@@ -42,11 +42,27 @@
         flex-direction: row;
         justify-content: flex-end;
         align-items: center;
+        gap: 8px;
         width: 100%;
-        margin-bottom: 4px;
+        margin-bottom: 16px;
         /* Above .chart-frame: negative chart margins pull the canvas over this row otherwise. */
         position: relative;
         z-index: 2;
+      }
+
+      /**
+       * Under `align-items: center` on `.chart-stack`, flex items shrink to content width unless
+       * stretched. This wrapper must span the stack so `.chart-frame`’s `width: 100%` and
+       * `syncChartFrameMargins()` see a real `offsetWidth`.
+       */
+      .chart-exportable {
+        align-self: stretch;
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
       }
 
       .chart-visibility-toggle {
@@ -76,7 +92,7 @@
 
       .chart-frame {
         width: 100%;
-        aspect-ratio: 1;
+        /* Height from `syncChartFrameMargins()` (width minus overlap from negative margins). */
         position: relative;
         z-index: 0;
         margin: 0 auto;
@@ -95,6 +111,9 @@
         min-width: 0;
         box-sizing: border-box;
         border-top: 1px solid #eee;
+        /* Above chart canvas (negative chart margins); keep inputs tappable. */
+        position: relative;
+        z-index: 10;
       }
 
       .form-title-row {
@@ -110,12 +129,36 @@
         color: #333;
       }
 
-      .form-title-row input[type='text'] {
+      .form-title-input-wrap {
+        display: flex;
+        flex: 1 1 auto;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+
+      .form-title-input-wrap input[type='text'] {
         flex: 1 1 auto;
         min-width: 0;
         box-sizing: border-box;
         border: 1px solid #ccc;
         border-radius: 8px;
+      }
+
+      .form-reset-levels-btn {
+        flex-shrink: 0;
+        font: 12px system-ui, sans-serif;
+        padding: 6px 10px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        background: #fafafa;
+        color: #333;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+
+      .form-reset-levels-btn:hover {
+        background: #f0f0f0;
       }
 
       #competencyInputs {
@@ -252,6 +295,13 @@
         <div class="chart-stack__toolbar">
           <button
             type="button"
+            id="copyChartImageBtn"
+            class="chart-visibility-toggle"
+          >
+            Copy image
+          </button>
+          <button
+            type="button"
             id="chartVisibilityToggle"
             class="chart-visibility-toggle"
             aria-expanded="true"
@@ -260,10 +310,12 @@
             Hide levels
           </button>
         </div>
-        <div id="chartHeading">John</div>
-        <div class="chart-frame">
-          <div class="chart-frame-inner">
-            <canvas id="competencyChart"></canvas>
+        <div class="chart-exportable">
+          <div id="chartHeading">John</div>
+          <div class="chart-frame">
+            <div class="chart-frame-inner">
+              <canvas id="competencyChart"></canvas>
+            </div>
           </div>
         </div>
       </div>
@@ -271,12 +323,22 @@
       <aside class="form-panel">
         <div class="form-title-row">
           <label for="chartTitleInput">Title</label>
-          <input
-            type="text"
-            id="chartTitleInput"
-            value="John"
-            placeholder="Chart title"
-          />
+          <div class="form-title-input-wrap">
+            <input
+              type="text"
+              id="chartTitleInput"
+              value="John"
+              placeholder="Chart title"
+            />
+            <button
+              type="button"
+              id="resetLevelsBtn"
+              class="form-reset-levels-btn"
+              title="Set all pillars to level 3"
+            >
+              Reset
+            </button>
+          </div>
         </div>
 
         <div id="competencyInputs">
@@ -348,7 +410,8 @@
     </div>
   
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
   <script>
     /**
      * Single place to tune layout, chart chrome, and form UI (all plain JS values).
@@ -374,12 +437,14 @@
         maxWidthCss: '100%',
         /**
          * Vertical margin scales with `.chart-frame` width vs `page.minWidthPx` / `page.maxWidthPx`.
-         * More negative = stronger overlap pull. Applied only via `syncChartFrameMargins()` (no CSS duplicate).
+         * More negative = stronger overlap pull. Frame height = width − sum(|negative margins|) (floored by minChartHeightPx).
          */
-        marginTopMinPx: -40,
-        marginTopMaxPx: -80,
-        marginBottomMinPx: -50,
-        marginBottomMaxPx: -100
+        marginTopMinPx: -30,
+        marginTopMaxPx: -60,
+        marginBottomMinPx: -40,
+        marginBottomMaxPx: -80,
+        /** Min chart-frame height (px) when `width − margin overlap` is small. */
+        minChartHeightPx: 120
       },
       heading: {
         fontSizeRem: 1.2,
@@ -402,7 +467,9 @@
         pillarIndentPx: 12,
         numberWidth: '3rem',
         numberPad: '8px 6px',
-        numberPx: 14
+        numberPx: 14,
+        /** Value applied to all seven pillars by the title-row Reset button. */
+        resetCompetencyLevel: 3
       },
       chartFonts: {
         tickMinPx: 8,
@@ -434,7 +501,12 @@
         centerPointLabels: false,
         tickInitialPx: 12,
         tickBackdropPad: { top: 2, bottom: 2, left: 3, right: 3 },
-        tickBackdropColor: 'rgba(255, 255, 255, 0.5)'
+        tickBackdropColor: 'rgba(255, 255, 255, 0.5)',
+        /**
+         * Copy image: output width = this factor × `.chart-exportable` CSS width (height scales).
+         * html2canvas uses the same box as on screen.
+         */
+        exportImageCssScale: 3
       },
       heptagon: {
         src: '7-pillar-heptagon-v1.png',
@@ -498,6 +570,15 @@
       const bot =
         cf.marginBottomMinPx + u * (cf.marginBottomMaxPx - cf.marginBottomMinPx);
       frame.style.margin = `${top}px auto ${bot}px`;
+
+      /** Shorter box height matches vertical overlap from negative margins (Chart fills frame). */
+      const shrink =
+        (top < 0 ? -top : 0) + (bot < 0 ? -bot : 0);
+      const minH =
+        cf.minChartHeightPx != null ? cf.minChartHeightPx : 120;
+      const innerH = Math.max(minH, w - shrink);
+      frame.style.aspectRatio = 'unset';
+      frame.style.height = `${innerH}px`;
     }
 
     function applyFeUiDomStyles() {
@@ -903,12 +984,116 @@
         writeLevelDataToDataset(readLevelsFromForm());
       }
       chart.update();
-      chartVisibilityBtn.textContent = hidden ? 'Show levels' : 'Hide levels';
+      chartVisibilityBtn.textContent = hidden ? 'Show chart' : 'Hide chart';
       chartVisibilityBtn.setAttribute('aria-expanded', String(!hidden));
     }
 
     chartVisibilityBtn.addEventListener('click', () => {
       setLevelsPolygonHidden(!levelsPolygonHidden);
+    });
+
+    const copyChartImageBtn = document.getElementById('copyChartImageBtn');
+
+    async function copyChartAsImageToClipboard() {
+      const exportRoot = document.querySelector('.chart-exportable');
+      const canvas = document.getElementById('competencyChart');
+      const headingEl = document.getElementById('chartHeading');
+      const titleInput = document.getElementById('chartTitleInput');
+      if (!exportRoot || !canvas || !chart) return;
+      if (typeof html2canvas !== 'function') {
+        throw new Error('html2canvas not loaded');
+      }
+
+      chart.update('none');
+      await new Promise((r) =>
+        requestAnimationFrame(() => requestAnimationFrame(r))
+      );
+
+      if (canvas.width < 2 || canvas.height < 2) return;
+
+      const titleText =
+        headingEl.style.display === 'none'
+          ? (titleInput.value.trim() || ' ')
+          : (headingEl.textContent.trim() ||
+              titleInput.value.trim() ||
+              ' ');
+
+      const cssW = Math.max(1, exportRoot.offsetWidth);
+      const cssH = Math.max(1, exportRoot.offsetHeight);
+      const cssScale = Math.max(
+        0.25,
+        Math.min(8, Number(FE_UI.chart.exportImageCssScale) || 3)
+      );
+      const exportW = Math.max(120, Math.round(cssW * cssScale));
+      const exportH = Math.max(2, Math.round((exportW * cssH) / cssW));
+
+      /** Rasterize the same box the user sees (heading + frame + chart). */
+      const snap = await html2canvas(exportRoot, {
+        scale: exportW / cssW,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        logging: false
+      });
+
+      const out = document.createElement('canvas');
+      out.width = exportW;
+      out.height = exportH;
+      const octx = out.getContext('2d');
+      octx.imageSmoothingEnabled = true;
+      octx.imageSmoothingQuality = 'high';
+      octx.fillStyle = '#ffffff';
+      octx.fillRect(0, 0, exportW, exportH);
+      octx.drawImage(snap, 0, 0, snap.width, snap.height, 0, 0, exportW, exportH);
+
+      const blob = await new Promise((resolve, reject) => {
+        out.toBlob(
+          (b) => (b ? resolve(b) : reject(new Error('toBlob failed'))),
+          'image/png',
+          0.95
+        );
+      });
+
+      try {
+        if (
+          navigator.clipboard &&
+          typeof ClipboardItem !== 'undefined' &&
+          typeof navigator.clipboard.write === 'function'
+        ) {
+          await navigator.clipboard.write([
+            new ClipboardItem({ 'image/png': blob })
+          ]);
+          copyChartImageBtn.textContent = 'Copied!';
+          setTimeout(() => {
+            copyChartImageBtn.textContent = 'Copy image';
+          }, 1600);
+          return;
+        }
+      } catch (e) {
+        console.warn(e);
+      }
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${(titleText || 'chart').replace(/[^\w\-]+/g, '-').slice(0, 48)}-growth.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      copyChartImageBtn.textContent = 'Saved file';
+      setTimeout(() => {
+        copyChartImageBtn.textContent = 'Copy image';
+      }, 1600);
+    }
+
+    copyChartImageBtn.addEventListener('click', () => {
+      copyChartAsImageToClipboard().catch((e) => {
+        console.error(e);
+        copyChartImageBtn.textContent = 'Failed';
+        setTimeout(() => {
+          copyChartImageBtn.textContent = 'Copy image';
+        }, 2200);
+      });
     });
 
     const STORAGE_KEY = 'fe-growth-framework:v1';
@@ -1008,6 +1193,23 @@
       const t = document.getElementById('chartTitleInput').value;
       applyTitleToHeadingAndChart(t);
       chart.update();
+      persistSavedState();
+    });
+
+    document.getElementById('resetLevelsBtn').addEventListener('click', () => {
+      const v = clampLevel(FE_UI.form.resetCompetencyLevel ?? 3);
+      for (let i = 0; i < 7; i++) {
+        const inp = document.querySelector(
+          `#competencyInputs input[data-index="${i}"]`
+        );
+        if (inp) inp.value = String(v);
+        if (!levelsPolygonHidden) {
+          chart.data.datasets[0].data[i] = v;
+        }
+      }
+      if (!levelsPolygonHidden) {
+        chart.update();
+      }
       persistSavedState();
     });
   </script>
