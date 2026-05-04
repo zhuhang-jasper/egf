@@ -37,6 +37,32 @@
         min-width: 0;
       }
 
+      .chart-stack__toolbar {
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-end;
+        align-items: center;
+        width: 100%;
+        margin-bottom: 4px;
+        /* Above .chart-frame: negative chart margins pull the canvas over this row otherwise. */
+        position: relative;
+        z-index: 2;
+      }
+
+      .chart-visibility-toggle {
+        font: 12px system-ui, sans-serif;
+        padding: 4px 10px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        background: #fafafa;
+        color: #333;
+        cursor: pointer;
+      }
+
+      .chart-visibility-toggle:hover {
+        background: #f0f0f0;
+      }
+
       #chartHeading {
         width: 100%;
         padding: 0;
@@ -44,12 +70,15 @@
         text-align: center;
         color: #222;
         box-sizing: border-box;
+        position: relative;
+        z-index: 1;
       }
 
       .chart-frame {
         width: 100%;
         aspect-ratio: 1;
         position: relative;
+        z-index: 0;
         margin: 0 auto;
         box-sizing: border-box;
       }
@@ -220,6 +249,17 @@
   <body>
     <div class="page">
       <div class="chart-stack">
+        <div class="chart-stack__toolbar">
+          <button
+            type="button"
+            id="chartVisibilityToggle"
+            class="chart-visibility-toggle"
+            aria-expanded="true"
+            aria-controls="competencyChart"
+          >
+            Hide levels
+          </button>
+        </div>
         <div id="chartHeading">John</div>
         <div class="chart-frame">
           <div class="chart-frame-inner">
@@ -818,11 +858,58 @@
       requestAnimationFrame(() => syncFontsForChart(chart));
     };
 
+    /** When true, level polygon is cleared from the chart; form inputs stay the source of truth. */
+    let levelsPolygonHidden = false;
+
+    const chartVisibilityBtn = document.getElementById('chartVisibilityToggle');
+
     function clampLevel(v) {
       const n = parseInt(String(v), 10);
       if (Number.isNaN(n)) return 0;
       return Math.max(0, Math.min(5, n));
     }
+
+    function readLevelsFromForm() {
+      const n = chart.data.labels.length;
+      const out = [];
+      for (let i = 0; i < n; i++) {
+        const inp = document.querySelector(
+          `#competencyInputs input[data-index="${i}"]`
+        );
+        out.push(inp ? clampLevel(inp.value) : 0);
+      }
+      return out;
+    }
+
+    /**
+     * Rebuild `dataset.data` in place (same array ref). Replacing `ds.data = [...]` can leave Chart.js
+     * radar parsed state stuck so the polygon never comes back after all-nulls.
+     */
+    function writeLevelDataToDataset(values) {
+      const ds = chart.data.datasets[0];
+      const d = ds.data;
+      d.length = 0;
+      for (let k = 0; k < values.length; k++) {
+        d.push(values[k]);
+      }
+    }
+
+    function setLevelsPolygonHidden(hidden) {
+      levelsPolygonHidden = hidden;
+      const n = chart.data.labels.length;
+      if (hidden) {
+        writeLevelDataToDataset(new Array(n).fill(null));
+      } else {
+        writeLevelDataToDataset(readLevelsFromForm());
+      }
+      chart.update();
+      chartVisibilityBtn.textContent = hidden ? 'Show levels' : 'Hide levels';
+      chartVisibilityBtn.setAttribute('aria-expanded', String(!hidden));
+    }
+
+    chartVisibilityBtn.addEventListener('click', () => {
+      setLevelsPolygonHidden(!levelsPolygonHidden);
+    });
 
     const STORAGE_KEY = 'fe-growth-framework:v1';
     const DEFAULT_STATE = {
@@ -865,12 +952,17 @@
         if (input) input.value = String(v);
         chart.data.datasets[0].data[i] = v;
       }
+      if (levelsPolygonHidden) {
+        writeLevelDataToDataset(
+          new Array(chart.data.labels.length).fill(null)
+        );
+      }
       chart.update();
     }
 
     function persistSavedState() {
       const title = document.getElementById('chartTitleInput').value;
-      const levels = chart.data.datasets[0].data.map((v) => clampLevel(v));
+      const levels = readLevelsFromForm();
       try {
         localStorage.setItem(
           STORAGE_KEY,
@@ -905,8 +997,10 @@
       const i = parseInt(input.getAttribute('data-index'), 10);
       const v = clampLevel(input.value);
       input.value = String(v);
-      chart.data.datasets[0].data[i] = v;
-      chart.update();
+      if (!levelsPolygonHidden) {
+        chart.data.datasets[0].data[i] = v;
+        chart.update();
+      }
       persistSavedState();
     });
 
