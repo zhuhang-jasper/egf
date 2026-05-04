@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FE growth framework</title>
+    <style>
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+      body {
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        min-height: 100vh;
+        min-height: 100dvh;
+        width: 100%;
+      }
+
+      .page {
+        display: grid;
+        grid-template-columns: 1fr;
+        margin: 0 auto;
+        box-sizing: border-box;
+        align-items: stretch;
+      }
+
+      .chart-stack {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        min-width: 0;
+      }
+
+      #chartHeading {
+        width: 100%;
+        padding: 0;
+        line-height: 1.2;
+        text-align: center;
+        color: #222;
+        box-sizing: border-box;
+      }
+
+      .chart-frame {
+        width: 100%;
+        aspect-ratio: 1;
+        position: relative;
+        margin: 0 auto;
+        box-sizing: border-box;
+      }
+
+      .chart-frame-inner {
+        position: absolute;
+        inset: 0;
+        min-width: 0;
+        min-height: 0;
+      }
+
+      .form-panel {
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+        border-top: 1px solid #eee;
+      }
+
+      .form-title-row {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        width: 100%;
+        margin-top: 8px;
+      }
+
+      .form-title-row label {
+        flex-shrink: 0;
+        color: #333;
+      }
+
+      .form-title-row input[type='text'] {
+        flex: 1 1 auto;
+        min-width: 0;
+        box-sizing: border-box;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+      }
+
+      #competencyInputs {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .form-section-title {
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #666;
+      }
+
+      /**
+       * One continuous left rail per cluster (full height); row bars removed.
+       */
+      .form-cluster {
+        position: relative;
+        box-sizing: border-box;
+        padding-left: 14px;
+      }
+
+      .form-cluster::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        border-radius: 3px;
+        pointer-events: none;
+        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+      }
+
+      #competencyInputs .form-cluster[data-cluster='technical']::before {
+        background: var(--cluster-technical);
+      }
+
+      #competencyInputs .form-cluster[data-cluster='product']::before {
+        background: var(--cluster-product);
+      }
+
+      #competencyInputs .form-cluster[data-cluster='behavioural']::before {
+        background: var(--cluster-behavioural);
+      }
+
+      .form-cluster .form-section-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .form-cluster .form-section-title::before {
+        content: '';
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+      }
+
+      .form-cluster[data-cluster='technical'] .form-section-title::before {
+        background: var(--cluster-technical);
+      }
+
+      .form-cluster[data-cluster='product'] .form-section-title::before {
+        background: var(--cluster-product);
+      }
+
+      .form-cluster[data-cluster='behavioural'] .form-section-title::before {
+        background: var(--cluster-behavioural);
+      }
+
+      #competencyInputs .field-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        width: 100%;
+        line-height: 1.35;
+        color: #333;
+        box-sizing: border-box;
+        border-radius: 8px;
+      }
+
+      #competencyInputs .field-row span {
+        min-width: 0;
+        text-align: left;
+      }
+
+      #competencyInputs .field-row input[type='number'] {
+        box-sizing: border-box;
+        text-align: center;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+      }
+
+      /** Pillar clusters: legend + thin row bar (colors from --cluster-* on #competencyInputs). */
+      .cluster-legend {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px 14px;
+        padding: 8px 0 2px;
+        margin: 0 0 4px;
+        border-bottom: 1px solid #f0f0f0;
+        color: #555;
+      }
+
+      .cluster-legend__item {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        line-height: 1.2;
+        letter-spacing: 0.01em;
+      }
+
+      .cluster-legend__swatch {
+        width: 10px;
+        height: 10px;
+        border-radius: 3px;
+        flex-shrink: 0;
+        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+      }
+
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="chart-stack">
+        <div id="chartHeading">John</div>
+        <div class="chart-frame">
+          <div class="chart-frame-inner">
+            <canvas id="competencyChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <aside class="form-panel">
+        <div class="form-title-row">
+          <label for="chartTitleInput">Title</label>
+          <input
+            type="text"
+            id="chartTitleInput"
+            value="John"
+            placeholder="Chart title"
+          />
+        </div>
+
+        <div id="competencyInputs">
+          <!-- <div class="cluster-legend" aria-hidden="true">
+            <span class="cluster-legend__item">
+              <span
+                class="cluster-legend__swatch"
+                style="background: var(--cluster-technical)"
+              ></span>
+              <span data-cluster-legend="technical"></span>
+            </span>
+            <span class="cluster-legend__item">
+              <span
+                class="cluster-legend__swatch"
+                style="background: var(--cluster-product)"
+              ></span>
+              <span data-cluster-legend="product"></span>
+            </span>
+            <span class="cluster-legend__item">
+              <span
+                class="cluster-legend__swatch"
+                style="background: var(--cluster-behavioural)"
+              ></span>
+              <span data-cluster-legend="behavioural"></span>
+            </span>
+          </div> -->
+
+          <div class="form-cluster" data-cluster="technical">
+            <div class="form-section-title">Technical</div>
+            <label class="field-row">
+              <span>🤲 Coding</span>
+              <input type="number" min="0" max="5" step="1" value="4" data-index="0" />
+            </label>
+            <label class="field-row">
+              <span>🧠 Architecture</span>
+              <input type="number" min="0" max="5" step="1" value="3" data-index="1" />
+            </label>
+            <label class="field-row">
+              <span>🦴 Process</span>
+              <input type="number" min="0" max="5" step="1" value="3" data-index="2" />
+            </label>
+          </div>
+
+          <div class="form-cluster" data-cluster="product">
+            <div class="form-section-title">Product</div>
+            <label class="field-row">
+              <span>👀 UI/UX</span>
+              <input type="number" min="0" max="5" step="1" value="3" data-index="6" />
+            </label>
+            <label class="field-row">
+              <span>💡 Product Sense</span>
+              <input type="number" min="0" max="5" step="1" value="3" data-index="5" />
+            </label>
+          </div>
+
+          <div class="form-cluster" data-cluster="behavioural">
+            <div class="form-section-title">Behavioural</div>
+            <label class="field-row">
+              <span>🗣️ Communication</span>
+              <input type="number" min="0" max="5" step="1" value="3" data-index="4" />
+            </label>
+            <label class="field-row">
+              <span>✨ Ownership</span>
+              <input type="number" min="0" max="5" step="1" value="3" data-index="3" />
+            </label>
+          </div>
+        </div>
+      </aside>
+    </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <script>
+    /**
+     * Single place to tune layout, chart chrome, and form UI (all plain JS values).
+     * `applyFeUiDomStyles()` pushes layout/typography onto the DOM; Chart.js reads from here too.
+     */
+    const FE_UI = {
+      page: {
+        maxWidthPx: 650,
+        minWidthPx: 350,
+        gapPx: 16,
+        padding: '12px 14px 16px',
+        borderRadiusPx: 14,
+        border: '1px solid #e8e8e8',
+        bg: '#fff',
+        shadow: '0 1px 4px rgba(0, 0, 0, 0.06)'
+      },
+      body: {
+        padXPx: 12,
+        padYPx: 12,
+        padBottomPx: 16
+      },
+      chartFrame: {
+        maxWidthCss: '100%',
+        /**
+         * Vertical margin scales with `.chart-frame` width vs `page.minWidthPx` / `page.maxWidthPx`.
+         * More negative = stronger overlap pull. Applied only via `syncChartFrameMargins()` (no CSS duplicate).
+         */
+        marginTopMinPx: -40,
+        marginTopMaxPx: -80,
+        marginBottomMinPx: -50,
+        marginBottomMaxPx: -100
+      },
+      heading: {
+        fontSizeRem: 1.2,
+        marginBottomPx: 8
+      },
+      form: {
+        panelMarginTopPx: 4,
+        panelPaddingTopPx: 12,
+        titleRowGapPx: 10,
+        titleLabelPx: 13,
+        textInputPad: '8px 10px',
+        textInputPx: 14,
+        inputsGapPx: 8,
+        inputsMarginTopPx: 16,
+        sectionTitlePx: 11,
+        sectionTitleMarginFirst: '0 0 2px',
+        sectionTitleMargin: '10px 0 2px',
+        fieldGapPx: 10,
+        fieldRowPx: 14,
+        pillarIndentPx: 12,
+        numberWidth: '3rem',
+        numberPad: '8px 6px',
+        numberPx: 14
+      },
+      chartFonts: {
+        tickMinPx: 8,
+        tickWidthDivisor: 48,
+        pointLabelMinPx: 9,
+        pointLabelMaxPx: 18,
+        pointLabelRefWidthPx: 380
+      },
+      chart: {
+        layoutPadding: { top: 0, right: 30, bottom: 0, left: 30 },
+        /**
+         * Pin the radar (and heptagon art) to the geometric center of the canvas.
+         * Uneven pillar label lengths otherwise shift Chart.js’s computed center.
+         */
+        radarCenterFix: true,
+        /** Min distance from chartArea edge to outer ring — room for L-ticks + pillar text; increase if labels clip. */
+        radarLabelReservedPx: 62,
+        pointLabelPadding: 5,
+        /** Pillar label size in px; honored by syncFonts (see pointLabelScaleWithChart). */
+        pointLabelPx: 12,
+        /** If true, size scales with canvas width vs pointLabelRefWidthPx; if false, fixed pointLabelPx. */
+        pointLabelScaleWithChart: true,
+        pointLabelWeight: 'bold',
+        pointLabelColor: '#333',
+        /** Concentric rings + spokes (`grid` / `angleLines`). */
+        gridColor: 'rgba(0, 0, 0, 0.15)',
+        /** L1–L5 text — slightly darker than `gridColor`. */
+        tickLabelColor: 'rgba(0, 0, 0, 0.3)',
+        centerPointLabels: false,
+        tickInitialPx: 12,
+        tickBackdropPad: { top: 2, bottom: 2, left: 3, right: 3 },
+        tickBackdropColor: 'rgba(255, 255, 255, 0.5)'
+      },
+      heptagon: {
+        src: '7-pillar-heptagon-v1.png',
+        bgSize: 0.985,
+        rotationAdjust: 0,
+        nudgeFracX: 0,
+        nudgeFracY: -0.01
+      },
+      dataset: {
+        fill: 'rgba(56, 56, 56, 0.58)',
+        stroke: '#3a3a3a',
+        lineWidth: 2,
+        /** Vertex markers (Chart.js `point*` options on the radar dataset). */
+        pointRadius: 2,
+        pointHoverRadius: 4,
+        pointStyle: 'circle',
+        pointFill: '#404040',
+        /** Use 0 width to hide the ring; stroke color is ignored when width is 0. */
+        pointStroke: '#404040',
+        pointBorderWidth: 0,
+        pointHoverFill: 'rgba(64, 64, 64, 0.95)',
+        pointHoverStroke: '#404040',
+        pointHoverBorderWidth: 0
+      },
+      /**
+       * One accent color per pillar cluster (Technical / Product / Behavioural).
+       * Colors = dominant triad from `7-pillar-heptagon-v1.png` (median-cut quantize on opaque pixels).
+       * Pushed to #competencyInputs as --cluster-* for legend, section dots, and row bars.
+       */
+      clusters: {
+        technical: { label: 'Technical', color: '#cdbdd8' },
+        product: { label: 'Product', color: '#f5b39d' },
+        behavioural: { label: 'Behavioural', color: '#bddbb5' }
+      }
+    };
+
+    function syncClusterFormUi() {
+      const root = document.getElementById('competencyInputs');
+      const clusters = FE_UI.clusters;
+      if (!root || !clusters) return;
+      for (const [id, meta] of Object.entries(clusters)) {
+        root.style.setProperty(`--cluster-${id}`, meta.color);
+      }
+      root.querySelectorAll('[data-cluster-legend]').forEach((el) => {
+        const id = el.getAttribute('data-cluster-legend');
+        const meta = clusters[id];
+        if (meta) el.textContent = meta.label;
+      });
+    }
+
+    function syncChartFrameMargins() {
+      const p = FE_UI.page;
+      const cf = FE_UI.chartFrame;
+      const frame = document.querySelector('.chart-frame');
+      if (!frame) return;
+      const w = frame.offsetWidth;
+      const w0 = p.minWidthPx;
+      const w1 = p.maxWidthPx;
+      const u = w1 > w0 ? Math.max(0, Math.min(1, (w - w0) / (w1 - w0))) : 1;
+      const top = cf.marginTopMinPx + u * (cf.marginTopMaxPx - cf.marginTopMinPx);
+      const bot =
+        cf.marginBottomMinPx + u * (cf.marginBottomMaxPx - cf.marginBottomMinPx);
+      frame.style.margin = `${top}px auto ${bot}px`;
+    }
+
+    function applyFeUiDomStyles() {
+      const p = FE_UI.page;
+      const b = FE_UI.body;
+      const h = FE_UI.heading;
+      const f = FE_UI.form;
+      const cf = FE_UI.chartFrame;
+
+      document.body.style.paddingLeft = `max(${b.padXPx}px, env(safe-area-inset-left, 0px))`;
+      document.body.style.paddingRight = `max(${b.padXPx}px, env(safe-area-inset-right, 0px))`;
+      document.body.style.paddingTop = `max(${b.padYPx}px, env(safe-area-inset-top, 0px))`;
+      document.body.style.paddingBottom = `max(${b.padBottomPx}px, env(safe-area-inset-bottom, 0px))`;
+
+      const pageEl = document.querySelector('.page');
+      pageEl.style.gap = `${p.gapPx}px`;
+      pageEl.style.width = `min(${p.maxWidthPx}px, calc(100vw - ${2 * b.padXPx}px))`;
+      pageEl.style.maxWidth = `${p.maxWidthPx}px`;
+      pageEl.style.minWidth = `${p.minWidthPx}px`;
+      pageEl.style.padding = p.padding;
+      pageEl.style.border = p.border;
+      pageEl.style.borderRadius = `${p.borderRadiusPx}px`;
+      pageEl.style.background = p.bg;
+      pageEl.style.boxShadow = p.shadow;
+
+      const headingEl = document.getElementById('chartHeading');
+      headingEl.style.marginBottom = `${h.marginBottomPx}px`;
+      headingEl.style.font = `600 ${h.fontSizeRem}rem system-ui, sans-serif`;
+
+      document.querySelector('.chart-frame').style.maxWidth = cf.maxWidthCss;
+
+      syncChartFrameMargins();
+      requestAnimationFrame(() => syncChartFrameMargins());
+
+      const formPanel = document.querySelector('.form-panel');
+      formPanel.style.marginTop = `${f.panelMarginTopPx}px`;
+      formPanel.style.paddingTop = `${f.panelPaddingTopPx}px`;
+
+      const titleRow = document.querySelector('.form-title-row');
+      titleRow.style.gap = `${f.titleRowGapPx}px`;
+      const titleLabel = titleRow.querySelector('label');
+      titleLabel.style.font = `${f.titleLabelPx}px system-ui, sans-serif`;
+      const titleInput = document.getElementById('chartTitleInput');
+      titleInput.style.padding = f.textInputPad;
+      titleInput.style.fontSize = `${f.textInputPx}px`;
+
+      const compInputs = document.getElementById('competencyInputs');
+      compInputs.style.gap = `${f.inputsGapPx}px`;
+      compInputs.style.marginTop = `${f.inputsMarginTopPx}px`;
+
+      document.querySelectorAll('.form-section-title').forEach((el, i) => {
+        el.style.font = `600 ${f.sectionTitlePx}px/1.2 system-ui, sans-serif`;
+        el.style.margin =
+          i === 0 ? f.sectionTitleMarginFirst : f.sectionTitleMargin;
+      });
+
+      document.querySelectorAll('#competencyInputs .field-row').forEach((row) => {
+        row.style.gap = `${f.fieldGapPx}px`;
+        row.style.font = `${f.fieldRowPx}px/1.35 system-ui, sans-serif`;
+        const span = row.querySelector('span');
+        if (span) span.style.paddingLeft = `${f.pillarIndentPx}px`;
+        const num = row.querySelector('input[type="number"]');
+        if (num) {
+          num.style.width = f.numberWidth;
+          num.style.padding = f.numberPad;
+          num.style.fontSize = `${f.numberPx}px`;
+        }
+      });
+
+      syncClusterFormUi();
+    }
+
+    applyFeUiDomStyles();
+    window.addEventListener('resize', () => applyFeUiDomStyles());
+
+    const ctx = document.getElementById('competencyChart');
+
+    const heptagonImg = new Image();
+    heptagonImg.src = FE_UI.heptagon.src;
+
+    function syncFontsForChart(chart) {
+      const w = chart.width;
+      if (!w) return;
+      const cf = FE_UI.chartFonts;
+      const ch = FE_UI.chart;
+      const tickSize = Math.max(
+        cf.tickMinPx,
+        Math.round(w / cf.tickWidthDivisor)
+      );
+      let labelSize = ch.pointLabelPx;
+      if (ch.pointLabelScaleWithChart) {
+        const ref = cf.pointLabelRefWidthPx || 380;
+        labelSize = Math.round((ch.pointLabelPx * w) / ref);
+        labelSize = Math.max(cf.pointLabelMinPx, labelSize);
+        if (cf.pointLabelMaxPx != null) {
+          labelSize = Math.min(cf.pointLabelMaxPx, labelSize);
+        }
+      }
+      const rScale = chart.options.scales.r;
+      const tickFont = rScale.ticks.font || {};
+      const plFont = rScale.pointLabels.font || {};
+      if (tickFont.size === tickSize && plFont.size === labelSize) {
+        return;
+      }
+      rScale.ticks.font = { ...tickFont, size: tickSize };
+      rScale.pointLabels.font = {
+        ...plFont,
+        size: labelSize,
+        weight: ch.pointLabelWeight
+      };
+      chart.update('none');
+    }
+
+    function radarTickBackdropHalf(scale) {
+      const tickOpts = scale.options.ticks;
+      if (!tickOpts.display || !scale.options.display) return 0;
+      const bp = tickOpts.backdropPadding || {};
+      const padY = (Number(bp.top) || 0) + (Number(bp.bottom) || 0);
+      const fs = (tickOpts.font && tickOpts.font.size) || 12;
+      return (fs + padY) / 2;
+    }
+
+    function radarNormAngleRad(a) {
+      const t = Math.PI * 2;
+      a = a % t;
+      return a < 0 ? a + t : a;
+    }
+
+    function radarTextAlignForDeg(angle) {
+      if (angle === 0 || angle === 180) return 'center';
+      if (angle < 180) return 'left';
+      return 'right';
+    }
+
+    function radarLeftForAlign(x, w, align) {
+      if (align === 'right') return x - w;
+      if (align === 'center') return x - w / 2;
+      return x;
+    }
+
+    function radarYForDeg(y, h, angle) {
+      if (angle === 90 || angle === 270) return y - h / 2;
+      if (angle > 270 || angle < 90) return y - h;
+      return y;
+    }
+
+    function radarMeasureLabel(ctx, fontWeight, fontSizePx, family, text) {
+      ctx.save();
+      ctx.font = `${fontWeight || 'normal'} ${fontSizePx}px ${family || 'system-ui, sans-serif'}`;
+      const w = ctx.measureText(String(text)).width;
+      ctx.restore();
+      return { w, h: fontSizePx * 1.2 };
+    }
+
+    /** Chart.js builds _pointLabelItems before afterFit; recompute after we move xCenter/yCenter/drawingArea. */
+    function rebuildRadarPointLabelItems(scale) {
+      const labels = scale._pointLabels;
+      const count = labels && labels.length;
+      if (!count || !scale.ctx) return;
+
+      const plOpts = scale.options.pointLabels;
+      const valueCount = count;
+      const addAngle = plOpts.centerPointLabels ? Math.PI / valueCount : 0;
+      const extra = radarTickBackdropHalf(scale);
+      const items = [];
+      const ctx = scale.ctx;
+
+      for (let i = 0; i < valueCount; i++) {
+        const opts = plOpts.setContext(scale.getPointLabelContext(i));
+        const pad = opts.padding;
+        const f = opts.font || {};
+        const fSize = f.size || 12;
+        const fWeight = f.weight || 'normal';
+        const family = f.family;
+        const size = radarMeasureLabel(ctx, fWeight, fSize, family, labels[i]);
+        const pos = scale.getPointPosition(
+          i,
+          scale.drawingArea + extra + pad,
+          addAngle
+        );
+        let angleDeg = Math.round(
+          (radarNormAngleRad(pos.angle + Math.PI / 2) * 180) / Math.PI
+        );
+        angleDeg %= 360;
+        if (angleDeg < 0) angleDeg += 360;
+        const align = radarTextAlignForDeg(angleDeg);
+        const y = radarYForDeg(pos.y, size.h, angleDeg);
+        const left = radarLeftForAlign(pos.x, size.w, align);
+        items.push({
+          visible: true,
+          x: pos.x,
+          y,
+          textAlign: align,
+          left,
+          top: y,
+          right: left + size.w,
+          bottom: y + size.h
+        });
+      }
+      scale._pointLabelItems = items;
+    }
+
+    function applyRadarCenterFit(scale) {
+      const u = FE_UI.chart;
+      if (!u.radarCenterFix) return;
+      const chart = scale.chart;
+      const area = chart.chartArea;
+      if (!area || area.width < 2 || area.height < 2) return;
+
+      const cx = area.left + area.width / 2;
+      const cy = area.top + area.height / 2;
+      const reserve = u.radarLabelReservedPx;
+      const maxR = Math.min(
+        cx - area.left - reserve,
+        area.right - cx - reserve,
+        cy - area.top - reserve,
+        area.bottom - cy - reserve
+      );
+
+      scale.xCenter = cx;
+      scale.yCenter = cy;
+      if (Number.isFinite(maxR) && maxR > 0) {
+        scale.drawingArea = Math.min(scale.drawingArea, maxR);
+      }
+      rebuildRadarPointLabelItems(scale);
+    }
+
+    const heptagonBackgroundPlugin = {
+      id: 'heptagonBackground',
+      beforeDraw(chart) {
+        const scale = chart.scales.r;
+        if (!scale || !heptagonImg.complete || heptagonImg.naturalWidth === 0) return;
+
+        const { ctx } = chart;
+        const x = scale.xCenter;
+        const y = scale.yCenter;
+        const r = scale.drawingArea;
+        const side = 2 * r * FE_UI.heptagon.bgSize;
+
+        const outer0 = scale.getPointPositionForValue(0, scale.max);
+        const axis0Angle = Math.atan2(outer0.y - y, outer0.x - x);
+        // Image "up" is −Y; rotate so that direction matches the first radar axis (Coding).
+        const rotation =
+          axis0Angle + Math.PI / 2 + FE_UI.heptagon.rotationAdjust;
+
+        const cx = x + FE_UI.heptagon.nudgeFracX * r;
+        const cy = y + FE_UI.heptagon.nudgeFracY * r;
+
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(rotation);
+        ctx.drawImage(heptagonImg, -side / 2, -side / 2, side, side);
+        ctx.restore();
+      }
+    };
+
+    const chart = new Chart(ctx, {
+      type: 'radar',
+      data: {
+        labels: [
+          '🤲 Coding', 
+          '🧠 Architecture', 
+          '🦴 Process', 
+          '✨ Ownership', 
+          '🗣️ Communication', 
+          '💡 Product Sense', 
+          '👀 UI/UX'
+        ],
+        datasets: [{
+          label: 'John',
+          data: [3, 3, 3, 3, 3, 3, 3],
+          backgroundColor: FE_UI.dataset.fill,
+          borderColor: FE_UI.dataset.stroke,
+          borderWidth: FE_UI.dataset.lineWidth,
+          pointRadius: FE_UI.dataset.pointRadius,
+          pointHoverRadius: FE_UI.dataset.pointHoverRadius,
+          pointStyle: FE_UI.dataset.pointStyle,
+          pointBackgroundColor: FE_UI.dataset.pointFill,
+          pointBorderColor: FE_UI.dataset.pointStroke,
+          pointBorderWidth: FE_UI.dataset.pointBorderWidth,
+          pointHoverBackgroundColor: FE_UI.dataset.pointHoverFill,
+          pointHoverBorderColor: FE_UI.dataset.pointHoverStroke,
+          pointHoverBorderWidth: FE_UI.dataset.pointHoverBorderWidth
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        backgroundColor: 'transparent',
+        layout: {
+          padding: { ...FE_UI.chart.layoutPadding }
+        },
+        onResize(chart) {
+          syncFontsForChart(chart);
+          syncChartFrameMargins();
+        },
+        scales: {
+          r: {
+            min: 0,
+            max: 5,
+            afterFit: applyRadarCenterFit,
+            ticks: {
+              color: FE_UI.chart.tickLabelColor,
+              stepSize: 1,
+              padding: 0,
+              backdropPadding: { ...FE_UI.chart.tickBackdropPad },
+              showLabelBackdrop(ctx) {
+                const v = ctx.tick?.value;
+                return v != null && v >= 1 && v <= 5;
+              },
+              backdropColor: FE_UI.chart.tickBackdropColor,
+              // Format the axis labels to show L1, L2, L3, etc.
+              callback: function(value) {
+                if (value === 0) return '0';
+                return 'L' + value;
+              },
+              font: {
+                size: FE_UI.chart.tickInitialPx
+              },
+              /**
+               * Chart.js splits the r scale into layers by z: grid defaults to z=-1, ticks here.
+               * z must be <= 0 or L1–L5 (and their backdrops) render in a layer *after* datasets and
+               * float on top of the radar polygon. z: 0 keeps ticks above grid lines but under the chart.
+               */
+              z: 0
+            },
+            pointLabels: {
+              centerPointLabels: FE_UI.chart.centerPointLabels,
+              padding: FE_UI.chart.pointLabelPadding,
+              font: {
+                size: FE_UI.chart.pointLabelPx,
+                weight: FE_UI.chart.pointLabelWeight
+              },
+              color: FE_UI.chart.pointLabelColor
+            },
+            angleLines: {
+              color: FE_UI.chart.gridColor
+            },
+            grid: {
+              circular: false, // polygon (heptagon) instead of circles
+              color: FE_UI.chart.gridColor
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: false // Hide the top legend if you are building custom CSS legends below
+          }
+        }
+      },
+      plugins: [heptagonBackgroundPlugin]
+    });
+
+    requestAnimationFrame(() => syncFontsForChart(chart));
+
+    heptagonImg.onload = () => {
+      chart.update();
+      requestAnimationFrame(() => syncFontsForChart(chart));
+    };
+
+    function clampLevel(v) {
+      const n = parseInt(String(v), 10);
+      if (Number.isNaN(n)) return 0;
+      return Math.max(0, Math.min(5, n));
+    }
+
+    const STORAGE_KEY = 'fe-growth-framework:v1';
+    const DEFAULT_STATE = {
+      title: 'John',
+      levels: [3, 3, 3, 3, 3, 3, 3]
+    };
+
+    function normalizeSavedState(parsed) {
+      if (!parsed || typeof parsed !== 'object') return null;
+      if (typeof parsed.title !== 'string') return null;
+      const levels = parsed.levels;
+      if (!Array.isArray(levels) || levels.length !== 7) return null;
+      return {
+        title: parsed.title,
+        levels: levels.map((v) => clampLevel(v))
+      };
+    }
+
+    function applyTitleToHeadingAndChart(t) {
+      const trimmed = t.trim();
+      const heading = document.getElementById('chartHeading');
+      if (!trimmed) {
+        heading.textContent = '';
+        heading.style.display = 'none';
+      } else {
+        heading.textContent = t;
+        heading.style.display = '';
+      }
+      chart.data.datasets[0].label = trimmed || ' ';
+    }
+
+    function applySavedState(state) {
+      document.getElementById('chartTitleInput').value = state.title;
+      applyTitleToHeadingAndChart(state.title);
+      for (let i = 0; i < 7; i++) {
+        const input = document.querySelector(
+          `#competencyInputs input[data-index="${i}"]`
+        );
+        const v = state.levels[i];
+        if (input) input.value = String(v);
+        chart.data.datasets[0].data[i] = v;
+      }
+      chart.update();
+    }
+
+    function persistSavedState() {
+      const title = document.getElementById('chartTitleInput').value;
+      const levels = chart.data.datasets[0].data.map((v) => clampLevel(v));
+      try {
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({ title, levels })
+        );
+      } catch (_) {
+        /* ignore quota / private mode */
+      }
+    }
+
+    function loadSavedState() {
+      let state = DEFAULT_STATE;
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          const n = normalizeSavedState(parsed);
+          if (n) state = n;
+        }
+      } catch (_) {
+        /* corrupt or unreadable */
+      }
+      applySavedState(state);
+    }
+
+    loadSavedState();
+    requestAnimationFrame(() => syncFontsForChart(chart));
+
+    document.getElementById('competencyInputs').addEventListener('input', (e) => {
+      const input = e.target.closest('input[type="number"][data-index]');
+      if (!input) return;
+      const i = parseInt(input.getAttribute('data-index'), 10);
+      const v = clampLevel(input.value);
+      input.value = String(v);
+      chart.data.datasets[0].data[i] = v;
+      chart.update();
+      persistSavedState();
+    });
+
+    document.getElementById('chartTitleInput').addEventListener('input', () => {
+      const t = document.getElementById('chartTitleInput').value;
+      applyTitleToHeadingAndChart(t);
+      chart.update();
+      persistSavedState();
+    });
+  </script>
+  </body>
+</html>
