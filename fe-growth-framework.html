@@ -65,6 +65,24 @@
         align-items: stretch;
       }
 
+      /** In flow directly under `#chartHeading`; left-aligned (included in Copy image). */
+      .chart-exportable__legend {
+        align-self: flex-start;
+        width: auto;
+        max-width: 100%;
+        margin: 0;
+        padding-left: 8px;
+        line-height: 0;
+        pointer-events: none;
+      }
+
+      .chart-exportable__legend img {
+        display: block;
+        width: auto;
+        height: auto;
+        max-width: min(125px, 18vw);
+      }
+
       .chart-visibility-toggle {
         font: 12px system-ui, sans-serif;
         padding: 4px 10px;
@@ -310,8 +328,16 @@
             Hide levels
           </button>
         </div>
-        <div class="chart-exportable">
+        <div id="chartExportable" class="chart-exportable">
           <div id="chartHeading">John</div>
+          <div class="chart-exportable__legend" aria-hidden="true">
+            <img
+              src="cluster-legend-export.png"
+              width="200"
+              height="116"
+              alt=""
+            />
+          </div>
           <div class="chart-frame">
             <div class="chart-frame-inner">
               <canvas id="competencyChart"></canvas>
@@ -438,6 +464,8 @@
         /**
          * Vertical margin scales with `.chart-frame` width vs `page.minWidthPx` / `page.maxWidthPx`.
          * More negative = stronger overlap pull. Frame height = width − sum(|negative margins|) (floored by minChartHeightPx).
+         * Applied `margin-top` is `top − legendH` where `top` is the curve above and `legendH` is
+         * `.chart-exportable__legend` outer height (more negative = pull frame up to match pre-legend overlap).
          */
         marginTopMinPx: -30,
         marginTopMaxPx: -60,
@@ -503,8 +531,8 @@
         tickBackdropPad: { top: 2, bottom: 2, left: 3, right: 3 },
         tickBackdropColor: 'rgba(255, 255, 255, 0.5)',
         /**
-         * Copy image: output width = this factor × `.chart-exportable` CSS width (height scales).
-         * html2canvas uses the same box as on screen.
+         * Copy image: output width = this factor × `#chartExportable` width (height from tight content).
+         * html2canvas targets only `#chartExportable` with explicit x/y/width/height.
          */
         exportImageCssScale: 3
       },
@@ -557,6 +585,26 @@
       });
     }
 
+    function measureChartExportableLegendHeight() {
+      const el = document.querySelector('.chart-exportable__legend');
+      if (!el) return 0;
+      const cs = getComputedStyle(el);
+      const mt = parseFloat(cs.marginTop) || 0;
+      const mb = parseFloat(cs.marginBottom) || 0;
+      return el.offsetHeight + mt + mb;
+    }
+
+    /** Tight vertical extent of `#chartExportable` children (avoids extra flex dead space in captures). */
+    function getChartExportableCaptureHeight(el) {
+      const root = el.getBoundingClientRect();
+      let maxBottom = root.top;
+      for (const child of el.children) {
+        maxBottom = Math.max(maxBottom, child.getBoundingClientRect().bottom);
+      }
+      const fromKids = Math.ceil(maxBottom - root.top);
+      return Math.max(1, Math.min(el.offsetHeight, fromKids));
+    }
+
     function syncChartFrameMargins() {
       const p = FE_UI.page;
       const cf = FE_UI.chartFrame;
@@ -569,9 +617,16 @@
       const top = cf.marginTopMinPx + u * (cf.marginTopMaxPx - cf.marginTopMinPx);
       const bot =
         cf.marginBottomMinPx + u * (cf.marginBottomMaxPx - cf.marginBottomMinPx);
-      frame.style.margin = `${top}px auto ${bot}px`;
+      /**
+       * Legend sits in flow above the frame, so the frame starts lower. Subtract its outer height
+       * from `top` (more negative margin) to keep the same overlap with the heading as when the
+       * frame sat directly under the title. Using `top + legendH` was wrong and caused a large gap.
+       */
+      const legendH = measureChartExportableLegendHeight();
+      const marginTop = top - legendH;
+      frame.style.margin = `${marginTop}px auto ${bot}px`;
 
-      /** Shorter box height matches vertical overlap from negative margins (Chart fills frame). */
+      /** Frame inner height still follows the design overlap from `top` / `bot` only. */
       const shrink =
         (top < 0 ? -top : 0) + (bot < 0 ? -bot : 0);
       const minH =
@@ -653,6 +708,16 @@
 
     applyFeUiDomStyles();
     window.addEventListener('resize', () => applyFeUiDomStyles());
+
+    const clusterLegendImg = document.querySelector('.chart-exportable__legend img');
+    if (clusterLegendImg) {
+      const bumpMarginsForLegend = () => {
+        syncChartFrameMargins();
+        requestAnimationFrame(() => syncChartFrameMargins());
+      };
+      if (clusterLegendImg.complete) bumpMarginsForLegend();
+      else clusterLegendImg.addEventListener('load', bumpMarginsForLegend);
+    }
 
     const ctx = document.getElementById('competencyChart');
 
@@ -995,7 +1060,7 @@
     const copyChartImageBtn = document.getElementById('copyChartImageBtn');
 
     async function copyChartAsImageToClipboard() {
-      const exportRoot = document.querySelector('.chart-exportable');
+      const exportRoot = document.getElementById('chartExportable');
       const canvas = document.getElementById('competencyChart');
       const headingEl = document.getElementById('chartHeading');
       const titleInput = document.getElementById('chartTitleInput');
@@ -1018,8 +1083,8 @@
               titleInput.value.trim() ||
               ' ');
 
-      const cssW = Math.max(1, exportRoot.offsetWidth);
-      const cssH = Math.max(1, exportRoot.offsetHeight);
+      const cssW = Math.max(1, Math.round(exportRoot.getBoundingClientRect().width));
+      const cssH = Math.max(1, getChartExportableCaptureHeight(exportRoot));
       const cssScale = Math.max(
         0.25,
         Math.min(8, Number(FE_UI.chart.exportImageCssScale) || 3)
@@ -1027,8 +1092,12 @@
       const exportW = Math.max(120, Math.round(cssW * cssScale));
       const exportH = Math.max(2, Math.round((exportW * cssH) / cssW));
 
-      /** Rasterize the same box the user sees (heading + frame + chart). */
+      /** Strictly `#chartExportable` only (not toolbar / form); x/y/width/height clip the raster. */
       const snap = await html2canvas(exportRoot, {
+        x: 0,
+        y: 0,
+        width: cssW,
+        height: cssH,
         scale: exportW / cssW,
         backgroundColor: '#ffffff',
         useCORS: true,
