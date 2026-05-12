@@ -130,7 +130,7 @@
 
       .chart-exportable__averages {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         align-items: stretch;
         gap: 12px;
         width: 100%;
@@ -161,11 +161,23 @@
       }
 
       .chart-avg--human {
-        color: #111;
+        border-color: #d97706;
+        color: #78350f;
+        background: #fffbeb;
       }
 
       .chart-avg--human .chart-avg__num {
-        color: #111;
+        color: #b45309;
+      }
+
+      .chart-avg--overall {
+        border-color: #475569;
+        color: #1e293b;
+        background: #f8fafc;
+      }
+
+      .chart-avg--overall .chart-avg__num {
+        color: #0f172a;
       }
 
       .chart-avg--ai {
@@ -669,21 +681,28 @@
           <div
             id="chartAverages"
             class="chart-exportable__averages"
-            aria-label="Strength index, AI score, and career level"
+            aria-label="Overall score, AI score, strength index, and career level"
           >
+            <div
+              class="chart-avg chart-avg--overall"
+              title="Mean of all seven pillar scores (flat average)."
+            >
+              <span class="chart-avg__label">Pillar Avg</span>
+              <span class="chart-avg__num" id="chartAvgOverall">—</span>
+            </div>
+            <div
+              class="chart-avg chart-avg--ai"
+              title="Mean of the three AI scores only: Coding, Architecture, and Process."
+            >
+              <span class="chart-avg__label">AI Avg</span>
+              <span class="chart-avg__num" id="chartAvgWithAi">—</span>
+            </div>
             <div
               class="chart-avg chart-avg--human"
               title="Strength index: mean of your three highest pillar scores (of seven). Similar in spirit to combined-event scoring that weights your best performances rather than a flat mean."
             >
               <span class="chart-avg__label">Strength index</span>
               <span class="chart-avg__num" id="chartAvgHuman">—</span>
-            </div>
-            <div
-              class="chart-avg chart-avg--ai"
-              title="Mean of the three AI scores only: Coding, Architecture, and Process."
-            >
-              <span class="chart-avg__label">AI Score</span>
-              <span class="chart-avg__num" id="chartAvgWithAi">—</span>
             </div>
             <div
               class="chart-avg chart-avg--level"
@@ -2015,6 +2034,17 @@
       return (Math.round(n * 100) / 100).toFixed(2);
     }
 
+    /**
+     * Mean of all seven human pillar scores (flat average).
+     */
+    function computeOverallSevenPillarAvg() {
+      const lv = readLevelsFromForm();
+      if (!lv.length) return NaN;
+      let sum = 0;
+      for (let i = 0; i < lv.length; i++) sum += lv[i];
+      return sum / lv.length;
+    }
+
     /** How many strongest pillars feed the human strength index (0–5 each). */
     const HUMAN_STRENGTH_TOP_K = 3;
 
@@ -2062,12 +2092,14 @@
     }
 
     function updateChartFooterAverages() {
+      const elOverall = document.getElementById('chartAvgOverall');
       const elH = document.getElementById('chartAvgHuman');
       const elAi = document.getElementById('chartAvgWithAi');
       const elCode = document.getElementById('chartLevelCode');
     //   const elPhase = document.getElementById('chartLevelPhase');
       const elRole = document.getElementById('chartLevelRole');
-      if (!elH || !elAi || !elCode || !elRole) return;
+      if (!elOverall || !elH || !elAi || !elCode || !elRole) return;
+      elOverall.textContent = formatAvgScore(computeOverallSevenPillarAvg());
       const humanIndex = computeHumanStrengthIndex();
       elH.textContent = formatAvgScore(humanIndex);
       elAi.textContent = formatAvgScore(computeAvgAiThree());
