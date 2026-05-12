@@ -229,6 +229,7 @@
       .form-title-row {
         display: flex;
         flex-direction: row;
+        flex-wrap: wrap;
         align-items: center;
         width: 100%;
         margin-top: 8px;
@@ -239,20 +240,136 @@
         color: #333;
       }
 
-      .form-title-input-wrap {
+      .form-title-toolbar {
         display: flex;
         flex: 1 1 auto;
+        flex-wrap: wrap;
         align-items: center;
         gap: 8px;
         min-width: 0;
+        width: 100%;
       }
 
-      .form-title-input-wrap input[type='text'] {
-        flex: 1 1 auto;
+      .form-title-toolbar .form-title-input {
+        flex: 0 1 50%;
+        width: 50%;
+        max-width: 50%;
         min-width: 0;
         box-sizing: border-box;
         border: 1px solid #ccc;
         border-radius: 8px;
+      }
+
+      .form-profile-save-btn,
+      .form-profile-picker-btn {
+        flex-shrink: 0;
+        font: 12px system-ui, sans-serif;
+        padding: 6px 10px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        background: #fafafa;
+        color: #333;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+
+      .form-profile-save-btn:hover,
+      .form-profile-picker-btn:hover {
+        background: #f0f0f0;
+      }
+
+      .form-profile-save-btn:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+
+      .profile-picker {
+        position: relative;
+        flex-shrink: 0;
+      }
+
+      .profile-picker-panel {
+        position: absolute;
+        top: calc(100% + 4px);
+        right: 0;
+        min-width: min(100vw - 32px, 280px);
+        max-width: min(100vw - 32px, 320px);
+        max-height: 240px;
+        overflow: auto;
+        padding: 6px 0;
+        margin: 0;
+        box-sizing: border-box;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        background: #fff;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+        z-index: 50;
+      }
+
+      .profile-picker-panel[hidden] {
+        display: none !important;
+      }
+
+      .profile-picker-empty {
+        margin: 0;
+        padding: 8px 12px;
+        font: 12px system-ui, sans-serif;
+        color: #777;
+      }
+
+      .profile-picker-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      .profile-picker-item {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 4px;
+        padding: 0 6px 0 8px;
+        min-height: 36px;
+        box-sizing: border-box;
+      }
+
+      .profile-picker-item:hover {
+        background: #f5f5f5;
+      }
+
+      .profile-picker-load {
+        flex: 1 1 auto;
+        min-width: 0;
+        text-align: left;
+        font: 13px system-ui, sans-serif;
+        padding: 6px 8px;
+        border: none;
+        border-radius: 6px;
+        background: transparent;
+        color: #111;
+        cursor: pointer;
+      }
+
+      .profile-picker-load:hover {
+        background: rgba(0, 0, 0, 0.04);
+      }
+
+      .profile-picker-remove {
+        flex-shrink: 0;
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        border: none;
+        border-radius: 6px;
+        background: transparent;
+        color: #991b1b;
+        font: 18px/1 system-ui, sans-serif;
+        cursor: pointer;
+        line-height: 1;
+      }
+
+      .profile-picker-remove:hover {
+        background: rgba(153, 27, 27, 0.08);
       }
 
       .form-reset-levels-btn {
@@ -269,6 +386,10 @@
 
       .form-reset-levels-btn:hover {
         background: #f0f0f0;
+      }
+
+      .form-title-toolbar .form-reset-levels-btn {
+        margin-left: auto;
       }
 
       #competencyInputs {
@@ -580,12 +701,46 @@
       <aside class="form-panel">
         <div class="form-title-row">
           <label for="chartTitleInput">Title</label>
-          <div class="form-title-input-wrap">
+          <div class="form-title-toolbar">
             <input
               type="text"
               id="chartTitleInput"
+              class="form-title-input"
               placeholder="Chart title"
             />
+            <button
+              type="button"
+              id="saveProfileBtn"
+              class="form-profile-save-btn"
+              title="Save this chart as a named profile (title + all levels)"
+            >
+              Save
+            </button>
+            <div class="profile-picker" id="profilePicker">
+              <button
+                type="button"
+                id="profilePickerToggle"
+                class="form-profile-picker-btn"
+                aria-expanded="false"
+                aria-haspopup="true"
+                aria-controls="profilePickerPanel"
+                title="Open list of saved profiles"
+              >
+                Profiles ▾
+              </button>
+              <div
+                id="profilePickerPanel"
+                class="profile-picker-panel"
+                hidden
+                role="menu"
+                aria-label="Saved profiles"
+              >
+                <p class="profile-picker-empty" id="profilePickerEmpty">
+                  No saved profiles yet.
+                </p>
+                <ul class="profile-picker-list" id="profilePickerList"></ul>
+              </div>
+            </div>
             <button
               type="button"
               id="resetLevelsBtn"
@@ -2077,6 +2232,9 @@
     });
 
     const STORAGE_KEY = 'fe-growth-framework:v1';
+    const PROFILES_STORAGE_KEY = 'fe-growth-framework:profiles:v1';
+    /** When set, Save updates this profile (supports renames). Otherwise Save may match by title or create new. */
+    let activeSavedProfileId = null;
 
     function normalizeAiLevels(arr) {
       const base = [0, 0, 0, 0, 0, 0, 0];
@@ -2183,6 +2341,182 @@
       applySavedState(state);
     }
 
+    function newSavedProfileId() {
+      if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+      }
+      return `p-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    }
+
+    function normalizeStoredProfile(p) {
+      if (!p || typeof p !== 'object' || typeof p.id !== 'string' || !p.id) return null;
+      const inner = normalizeSavedState(p);
+      if (!inner) return null;
+      return {
+        id: p.id,
+        title: inner.title,
+        levels: inner.levels,
+        aiLevels: inner.aiLevels,
+        savedAt: Number.isFinite(p.savedAt) ? p.savedAt : 0
+      };
+    }
+
+    function loadProfilesFromStorage() {
+      try {
+        const raw = localStorage.getItem(PROFILES_STORAGE_KEY);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        const arr = Array.isArray(parsed.profiles) ? parsed.profiles : [];
+        const out = [];
+        for (const row of arr) {
+          const n = normalizeStoredProfile(row);
+          if (n) out.push(n);
+        }
+        out.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
+        return out;
+      } catch (_) {
+        return [];
+      }
+    }
+
+    function writeProfilesToStorage(profiles) {
+      try {
+        localStorage.setItem(PROFILES_STORAGE_KEY, JSON.stringify({ profiles }));
+      } catch (_) {
+        /* ignore quota / private mode */
+      }
+    }
+
+    function isProfilePickerOpen() {
+      const panel = document.getElementById('profilePickerPanel');
+      return panel && !panel.hidden;
+    }
+
+    function setProfilePickerOpen(open) {
+      const panel = document.getElementById('profilePickerPanel');
+      const toggle = document.getElementById('profilePickerToggle');
+      if (!panel || !toggle) return;
+      panel.hidden = !open;
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open) renderProfileList();
+    }
+
+    function renderProfileList() {
+      const list = document.getElementById('profilePickerList');
+      const empty = document.getElementById('profilePickerEmpty');
+      if (!list || !empty) return;
+      list.textContent = '';
+      const profiles = loadProfilesFromStorage();
+      empty.hidden = profiles.length > 0;
+      for (const pr of profiles) {
+        const li = document.createElement('li');
+        li.className = 'profile-picker-item';
+        const loadBtn = document.createElement('button');
+        loadBtn.type = 'button';
+        loadBtn.className = 'profile-picker-load';
+        loadBtn.dataset.profileId = pr.id;
+        const label = String(pr.title).trim() || '(Untitled)';
+        loadBtn.textContent = label;
+        loadBtn.setAttribute('role', 'menuitem');
+        const rmBtn = document.createElement('button');
+        rmBtn.type = 'button';
+        rmBtn.className = 'profile-picker-remove';
+        rmBtn.dataset.profileId = pr.id;
+        rmBtn.setAttribute('aria-label', `Remove profile ${label}`);
+        rmBtn.textContent = '×';
+        li.appendChild(loadBtn);
+        li.appendChild(rmBtn);
+        list.appendChild(li);
+      }
+    }
+
+    function removeProfileById(id) {
+      const next = loadProfilesFromStorage().filter((p) => p.id !== id);
+      writeProfilesToStorage(next);
+      if (activeSavedProfileId === id) activeSavedProfileId = null;
+      renderProfileList();
+    }
+
+    function applyProfileById(id) {
+      const profiles = loadProfilesFromStorage();
+      const pr = profiles.find((p) => p.id === id);
+      if (!pr) return;
+      const state = normalizeSavedState(pr);
+      if (!state) return;
+      applySavedState(state);
+      activeSavedProfileId = id;
+      persistSavedState();
+      setProfilePickerOpen(false);
+    }
+
+    function saveNamedProfile() {
+      const btn = document.getElementById('saveProfileBtn');
+      const trimmed = String(document.getElementById('chartTitleInput').value).trim();
+      if (!trimmed) {
+        if (btn) {
+          const prev = btn.textContent;
+          btn.textContent = 'Add title';
+          setTimeout(() => {
+            btn.textContent = prev;
+          }, 1400);
+        }
+        return;
+      }
+      const levels = readLevelsFromForm();
+      const aiLevels = readAiLevelsFromForm();
+      const state = normalizeSavedState({ title: trimmed, levels, aiLevels });
+      if (!state) return;
+      const now = Date.now();
+      const existing = loadProfilesFromStorage();
+      let id = null;
+      let replaceIdx = -1;
+      const byActive =
+        activeSavedProfileId != null
+          ? existing.findIndex((p) => p.id === activeSavedProfileId)
+          : -1;
+      if (byActive >= 0) {
+        id = activeSavedProfileId;
+        replaceIdx = byActive;
+      } else {
+        const byTitle = existing.findIndex(
+          (p) => String(p.title).trim() === trimmed
+        );
+        if (byTitle >= 0) {
+          id = existing[byTitle].id;
+          replaceIdx = byTitle;
+        }
+      }
+      if (id == null) {
+        id = newSavedProfileId();
+        replaceIdx = -1;
+      }
+      const row = {
+        id,
+        title: state.title,
+        levels: state.levels,
+        aiLevels: state.aiLevels,
+        savedAt: now
+      };
+      let next;
+      if (replaceIdx >= 0) {
+        next = [...existing];
+        next[replaceIdx] = row;
+      } else {
+        next = [...existing, row];
+      }
+      activeSavedProfileId = id;
+      writeProfilesToStorage(next);
+      if (btn) {
+        const prev = btn.textContent;
+        btn.textContent = 'Saved';
+        setTimeout(() => {
+          btn.textContent = prev;
+        }, 1200);
+      }
+      if (isProfilePickerOpen()) renderProfileList();
+      persistSavedState();
+    }
+
     loadSavedState();
     requestAnimationFrame(() => syncFontsForChart(chart));
 
@@ -2239,7 +2573,43 @@
       persistSavedState();
     });
 
+    document.getElementById('saveProfileBtn').addEventListener('click', () => {
+      saveNamedProfile();
+    });
+
+    document.getElementById('profilePickerToggle').addEventListener('click', (e) => {
+      e.stopPropagation();
+      setProfilePickerOpen(!isProfilePickerOpen());
+    });
+
+    document.getElementById('profilePickerList').addEventListener('click', (e) => {
+      const rm = e.target.closest('.profile-picker-remove');
+      if (rm) {
+        e.preventDefault();
+        e.stopPropagation();
+        removeProfileById(rm.dataset.profileId);
+        return;
+      }
+      const load = e.target.closest('.profile-picker-load');
+      if (load) {
+        e.preventDefault();
+        applyProfileById(load.dataset.profileId);
+      }
+    });
+
+    document.addEventListener('mousedown', (e) => {
+      const picker = document.getElementById('profilePicker');
+      if (!picker || !isProfilePickerOpen()) return;
+      if (!picker.contains(e.target)) setProfilePickerOpen(false);
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      if (isProfilePickerOpen()) setProfilePickerOpen(false);
+    });
+
     document.getElementById('resetLevelsBtn').addEventListener('click', () => {
+      activeSavedProfileId = null;
       for (let i = 0; i < 7; i++) {
         const v = clampLevel(DEFAULT_STATE.levels[i]);
         const inp = document.querySelector(
