@@ -544,25 +544,25 @@
           <div
             id="chartAverages"
             class="chart-exportable__averages"
-            aria-label="Pillar score averages and career level"
+            aria-label="Strength index, AI score, and career level"
           >
             <div
               class="chart-avg chart-avg--human"
-              title="Mean of all seven pillar scores (human / framework values only)."
+              title="Strength index: mean of your three highest pillar scores (of seven). Similar in spirit to combined-event scoring that weights your best performances rather than a flat mean."
             >
-              <span class="chart-avg__label">AVG Score</span>
+              <span class="chart-avg__label">Strength index</span>
               <span class="chart-avg__num" id="chartAvgHuman">—</span>
             </div>
             <div
               class="chart-avg chart-avg--ai"
-              title="Coding, Architecture, and Process each use (human + AI) ÷ 2; the other four pillars use human only. Then mean of all seven."
+              title="Mean of the three AI scores only: Coding, Architecture, and Process."
             >
-              <span class="chart-avg__label">AVG Score (AI-Agg.)</span>
+              <span class="chart-avg__label">AI Score</span>
               <span class="chart-avg__num" id="chartAvgWithAi">—</span>
             </div>
             <div
               class="chart-avg chart-avg--level"
-              title="From human 7-pillar average. Bands: L1 [0,1.5), L2 [1.5,2.5), L3 [2.5,3.5), L4 [3.5,4.5), L5 [4.5,5]. Matches Level / Role Equivalent table."
+              title="From strength index (mean of three highest pillars). Bands: L1 [0,1.5), L2 [1.5,2.5), L3 [2.5,3.5), L4 [3.5,4.0), L5 [4.0,5]. L5 threshold lowered vs a flat 7-pillar average so senior impact aligns with typical profiles."
             >
               <span class="chart-avg__label">Career level</span>
               <span class="chart-avg__num" id="chartLevelCode">—</span>
@@ -1676,9 +1676,10 @@
                 return v != null && v >= 1 && v <= 5;
               },
               backdropColor: FE_UI.chart.tickBackdropColor,
-              // Format the axis labels to show L1, L2, L3, etc.
+              // Format the axis labels to show L1–L5; outer ring stays at 6 with no tick text.
               callback: function(value) {
                 if (value === 0) return '0';
+                if (value === 6) return '';
                 return 'L' + value;
               },
               font: {
@@ -1688,6 +1689,7 @@
                * Chart.js splits the r scale into layers by z: grid defaults to z=-1, ticks here.
                * z must be <= 0 or L1–L5 (and their backdrops) render in a layer *after* datasets and
                * float on top of the radar polygon. z: 0 keeps ticks above grid lines but under the chart.
+               * Value 6 keeps the outer ring; its label is suppressed in `ticks.callback`.
                */
               z: 0
             },
@@ -1817,48 +1819,49 @@
       return (Math.round(n * 100) / 100).toFixed(2);
     }
 
-    /** Mean of seven human pillar scores (no AI). */
-    function computeAvgHumanSeven() {
+    /** How many strongest pillars feed the human strength index (0–5 each). */
+    const HUMAN_STRENGTH_TOP_K = 3;
+
+    /**
+     * Human “strength index”: mean of the K highest pillar scores (descending sort).
+     * Less sensitive to a single weak spoke than a full seven-pillar average.
+     */
+    function computeHumanStrengthIndex() {
       const lv = readLevelsFromForm();
       if (!lv.length) return NaN;
-      return lv.reduce((a, b) => a + b, 0) / lv.length;
-    }
-
-    /**
-     * Mean of seven scores where Coding / Architecture / Process use (human + AI) / 2,
-     * and the other four pillars use human only.
-     */
-    function computeAvgWithAiBlendedSeven() {
-      const h = readLevelsFromForm();
-      const ai = readAiLevelsFromForm();
-      if (!h.length || h.length !== ai.length) return NaN;
+      const k = Math.min(HUMAN_STRENGTH_TOP_K, lv.length);
+      const sorted = [...lv].sort((a, b) => b - a);
       let sum = 0;
-      for (let i = 0; i < h.length; i++) {
-        if (i < 3) sum += (h[i] + ai[i]) / 2;
-        else sum += h[i];
-      }
-      return sum / h.length;
+      for (let i = 0; i < k; i++) sum += sorted[i];
+      return sum / k;
+    }
+
+    /** Mean of the three technical AI inputs (Coding, Architecture, Process). */
+    function computeAvgAiThree() {
+      const ai = readAiLevelsFromForm();
+      if (!ai.length) return NaN;
+      return (ai[0] + ai[1] + ai[2]) / 3;
     }
 
     /**
-     * Career band from average score (0–5). Midpoint splits: L1 [0,1.5), L2 [1.5,2.5),
-     * L3 [2.5,3.5), L4 [3.5,4.5), L5 [4.5,5] (L2/L3 boundary at 2.5).
+     * Career band from strength index (0–5, clamped). Same lower splits as before;
+     * L4/L5 split at 4.0 so lead-level impact aligns with the index (not a flat ~4.5 average).
      */
     const CAREER_LEVEL_BY_AVG_BAND = [
       { code: 'L1', phase: 'Adherence / Learning', role: 'Junior (Early)' },
       { code: 'L2', phase: 'Practitioner / Autonomy', role: 'Junior (Late)' },
       { code: 'L3', phase: 'Proficient / Complexity', role: 'Mid-Level' },
       { code: 'L4', phase: 'Influential', role: 'Senior' },
-      { code: 'L5', phase: 'Impact / Strategic', role: 'Lead / Staff' }
+      { code: 'L5', phase: 'Impact / Strategic', role: 'Lead' }
     ];
 
-    function careerLevelFromAvg(avg) {
+    function careerLevelFromStrengthIndex(avg) {
       if (!Number.isFinite(avg)) return null;
       const c = Math.max(0, Math.min(5, avg));
       if (c < 1.5) return CAREER_LEVEL_BY_AVG_BAND[0];
       if (c < 2.5) return CAREER_LEVEL_BY_AVG_BAND[1];
       if (c < 3.5) return CAREER_LEVEL_BY_AVG_BAND[2];
-      if (c < 4.5) return CAREER_LEVEL_BY_AVG_BAND[3];
+      if (c < 4.0) return CAREER_LEVEL_BY_AVG_BAND[3];
       return CAREER_LEVEL_BY_AVG_BAND[4];
     }
 
@@ -1869,10 +1872,10 @@
     //   const elPhase = document.getElementById('chartLevelPhase');
       const elRole = document.getElementById('chartLevelRole');
       if (!elH || !elAi || !elCode || !elRole) return;
-      elH.textContent = formatAvgScore(computeAvgHumanSeven());
-      elAi.textContent = formatAvgScore(computeAvgWithAiBlendedSeven());
-      const humanAvg = computeAvgHumanSeven();
-      const lvl = careerLevelFromAvg(humanAvg);
+      const humanIndex = computeHumanStrengthIndex();
+      elH.textContent = formatAvgScore(humanIndex);
+      elAi.textContent = formatAvgScore(computeAvgAiThree());
+      const lvl = careerLevelFromStrengthIndex(humanIndex);
       if (!lvl) {
         elCode.textContent = '—';
         // elPhase.textContent = '';
