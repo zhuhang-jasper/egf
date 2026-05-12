@@ -230,6 +230,7 @@
         display: flex;
         align-items: center;
         gap: 8px;
+        padding-bottom: 4px;
       }
 
       .form-cluster .form-section-title::before {
@@ -274,7 +275,7 @@
         flex-direction: row;
         align-items: center;
         justify-content: flex-end;
-        gap: 8px;
+        gap: 16px;
         flex-shrink: 0;
       }
 
@@ -291,16 +292,98 @@
         white-space: nowrap;
       }
 
-      #competencyInputs .field-row input[type='number'] {
+      #competencyInputs .level-value-with-spin {
+        display: inline-flex;
+        flex-direction: row;
+        align-items: stretch;
+        vertical-align: middle;
+        flex-shrink: 0;
         box-sizing: border-box;
-        text-align: center;
+        width: calc(var(--level-num-w, 4.25rem) + var(--level-spin-w, 22px));
+        max-width: 100%;
         border: 1px solid #ccc;
         border-radius: 8px;
+        overflow: hidden;
+        background: #fff;
       }
 
-      #competencyInputs .field-row input[type='number'][data-field='ai'] {
+      #competencyInputs .level-value-with-spin:focus-within {
+        border-color: #888;
+      }
+
+      #competencyInputs .field-row .level-value-with-spin > .level-value {
+        box-sizing: border-box;
+        text-align: center;
+        border: none;
+        border-radius: 0;
+        flex: 1 1 auto;
+        min-width: 0;
+        width: 0;
+        background: transparent;
+      }
+
+      #competencyInputs .field-row .level-value-with-spin > .level-value[data-field='ai'] {
         color: #4f46e5;
         font-weight: 600;
+      }
+
+      #competencyInputs .level-value-spin__col {
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+        box-sizing: border-box;
+        width: var(--level-spin-w, 22px);
+        min-width: var(--level-spin-w, 22px);
+        background: #fff;
+        border: none;
+        border-left: 1px solid transparent;
+        transition:
+          background 0.12s ease,
+          border-left-color 0.12s ease;
+      }
+
+      #competencyInputs .level-value-with-spin:hover .level-value-spin__col,
+      #competencyInputs .level-value-with-spin:focus-within .level-value-spin__col {
+        background: #f7f7f7;
+        border-left-color: #e0e0e0;
+      }
+
+      #competencyInputs .level-value-spin__btn {
+        flex: 1 1 50%;
+        min-height: 0;
+        padding: 0;
+        margin: 0;
+        border: none;
+        border-bottom: 1px solid #e0e0e0;
+        background: transparent;
+        font-size: 8px;
+        line-height: 1;
+        letter-spacing: 0;
+        color: #555;
+        cursor: pointer;
+        user-select: none;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.12s ease;
+      }
+
+      #competencyInputs .level-value-with-spin:hover .level-value-spin__btn,
+      #competencyInputs .level-value-with-spin:focus-within .level-value-spin__btn {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      #competencyInputs .level-value-spin__btn:last-child {
+        border-bottom: none;
+      }
+
+      #competencyInputs .level-value-spin__btn:hover {
+        background: #efefef;
+        color: #111;
+      }
+
+      #competencyInputs .level-value-spin__btn:active {
+        background: #e5e5e5;
       }
 
       /** Pillar clusters: legend + thin row bar (colors from --cluster-* on #competencyInputs). */
@@ -424,54 +507,213 @@
             <label class="field-row">
               <span>🤲 Coding</span>
               <span class="field-row__nums">
-                <input type="number" min="0" max="5" step="1" value="4" data-index="0" />
+                <span class="level-value-with-spin">
+                  <input
+                    class="level-value"
+                    type="text"
+                    inputmode="decimal"
+                    autocomplete="off"
+                    spellcheck="false"
+                    value="4"
+                    data-index="0"
+                  />
+                  <span class="level-value-spin__col">
+                    <button
+                      type="button"
+                      class="level-value-spin__btn"
+                      tabindex="-1"
+                      data-dir="1"
+                      aria-label="Increase level"
+                    >
+                      ▲
+                    </button>
+                    <button
+                      type="button"
+                      class="level-value-spin__btn"
+                      tabindex="-1"
+                      data-dir="-1"
+                      aria-label="Decrease level"
+                    >
+                      ▼
+                    </button>
+                  </span>
+                </span>
                 <span class="field-row__ai">
                   <span class="field-row__ai-label">AI:</span>
-                  <input
-                    type="number"
-                    min="0"
-                    max="5"
-                    step="1"
-                    value="3"
-                    data-index="0"
-                    data-field="ai"
-                  />
+                  <span class="level-value-with-spin">
+                    <input
+                      class="level-value"
+                      type="text"
+                      inputmode="decimal"
+                      autocomplete="off"
+                      spellcheck="false"
+                      value="3"
+                      data-index="0"
+                      data-field="ai"
+                    />
+                    <span class="level-value-spin__col">
+                      <button
+                        type="button"
+                        class="level-value-spin__btn"
+                        tabindex="-1"
+                        data-dir="1"
+                        aria-label="Increase AI level"
+                      >
+                        ▲
+                      </button>
+                      <button
+                        type="button"
+                        class="level-value-spin__btn"
+                        tabindex="-1"
+                        data-dir="-1"
+                        aria-label="Decrease AI level"
+                      >
+                        ▼
+                      </button>
+                    </span>
+                  </span>
                 </span>
               </span>
             </label>
             <label class="field-row">
               <span>🧠 Architecture</span>
               <span class="field-row__nums">
-                <input type="number" min="0" max="5" step="1" value="3" data-index="1" />
-                <span class="field-row__ai">
-                  <span class="field-row__ai-label">AI:</span>
+                <span class="level-value-with-spin">
                   <input
-                    type="number"
-                    min="0"
-                    max="5"
-                    step="1"
+                    class="level-value"
+                    type="text"
+                    inputmode="decimal"
+                    autocomplete="off"
+                    spellcheck="false"
                     value="3"
                     data-index="1"
-                    data-field="ai"
                   />
+                  <span class="level-value-spin__col">
+                    <button
+                      type="button"
+                      class="level-value-spin__btn"
+                      tabindex="-1"
+                      data-dir="1"
+                      aria-label="Increase level"
+                    >
+                      ▲
+                    </button>
+                    <button
+                      type="button"
+                      class="level-value-spin__btn"
+                      tabindex="-1"
+                      data-dir="-1"
+                      aria-label="Decrease level"
+                    >
+                      ▼
+                    </button>
+                  </span>
+                </span>
+                <span class="field-row__ai">
+                  <span class="field-row__ai-label">AI:</span>
+                  <span class="level-value-with-spin">
+                    <input
+                      class="level-value"
+                      type="text"
+                      inputmode="decimal"
+                      autocomplete="off"
+                      spellcheck="false"
+                      value="3"
+                      data-index="1"
+                      data-field="ai"
+                    />
+                    <span class="level-value-spin__col">
+                      <button
+                        type="button"
+                        class="level-value-spin__btn"
+                        tabindex="-1"
+                        data-dir="1"
+                        aria-label="Increase AI level"
+                      >
+                        ▲
+                      </button>
+                      <button
+                        type="button"
+                        class="level-value-spin__btn"
+                        tabindex="-1"
+                        data-dir="-1"
+                        aria-label="Decrease AI level"
+                      >
+                        ▼
+                      </button>
+                    </span>
+                  </span>
                 </span>
               </span>
             </label>
             <label class="field-row">
               <span>🦴 Process</span>
               <span class="field-row__nums">
-                <input type="number" min="0" max="5" step="1" value="3" data-index="2" />
-                <span class="field-row__ai">
-                  <span class="field-row__ai-label">AI:</span>
+                <span class="level-value-with-spin">
                   <input
-                    type="number"
-                    min="0"
-                    max="5"
-                    step="1"
+                    class="level-value"
+                    type="text"
+                    inputmode="decimal"
+                    autocomplete="off"
+                    spellcheck="false"
                     value="3"
                     data-index="2"
-                    data-field="ai"
                   />
+                  <span class="level-value-spin__col">
+                    <button
+                      type="button"
+                      class="level-value-spin__btn"
+                      tabindex="-1"
+                      data-dir="1"
+                      aria-label="Increase level"
+                    >
+                      ▲
+                    </button>
+                    <button
+                      type="button"
+                      class="level-value-spin__btn"
+                      tabindex="-1"
+                      data-dir="-1"
+                      aria-label="Decrease level"
+                    >
+                      ▼
+                    </button>
+                  </span>
+                </span>
+                <span class="field-row__ai">
+                  <span class="field-row__ai-label">AI:</span>
+                  <span class="level-value-with-spin">
+                    <input
+                      class="level-value"
+                      type="text"
+                      inputmode="decimal"
+                      autocomplete="off"
+                      spellcheck="false"
+                      value="3"
+                      data-index="2"
+                      data-field="ai"
+                    />
+                    <span class="level-value-spin__col">
+                      <button
+                        type="button"
+                        class="level-value-spin__btn"
+                        tabindex="-1"
+                        data-dir="1"
+                        aria-label="Increase AI level"
+                      >
+                        ▲
+                      </button>
+                      <button
+                        type="button"
+                        class="level-value-spin__btn"
+                        tabindex="-1"
+                        data-dir="-1"
+                        aria-label="Decrease AI level"
+                      >
+                        ▼
+                      </button>
+                    </span>
+                  </span>
                 </span>
               </span>
             </label>
@@ -481,11 +723,71 @@
             <div class="form-section-title">Product</div>
             <label class="field-row">
               <span>👀 UI/UX</span>
-              <input type="number" min="0" max="5" step="1" value="3" data-index="6" />
+              <span class="level-value-with-spin">
+                <input
+                  class="level-value"
+                  type="text"
+                  inputmode="decimal"
+                  autocomplete="off"
+                  spellcheck="false"
+                  value="3"
+                  data-index="6"
+                />
+                <span class="level-value-spin__col">
+                  <button
+                    type="button"
+                    class="level-value-spin__btn"
+                    tabindex="-1"
+                    data-dir="1"
+                    aria-label="Increase level"
+                  >
+                    ▲
+                  </button>
+                  <button
+                    type="button"
+                    class="level-value-spin__btn"
+                    tabindex="-1"
+                    data-dir="-1"
+                    aria-label="Decrease level"
+                  >
+                    ▼
+                  </button>
+                </span>
+              </span>
             </label>
             <label class="field-row">
               <span>💡 Product Sense</span>
-              <input type="number" min="0" max="5" step="1" value="3" data-index="5" />
+              <span class="level-value-with-spin">
+                <input
+                  class="level-value"
+                  type="text"
+                  inputmode="decimal"
+                  autocomplete="off"
+                  spellcheck="false"
+                  value="3"
+                  data-index="5"
+                />
+                <span class="level-value-spin__col">
+                  <button
+                    type="button"
+                    class="level-value-spin__btn"
+                    tabindex="-1"
+                    data-dir="1"
+                    aria-label="Increase level"
+                  >
+                    ▲
+                  </button>
+                  <button
+                    type="button"
+                    class="level-value-spin__btn"
+                    tabindex="-1"
+                    data-dir="-1"
+                    aria-label="Decrease level"
+                  >
+                    ▼
+                  </button>
+                </span>
+              </span>
             </label>
           </div>
 
@@ -493,11 +795,71 @@
             <div class="form-section-title">Behavioural</div>
             <label class="field-row">
               <span>🗣️ Communication</span>
-              <input type="number" min="0" max="5" step="1" value="3" data-index="4" />
+              <span class="level-value-with-spin">
+                <input
+                  class="level-value"
+                  type="text"
+                  inputmode="decimal"
+                  autocomplete="off"
+                  spellcheck="false"
+                  value="3"
+                  data-index="4"
+                />
+                <span class="level-value-spin__col">
+                  <button
+                    type="button"
+                    class="level-value-spin__btn"
+                    tabindex="-1"
+                    data-dir="1"
+                    aria-label="Increase level"
+                  >
+                    ▲
+                  </button>
+                  <button
+                    type="button"
+                    class="level-value-spin__btn"
+                    tabindex="-1"
+                    data-dir="-1"
+                    aria-label="Decrease level"
+                  >
+                    ▼
+                  </button>
+                </span>
+              </span>
             </label>
             <label class="field-row">
               <span>✨ Ownership</span>
-              <input type="number" min="0" max="5" step="1" value="3" data-index="3" />
+              <span class="level-value-with-spin">
+                <input
+                  class="level-value"
+                  type="text"
+                  inputmode="decimal"
+                  autocomplete="off"
+                  spellcheck="false"
+                  value="3"
+                  data-index="3"
+                />
+                <span class="level-value-spin__col">
+                  <button
+                    type="button"
+                    class="level-value-spin__btn"
+                    tabindex="-1"
+                    data-dir="1"
+                    aria-label="Increase level"
+                  >
+                    ▲
+                  </button>
+                  <button
+                    type="button"
+                    class="level-value-spin__btn"
+                    tabindex="-1"
+                    data-dir="-1"
+                    aria-label="Decrease level"
+                  >
+                    ▼
+                  </button>
+                </span>
+              </span>
             </label>
           </div>
         </div>
@@ -557,17 +919,21 @@
         inputsGapPx: 8,
         inputsMarginTopPx: 16,
         sectionTitlePx: 11,
-        sectionTitleMarginFirst: '0 0 2px',
-        sectionTitleMargin: '10px 0 2px',
+        sectionTitleMarginFirst: '4px 0 2px',
+        sectionTitleMargin: '4px 0 2px',
         fieldGapPx: 10,
         fieldRowPx: 14,
         pillarIndentPx: 12,
         numberWidth: '3rem',
         numberPad: '8px 6px',
         numberPx: 14,
-        /** Value applied to all seven pillars by the title-row Reset button. */
+        /** Value applied to all seven pillars by the title-row Reset button (snaps to 0.5). */
         resetCompetencyLevel: 3,
-        resetAiLevel: 2
+        resetAiLevel: 2,
+        /** Allowed increment for level inputs and chart values (see `clampLevel`). */
+        levelStep: 0.5,
+        /** Width (px) of the ▲/▼ column next to each level field. */
+        levelSpinColPx: 22
       },
       chartFonts: {
         tickMinPx: 8,
@@ -769,6 +1135,9 @@
       const compInputs = document.getElementById('competencyInputs');
       compInputs.style.gap = `${f.inputsGapPx}px`;
       compInputs.style.marginTop = `${f.inputsMarginTopPx}px`;
+      const spinPx = f.levelSpinColPx != null ? f.levelSpinColPx : 22;
+      compInputs.style.setProperty('--level-num-w', f.numberWidth);
+      compInputs.style.setProperty('--level-spin-w', `${spinPx}px`);
 
       document.querySelectorAll('.form-section-title').forEach((el, i) => {
         el.style.font = `600 ${f.sectionTitlePx}px/1.2 system-ui, sans-serif`;
@@ -781,10 +1150,10 @@
         row.style.font = `${f.fieldRowPx}px/1.35 system-ui, sans-serif`;
         const labelSpan = row.querySelector(':scope > span:first-child');
         if (labelSpan) labelSpan.style.paddingLeft = `${f.pillarIndentPx}px`;
-        row.querySelectorAll('input[type="number"]').forEach((num) => {
-          num.style.width = f.numberWidth;
+        row.querySelectorAll('input.level-value').forEach((num) => {
           num.style.padding = f.numberPad;
           num.style.fontSize = `${f.numberPx}px`;
+          num.style.width = '';
         });
         const aiLab = row.querySelector('.field-row__ai-label');
         if (aiLab) {
@@ -1245,9 +1614,59 @@
     const chartVisibilityBtn = document.getElementById('chartVisibilityToggle');
 
     function clampLevel(v) {
-      const n = parseInt(String(v), 10);
-      if (Number.isNaN(n)) return 0;
-      return Math.max(0, Math.min(5, n));
+      const step = Number(FE_UI.form.levelStep) || 0.5;
+      const inv = 1 / step;
+      let n;
+      if (typeof v === 'number' && Number.isFinite(v)) {
+        n = v;
+      } else {
+        let raw = String(v).trim().replace(',', '.');
+        if (raw === '' || raw === '-') return 0;
+        /** `type=number` often omits a leading zero; normalize so ".5" → 0.5. */
+        if (/^\.(?=\d)/.test(raw)) raw = `0${raw}`;
+        n = parseFloat(raw);
+      }
+      if (!Number.isFinite(n)) return 0;
+      const c = Math.max(0, Math.min(5, n));
+      return Math.round(c * inv) / inv;
+    }
+
+    /** Stable string for number inputs (integers without ".0"). */
+    function formatLevelForInput(v) {
+      const x = clampLevel(v);
+      const step = Number(FE_UI.form.levelStep) || 0.5;
+      const inv = 1 / step;
+      const stepped = Math.round(x * inv) / inv;
+      if (Math.abs(stepped - Math.round(stepped)) < 1e-9) {
+        return String(Math.round(stepped));
+      }
+      const decimals = Math.max(1, Math.ceil(-Math.log10(step)));
+      return stepped.toFixed(decimals);
+    }
+
+    function applyCompetencyNumberToChartAndPersist(input, v) {
+      const i = parseInt(input.getAttribute('data-index'), 10);
+      const isAi = input.getAttribute('data-field') === 'ai';
+      if (!levelsPolygonHidden) {
+        if (isAi) {
+          chart.data.datasets[1].data[i] = v;
+          for (let j = 3; j < 7; j++) {
+            chart.data.datasets[1].data[j] = 0;
+          }
+        } else {
+          chart.data.datasets[0].data[i] = v;
+        }
+        chart.update();
+      }
+      persistSavedState();
+    }
+
+    function bumpLevelInput(input, dirSign) {
+      const step = Number(FE_UI.form.levelStep) || 0.5;
+      const base = clampLevel(input.value);
+      const v = clampLevel(base + dirSign * step);
+      input.value = formatLevelForInput(v);
+      applyCompetencyNumberToChartAndPersist(input, v);
     }
 
     function readLevelsFromForm() {
@@ -1492,7 +1911,7 @@
           `#competencyInputs input[data-index="${i}"]:not([data-field="ai"])`
         );
         const v = state.levels[i];
-        if (input) input.value = String(v);
+        if (input) input.value = formatLevelForInput(v);
         chart.data.datasets[0].data[i] = v;
       }
       for (let i = 0; i < 3; i++) {
@@ -1500,7 +1919,7 @@
           `#competencyInputs input[data-field="ai"][data-index="${i}"]`
         );
         const av = ai[i] ?? 0;
-        if (aiInp) aiInp.value = String(av);
+        if (aiInp) aiInp.value = formatLevelForInput(av);
         chart.data.datasets[1].data[i] = av;
       }
       for (let j = 3; j < 7; j++) {
@@ -1547,24 +1966,49 @@
     requestAnimationFrame(() => syncFontsForChart(chart));
 
     document.getElementById('competencyInputs').addEventListener('input', (e) => {
-      const input = e.target.closest('input[type="number"][data-index]');
+      const input = e.target.closest('input.level-value[data-index]');
       if (!input) return;
-      const i = parseInt(input.getAttribute('data-index'), 10);
       const v = clampLevel(input.value);
-      input.value = String(v);
-      const isAi = input.getAttribute('data-field') === 'ai';
-      if (!levelsPolygonHidden) {
-        if (isAi) {
-          chart.data.datasets[1].data[i] = v;
-          for (let j = 3; j < 7; j++) {
-            chart.data.datasets[1].data[j] = 0;
-          }
-        } else {
-          chart.data.datasets[0].data[i] = v;
-        }
-        chart.update();
-      }
-      persistSavedState();
+      applyCompetencyNumberToChartAndPersist(input, v);
+    });
+
+    document.getElementById('competencyInputs').addEventListener(
+      'blur',
+      (e) => {
+        const input = e.target.closest('input.level-value[data-index]');
+        if (!input) return;
+        const v = clampLevel(input.value);
+        input.value = formatLevelForInput(v);
+        applyCompetencyNumberToChartAndPersist(input, v);
+      },
+      true
+    );
+
+    document.getElementById('competencyInputs').addEventListener(
+      'keydown',
+      (e) => {
+        if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+        const input = e.target.closest('input.level-value[data-index]');
+        if (!input) return;
+        e.preventDefault();
+        bumpLevelInput(input, e.key === 'ArrowUp' ? 1 : -1);
+      },
+      true
+    );
+
+    document.getElementById('competencyInputs').addEventListener('click', (e) => {
+      const btn = e.target.closest('button.level-value-spin__btn');
+      if (!btn) return;
+      const wrap = btn.closest('.level-value-with-spin');
+      const input =
+        wrap && wrap.querySelector('input.level-value[data-index]');
+      if (!input) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const dir = parseInt(btn.getAttribute('data-dir'), 10);
+      if (!Number.isFinite(dir) || dir === 0) return;
+      bumpLevelInput(input, dir);
+      input.focus();
     });
 
     document.getElementById('chartTitleInput').addEventListener('input', () => {
@@ -1581,7 +2025,7 @@
         const inp = document.querySelector(
           `#competencyInputs input[data-index="${i}"]:not([data-field="ai"])`
         );
-        if (inp) inp.value = String(v);
+        if (inp) inp.value = formatLevelForInput(v);
         if (!levelsPolygonHidden) {
           chart.data.datasets[0].data[i] = v;
         }
@@ -1590,7 +2034,7 @@
         const aiInp = document.querySelector(
           `#competencyInputs input[data-field="ai"][data-index="${i}"]`
         );
-        if (aiInp) aiInp.value = String(aiV);
+        if (aiInp) aiInp.value = formatLevelForInput(aiV);
         if (!levelsPolygonHidden) {
           chart.data.datasets[1].data[i] = aiV;
         }
