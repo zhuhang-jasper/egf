@@ -264,9 +264,31 @@
         border-radius: 8px;
       }
 
-      #competencyInputs .field-row span {
+      #competencyInputs .field-row > span:first-child {
         min-width: 0;
         text-align: left;
+      }
+
+      #competencyInputs .field-row__nums {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+
+      #competencyInputs .field-row__ai {
+        display: inline-flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 4px;
+      }
+
+      #competencyInputs .field-row__ai-label {
+        color: #4f46e5;
+        font-weight: 600;
+        white-space: nowrap;
       }
 
       #competencyInputs .field-row input[type='number'] {
@@ -274,6 +296,11 @@
         text-align: center;
         border: 1px solid #ccc;
         border-radius: 8px;
+      }
+
+      #competencyInputs .field-row input[type='number'][data-field='ai'] {
+        color: #4f46e5;
+        font-weight: 600;
       }
 
       /** Pillar clusters: legend + thin row bar (colors from --cluster-* on #competencyInputs). */
@@ -396,15 +423,57 @@
             <div class="form-section-title">Technical</div>
             <label class="field-row">
               <span>🤲 Coding</span>
-              <input type="number" min="0" max="5" step="1" value="4" data-index="0" />
+              <span class="field-row__nums">
+                <input type="number" min="0" max="5" step="1" value="4" data-index="0" />
+                <span class="field-row__ai">
+                  <span class="field-row__ai-label">AI:</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="5"
+                    step="1"
+                    value="3"
+                    data-index="0"
+                    data-field="ai"
+                  />
+                </span>
+              </span>
             </label>
             <label class="field-row">
               <span>🧠 Architecture</span>
-              <input type="number" min="0" max="5" step="1" value="3" data-index="1" />
+              <span class="field-row__nums">
+                <input type="number" min="0" max="5" step="1" value="3" data-index="1" />
+                <span class="field-row__ai">
+                  <span class="field-row__ai-label">AI:</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="5"
+                    step="1"
+                    value="3"
+                    data-index="1"
+                    data-field="ai"
+                  />
+                </span>
+              </span>
             </label>
             <label class="field-row">
               <span>🦴 Process</span>
-              <input type="number" min="0" max="5" step="1" value="3" data-index="2" />
+              <span class="field-row__nums">
+                <input type="number" min="0" max="5" step="1" value="3" data-index="2" />
+                <span class="field-row__ai">
+                  <span class="field-row__ai-label">AI:</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="5"
+                    step="1"
+                    value="3"
+                    data-index="2"
+                    data-field="ai"
+                  />
+                </span>
+              </span>
             </label>
           </div>
 
@@ -559,6 +628,22 @@
         pointHoverStroke: '#404040',
         pointHoverBorderWidth: 0
       },
+      /** Second radar layer: AI scores on the three technical pillars only (others fixed at 0). */
+      datasetAi: {
+        label: 'AI (Technical)',
+        fill: 'rgba(99, 102, 241, 0.42)',
+        stroke: '#4f46e5',
+        lineWidth: 2,
+        pointRadius: 2,
+        pointHoverRadius: 4,
+        pointStyle: 'circle',
+        pointFill: '#6366f1',
+        pointStroke: '#4f46e5',
+        pointBorderWidth: 0,
+        pointHoverBackgroundColor: 'rgba(99, 102, 241, 0.95)',
+        pointHoverBorderColor: '#4338ca',
+        pointHoverBorderWidth: 0
+      },
       /**
        * One accent color per pillar cluster (Technical / Product / Behavioural).
        * Colors = dominant triad from `7-pillar-heptagon-v1.png` (median-cut quantize on opaque pixels).
@@ -693,13 +778,16 @@
       document.querySelectorAll('#competencyInputs .field-row').forEach((row) => {
         row.style.gap = `${f.fieldGapPx}px`;
         row.style.font = `${f.fieldRowPx}px/1.35 system-ui, sans-serif`;
-        const span = row.querySelector('span');
-        if (span) span.style.paddingLeft = `${f.pillarIndentPx}px`;
-        const num = row.querySelector('input[type="number"]');
-        if (num) {
+        const labelSpan = row.querySelector(':scope > span:first-child');
+        if (labelSpan) labelSpan.style.paddingLeft = `${f.pillarIndentPx}px`;
+        row.querySelectorAll('input[type="number"]').forEach((num) => {
           num.style.width = f.numberWidth;
           num.style.padding = f.numberPad;
           num.style.fontSize = `${f.numberPx}px`;
+        });
+        const aiLab = row.querySelector('.field-row__ai-label');
+        if (aiLab) {
+          aiLab.style.fontSize = `${Math.max(11, f.fieldRowPx - 1)}px`;
         }
       });
 
@@ -904,30 +992,48 @@
       type: 'radar',
       data: {
         labels: [
-          '🤲 Coding', 
-          '🧠 Architecture', 
-          '🦴 Process', 
+          '🤲 Coding*', 
+          '🧠 Architecture*', 
+          '🦴 Process*', 
           '✨ Ownership', 
           '🗣️ Communication', 
           '💡 Product Sense', 
           '👀 UI/UX'
         ],
-        datasets: [{
-          label: 'John',
-          data: [3, 3, 3, 3, 3, 3, 3],
-          backgroundColor: FE_UI.dataset.fill,
-          borderColor: FE_UI.dataset.stroke,
-          borderWidth: FE_UI.dataset.lineWidth,
-          pointRadius: FE_UI.dataset.pointRadius,
-          pointHoverRadius: FE_UI.dataset.pointHoverRadius,
-          pointStyle: FE_UI.dataset.pointStyle,
-          pointBackgroundColor: FE_UI.dataset.pointFill,
-          pointBorderColor: FE_UI.dataset.pointStroke,
-          pointBorderWidth: FE_UI.dataset.pointBorderWidth,
-          pointHoverBackgroundColor: FE_UI.dataset.pointHoverFill,
-          pointHoverBorderColor: FE_UI.dataset.pointHoverStroke,
-          pointHoverBorderWidth: FE_UI.dataset.pointHoverBorderWidth
-        }]
+        datasets: [
+          {
+            label: 'Framework',
+            data: [3, 3, 3, 3, 3, 3, 3],
+            backgroundColor: FE_UI.dataset.fill,
+            borderColor: FE_UI.dataset.stroke,
+            borderWidth: FE_UI.dataset.lineWidth,
+            pointRadius: FE_UI.dataset.pointRadius,
+            pointHoverRadius: FE_UI.dataset.pointHoverRadius,
+            pointStyle: FE_UI.dataset.pointStyle,
+            pointBackgroundColor: FE_UI.dataset.pointFill,
+            pointBorderColor: FE_UI.dataset.pointStroke,
+            pointBorderWidth: FE_UI.dataset.pointBorderWidth,
+            pointHoverBackgroundColor: FE_UI.dataset.pointHoverFill,
+            pointHoverBorderColor: FE_UI.dataset.pointHoverStroke,
+            pointHoverBorderWidth: FE_UI.dataset.pointHoverBorderWidth
+          },
+          {
+            label: FE_UI.datasetAi.label,
+            data: [2, 2, 2, 0, 0, 0, 0],
+            backgroundColor: FE_UI.datasetAi.fill,
+            borderColor: FE_UI.datasetAi.stroke,
+            borderWidth: FE_UI.datasetAi.lineWidth,
+            pointRadius: FE_UI.datasetAi.pointRadius,
+            pointHoverRadius: FE_UI.datasetAi.pointHoverRadius,
+            pointStyle: FE_UI.datasetAi.pointStyle,
+            pointBackgroundColor: FE_UI.datasetAi.pointFill,
+            pointBorderColor: FE_UI.datasetAi.pointStroke,
+            pointBorderWidth: FE_UI.datasetAi.pointBorderWidth,
+            pointHoverBackgroundColor: FE_UI.datasetAi.pointHoverBackgroundColor,
+            pointHoverBorderColor: FE_UI.datasetAi.pointHoverBorderColor,
+            pointHoverBorderWidth: FE_UI.datasetAi.pointHoverBorderWidth
+          }
+        ]
       },
       options: {
         responsive: true,
@@ -1020,9 +1126,22 @@
       const out = [];
       for (let i = 0; i < n; i++) {
         const inp = document.querySelector(
-          `#competencyInputs input[data-index="${i}"]`
+          `#competencyInputs input[data-index="${i}"]:not([data-field="ai"])`
         );
         out.push(inp ? clampLevel(inp.value) : 0);
+      }
+      return out;
+    }
+
+    /** AI scores: only technical pillars 0–2; indices 3–6 are always 0 for the chart. */
+    function readAiLevelsFromForm() {
+      const n = chart.data.labels.length;
+      const out = new Array(n).fill(0);
+      for (let i = 0; i < 3; i++) {
+        const inp = document.querySelector(
+          `#competencyInputs input[data-field="ai"][data-index="${i}"]`
+        );
+        out[i] = inp ? clampLevel(inp.value) : 0;
       }
       return out;
     }
@@ -1040,13 +1159,24 @@
       }
     }
 
+    function writeAiLevelDataToDataset(values) {
+      const ds = chart.data.datasets[1];
+      const d = ds.data;
+      d.length = 0;
+      for (let k = 0; k < values.length; k++) {
+        d.push(values[k]);
+      }
+    }
+
     function setLevelsPolygonHidden(hidden) {
       levelsPolygonHidden = hidden;
       const n = chart.data.labels.length;
       if (hidden) {
         writeLevelDataToDataset(new Array(n).fill(null));
+        writeAiLevelDataToDataset(new Array(n).fill(null));
       } else {
         writeLevelDataToDataset(readLevelsFromForm());
+        writeAiLevelDataToDataset(readAiLevelsFromForm());
       }
       chart.update();
       chartVisibilityBtn.textContent = hidden ? 'Show chart' : 'Hide chart';
@@ -1167,18 +1297,47 @@
 
     const STORAGE_KEY = 'fe-growth-framework:v1';
     const DEFAULT_STATE = {
-      title: 'John',
-      levels: [3, 3, 3, 3, 3, 3, 3]
+      title: 'Framework',
+      levels: [3, 3, 3, 3, 3, 3, 3],
+      aiLevels: [2, 2, 2, 0, 0, 0, 0]
     };
+
+    function normalizeAiLevels(arr) {
+      const base = [0, 0, 0, 0, 0, 0, 0];
+      if (!Array.isArray(arr)) return base;
+      for (let i = 0; i < 7; i++) {
+        base[i] = clampLevel(arr[i] ?? 0);
+      }
+      for (let j = 3; j < 7; j++) {
+        base[j] = 0;
+      }
+      return base;
+    }
 
     function normalizeSavedState(parsed) {
       if (!parsed || typeof parsed !== 'object') return null;
       if (typeof parsed.title !== 'string') return null;
       const levels = parsed.levels;
       if (!Array.isArray(levels) || levels.length !== 7) return null;
+      const levelsMapped = levels.map((v) => clampLevel(v));
+      let aiLevels;
+      if (Array.isArray(parsed.aiLevels) && parsed.aiLevels.length === 7) {
+        aiLevels = normalizeAiLevels(parsed.aiLevels);
+      } else {
+        aiLevels = normalizeAiLevels([
+          levelsMapped[0],
+          levelsMapped[1],
+          levelsMapped[2],
+          0,
+          0,
+          0,
+          0
+        ]);
+      }
       return {
         title: parsed.title,
-        levels: levels.map((v) => clampLevel(v))
+        levels: levelsMapped,
+        aiLevels
       };
     }
 
@@ -1198,18 +1357,30 @@
     function applySavedState(state) {
       document.getElementById('chartTitleInput').value = state.title;
       applyTitleToHeadingAndChart(state.title);
+      const ai = state.aiLevels || DEFAULT_STATE.aiLevels;
       for (let i = 0; i < 7; i++) {
         const input = document.querySelector(
-          `#competencyInputs input[data-index="${i}"]`
+          `#competencyInputs input[data-index="${i}"]:not([data-field="ai"])`
         );
         const v = state.levels[i];
         if (input) input.value = String(v);
         chart.data.datasets[0].data[i] = v;
       }
-      if (levelsPolygonHidden) {
-        writeLevelDataToDataset(
-          new Array(chart.data.labels.length).fill(null)
+      for (let i = 0; i < 3; i++) {
+        const aiInp = document.querySelector(
+          `#competencyInputs input[data-field="ai"][data-index="${i}"]`
         );
+        const av = ai[i] ?? 0;
+        if (aiInp) aiInp.value = String(av);
+        chart.data.datasets[1].data[i] = av;
+      }
+      for (let j = 3; j < 7; j++) {
+        chart.data.datasets[1].data[j] = 0;
+      }
+      if (levelsPolygonHidden) {
+        const n = chart.data.labels.length;
+        writeLevelDataToDataset(new Array(n).fill(null));
+        writeAiLevelDataToDataset(new Array(n).fill(null));
       }
       chart.update();
     }
@@ -1217,10 +1388,11 @@
     function persistSavedState() {
       const title = document.getElementById('chartTitleInput').value;
       const levels = readLevelsFromForm();
+      const aiLevels = readAiLevelsFromForm();
       try {
         localStorage.setItem(
           STORAGE_KEY,
-          JSON.stringify({ title, levels })
+          JSON.stringify({ title, levels, aiLevels })
         );
       } catch (_) {
         /* ignore quota / private mode */
@@ -1251,8 +1423,16 @@
       const i = parseInt(input.getAttribute('data-index'), 10);
       const v = clampLevel(input.value);
       input.value = String(v);
+      const isAi = input.getAttribute('data-field') === 'ai';
       if (!levelsPolygonHidden) {
-        chart.data.datasets[0].data[i] = v;
+        if (isAi) {
+          chart.data.datasets[1].data[i] = v;
+          for (let j = 3; j < 7; j++) {
+            chart.data.datasets[1].data[j] = 0;
+          }
+        } else {
+          chart.data.datasets[0].data[i] = v;
+        }
         chart.update();
       }
       persistSavedState();
@@ -1269,14 +1449,26 @@
       const v = clampLevel(FE_UI.form.resetCompetencyLevel ?? 3);
       for (let i = 0; i < 7; i++) {
         const inp = document.querySelector(
-          `#competencyInputs input[data-index="${i}"]`
+          `#competencyInputs input[data-index="${i}"]:not([data-field="ai"])`
         );
         if (inp) inp.value = String(v);
         if (!levelsPolygonHidden) {
           chart.data.datasets[0].data[i] = v;
         }
       }
+      for (let i = 0; i < 3; i++) {
+        const aiInp = document.querySelector(
+          `#competencyInputs input[data-field="ai"][data-index="${i}"]`
+        );
+        if (aiInp) aiInp.value = String(v);
+        if (!levelsPolygonHidden) {
+          chart.data.datasets[1].data[i] = v;
+        }
+      }
       if (!levelsPolygonHidden) {
+        for (let j = 3; j < 7; j++) {
+          chart.data.datasets[1].data[j] = 0;
+        }
         chart.update();
       }
       persistSavedState();
