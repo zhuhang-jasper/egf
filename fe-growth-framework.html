@@ -124,6 +124,94 @@
         min-height: 0;
       }
 
+      .chart-exportable__averages {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        align-items: stretch;
+        gap: 12px;
+        width: 100%;
+        margin-top: 10px;
+        padding: 0 8px 6px;
+        box-sizing: border-box;
+        z-index: 1;
+      }
+
+      /* Author `display: grid` beats default `[hidden]` in some engines; force hide when toggled. */
+      #chartAverages[hidden] {
+        display: none !important;
+      }
+
+      .chart-avg {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: 8px 14px 10px;
+        border-radius: 8px;
+        border: 1px solid #111;
+        background: #fafafa;
+        min-width: 0;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .chart-avg--human {
+        color: #111;
+      }
+
+      .chart-avg--human .chart-avg__num {
+        color: #111;
+      }
+
+      .chart-avg--ai {
+        border-color: #4f46e5;
+        color: #4f46e5;
+        background: #f8f7ff;
+      }
+
+      .chart-avg--ai .chart-avg__num {
+        color: #4f46e5;
+      }
+
+      .chart-avg--level {
+        border-color: #0d9488;
+        color: #115e59;
+        background: #f0fdfa;
+        gap: 3px;
+      }
+
+      .chart-avg--level .chart-avg__num {
+        color: #0f766e;
+      }
+
+      .chart-avg__phase {
+        font: 600 9px/1.25 system-ui, sans-serif;
+        text-align: center;
+        max-width: 12rem;
+        color: inherit;
+      }
+
+      .chart-avg__role {
+        font: 700 11px/1.2 system-ui, sans-serif;
+        text-align: center;
+        max-width: 12rem;
+        color: inherit;
+        opacity: 0.95;
+      }
+
+      .chart-avg__label {
+        font: 600 10px/1.2 system-ui, sans-serif;
+        letter-spacing: 0.02em;
+        text-align: center;
+        max-width: 11rem;
+      }
+
+      .chart-avg__num {
+        font: 700 1.1rem/1.2 system-ui, sans-serif;
+        font-variant-numeric: tabular-nums;
+      }
+
       .form-panel {
         width: 100%;
         min-width: 0;
@@ -433,7 +521,7 @@
             id="chartVisibilityToggle"
             class="chart-visibility-toggle"
             aria-expanded="true"
-            aria-controls="competencyChart"
+            aria-controls="competencyChart chartAverages"
           >
             Hide levels
           </button>
@@ -451,6 +539,35 @@
           <div class="chart-frame">
             <div class="chart-frame-inner">
               <canvas id="competencyChart"></canvas>
+            </div>
+          </div>
+          <div
+            id="chartAverages"
+            class="chart-exportable__averages"
+            aria-label="Pillar score averages and career level"
+          >
+            <div
+              class="chart-avg chart-avg--human"
+              title="Mean of all seven pillar scores (human / framework values only)."
+            >
+              <span class="chart-avg__label">AVG Score</span>
+              <span class="chart-avg__num" id="chartAvgHuman">—</span>
+            </div>
+            <div
+              class="chart-avg chart-avg--ai"
+              title="Coding, Architecture, and Process each use (human + AI) ÷ 2; the other four pillars use human only. Then mean of all seven."
+            >
+              <span class="chart-avg__label">AVG Score (AI-Agg.)</span>
+              <span class="chart-avg__num" id="chartAvgWithAi">—</span>
+            </div>
+            <div
+              class="chart-avg chart-avg--level"
+              title="From human 7-pillar average. Bands: L1 [0,1.5), L2 [1.5,2.5), L3 [2.5,3.5), L4 [3.5,4.5), L5 [4.5,5]. Matches Level / Role Equivalent table."
+            >
+              <span class="chart-avg__label">Career level</span>
+              <span class="chart-avg__num" id="chartLevelCode">—</span>
+              <!-- <span class="chart-avg__phase" id="chartLevelPhase"></span> -->
+              <span class="chart-avg__role" id="chartLevelRole"></span>
             </div>
           </div>
         </div>
@@ -1659,6 +1776,7 @@
         chart.update();
       }
       persistSavedState();
+      updateChartFooterAverages();
     }
 
     function bumpLevelInput(input, dirSign) {
@@ -1694,6 +1812,78 @@
       return out;
     }
 
+    function formatAvgScore(n) {
+      if (!Number.isFinite(n)) return '—';
+      return (Math.round(n * 100) / 100).toFixed(2);
+    }
+
+    /** Mean of seven human pillar scores (no AI). */
+    function computeAvgHumanSeven() {
+      const lv = readLevelsFromForm();
+      if (!lv.length) return NaN;
+      return lv.reduce((a, b) => a + b, 0) / lv.length;
+    }
+
+    /**
+     * Mean of seven scores where Coding / Architecture / Process use (human + AI) / 2,
+     * and the other four pillars use human only.
+     */
+    function computeAvgWithAiBlendedSeven() {
+      const h = readLevelsFromForm();
+      const ai = readAiLevelsFromForm();
+      if (!h.length || h.length !== ai.length) return NaN;
+      let sum = 0;
+      for (let i = 0; i < h.length; i++) {
+        if (i < 3) sum += (h[i] + ai[i]) / 2;
+        else sum += h[i];
+      }
+      return sum / h.length;
+    }
+
+    /**
+     * Career band from average score (0–5). Midpoint splits: L1 [0,1.5), L2 [1.5,2.5),
+     * L3 [2.5,3.5), L4 [3.5,4.5), L5 [4.5,5] (L2/L3 boundary at 2.5).
+     */
+    const CAREER_LEVEL_BY_AVG_BAND = [
+      { code: 'L1', phase: 'Adherence / Learning', role: 'Junior (Early)' },
+      { code: 'L2', phase: 'Practitioner / Autonomy', role: 'Junior (Late)' },
+      { code: 'L3', phase: 'Proficient / Complexity', role: 'Mid-Level' },
+      { code: 'L4', phase: 'Influential', role: 'Senior' },
+      { code: 'L5', phase: 'Impact / Strategic', role: 'Lead / Staff' }
+    ];
+
+    function careerLevelFromAvg(avg) {
+      if (!Number.isFinite(avg)) return null;
+      const c = Math.max(0, Math.min(5, avg));
+      if (c < 1.5) return CAREER_LEVEL_BY_AVG_BAND[0];
+      if (c < 2.5) return CAREER_LEVEL_BY_AVG_BAND[1];
+      if (c < 3.5) return CAREER_LEVEL_BY_AVG_BAND[2];
+      if (c < 4.5) return CAREER_LEVEL_BY_AVG_BAND[3];
+      return CAREER_LEVEL_BY_AVG_BAND[4];
+    }
+
+    function updateChartFooterAverages() {
+      const elH = document.getElementById('chartAvgHuman');
+      const elAi = document.getElementById('chartAvgWithAi');
+      const elCode = document.getElementById('chartLevelCode');
+    //   const elPhase = document.getElementById('chartLevelPhase');
+      const elRole = document.getElementById('chartLevelRole');
+      if (!elH || !elAi || !elCode || !elRole) return;
+      elH.textContent = formatAvgScore(computeAvgHumanSeven());
+      elAi.textContent = formatAvgScore(computeAvgWithAiBlendedSeven());
+      const humanAvg = computeAvgHumanSeven();
+      const lvl = careerLevelFromAvg(humanAvg);
+      if (!lvl) {
+        elCode.textContent = '—';
+        // elPhase.textContent = '';
+        elRole.textContent = '';
+      } else {
+        elCode.textContent = lvl.code;
+        // elPhase.textContent = lvl.phase;
+        elRole.textContent = lvl.role;
+      }
+    }
+
     /**
      * Rebuild `dataset.data` in place (same array ref). Replacing `ds.data = [...]` can leave Chart.js
      * radar parsed state stuck so the polygon never comes back after all-nulls.
@@ -1727,8 +1917,11 @@
         writeAiLevelDataToDataset(readAiLevelsFromForm());
       }
       chart.update();
+      const chartAveragesEl = document.getElementById('chartAverages');
+      if (chartAveragesEl) chartAveragesEl.hidden = hidden;
       chartVisibilityBtn.textContent = hidden ? 'Show chart' : 'Hide chart';
       chartVisibilityBtn.setAttribute('aria-expanded', String(!hidden));
+      updateChartFooterAverages();
     }
 
     chartVisibilityBtn.addEventListener('click', () => {
@@ -1931,6 +2124,7 @@
         writeAiLevelDataToDataset(new Array(n).fill(null));
       }
       chart.update();
+      updateChartFooterAverages();
     }
 
     function persistSavedState() {
@@ -2046,6 +2240,7 @@
         chart.update();
       }
       persistSavedState();
+      updateChartFooterAverages();
     });
   </script>
   </body>
