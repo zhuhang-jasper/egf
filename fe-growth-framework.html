@@ -566,7 +566,8 @@
         numberPad: '8px 6px',
         numberPx: 14,
         /** Value applied to all seven pillars by the title-row Reset button. */
-        resetCompetencyLevel: 3
+        resetCompetencyLevel: 3,
+        resetAiLevel: 2
       },
       chartFonts: {
         tickMinPx: 8,
@@ -630,7 +631,7 @@
       },
       /** Second radar layer: AI scores on the three technical pillars only (others fixed at 0). */
       datasetAi: {
-        label: 'AI (Technical)',
+        label: 'AI',
         fill: 'rgba(99, 102, 241, 0.42)',
         stroke: '#4f46e5',
         lineWidth: 2,
@@ -988,16 +989,144 @@
       }
     };
 
+    /** Technical pillar chart labels (no *); marker drawn in `technicalAsteriskPointLabelsPlugin`. */
+    const FE_TECH_ASTERISK = {
+      color: FE_UI.datasetAi.stroke,
+      indices: [0, 1, 2],
+      /** String drawn after each technical label (e.g. '*', '†', ' AI'). Empty = skip. */
+      text: 'AI',
+      /**
+       * Optional: one string per entry in `indices` (same order). Overrides `text` when length matches.
+       * Example with `indices: [0,1,2]`: `texts: ['*', '†', '*']`
+       */
+      texts: null,
+      /** Horizontal nudge (px) after placement next to the label. */
+      offsetXPx: 8,
+      /** Extra downward offset (px); brings * closer to the label baseline. */
+      offsetYPx: 5,
+      /**
+       * Border box around the marker (not glyph stroke). Same color as `color`. 0 = no box.
+       */
+      boxBorderWidthPx: 1.5,
+      /** Inner padding between box edge and marker text (px). */
+      boxPaddingPx: 4,
+      /** Corner radius (px) for the border box; 0 = square corners. */
+      boxRadiusPx: 4,
+      /** Optional fill inside the box (e.g. 'rgba(255,255,255,0.92)'). Omit/null = transparent. */
+      boxFill: null,
+      /**
+       * Added to the pillar point-label font size (px) for the marker, so it scales with the chart.
+       * E.g. `-2` is slightly smaller than the label; `0` matches the label size.
+       */
+      sizeOffsetPx: -6
+    };
+
+    const technicalAsteriskPointLabelsPlugin = {
+      id: 'technicalAsteriskPointLabels',
+      afterDraw(chart) {
+        const scale = chart.scales.r;
+        if (!scale || !scale._pointLabelItems || !scale._pointLabels) return;
+        const ctx = chart.ctx;
+        const pl = scale.options.pointLabels;
+        for (const i of FE_TECH_ASTERISK.indices) {
+          const item = scale._pointLabelItems[i];
+          if (!item || !item.visible) continue;
+          const text = scale._pointLabels[i];
+          if (text == null || text === '') continue;
+          const texts = FE_TECH_ASTERISK.texts;
+          const idxInList = FE_TECH_ASTERISK.indices.indexOf(i);
+          let marker =
+            Array.isArray(texts) &&
+            texts.length === FE_TECH_ASTERISK.indices.length &&
+            idxInList >= 0
+              ? texts[idxInList]
+              : FE_TECH_ASTERISK.text;
+          marker = marker != null ? String(marker) : '*';
+          if (!marker) continue;
+          const optsAtIndex = pl.setContext(scale.getPointLabelContext(i));
+          const f = optsAtIndex.font || {};
+          const labelFontSize = Number(f.size) || 12;
+          const starFontSize = Math.max(
+            1,
+            Math.round(
+              labelFontSize + (Number(FE_TECH_ASTERISK.sizeOffsetPx) || 0)
+            )
+          );
+          const weight = f.weight || 'bold';
+          const family = f.family || 'system-ui, sans-serif';
+          const lineHeight =
+            f.lineHeight != null && Number.isFinite(Number(f.lineHeight))
+              ? Number(f.lineHeight)
+              : labelFontSize * 1.2;
+          ctx.save();
+          ctx.font = `${weight} ${labelFontSize}px ${family}`;
+          ctx.textBaseline = 'middle';
+          const w = ctx.measureText(String(text)).width;
+          ctx.font = `${weight} ${starFontSize}px ${family}`;
+          const c = FE_TECH_ASTERISK.color;
+          ctx.fillStyle = c;
+          const align = item.textAlign;
+          let starX = item.x;
+          if (align === 'left') starX = item.x + w + 1;
+          else if (align === 'center') starX = item.x + w / 2 + 1;
+          else if (align === 'right') starX = item.x + 1;
+          ctx.textAlign = 'left';
+          const starY =
+            item.y +
+            lineHeight / 2 +
+            (Number(FE_TECH_ASTERISK.offsetYPx) || 0);
+          const ox = Number(FE_TECH_ASTERISK.offsetXPx) || 0;
+          const mx = starX + ox;
+          const bw = Number(FE_TECH_ASTERISK.boxBorderWidthPx);
+          const metrics = ctx.measureText(marker);
+          const tw = metrics.width;
+          const ascent =
+            metrics.actualBoundingBoxAscent != null
+              ? metrics.actualBoundingBoxAscent
+              : starFontSize * 0.72;
+          const descent =
+            metrics.actualBoundingBoxDescent != null
+              ? metrics.actualBoundingBoxDescent
+              : starFontSize * 0.28;
+          const pad = Number(FE_TECH_ASTERISK.boxPaddingPx) || 4;
+          const br = Math.max(0, Number(FE_TECH_ASTERISK.boxRadiusPx) || 0);
+          if (Number.isFinite(bw) && bw > 0) {
+            const boxLeft = mx - pad;
+            const boxTop = starY - ascent - pad;
+            const boxW = tw + 2 * pad;
+            const boxH = ascent + descent + 2 * pad;
+            ctx.beginPath();
+            if (br > 0 && typeof ctx.roundRect === 'function') {
+              ctx.roundRect(boxLeft, boxTop, boxW, boxH, br);
+            } else {
+              ctx.rect(boxLeft, boxTop, boxW, boxH);
+            }
+            const fill = FE_TECH_ASTERISK.boxFill;
+            if (fill) {
+              ctx.fillStyle = fill;
+              ctx.fill();
+            }
+            ctx.strokeStyle = c;
+            ctx.lineWidth = bw;
+            ctx.stroke();
+          }
+          ctx.fillStyle = c;
+          ctx.fillText(marker, mx, starY);
+          ctx.restore();
+        }
+      }
+    };
+
     const chart = new Chart(ctx, {
       type: 'radar',
       data: {
         labels: [
-          '🤲 Coding*', 
-          '🧠 Architecture*', 
-          '🦴 Process*', 
-          '✨ Ownership', 
-          '🗣️ Communication', 
-          '💡 Product Sense', 
+          '🤲 Coding',
+          '🧠 Architecture',
+          '🦴 Process',
+          '✨ Ownership',
+          '🗣️ Communication',
+          '💡 Product Sense',
           '👀 UI/UX'
         ],
         datasets: [
@@ -1100,7 +1229,7 @@
           }
         }
       },
-      plugins: [heptagonBackgroundPlugin]
+      plugins: [heptagonBackgroundPlugin, technicalAsteriskPointLabelsPlugin]
     });
 
     requestAnimationFrame(() => syncFontsForChart(chart));
@@ -1447,6 +1576,7 @@
 
     document.getElementById('resetLevelsBtn').addEventListener('click', () => {
       const v = clampLevel(FE_UI.form.resetCompetencyLevel ?? 3);
+      const aiV = clampLevel(FE_UI.form.resetAiLevel ?? 2);
       for (let i = 0; i < 7; i++) {
         const inp = document.querySelector(
           `#competencyInputs input[data-index="${i}"]:not([data-field="ai"])`
@@ -1460,9 +1590,9 @@
         const aiInp = document.querySelector(
           `#competencyInputs input[data-field="ai"][data-index="${i}"]`
         );
-        if (aiInp) aiInp.value = String(v);
+        if (aiInp) aiInp.value = String(aiV);
         if (!levelsPolygonHidden) {
-          chart.data.datasets[1].data[i] = v;
+          chart.data.datasets[1].data[i] = aiV;
         }
       }
       if (!levelsPolygonHidden) {
