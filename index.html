@@ -1230,9 +1230,13 @@
         tickBackdropColor: 'rgba(255, 255, 255, 0.5)',
         /**
          * Copy image: output width = this factor × `#chartExportable` width (height from tight content).
-         * html2canvas targets only `#chartExportable` with explicit x/y/width/height.
+         * html2canvas captures the DOM; the chart `<canvas>` is pasted separately. During copy,
+         * Chart `devicePixelRatio` is raised to at least this value so the chart bitmap matches the
+         * export slot (less upscale blur). Total scale is capped by `exportImageCssScaleMax`.
          */
-        exportImageCssScale: 3
+        exportImageCssScale: 8,
+        /** Upper bound for export scale (memory and capture time). */
+        exportImageCssScaleMax: 12
       },
       heptagon: {
         src: '7-pillar-heptagon-v1.png',
@@ -2135,13 +2139,6 @@
         throw new Error('html2canvas not loaded');
       }
 
-      chart.update('none');
-      await new Promise((r) =>
-        requestAnimationFrame(() => requestAnimationFrame(r))
-      );
-
-      if (canvas.width < 2 || canvas.height < 2) return;
-
       const titleText =
         headingEl.style.display === 'none'
           ? (titleInput.value.trim() || ' ')
@@ -2151,74 +2148,132 @@
 
       const cssW = Math.max(1, Math.round(exportRoot.getBoundingClientRect().width));
       const cssH = Math.max(1, getChartExportableCaptureHeight(exportRoot));
+      const scaleMax = Math.max(
+        1,
+        Number(FE_UI.chart.exportImageCssScaleMax) || 12
+      );
       const cssScale = Math.max(
         0.25,
-        Math.min(8, Number(FE_UI.chart.exportImageCssScale) || 3)
+        Math.min(
+          scaleMax,
+          Number(FE_UI.chart.exportImageCssScale) || 8
+        )
       );
       const exportW = Math.max(120, Math.round(cssW * cssScale));
       const exportH = Math.max(2, Math.round((exportW * cssH) / cssW));
+      const pxPerCssX = exportW / cssW;
+      const pxPerCssY = exportH / cssH;
 
-      /** Strictly `#chartExportable` only (not toolbar / form); x/y/width/height clip the raster. */
-      const snap = await html2canvas(exportRoot, {
-        x: 0,
-        y: 0,
-        width: cssW,
-        height: cssH,
-        scale: exportW / cssW,
-        backgroundColor: '#ffffff',
-        useCORS: true,
-        logging: false
-      });
-
-      const out = document.createElement('canvas');
-      out.width = exportW;
-      out.height = exportH;
-      const octx = out.getContext('2d');
-      octx.imageSmoothingEnabled = true;
-      octx.imageSmoothingQuality = 'high';
-      octx.fillStyle = '#ffffff';
-      octx.fillRect(0, 0, exportW, exportH);
-      octx.drawImage(snap, 0, 0, snap.width, snap.height, 0, 0, exportW, exportH);
-
-      const blob = await new Promise((resolve, reject) => {
-        out.toBlob(
-          (b) => (b ? resolve(b) : reject(new Error('toBlob failed'))),
-          'image/png',
-          0.95
-        );
-      });
+      const hadDpr = Object.prototype.hasOwnProperty.call(
+        chart.options,
+        'devicePixelRatio'
+      );
+      const prevDpr = chart.options.devicePixelRatio;
 
       try {
-        if (
-          navigator.clipboard &&
-          typeof ClipboardItem !== 'undefined' &&
-          typeof navigator.clipboard.write === 'function'
-        ) {
-          await navigator.clipboard.write([
-            new ClipboardItem({ 'image/png': blob })
-          ]);
-          copyChartImageBtn.textContent = 'Copied!';
-          setTimeout(() => {
-            copyChartImageBtn.textContent = 'Copy image';
-          }, 1600);
-          return;
-        }
-      } catch (e) {
-        console.warn(e);
-      }
+        /** Match chart backing store to export slot so `drawImage` is not upscaling a low-DPR bitmap. */
+        chart.options.devicePixelRatio = Math.max(
+          cssScale,
+          window.devicePixelRatio || 1
+        );
+        chart.resize();
+        chart.update('none');
+        await new Promise((r) =>
+          requestAnimationFrame(() => requestAnimationFrame(r))
+        );
 
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${(titleText || 'chart').replace(/[^\w\-]+/g, '-').slice(0, 48)}-growth.png`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      copyChartImageBtn.textContent = 'Saved file';
-      setTimeout(() => {
-        copyChartImageBtn.textContent = 'Copy image';
-      }, 1600);
+        if (canvas.width < 2 || canvas.height < 2) return;
+
+        /** DOM capture only: skipping the chart canvas avoids html2canvas’s soft resample of canvas. */
+        const snap = await html2canvas(exportRoot, {
+          x: 0,
+          y: 0,
+          width: cssW,
+          height: cssH,
+          scale: pxPerCssX,
+          backgroundColor: '#ffffff',
+          useCORS: true,
+          logging: false,
+          ignoreElements: (el) => el === canvas
+        });
+
+        const rootRect = exportRoot.getBoundingClientRect();
+        const canvasRect = canvas.getBoundingClientRect();
+        const slotX = Math.round((canvasRect.left - rootRect.left) * pxPerCssX);
+        const slotY = Math.round((canvasRect.top - rootRect.top) * pxPerCssY);
+        const slotW = Math.max(1, Math.round(canvasRect.width * pxPerCssX));
+        const slotH = Math.max(1, Math.round(canvasRect.height * pxPerCssY));
+
+        const out = document.createElement('canvas');
+        out.width = exportW;
+        out.height = exportH;
+        const octx = out.getContext('2d');
+        octx.fillStyle = '#ffffff';
+        octx.fillRect(0, 0, exportW, exportH);
+        octx.drawImage(snap, 0, 0, snap.width, snap.height, 0, 0, exportW, exportH);
+
+        const ratioDiff =
+          Math.abs(slotW / canvas.width - 1) + Math.abs(slotH / canvas.height - 1);
+        octx.imageSmoothingEnabled = ratioDiff > 0.04;
+        octx.imageSmoothingQuality = 'high';
+        octx.drawImage(
+          canvas,
+          0,
+          0,
+          canvas.width,
+          canvas.height,
+          slotX,
+          slotY,
+          slotW,
+          slotH
+        );
+
+        const blob = await new Promise((resolve, reject) => {
+          out.toBlob(
+            (b) => (b ? resolve(b) : reject(new Error('toBlob failed'))),
+            'image/png',
+            1
+          );
+        });
+
+        try {
+          if (
+            navigator.clipboard &&
+            typeof ClipboardItem !== 'undefined' &&
+            typeof navigator.clipboard.write === 'function'
+          ) {
+            await navigator.clipboard.write([
+              new ClipboardItem({ 'image/png': blob })
+            ]);
+            copyChartImageBtn.textContent = 'Copied!';
+            setTimeout(() => {
+              copyChartImageBtn.textContent = 'Copy image';
+            }, 1600);
+            return;
+          }
+        } catch (e) {
+          console.warn(e);
+        }
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${(titleText || 'chart').replace(/[^\w\-]+/g, '-').slice(0, 48)}-growth.png`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        copyChartImageBtn.textContent = 'Saved file';
+        setTimeout(() => {
+          copyChartImageBtn.textContent = 'Copy image';
+        }, 1600);
+      } finally {
+        if (hadDpr) chart.options.devicePixelRatio = prevDpr;
+        else delete chart.options.devicePixelRatio;
+        chart.resize();
+        chart.update('none');
+        requestAnimationFrame(() => syncFontsForChart(chart));
+      }
     }
 
     copyChartImageBtn.addEventListener('click', () => {
