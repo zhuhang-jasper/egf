@@ -3,7 +3,11 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>engineer growth framework</title>
+
+    <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+    <meta name="googlebot" content="noindex, nofollow" />
+
+    <title>Engineer Growth Framework</title>
     <style>
       html,
       body {
@@ -527,7 +531,7 @@
           </button>
         </div>
         <div id="chartExportable" class="chart-exportable">
-          <div id="chartHeading">John</div>
+          <div id="chartHeading"></div>
           <div class="chart-exportable__legend" aria-hidden="true">
             <img
               src="cluster-legend-export.png"
@@ -580,14 +584,13 @@
             <input
               type="text"
               id="chartTitleInput"
-              value="John"
               placeholder="Chart title"
             />
             <button
               type="button"
               id="resetLevelsBtn"
               class="form-reset-levels-btn"
-              title="Set all pillars to level 3"
+              title="Reset pillars and AI scores to default values"
             >
               Reset
             </button>
@@ -631,7 +634,6 @@
                     inputmode="decimal"
                     autocomplete="off"
                     spellcheck="false"
-                    value="4"
                     data-index="0"
                   />
                   <span class="level-value-spin__col">
@@ -664,7 +666,6 @@
                       inputmode="decimal"
                       autocomplete="off"
                       spellcheck="false"
-                      value="3"
                       data-index="0"
                       data-field="ai"
                     />
@@ -702,7 +703,6 @@
                     inputmode="decimal"
                     autocomplete="off"
                     spellcheck="false"
-                    value="3"
                     data-index="1"
                   />
                   <span class="level-value-spin__col">
@@ -735,7 +735,6 @@
                       inputmode="decimal"
                       autocomplete="off"
                       spellcheck="false"
-                      value="3"
                       data-index="1"
                       data-field="ai"
                     />
@@ -773,7 +772,6 @@
                     inputmode="decimal"
                     autocomplete="off"
                     spellcheck="false"
-                    value="3"
                     data-index="2"
                   />
                   <span class="level-value-spin__col">
@@ -806,7 +804,6 @@
                       inputmode="decimal"
                       autocomplete="off"
                       spellcheck="false"
-                      value="3"
                       data-index="2"
                       data-field="ai"
                     />
@@ -847,7 +844,6 @@
                   inputmode="decimal"
                   autocomplete="off"
                   spellcheck="false"
-                  value="3"
                   data-index="6"
                 />
                 <span class="level-value-spin__col">
@@ -881,7 +877,6 @@
                   inputmode="decimal"
                   autocomplete="off"
                   spellcheck="false"
-                  value="3"
                   data-index="5"
                 />
                 <span class="level-value-spin__col">
@@ -919,7 +914,6 @@
                   inputmode="decimal"
                   autocomplete="off"
                   spellcheck="false"
-                  value="3"
                   data-index="4"
                 />
                 <span class="level-value-spin__col">
@@ -953,7 +947,6 @@
                   inputmode="decimal"
                   autocomplete="off"
                   spellcheck="false"
-                  value="3"
                   data-index="3"
                 />
                 <span class="level-value-spin__col">
@@ -1044,9 +1037,6 @@
         numberWidth: '3rem',
         numberPad: '8px 6px',
         numberPx: 14,
-        /** Value applied to all seven pillars by the title-row Reset button (snaps to 0.5). */
-        resetCompetencyLevel: 3,
-        resetAiLevel: 2,
         /** Allowed increment for level inputs and chart values (see `clampLevel`). */
         levelStep: 0.5,
         /** Width (px) of the ▲/▼ column next to each level field. */
@@ -1139,6 +1129,82 @@
         behavioural: { label: 'Behavioural', color: '#bddbb5' }
       }
     };
+
+    /**
+     * Canonical initial app state: storage miss, chart bootstrap, DOM before Chart(), and Reset.
+     * Keep pillar lists length 7; only indices 0–2 of `aiLevels` are shown in the form (rest stay 0).
+     */
+    const DEFAULT_STATE = {
+      title: 'Engineer Growth Framework',
+      levels: [3, 3, 3, 3, 3, 3, 3],
+      aiLevels: [2, 2, 2, 0, 0, 0, 0]
+    };
+
+    function clampLevel(v) {
+      const step = Number(FE_UI.form.levelStep) || 0.5;
+      const inv = 1 / step;
+      let n;
+      if (typeof v === 'number' && Number.isFinite(v)) {
+        n = v;
+      } else {
+        let raw = String(v).trim().replace(',', '.');
+        if (raw === '' || raw === '-') return 0;
+        /** `type=number` often omits a leading zero; normalize so ".5" → 0.5. */
+        if (/^\.(?=\d)/.test(raw)) raw = `0${raw}`;
+        n = parseFloat(raw);
+      }
+      if (!Number.isFinite(n)) return 0;
+      const c = Math.max(0, Math.min(5, n));
+      return Math.round(c * inv) / inv;
+    }
+
+    /** Stable string for number inputs (integers without ".0"). */
+    function formatLevelForInput(v) {
+      const x = clampLevel(v);
+      const step = Number(FE_UI.form.levelStep) || 0.5;
+      const inv = 1 / step;
+      const stepped = Math.round(x * inv) / inv;
+      if (Math.abs(stepped - Math.round(stepped)) < 1e-9) {
+        return String(Math.round(stepped));
+      }
+      const decimals = Math.max(1, Math.ceil(-Math.log10(step)));
+      return stepped.toFixed(decimals);
+    }
+
+    /** Updates `#chartHeading` visibility/text from a raw title string; returns trimmed text. */
+    function syncChartHeadingElement(titleRaw) {
+      const trimmed = String(titleRaw).trim();
+      const heading = document.getElementById('chartHeading');
+      if (!trimmed) {
+        heading.textContent = '';
+        heading.style.display = 'none';
+      } else {
+        heading.textContent = String(titleRaw);
+        heading.style.display = '';
+      }
+      return trimmed;
+    }
+
+    /** Push saved or default state into title + pillar inputs before `new Chart` reads the canvas. */
+    function applyDefaultStateToDom(state) {
+      document.getElementById('chartTitleInput').value = state.title;
+      syncChartHeadingElement(state.title);
+      const ai = state.aiLevels;
+      for (let i = 0; i < 7; i++) {
+        const input = document.querySelector(
+          `#competencyInputs input[data-index="${i}"]:not([data-field="ai"])`
+        );
+        const v = state.levels[i];
+        if (input) input.value = formatLevelForInput(v);
+      }
+      for (let i = 0; i < 3; i++) {
+        const aiInp = document.querySelector(
+          `#competencyInputs input[data-field="ai"][data-index="${i}"]`
+        );
+        const av = ai[i] ?? 0;
+        if (aiInp) aiInp.value = formatLevelForInput(av);
+      }
+    }
 
     function syncClusterFormUi() {
       const root = document.getElementById('competencyInputs');
@@ -1283,6 +1349,8 @@
 
     applyFeUiDomStyles();
     window.addEventListener('resize', () => applyFeUiDomStyles());
+
+    applyDefaultStateToDom(DEFAULT_STATE);
 
     const clusterLegendImg = document.querySelector('.chart-exportable__legend img');
     if (clusterLegendImg) {
@@ -1617,8 +1685,8 @@
         ],
         datasets: [
           {
-            label: 'Framework',
-            data: [3, 3, 3, 3, 3, 3, 3],
+            label: String(DEFAULT_STATE.title).trim() || ' ',
+            data: [...DEFAULT_STATE.levels],
             backgroundColor: FE_UI.dataset.fill,
             borderColor: FE_UI.dataset.stroke,
             borderWidth: FE_UI.dataset.lineWidth,
@@ -1634,7 +1702,7 @@
           },
           {
             label: FE_UI.datasetAi.label,
-            data: [2, 2, 2, 0, 0, 0, 0],
+            data: [...DEFAULT_STATE.aiLevels],
             backgroundColor: FE_UI.datasetAi.fill,
             borderColor: FE_UI.datasetAi.stroke,
             borderWidth: FE_UI.datasetAi.lineWidth,
@@ -1731,37 +1799,6 @@
     let levelsPolygonHidden = false;
 
     const chartVisibilityBtn = document.getElementById('chartVisibilityToggle');
-
-    function clampLevel(v) {
-      const step = Number(FE_UI.form.levelStep) || 0.5;
-      const inv = 1 / step;
-      let n;
-      if (typeof v === 'number' && Number.isFinite(v)) {
-        n = v;
-      } else {
-        let raw = String(v).trim().replace(',', '.');
-        if (raw === '' || raw === '-') return 0;
-        /** `type=number` often omits a leading zero; normalize so ".5" → 0.5. */
-        if (/^\.(?=\d)/.test(raw)) raw = `0${raw}`;
-        n = parseFloat(raw);
-      }
-      if (!Number.isFinite(n)) return 0;
-      const c = Math.max(0, Math.min(5, n));
-      return Math.round(c * inv) / inv;
-    }
-
-    /** Stable string for number inputs (integers without ".0"). */
-    function formatLevelForInput(v) {
-      const x = clampLevel(v);
-      const step = Number(FE_UI.form.levelStep) || 0.5;
-      const inv = 1 / step;
-      const stepped = Math.round(x * inv) / inv;
-      if (Math.abs(stepped - Math.round(stepped)) < 1e-9) {
-        return String(Math.round(stepped));
-      }
-      const decimals = Math.max(1, Math.ceil(-Math.log10(step)));
-      return stepped.toFixed(decimals);
-    }
 
     function applyCompetencyNumberToChartAndPersist(input, v) {
       const i = parseInt(input.getAttribute('data-index'), 10);
@@ -2040,11 +2077,6 @@
     });
 
     const STORAGE_KEY = 'fe-growth-framework:v1';
-    const DEFAULT_STATE = {
-      title: 'Framework',
-      levels: [3, 3, 3, 3, 3, 3, 3],
-      aiLevels: [2, 2, 2, 0, 0, 0, 0]
-    };
 
     function normalizeAiLevels(arr) {
       const base = [0, 0, 0, 0, 0, 0, 0];
@@ -2086,15 +2118,7 @@
     }
 
     function applyTitleToHeadingAndChart(t) {
-      const trimmed = t.trim();
-      const heading = document.getElementById('chartHeading');
-      if (!trimmed) {
-        heading.textContent = '';
-        heading.style.display = 'none';
-      } else {
-        heading.textContent = t;
-        heading.style.display = '';
-      }
+      const trimmed = syncChartHeadingElement(t);
       chart.data.datasets[0].label = trimmed || ' ';
     }
 
@@ -2216,9 +2240,8 @@
     });
 
     document.getElementById('resetLevelsBtn').addEventListener('click', () => {
-      const v = clampLevel(FE_UI.form.resetCompetencyLevel ?? 3);
-      const aiV = clampLevel(FE_UI.form.resetAiLevel ?? 2);
       for (let i = 0; i < 7; i++) {
+        const v = clampLevel(DEFAULT_STATE.levels[i]);
         const inp = document.querySelector(
           `#competencyInputs input[data-index="${i}"]:not([data-field="ai"])`
         );
@@ -2228,6 +2251,7 @@
         }
       }
       for (let i = 0; i < 3; i++) {
+        const aiV = clampLevel(DEFAULT_STATE.aiLevels[i]);
         const aiInp = document.querySelector(
           `#competencyInputs input[data-field="ai"][data-index="${i}"]`
         );
