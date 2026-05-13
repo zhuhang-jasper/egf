@@ -1255,7 +1255,12 @@
          */
         exportImageCssScale: 8,
         /** Upper bound for export scale (memory and capture time). */
-        exportImageCssScaleMax: 12
+        exportImageCssScaleMax: 12,
+        /**
+         * When false, the four footer boxes under the chart (Overall, AI, Strength, Career) stay hidden.
+         * When true, their visibility follows the chart visibility toggle (hidden together with the radar when "Hide chart").
+         */
+        showFooterAverages: false
       },
       heptagon: {
         src: '7-pillar-heptagon-v1.png',
@@ -2137,6 +2142,13 @@
       }
     }
 
+    function syncChartFooterAveragesBoxVisibility() {
+      const chartAveragesEl = document.getElementById('chartAverages');
+      if (!chartAveragesEl) return;
+      const show = FE_UI.chart.showFooterAverages !== false;
+      chartAveragesEl.hidden = !show || levelsPolygonHidden;
+    }
+
     function setLevelsPolygonHidden(hidden) {
       levelsPolygonHidden = hidden;
       const n = chart.data.labels.length;
@@ -2148,8 +2160,7 @@
         writeAiLevelDataToDataset(readAiLevelsFromForm());
       }
       chart.update();
-      const chartAveragesEl = document.getElementById('chartAverages');
-      if (chartAveragesEl) chartAveragesEl.hidden = hidden;
+      syncChartFooterAveragesBoxVisibility();
       chartVisibilityBtn.textContent = hidden ? 'Show chart' : 'Hide chart';
       chartVisibilityBtn.setAttribute('aria-expanded', String(!hidden));
       updateChartFooterAverages();
@@ -2605,6 +2616,7 @@
     }
 
     loadSavedState();
+    syncChartFooterAveragesBoxVisibility();
     requestAnimationFrame(() => syncFontsForChart(chart));
 
     document.getElementById('competencyInputs').addEventListener('input', (e) => {
