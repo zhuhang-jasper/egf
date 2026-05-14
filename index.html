@@ -140,6 +140,10 @@
         z-index: 1;
       }
 
+      .chart-exportable__averages.is-ai-hidden {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
       /* Author `display: grid` beats default `[hidden]` in some engines; force hide when toggled. */
       #chartAverages[hidden] {
         display: none !important;
@@ -555,6 +559,11 @@
         flex-direction: row;
         align-items: center;
         gap: 4px;
+      }
+
+      #competencyInputs .field-row__ai[hidden],
+      .chart-avg--ai[hidden] {
+        display: none !important;
       }
 
       #competencyInputs .field-row__ai-label {
@@ -1211,6 +1220,9 @@
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
   <script>
+    const URL_FLAGS = new URLSearchParams(window.location.search);
+    const AI_FEATURE_ENABLED = URL_FLAGS.get('ai') === '1';
+
     /**
      * Single place to tune layout, chart chrome, and form UI (all plain JS values).
      * `applyFeUiDomStyles()` pushes layout/typography onto the DOM; Chart.js reads from here too.
@@ -1470,6 +1482,30 @@
       });
     }
 
+    function syncAiFeatureVisibility() {
+      document.querySelectorAll('.field-row__ai').forEach((el) => {
+        el.hidden = !AI_FEATURE_ENABLED;
+      });
+      const aiAverage = document.querySelector('.chart-avg--ai');
+      if (aiAverage) aiAverage.hidden = !AI_FEATURE_ENABLED;
+      const averages = document.getElementById('chartAverages');
+      if (averages) {
+        averages.classList.toggle('is-ai-hidden', !AI_FEATURE_ENABLED);
+        averages.setAttribute(
+          'aria-label',
+          AI_FEATURE_ENABLED
+            ? 'Overall score, AI score, strength index, and career level'
+            : 'Overall score, strength index, and career level'
+        );
+      }
+      const resetBtn = document.getElementById('resetLevelsBtn');
+      if (resetBtn) {
+        resetBtn.title = AI_FEATURE_ENABLED
+          ? 'Reset pillars and AI scores to default values'
+          : 'Reset pillars to default values';
+      }
+    }
+
     function measureChartExportableLegendHeight() {
       const el = document.querySelector('.chart-exportable__legend');
       if (!el) return 0;
@@ -1596,6 +1632,7 @@
       });
 
       syncClusterFormUi();
+      syncAiFeatureVisibility();
     }
 
     applyFeUiDomStyles();
@@ -1950,24 +1987,29 @@
             pointHoverBackgroundColor: FE_UI.dataset.pointHoverFill,
             pointHoverBorderColor: FE_UI.dataset.pointHoverStroke,
             pointHoverBorderWidth: FE_UI.dataset.pointHoverBorderWidth
-          },
-          {
-            label: FE_UI.datasetAi.label,
-            data: [...DEFAULT_STATE.aiLevels],
-            backgroundColor: FE_UI.datasetAi.fill,
-            borderColor: FE_UI.datasetAi.stroke,
-            borderWidth: FE_UI.datasetAi.lineWidth,
-            pointRadius: FE_UI.datasetAi.pointRadius,
-            pointHoverRadius: FE_UI.datasetAi.pointHoverRadius,
-            pointStyle: FE_UI.datasetAi.pointStyle,
-            pointBackgroundColor: FE_UI.datasetAi.pointFill,
-            pointBorderColor: FE_UI.datasetAi.pointStroke,
-            pointBorderWidth: FE_UI.datasetAi.pointBorderWidth,
-            pointHoverBackgroundColor: FE_UI.datasetAi.pointHoverBackgroundColor,
-            pointHoverBorderColor: FE_UI.datasetAi.pointHoverBorderColor,
-            pointHoverBorderWidth: FE_UI.datasetAi.pointHoverBorderWidth
           }
-        ]
+        ].concat(
+          AI_FEATURE_ENABLED
+            ? [
+                {
+                  label: FE_UI.datasetAi.label,
+                  data: [...DEFAULT_STATE.aiLevels],
+                  backgroundColor: FE_UI.datasetAi.fill,
+                  borderColor: FE_UI.datasetAi.stroke,
+                  borderWidth: FE_UI.datasetAi.lineWidth,
+                  pointRadius: FE_UI.datasetAi.pointRadius,
+                  pointHoverRadius: FE_UI.datasetAi.pointHoverRadius,
+                  pointStyle: FE_UI.datasetAi.pointStyle,
+                  pointBackgroundColor: FE_UI.datasetAi.pointFill,
+                  pointBorderColor: FE_UI.datasetAi.pointStroke,
+                  pointBorderWidth: FE_UI.datasetAi.pointBorderWidth,
+                  pointHoverBackgroundColor: FE_UI.datasetAi.pointHoverBackgroundColor,
+                  pointHoverBorderColor: FE_UI.datasetAi.pointHoverBorderColor,
+                  pointHoverBorderWidth: FE_UI.datasetAi.pointHoverBorderWidth
+                }
+              ]
+            : []
+        )
       },
       options: {
         responsive: true,
@@ -2036,7 +2078,9 @@
           }
         }
       },
-      plugins: [heptagonBackgroundPlugin, technicalAsteriskPointLabelsPlugin]
+      plugins: [heptagonBackgroundPlugin].concat(
+        AI_FEATURE_ENABLED ? [technicalAsteriskPointLabelsPlugin] : []
+      )
     });
 
     requestAnimationFrame(() => syncFontsForChart(chart));
@@ -2056,9 +2100,12 @@
       const isAi = input.getAttribute('data-field') === 'ai';
       if (!levelsPolygonHidden) {
         if (isAi) {
-          chart.data.datasets[1].data[i] = v;
-          for (let j = 3; j < 7; j++) {
-            chart.data.datasets[1].data[j] = 0;
+          const aiDataset = chart.data.datasets[1];
+          if (aiDataset) {
+            aiDataset.data[i] = v;
+            for (let j = 3; j < 7; j++) {
+              aiDataset.data[j] = 0;
+            }
           }
         } else {
           chart.data.datasets[0].data[i] = v;
@@ -2171,11 +2218,13 @@
       const elCode = document.getElementById('chartLevelCode');
     //   const elPhase = document.getElementById('chartLevelPhase');
       const elRole = document.getElementById('chartLevelRole');
-      if (!elOverall || !elH || !elAi || !elCode || !elRole) return;
+      if (!elOverall || !elH || !elCode || !elRole) return;
       elOverall.textContent = formatAvgScore(computeOverallSevenPillarAvg());
       const humanIndex = computeHumanStrengthIndex();
       elH.textContent = formatAvgScore(humanIndex);
-      elAi.textContent = formatAvgScore(computeAvgAiThree());
+      if (AI_FEATURE_ENABLED && elAi) {
+        elAi.textContent = formatAvgScore(computeAvgAiThree());
+      }
       const lvl = careerLevelFromStrengthIndex(humanIndex);
       if (!lvl) {
         elCode.textContent = '—';
@@ -2203,6 +2252,7 @@
 
     function writeAiLevelDataToDataset(values) {
       const ds = chart.data.datasets[1];
+      if (!ds) return;
       const d = ds.data;
       d.length = 0;
       for (let k = 0; k < values.length; k++) {
@@ -2459,16 +2509,19 @@
         if (input) input.value = formatLevelForInput(v);
         chart.data.datasets[0].data[i] = v;
       }
+      const aiDataset = chart.data.datasets[1];
       for (let i = 0; i < 3; i++) {
         const aiInp = document.querySelector(
           `#competencyInputs input[data-field="ai"][data-index="${i}"]`
         );
         const av = ai[i] ?? 0;
         if (aiInp) aiInp.value = formatLevelForInput(av);
-        chart.data.datasets[1].data[i] = av;
+        if (aiDataset) aiDataset.data[i] = av;
       }
-      for (let j = 3; j < 7; j++) {
-        chart.data.datasets[1].data[j] = 0;
+      if (aiDataset) {
+        for (let j = 3; j < 7; j++) {
+          aiDataset.data[j] = 0;
+        }
       }
       if (levelsPolygonHidden) {
         const n = chart.data.labels.length;
@@ -2797,20 +2850,23 @@
           chart.data.datasets[0].data[i] = v;
         }
       }
+      const aiDataset = chart.data.datasets[1];
       for (let i = 0; i < 3; i++) {
         const aiV = clampLevel(DEFAULT_STATE.aiLevels[i]);
         const aiInp = document.querySelector(
           `#competencyInputs input[data-field="ai"][data-index="${i}"]`
         );
         if (aiInp) aiInp.value = formatLevelForInput(aiV);
-        if (!levelsPolygonHidden) {
-          chart.data.datasets[1].data[i] = aiV;
+        if (!levelsPolygonHidden && aiDataset) {
+          aiDataset.data[i] = aiV;
+        }
+      }
+      if (!levelsPolygonHidden && aiDataset) {
+        for (let j = 3; j < 7; j++) {
+          aiDataset.data[j] = 0;
         }
       }
       if (!levelsPolygonHidden) {
-        for (let j = 3; j < 7; j++) {
-          chart.data.datasets[1].data[j] = 0;
-        }
         chart.update();
       }
       persistSavedState();
