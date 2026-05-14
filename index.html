@@ -262,14 +262,54 @@
         width: 100%;
       }
 
-      .form-title-toolbar .form-title-input {
+      .form-title-input-wrap {
+        position: relative;
         flex: 0 1 50%;
         width: 50%;
         max-width: 50%;
         min-width: 0;
+      }
+
+      .form-title-toolbar .form-title-input {
+        width: 100%;
+        max-width: none;
         box-sizing: border-box;
         border: 1px solid #ccc;
         border-radius: 8px;
+      }
+
+      .form-title-clear-btn {
+        position: absolute;
+        /* top: 50%; */
+        right: 0px;
+        margin-top: -1px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 100%;
+        padding: 0;
+        border: none;
+        background: transparent !important;
+        /* border: 1px solid rgba(0, 0, 0, 0.12); */
+        /* border-radius: 50%; */
+        /* background: #f2f2f2; */
+        color: #555;
+        font: 700 16px/1 system-ui, sans-serif;
+        cursor: pointer;
+        /* transform: translateY(-50%); */
+        z-index: 1;
+        opacity: 0;
+      }
+
+      .form-title-clear-btn:hover {
+        opacity: 1;
+        background: #e5e5e5;
+        color: #333;
+      }
+
+      .form-title-clear-btn[hidden] {
+        display: none !important;
       }
 
       .form-profile-save-btn,
@@ -721,12 +761,23 @@
         <div class="form-title-row">
           <!-- <label for="chartTitleInput">Title</label> -->
           <div class="form-title-toolbar">
-            <input
-              type="text"
-              id="chartTitleInput"
-              class="form-title-input"
-              placeholder="Chart title"
-            />
+            <div class="form-title-input-wrap">
+              <input
+                type="text"
+                id="chartTitleInput"
+                class="form-title-input"
+                placeholder="Chart title"
+              />
+              <button
+                type="button"
+                id="clearChartTitleBtn"
+                class="form-title-clear-btn"
+                aria-label="Clear chart title"
+                title="Clear title"
+              >
+                ×
+              </button>
+            </div>
             <button
               type="button"
               id="saveProfileBtn"
@@ -1368,9 +1419,17 @@
       return trimmed;
     }
 
+    function syncTitleClearButtonVisibility() {
+      const input = document.getElementById('chartTitleInput');
+      const btn = document.getElementById('clearChartTitleBtn');
+      if (!input || !btn) return;
+      btn.hidden = false;
+    }
+
     /** Push saved or default state into title + pillar inputs before `new Chart` reads the canvas. */
     function applyDefaultStateToDom(state) {
       document.getElementById('chartTitleInput').value = state.title;
+      syncTitleClearButtonVisibility();
       syncChartHeadingElement(state.title);
       const ai = state.aiLevels;
       for (let i = 0; i < 7; i++) {
@@ -1496,6 +1555,7 @@
     //   titleLabel.style.font = `${f.titleLabelPx}px system-ui, sans-serif`;
       const titleInput = document.getElementById('chartTitleInput');
       titleInput.style.padding = f.textInputPad;
+      titleInput.style.paddingRight = '34px';
       titleInput.style.fontSize = `${f.textInputPx}px`;
 
       const compInputs = document.getElementById('competencyInputs');
@@ -2380,6 +2440,7 @@
 
     function applySavedState(state) {
       document.getElementById('chartTitleInput').value = state.title;
+      syncTitleClearButtonVisibility();
       applyTitleToHeadingAndChart(state.title);
       const ai = state.aiLevels || DEFAULT_STATE.aiLevels;
       for (let i = 0; i < 7; i++) {
@@ -2668,9 +2729,17 @@
     document.getElementById('chartTitleInput').addEventListener('input', () => {
       const t = document.getElementById('chartTitleInput').value;
       activeSavedProfileId = null;
+      syncTitleClearButtonVisibility();
       applyTitleToHeadingAndChart(t);
       chart.update();
       persistSavedState();
+    });
+
+    document.getElementById('clearChartTitleBtn').addEventListener('click', () => {
+      const input = document.getElementById('chartTitleInput');
+      input.value = '';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.focus();
     });
 
     document.getElementById('saveProfileBtn').addEventListener('click', () => {
