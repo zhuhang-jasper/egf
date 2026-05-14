@@ -719,7 +719,7 @@
 
       <aside class="form-panel">
         <div class="form-title-row">
-          <label for="chartTitleInput">Title</label>
+          <!-- <label for="chartTitleInput">Title</label> -->
           <div class="form-title-toolbar">
             <input
               type="text"
@@ -1260,7 +1260,7 @@
          * When false, the four footer boxes under the chart (Overall, AI, Strength, Career) stay hidden.
          * When true, their visibility follows the chart visibility toggle (hidden together with the radar when "Hide chart").
          */
-        showFooterAverages: false
+        showFooterAverages: window.location.search.includes('score=1')
       },
       heptagon: {
         src: '7-pillar-heptagon-v1.png',
@@ -1492,8 +1492,8 @@
 
       const titleRow = document.querySelector('.form-title-row');
       titleRow.style.gap = `${f.titleRowGapPx}px`;
-      const titleLabel = titleRow.querySelector('label');
-      titleLabel.style.font = `${f.titleLabelPx}px system-ui, sans-serif`;
+    //   const titleLabel = titleRow.querySelector('label');
+    //   titleLabel.style.font = `${f.titleLabelPx}px system-ui, sans-serif`;
       const titleInput = document.getElementById('chartTitleInput');
       titleInput.style.padding = f.textInputPad;
       titleInput.style.fontSize = `${f.textInputPx}px`;
@@ -2331,7 +2331,7 @@
 
     const STORAGE_KEY = 'fe-growth-framework:v1';
     const PROFILES_STORAGE_KEY = 'fe-growth-framework:profiles:v1';
-    /** When set, Save updates this profile (supports renames). Otherwise Save may match by title or create new. */
+    /** When set, Save updates this profile. Title edits clear it so Save can create a new profile. */
     let activeSavedProfileId = null;
 
     function normalizeAiLevels(arr) {
@@ -2667,6 +2667,7 @@
 
     document.getElementById('chartTitleInput').addEventListener('input', () => {
       const t = document.getElementById('chartTitleInput').value;
+      activeSavedProfileId = null;
       applyTitleToHeadingAndChart(t);
       chart.update();
       persistSavedState();
