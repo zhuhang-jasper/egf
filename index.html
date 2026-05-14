@@ -300,10 +300,16 @@
         /* transform: translateY(-50%); */
         z-index: 1;
         opacity: 0;
+        pointer-events: none;
+      }
+
+      .form-title-input-wrap.has-title:hover .form-title-clear-btn,
+      .form-title-input-wrap.has-title:focus-within .form-title-clear-btn {
+        opacity: 1;
+        pointer-events: auto;
       }
 
       .form-title-clear-btn:hover {
-        opacity: 1;
         background: #e5e5e5;
         color: #333;
       }
@@ -1423,6 +1429,8 @@
       const input = document.getElementById('chartTitleInput');
       const btn = document.getElementById('clearChartTitleBtn');
       if (!input || !btn) return;
+      const wrap = input.closest('.form-title-input-wrap');
+      if (wrap) wrap.classList.toggle('has-title', String(input.value).length > 0);
       btn.hidden = false;
     }
 
