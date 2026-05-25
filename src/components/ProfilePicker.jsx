@@ -4,8 +4,6 @@ import { ChevronDown, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
-import { cn } from "@/lib/utils";
-
 import { useAppStore } from "@/store/useAppStore";
 
 export function ProfilePicker() {
@@ -18,7 +16,9 @@ export function ProfilePicker() {
 
   useEffect(() => {
     const onKey = (e) => {
-      if (e.key === "Escape" && open) {setOpen(false);}
+      if (e.key === "Escape" && open) {
+        setOpen(false);
+      }
     };
     const onMouse = (e) => {
       if (open && rootRef.current && !rootRef.current.contains(e.target)) {
