@@ -75,6 +75,8 @@ export const FE_UI = {
     exportImageCssScale: 8,
     exportImageCssScaleMax: 12,
     showFooterAverages: SHOW_FOOTER_AVERAGES,
+    clusterBorderColor: "rgba(0, 0, 0, 0.22)",
+    clusterBorderWidth: 1,
   },
   chartFonts: {
     tickMinPx: 8,
@@ -82,12 +84,6 @@ export const FE_UI = {
     pointLabelMinPx: 9,
     pointLabelMaxPx: 18,
     pointLabelRefWidthPx: 380,
-  },
-  heptagon: {
-    bgSize: 0.985,
-    rotationAdjust: 0,
-    nudgeFracX: 0,
-    nudgeFracY: -0.01,
   },
   dataset: {
     fill: "rgba(56, 56, 56, 0.58)",

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 
 import { useChartFrameMargins } from "@/hooks/useChartFrameMargins";
 
+import { syncLevelDatasetsVisibility } from "@/lib/chart/dataset-visibility";
 import { copyChartAsImageToClipboard } from "@/lib/copy-chart-image";
 
 import { useAppStore } from "@/store/useAppStore";
@@ -31,6 +32,15 @@ export function ChartSection() {
 
   const trimmedTitle = String(title).trim();
   const showHeading = trimmedTitle.length > 0;
+
+  const toggleLevelsPolygonHidden = useCallback(() => {
+    const nextHidden = !levelsPolygonHidden;
+    const chart = chartInstanceRef.current;
+    if (chart && syncLevelDatasetsVisibility(chart, nextHidden)) {
+      chart.update("none");
+    }
+    setLevelsPolygonHidden(nextHidden);
+  }, [levelsPolygonHidden, setLevelsPolygonHidden]);
 
   const handleCopy = async () => {
     try {
@@ -61,7 +71,7 @@ export function ChartSection() {
           variant="outline"
           size="sm"
           aria-expanded={!levelsPolygonHidden}
-          onClick={() => setLevelsPolygonHidden(!levelsPolygonHidden)}
+          onClick={toggleLevelsPolygonHidden}
         >
           {levelsPolygonHidden ? "Show chart" : "Hide chart"}
         </Button>
