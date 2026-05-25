@@ -1,0 +1,126 @@
+name: Create production tag and release
+
+on:
+  push:
+    branches: [ master ]
+
+permissions:
+  contents: write
+  issues: read
+  pull-requests: read
+
+jobs:
+  main_push_create-tag-release:
+    name: Create tag, release, changelog
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+        fetch-tags: true
+
+    - name: Identify tag suffix from merge source branch
+      id: verify_merge_source_branch
+      run: |
+        # Merge commit message is like: "Merge pull request #123 from owner/release/sprint-22" or "... from owner/hotfix/some-fixes"
+        MSG=$(git log -1 --pretty=%B HEAD)
+        if echo "$MSG" | grep -qE 'Merge pull request.*from .*release/sprint-[0-9]+'; then
+          SPRINT=$(echo "$MSG" | grep -oE 'release/sprint-[0-9]+' | head -1 | sed 's/release\/sprint-//')
+          echo "tag_suffix=sprint$SPRINT" >> $GITHUB_OUTPUT
+          echo "release_label=Sprint $SPRINT" >> $GITHUB_OUTPUT
+          echo "Sprint number: $SPRINT → tag suffix: sprint$SPRINT"
+        elif echo "$MSG" | grep -qE 'Merge pull request.*from .*hotfix/'; then
+          echo "tag_suffix=hotfix" >> $GITHUB_OUTPUT
+          echo "release_label=Hotfix" >> $GITHUB_OUTPUT
+          echo "Hotfix branch → tag suffix: hotfix"
+        elif echo "$MSG" | grep -qE 'Merge pull request.*from .*chore/'; then
+          echo "tag_suffix=chore" >> $GITHUB_OUTPUT
+          echo "release_label=Chore" >> $GITHUB_OUTPUT
+          echo "Chore branch → tag suffix: chore"
+        else
+          echo "::error::Push to master must come from a PR merged from release/sprint-xx, hotfix/*, or chore/*. Use 'Create a merge commit' when merging (squash merge does not include branch name)."
+          exit 1
+        fi
+
+    - name: Check if version was incremented
+      id: verify_semver_increment
+      run: |
+        CURRENT=$(node -p "JSON.parse(require('fs').readFileSync('package.json','utf8')).version")
+        echo "VERSION=$CURRENT" >> $GITHUB_OUTPUT
+        # Compare with tip of master *before* this push (works for 1, 2, or N commits)
+        git show ${{ github.event.before }}:package.json > prev_package.json 2>/dev/null || true
+        if [ -f prev_package.json ]; then
+          PREV=$(node -p "JSON.parse(require('fs').readFileSync('prev_package.json','utf8')).version")
+        else
+          PREV=""
+        fi
+        if [ "$CURRENT" != "$PREV" ]; then
+          echo "changed=true" >> $GITHUB_OUTPUT
+          echo "Version incremented: $PREV → $CURRENT"
+        else
+          echo "changed=false" >> $GITHUB_OUTPUT
+          echo "Version unchanged: $CURRENT (skipping tag and release)"
+        fi
+
+    - name: Resolve previous release tag
+      if: steps.verify_semver_increment.outputs.changed == 'true'
+      id: prev_tag
+      run: |
+        if PREV=$(git describe --tags --abbrev=0 HEAD 2>/dev/null); then
+          echo "prev_tag=$PREV" >> "$GITHUB_OUTPUT"
+          echo "Previous tag (baseline for changelog): $PREV"
+        else
+          echo "prev_tag=" >> "$GITHUB_OUTPUT"
+          echo "No prior tag on this branch (first release baseline empty)"
+        fi
+
+    - name: Create and push tag
+      if: steps.verify_semver_increment.outputs.changed == 'true'
+      id: create_tag
+      run: |
+        VERSION="${{ steps.verify_semver_increment.outputs.VERSION }}"
+        SUFFIX="${{ steps.verify_merge_source_branch.outputs.tag_suffix }}"
+        LABEL="${{ steps.verify_merge_source_branch.outputs.release_label }}"
+        if [ -n "$SUFFIX" ]; then
+          TAG="v${VERSION}-${SUFFIX}"
+          RELEASE_NAME="v${VERSION} - ${LABEL}"
+        else
+          TAG="v${VERSION}"
+          RELEASE_NAME="v${VERSION}"
+        fi
+        echo "full_tag=$TAG" >> $GITHUB_OUTPUT
+        echo "release_name=$RELEASE_NAME" >> $GITHUB_OUTPUT
+        echo "Tag: $TAG | Release name: $RELEASE_NAME"
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git tag -f "$TAG"
+        git push origin "$TAG" --force
+        echo "Pushed tag $TAG to origin"
+
+    - name: Build release changelog
+      if: steps.verify_semver_increment.outputs.changed == 'true'
+      env:
+        NEW_TAG: ${{ steps.create_tag.outputs.full_tag }}
+        CHANGELOG_DESCRIPTION_SOURCE: auto
+        CHANGELOG_COMMENT_MARKER: "changelog:"
+        CONTRIBUTOR_PLACEHOLDER: "@contributor"
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        # If the new release tag points at HEAD, plain `git describe` is that tag and `git log PREV..HEAD` is empty.
+        if PREV=$(git describe --tags --abbrev=0 --exclude="$NEW_TAG" HEAD 2>/dev/null); then
+          export PREV_TAG="$PREV"
+        else
+          export PREV_TAG="${{ steps.prev_tag.outputs.prev_tag }}"
+        fi
+        echo "Changelog: PREV_TAG=${PREV_TAG:-<empty>} NEW_TAG=$NEW_TAG"
+        python3 .github/scripts/build-release-changelog.py
+
+    - name: Create GitHub Release
+      if: steps.verify_semver_increment.outputs.changed == 'true'
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ steps.create_tag.outputs.full_tag }}
+        name: ${{ steps.create_tag.outputs.release_name }}
+        body_path: release-notes.md
+        generate_release_notes: false
+        draft: false

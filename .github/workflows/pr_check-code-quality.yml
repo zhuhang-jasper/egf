@@ -1,0 +1,59 @@
+name: PR check code quality
+
+on:
+  pull_request:
+    branches: [ next, "release/**", "hotfix/**", "chore/**" ]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  detect-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      lint: ${{ steps.filter.outputs.lint }}
+      imports: ${{ steps.filter.outputs.imports }}
+    steps:
+    - uses: dorny/paths-filter@v4
+      id: filter
+      with:
+        filters: |
+          lint:
+            - '**/*.cjs'
+            - '**/*.js'
+            - '**/*.jsx'
+            - '**/*.ts'
+            - '**/*.tsx'
+            - '**/*.css'
+            - '**/*.scss'
+            - 'src/**/*.json'
+            - '**/*.html'
+          imports:
+            - '**/*.cjs'
+            - '**/*.js'
+            - '**/*.jsx'
+            - '**/*.ts'
+            - '**/*.tsx'
+
+  lint-and-format:
+    name: Oxlint, Oxfmt, Custom lints
+    needs: detect-changes
+    if: needs.detect-changes.outputs.lint == 'true'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - uses: ./.github/actions/setup-node
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Oxlint (check only)
+      run: npm run lint:check
+
+    - name: Oxfmt (check only)
+      run: npm run format:check

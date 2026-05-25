@@ -1,0 +1,107 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["eslint", "oxc", "import", "react", "jsx-a11y"],
+  "jsPlugins": ["eslint-plugin-simple-import-sort"],
+  "env": {
+    "browser": true,
+    "es2022": true
+  },
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "pedantic": "off",
+    "style": "warn",
+    "restriction": "off"
+  },
+  "settings": {
+    "react": {
+      "version": "19.1.0"
+    }
+  },
+  "rules": {
+    "eslint/capitalized-comments": "off",
+    "eslint/func-style": "off",
+    "eslint/id-length": "off",
+    "eslint/max-statements": "off",
+    "eslint/no-magic-numbers": "off",
+    "eslint/no-ternary": "off",
+    "eslint/no-unused-vars": "warn",
+    "eslint/no-useless-catch": "warn",
+    "eslint/sort-imports": "off",
+    "eslint/sort-keys": "off",
+    "import/exports-last": "off",
+    "import/first": "error",
+    "import/group-exports": "off",
+    "import/no-duplicates": "error",
+    "import/no-named-as-default-member": "off",
+    "import/no-named-export": "off",
+    "import/no-unassigned-import": "off",
+    "import/prefer-default-export": "off",
+    "jsx-a11y/alt-text": "warn",
+    "react/display-name": "off",
+    "react/exhaustive-deps": "warn",
+    "react/jsx-max-depth": "off",
+    "react/jsx-props-no-spreading": "off",
+    "react/no-unescaped-entities": "off",
+    "react/only-export-components": [
+      "error",
+      {
+        "allowConstantExport": false
+      }
+    ],
+    "react/react-in-jsx-scope": "off",
+    "simple-import-sort/exports": "off",
+    "simple-import-sort/imports": [
+      "error",
+      {
+        "groups": [
+          ["^vite([\\w-]*|$)", "^@vitejs(/.*|$)", "^vitest(/.*|$)"],
+          ["^react", "^react-dom"],
+          [
+            "^@radix-ui(/.*|$)",
+            "^chart\\.js(/.*|$)",
+            "^html2canvas(/.*|$)",
+            "^lucide-react(/.*|$)",
+            "^zustand(/.*|$)",
+            "^tailwind-merge(/.*|$)",
+            "^clsx(/.*|$)",
+            "^class-variance-authority(/.*|$)"
+          ],
+          ["^node:", "^@?\\w"],
+          ["^@/components(?!.*\\.(json|css|scss)$)(/.*|$)"],
+          ["^@/hooks(?!.*\\.(json|css|scss)$)(/.*|$)"],
+          ["^@/lib(?!.*\\.(json|css|scss)$)(/.*|$)"],
+          ["^@/store(?!.*\\.(json|css|scss)$)(/.*|$)"],
+          ["^@/(?!.*\\.(json|css|scss)$)"],
+          ["^\\.\\.(?!/?$)(?!.*\\.(json|css|scss)$)", "^\\.\\./?(?!.*\\.(json|css|scss)$)"],
+          ["^\\./(?=.*/)(?!/?$)(?!.*\\.(json|css|scss)$)", "^\\.(?!/?$)(?!.*\\.(json|css|scss)$)", "^\\./?(?!.*\\.(json|css|scss)$)"],
+          ["^\\u0000"],
+          ["^.+\\.json$"],
+          ["^.+\\.(css|scss)$"]
+        ]
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["scripts/**/*.js", "**/*.config.js", "vite.config.js", "vite.chunksplit.js", "vite-plugins/**/*.js"],
+      "env": { "node": true },
+      "rules": {
+        "eslint/init-declarations": "off",
+        "import/no-nodejs-modules": "off",
+        "eslint/max-params": "off",
+        "eslint/no-continue": "off"
+      }
+    },
+    {
+      "files": ["src/**/*.jsx"],
+      "rules": {
+        "import/exports-last": "error",
+        "import/group-exports": "error",
+        "import/no-anonymous-default-export": "error",
+        "simple-import-sort/exports": "error"
+      }
+    }
+  ],
+  "ignorePatterns": ["dist/**", "legacy/**", "node_modules/**"]
+}

@@ -1,0 +1,22 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "endOfLine": "lf",
+  "insertFinalNewline": true,
+  "jsxSingleQuote": false,
+  "printWidth": 150,
+  "quoteProps": "consistent",
+  "semi": true,
+  "singleQuote": false,
+  "tabWidth": 2,
+  "trailingComma": "all",
+  "useTabs": false,
+  "overrides": [
+    {
+      "files": ["**/*.json", "**/*.jsonc"],
+      "options": {
+        "trailingComma": "none"
+      }
+    }
+  ],
+  "ignorePatterns": ["**/package-lock.json", "package.json", "**/*.yml", "**/*.yaml", "dist/**", "legacy/**"]
+}
