@@ -9,6 +9,8 @@ import { AI_FEATURE_ENABLED } from "@/lib/flags";
 
 import { useAppStore } from "@/store/useAppStore";
 
+import heptagonImage from "@/assets/7-pillar-heptagon-v1.png";
+
 Chart.register(RadarController, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
 
 function buildHumanDataset(label, data) {
@@ -73,7 +75,7 @@ export function CompetencyChart({ canvasRef, onChartReady, onResize }) {
     if (!canvas || chartRef.current) {return;}
 
     const heptagonImg = new Image();
-    heptagonImg.src = FE_UI.heptagon.src;
+    heptagonImg.src = heptagonImage;
     heptagonRef.current = heptagonImg;
 
     const plugins = [createHeptagonBackgroundPlugin(heptagonImg)];
@@ -84,7 +86,10 @@ export function CompetencyChart({ canvasRef, onChartReady, onResize }) {
       type: "radar",
       data: {
         labels: CHART_LABELS,
-        datasets: [buildHumanDataset(String(title).trim(), [...levels]), ...(AI_FEATURE_ENABLED ? [buildAiDataset([...aiLevels])] : [])],
+        datasets: [
+          buildHumanDataset(" ", new Array(7).fill(0)),
+          ...(AI_FEATURE_ENABLED ? [buildAiDataset(new Array(7).fill(0))] : []),
+        ],
       },
       options: {
         responsive: true,

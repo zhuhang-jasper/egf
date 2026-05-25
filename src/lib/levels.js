@@ -3,15 +3,13 @@ import { DEFAULT_STATE, LEVEL_STEP } from "@/lib/constants";
 export function clampLevel(v) {
   const step = LEVEL_STEP;
   const inv = 1 / step;
-  let n;
-  if (typeof v === "number" && Number.isFinite(v)) {
-    n = v;
-  } else {
+  const n = (() => {
+    if (typeof v === "number" && Number.isFinite(v)) {return v;}
     let raw = String(v).trim().replace(",", ".");
-    if (raw === "" || raw === "-") {return 0;}
+    if (raw === "" || raw === "-") {return Number.NaN;}
     if (/^\.(?=\d)/.test(raw)) {raw = `0${raw}`;}
-    n = parseFloat(raw);
-  }
+    return parseFloat(raw);
+  })();
   if (!Number.isFinite(n)) {return 0;}
   const c = Math.max(0, Math.min(5, n));
   return Math.round(c * inv) / inv;
@@ -42,12 +40,10 @@ export function normalizeSavedState(parsed) {
   const {levels} = parsed;
   if (!Array.isArray(levels) || levels.length !== 7) {return null;}
   const levelsMapped = levels.map((v) => clampLevel(v));
-  let aiLevels;
-  if (Array.isArray(parsed.aiLevels) && parsed.aiLevels.length === 7) {
-    aiLevels = normalizeAiLevels(parsed.aiLevels);
-  } else {
-    aiLevels = normalizeAiLevels([levelsMapped[0], levelsMapped[1], levelsMapped[2], 0, 0, 0, 0]);
-  }
+  const aiLevels =
+    Array.isArray(parsed.aiLevels) && parsed.aiLevels.length === 7
+      ? normalizeAiLevels(parsed.aiLevels)
+      : normalizeAiLevels([levelsMapped[0], levelsMapped[1], levelsMapped[2], 0, 0, 0, 0]);
   return { title: parsed.title, levels: levelsMapped, aiLevels };
 }
 

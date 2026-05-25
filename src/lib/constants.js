@@ -84,7 +84,6 @@ export const FE_UI = {
     pointLabelRefWidthPx: 380,
   },
   heptagon: {
-    src: "/7-pillar-heptagon-v1.png",
     bgSize: 0.985,
     rotationAdjust: 0,
     nudgeFracX: 0,
