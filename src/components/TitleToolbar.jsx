@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { X } from "lucide-react";
+import { RotateCcw, Save, X } from "lucide-react";
 
 import { ProfilePicker } from "@/components/ProfilePicker";
 import { Button } from "@/components/ui/button";
@@ -54,19 +54,20 @@ export function TitleToolbar() {
           <X className="h-4 w-4" />
         </button>
       </div>
-      <Button type="button" variant="outline" size="sm" onClick={() => saveProfile()}>
-        {saveLabel}
+      <Button type="button" variant="outline" size="icon" onClick={() => saveProfile()} aria-label={saveLabel} title={saveLabel}>
+        <Save className="h-4 w-4" />
       </Button>
       <ProfilePicker />
       <Button
         type="button"
         variant="outline"
-        size="sm"
+        size="icon"
         className="ml-auto"
         onClick={resetLevels}
+        aria-label={AI_FEATURE_ENABLED ? "Reset pillars and AI scores to default values" : "Reset pillars to default values"}
         title={AI_FEATURE_ENABLED ? "Reset pillars and AI scores to default values" : "Reset pillars to default values"}
       >
-        Reset
+        <RotateCcw className="h-4 w-4" />
       </Button>
     </div>
   );
