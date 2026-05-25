@@ -1,17 +1,61 @@
-import { SHOW_FOOTER_AVERAGES } from "@/lib/flags";
+import { AI_AUGMENTATION_ENABLED, AI_PILLAR_ENABLED, SHOW_FOOTER_AVERAGES } from "@/lib/flags";
 
 export const STORAGE_KEY = "fe-growth-framework:v1";
 export const PROFILES_STORAGE_KEY = "fe-growth-framework:profiles:v1";
 export const LEVEL_STEP = 0.5;
 export const HUMAN_STRENGTH_TOP_K = 3;
 
-export const DEFAULT_STATE = {
-  title: "Engineer Growth Framework",
-  levels: [3, 3, 3, 3, 3, 3, 3],
-  aiLevels: [2, 2, 2, 0, 0, 0, 0],
+/** Chart order when the dedicated AI pillar is included (`?ai=2`). */
+export const PILLAR_ORDER_WITH_AI = ["coding", "architecture", "ai", "process", "ownership", "communication", "productSense", "uiUx"];
+
+/** Default 7-pillar order (no dedicated AI pillar; used for default and `?ai=1`). */
+export const PILLAR_ORDER_BASE = ["coding", "architecture", "process", "ownership", "communication", "productSense", "uiUx"];
+
+export const FULL_PILLAR_COUNT = PILLAR_ORDER_WITH_AI.length;
+export const BASE_PILLAR_COUNT = PILLAR_ORDER_BASE.length;
+
+/** Index of the 🤖 AI pillar when {@link PILLAR_ORDER_WITH_AI} is active. */
+export const AI_PILLAR_CHART_INDEX = PILLAR_ORDER_WITH_AI.indexOf("ai");
+
+/** Canonical pillar definitions (names and metadata). Chart order is {@link PILLAR_ORDER}. */
+export const PILLARS = {
+  coding: { label: "🤲 Coding", hasAi: true },
+  architecture: { label: "🧠 Architecture", hasAi: true },
+  ai: { label: "🤖 AI" },
+  process: { label: "🦴 Process", hasAi: true },
+  ownership: { label: "✨ Ownership" },
+  communication: { label: "🗣️ Communication" },
+  productSense: { label: "💡 Product Sense" },
+  uiUx: { label: "👀 UI/UX" },
 };
 
-export const CHART_LABELS = ["🤲 Coding", "🧠 Architecture", "🦴 Process", "✨ Ownership", "🗣️ Communication", "💡 Product Sense", "👀 UI/UX"];
+export const PILLAR_ORDER = AI_PILLAR_ENABLED ? PILLAR_ORDER_WITH_AI : PILLAR_ORDER_BASE;
+
+export const CHART_LABELS = PILLAR_ORDER.map((id) => PILLARS[id].label);
+
+export const PILLAR_COUNT = PILLAR_ORDER.length;
+
+function buildDefaultState() {
+  const levels = new Array(PILLAR_COUNT).fill(3);
+  const aiLevels = new Array(PILLAR_COUNT).fill(0);
+  if (AI_AUGMENTATION_ENABLED) {
+    PILLAR_ORDER.forEach((id, index) => {
+      if (PILLARS[id].hasAi) {
+        aiLevels[index] = 2;
+      }
+    });
+  }
+  return {
+    title: "Engineer Growth Framework",
+    levels,
+    aiLevels,
+  };
+}
+
+export const DEFAULT_STATE = buildDefaultState();
+
+/** Bumped when pillar order changes; used to migrate saved profiles. */
+export const PILLAR_SCHEMA = 2;
 
 export const CLUSTERS = {
   technical: { label: "Technical", color: "#cdbdd8" },
@@ -19,34 +63,56 @@ export const CLUSTERS = {
   behavioural: { label: "Behavioural", color: "#bddbb5" },
 };
 
-/** Form pillar definitions (index matches chart label order). */
-export const PILLAR_GROUPS = [
+const PILLAR_GROUP_ORDER = [
   {
     id: "technical",
-    title: "Technical",
-    pillars: [
-      { index: 0, label: "🤲 Coding", hasAi: true },
-      { index: 1, label: "🧠 Architecture", hasAi: true },
-      { index: 2, label: "🦴 Process", hasAi: true },
-    ],
+    pillars: AI_PILLAR_ENABLED ? ["coding", "architecture", "ai", "process"] : ["coding", "architecture", "process"],
   },
-  {
-    id: "product",
-    title: "Product",
-    pillars: [
-      { index: 6, label: "👀 UI/UX" },
-      { index: 5, label: "💡 Product Sense" },
-    ],
-  },
-  {
-    id: "behavioural",
-    title: "Behavioural",
-    pillars: [
-      { index: 4, label: "🗣️ Communication" },
-      { index: 3, label: "✨ Ownership" },
-    ],
-  },
+  { id: "product", pillars: ["uiUx", "productSense"] },
+  { id: "behavioural", pillars: ["communication", "ownership"] },
 ];
+
+function buildPillarRef(pillarId) {
+  const meta = PILLARS[pillarId];
+  return {
+    id: pillarId,
+    index: PILLAR_ORDER.indexOf(pillarId),
+    label: meta.label,
+    ...(meta.hasAi && AI_AUGMENTATION_ENABLED ? { hasAi: true } : {}),
+  };
+}
+
+/** Form pillar definitions (index matches chart label order). */
+export const PILLAR_GROUPS = PILLAR_GROUP_ORDER.map(({ id, pillars }) => ({
+  id,
+  title: CLUSTERS[id].label,
+  pillars: pillars.map(buildPillarRef),
+}));
+
+export function getPillarIdByIndex(index) {
+  return PILLAR_ORDER[index] ?? null;
+}
+
+export function getPillarLabelByIndex(index) {
+  const id = getPillarIdByIndex(index);
+  return id ? PILLARS[id].label : "";
+}
+
+export function getAiPillarIndices() {
+  if (!AI_AUGMENTATION_ENABLED) {
+    return [];
+  }
+  return PILLAR_ORDER.reduce((indices, id, index) => {
+    if (PILLARS[id].hasAi) {
+      indices.push(index);
+    }
+    return indices;
+  }, []);
+}
+
+export function isAiPillarIndex(index) {
+  return AI_AUGMENTATION_ENABLED && getAiPillarIndices().includes(index);
+}
 
 export const FE_UI = {
   page: { maxWidthPx: 650, minWidthPx: 350 },
@@ -62,7 +128,7 @@ export const FE_UI = {
     radarCenterFix: true,
     radarLabelReservedPx: 62,
     pointLabelPadding: 5,
-    pointLabelPx: 12,
+    pointLabelPx: 11,
     pointLabelScaleWithChart: true,
     pointLabelWeight: "bold",
     pointLabelColor: "#333",
@@ -75,6 +141,8 @@ export const FE_UI = {
     exportImageCssScale: 8,
     exportImageCssScaleMax: 12,
     showFooterAverages: SHOW_FOOTER_AVERAGES,
+    clusterBorderColor: "rgba(0, 0, 0, 0.22)",
+    clusterBorderWidth: 1,
   },
   chartFonts: {
     tickMinPx: 8,
@@ -82,12 +150,6 @@ export const FE_UI = {
     pointLabelMinPx: 9,
     pointLabelMaxPx: 18,
     pointLabelRefWidthPx: 380,
-  },
-  heptagon: {
-    bgSize: 0.985,
-    rotationAdjust: 0,
-    nudgeFracX: 0,
-    nudgeFracY: -0.01,
   },
   dataset: {
     fill: "rgba(56, 56, 56, 0.58)",

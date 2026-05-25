@@ -1,15 +1,14 @@
 import { useEffect, useRef } from "react";
 
-import { Chart, Filler, Legend,LineElement, PointElement, RadarController, RadialLinearScale, Tooltip } from "chart.js";
+import { Chart, Filler, Legend, LineElement, PointElement, RadarController, RadialLinearScale, Tooltip } from "chart.js";
 
-import { createHeptagonBackgroundPlugin, createTechnicalAsteriskPlugin } from "@/lib/chart/plugins";
+import { syncLevelDatasetsVisibility } from "@/lib/chart/dataset-visibility";
+import { createClusterBackgroundPlugin, createTechnicalAsteriskPlugin } from "@/lib/chart/plugins";
 import { applyRadarCenterFit, syncFontsForChart } from "@/lib/chart/radar-center";
-import { CHART_LABELS, FE_UI } from "@/lib/constants";
-import { AI_FEATURE_ENABLED } from "@/lib/flags";
+import { CHART_LABELS, FE_UI, PILLAR_COUNT } from "@/lib/constants";
+import { AI_AUGMENTATION_ENABLED } from "@/lib/flags";
 
 import { useAppStore } from "@/store/useAppStore";
-
-import heptagonImage from "@/assets/7-pillar-heptagon-v1.png";
 
 Chart.register(RadarController, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
 
@@ -54,7 +53,9 @@ function buildAiDataset(data) {
 }
 
 function writeDatasetInPlace(ds, values) {
-  if (!ds) {return;}
+  if (!ds) {
+    return;
+  }
   const d = ds.data;
   for (let k = 0; k < values.length; k++) {
     d[k] = values[k];
@@ -64,7 +65,6 @@ function writeDatasetInPlace(ds, values) {
 
 export function CompetencyChart({ canvasRef, onChartReady, onResize }) {
   const chartRef = useRef(null);
-  const heptagonRef = useRef(null);
   const levels = useAppStore((s) => s.levels);
   const aiLevels = useAppStore((s) => s.aiLevels);
   const title = useAppStore((s) => s.title);
@@ -72,14 +72,14 @@ export function CompetencyChart({ canvasRef, onChartReady, onResize }) {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || chartRef.current) {return;}
+    if (!canvas || chartRef.current) {
+      return;
+    }
 
-    const heptagonImg = new Image();
-    heptagonImg.src = heptagonImage;
-    heptagonRef.current = heptagonImg;
-
-    const plugins = [createHeptagonBackgroundPlugin(heptagonImg)];
-    if (AI_FEATURE_ENABLED) {plugins.push(createTechnicalAsteriskPlugin());}
+    const plugins = [createClusterBackgroundPlugin()];
+    if (AI_AUGMENTATION_ENABLED) {
+      plugins.push(createTechnicalAsteriskPlugin());
+    }
 
     let cancelled = false;
 
@@ -89,8 +89,8 @@ export function CompetencyChart({ canvasRef, onChartReady, onResize }) {
       data: {
         labels: CHART_LABELS,
         datasets: [
-          buildHumanDataset(" ", new Array(7).fill(0)),
-          ...(AI_FEATURE_ENABLED ? [buildAiDataset(new Array(7).fill(0))] : []),
+          buildHumanDataset(" ", new Array(PILLAR_COUNT).fill(0)),
+          ...(AI_AUGMENTATION_ENABLED ? [buildAiDataset(new Array(PILLAR_COUNT).fill(0))] : []),
         ],
       },
       options: {
@@ -118,9 +118,13 @@ export function CompetencyChart({ canvasRef, onChartReady, onResize }) {
               },
               backdropColor: ch.tickBackdropColor,
               callback(value) {
-                if (value === 0) {return "0";}
-                if (value === 6) {return "";}
-                return `L${  value}`;
+                if (value === 0) {
+                  return "0";
+                }
+                if (value === 6) {
+                  return "";
+                }
+                return `L${value}`;
               },
               font: { size: ch.tickInitialPx },
               z: 0,
@@ -143,23 +147,14 @@ export function CompetencyChart({ canvasRef, onChartReady, onResize }) {
     chartRef.current = chart;
     onChartReady?.(chart);
 
-    const onLoad = () => {
-      if (cancelled || chartRef.current !== chart) {return;}
-      chart.update();
-      requestAnimationFrame(() => {
-        if (!cancelled && chartRef.current === chart) {syncFontsForChart(chart);}
-      });
-    };
-    if (heptagonImg.complete) {onLoad();}
-    else {heptagonImg.addEventListener("load", onLoad);}
-
     requestAnimationFrame(() => {
-      if (!cancelled && chartRef.current === chart) {syncFontsForChart(chart);}
+      if (!cancelled && chartRef.current === chart) {
+        syncFontsForChart(chart);
+      }
     });
 
     return () => {
       cancelled = true;
-      heptagonImg.removeEventListener("load", onLoad);
       chart.destroy();
       chartRef.current = null;
     };
@@ -167,19 +162,28 @@ export function CompetencyChart({ canvasRef, onChartReady, onResize }) {
 
   useEffect(() => {
     const chart = chartRef.current;
-    if (!chart) {return;}
+    if (!chart) {
+      return;
+    }
 
-    const n = chart.data.labels.length;
-    const humanData = levelsPolygonHidden ? new Array(n).fill(null) : [...levels];
-    const aiData = levelsPolygonHidden ? new Array(n).fill(null) : [...aiLevels];
-
-    writeDatasetInPlace(chart.data.datasets[0], humanData);
+    writeDatasetInPlace(chart.data.datasets[0], levels);
     chart.data.datasets[0].label = String(title).trim() || " ";
     if (chart.data.datasets[1]) {
-      writeDatasetInPlace(chart.data.datasets[1], aiData);
+      writeDatasetInPlace(chart.data.datasets[1], aiLevels);
     }
-    chart.update();
-  }, [levels, aiLevels, title, levelsPolygonHidden]);
+    chart.update("none");
+  }, [levels, aiLevels, title]);
+
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart) {
+      return;
+    }
+    if (!syncLevelDatasetsVisibility(chart, levelsPolygonHidden)) {
+      return;
+    }
+    chart.update("none");
+  }, [levelsPolygonHidden]);
 
   return null;
 }

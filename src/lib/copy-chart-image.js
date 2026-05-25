@@ -5,15 +5,21 @@ const UNSUPPORTED_COLOR_RE = /(?:oklch|oklab|lab\(|lch\(|color\()/i;
 
 function sanitizeColorForHtml2Canvas(value) {
   const trimmed = String(value ?? "").trim();
-  if (!trimmed || trimmed === "transparent") {return trimmed;}
-  if (!UNSUPPORTED_COLOR_RE.test(trimmed)) {return trimmed;}
+  if (!trimmed || trimmed === "transparent") {
+    return trimmed;
+  }
+  if (!UNSUPPORTED_COLOR_RE.test(trimmed)) {
+    return trimmed;
+  }
 
   try {
     const probe = document.createElement("canvas");
     probe.width = 1;
     probe.height = 1;
     const ctx = probe.getContext("2d");
-    if (!ctx) {return "#000000";}
+    if (!ctx) {
+      return "#000000";
+    }
     ctx.fillStyle = "#000000";
     ctx.fillStyle = trimmed;
     return ctx.fillStyle;
@@ -59,8 +65,12 @@ function drawRoundedRect(ctx, x, y, w, h, radius, fill, stroke, lineWidth) {
 
 function isVisuallyHidden(el) {
   const cs = window.getComputedStyle(el);
-  if (cs.display === "none" || cs.visibility === "hidden") {return true;}
-  if (el.classList.contains("sr-only")) {return true;}
+  if (cs.display === "none" || cs.visibility === "hidden") {
+    return true;
+  }
+  if (el.classList.contains("sr-only")) {
+    return true;
+  }
   const w = Number.parseFloat(cs.width);
   const h = Number.parseFloat(cs.height);
   return cs.position === "absolute" && w <= 1 && h <= 1;
@@ -92,7 +102,9 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY) {
   const averagesGrid = exportRoot.querySelector("[aria-label]");
   if (averagesGrid) {
     for (const card of averagesGrid.children) {
-      if (!(card instanceof HTMLElement)) {continue;}
+      if (!(card instanceof HTMLElement)) {
+        continue;
+      }
       const cs = window.getComputedStyle(card);
       const { x, y, w, h } = getRelativeRect(card, rootRect, scaleX, scaleY);
       const radius = (Number.parseFloat(cs.borderTopLeftRadius) || 8) * scaleX;
@@ -111,7 +123,9 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY) {
 
       for (const span of card.querySelectorAll("span")) {
         const text = span.textContent?.trim();
-        if (!text) {continue;}
+        if (!text) {
+          continue;
+        }
         const scs = window.getComputedStyle(span);
         const sr = getRelativeRect(span, rootRect, scaleX, scaleY);
         ctx.fillStyle = sanitizeColorForHtml2Canvas(scs.color);
@@ -135,7 +149,9 @@ function getChartExportableCaptureHeight(el) {
 }
 
 export async function copyChartAsImageToClipboard({ exportRoot, canvas, chart, titleText }) {
-  if (!exportRoot || !canvas || !chart) {return { ok: false, method: null };}
+  if (!exportRoot || !canvas || !chart) {
+    return { ok: false, method: null };
+  }
 
   const cssW = Math.max(1, Math.round(exportRoot.getBoundingClientRect().width));
   const cssH = Math.max(1, getChartExportableCaptureHeight(exportRoot));
@@ -155,7 +171,9 @@ export async function copyChartAsImageToClipboard({ exportRoot, canvas, chart, t
     chart.update("none");
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-    if (canvas.width < 2 || canvas.height < 2) {return { ok: false, method: null };}
+    if (canvas.width < 2 || canvas.height < 2) {
+      return { ok: false, method: null };
+    }
 
     const out = document.createElement("canvas");
     out.width = exportW;
@@ -200,8 +218,11 @@ export async function copyChartAsImageToClipboard({ exportRoot, canvas, chart, t
     URL.revokeObjectURL(url);
     return { ok: true, method: "download" };
   } finally {
-    if (hadDpr) {chart.options.devicePixelRatio = prevDpr;}
-    else {delete chart.options.devicePixelRatio;}
+    if (hadDpr) {
+      chart.options.devicePixelRatio = prevDpr;
+    } else {
+      delete chart.options.devicePixelRatio;
+    }
     chart.resize();
     chart.update("none");
     requestAnimationFrame(() => syncFontsForChart(chart));

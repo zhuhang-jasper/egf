@@ -5,7 +5,9 @@ import { FE_UI } from "@/lib/constants";
 export function useChartFrameMargins(frameRef, legendRef) {
   const sync = useCallback(() => {
     const frame = frameRef.current;
-    if (!frame) {return;}
+    if (!frame) {
+      return;
+    }
 
     const p = FE_UI.page;
     const cf = FE_UI.chartFrame;
@@ -36,7 +38,9 @@ export function useChartFrameMargins(frameRef, legendRef) {
   useEffect(() => {
     sync();
     const ro = new ResizeObserver(() => sync());
-    if (frameRef.current) {ro.observe(frameRef.current);}
+    if (frameRef.current) {
+      ro.observe(frameRef.current);
+    }
     window.addEventListener("resize", sync);
     return () => {
       ro.disconnect();

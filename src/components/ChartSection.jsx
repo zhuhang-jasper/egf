@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 
 import { useChartFrameMargins } from "@/hooks/useChartFrameMargins";
 
+import { syncLevelDatasetsVisibility } from "@/lib/chart/dataset-visibility";
 import { copyChartAsImageToClipboard } from "@/lib/copy-chart-image";
 
 import { useAppStore } from "@/store/useAppStore";
@@ -32,6 +33,15 @@ export function ChartSection() {
   const trimmedTitle = String(title).trim();
   const showHeading = trimmedTitle.length > 0;
 
+  const toggleLevelsPolygonHidden = useCallback(() => {
+    const nextHidden = !levelsPolygonHidden;
+    const chart = chartInstanceRef.current;
+    if (chart && syncLevelDatasetsVisibility(chart, nextHidden)) {
+      chart.update("none");
+    }
+    setLevelsPolygonHidden(nextHidden);
+  }, [levelsPolygonHidden, setLevelsPolygonHidden]);
+
   const handleCopy = async () => {
     try {
       const result = await copyChartAsImageToClipboard({
@@ -40,9 +50,13 @@ export function ChartSection() {
         chart: chartInstanceRef.current,
         titleText: trimmedTitle || " ",
       });
-      if (result?.method === "clipboard") {setCopyLabel("Copied!");}
-      else if (result?.method === "download") {setCopyLabel("Saved file");}
-      else {setCopyLabel("Failed");}
+      if (result?.method === "clipboard") {
+        setCopyLabel("Copied!");
+      } else if (result?.method === "download") {
+        setCopyLabel("Saved file");
+      } else {
+        setCopyLabel("Failed");
+      }
     } catch (e) {
       console.error(e);
       setCopyLabel("Failed");
@@ -56,22 +70,20 @@ export function ChartSection() {
         <Button type="button" variant="outline" size="sm" onClick={handleCopy}>
           {copyLabel}
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          aria-expanded={!levelsPolygonHidden}
-          onClick={() => setLevelsPolygonHidden(!levelsPolygonHidden)}
-        >
+        <Button type="button" variant="outline" size="sm" aria-expanded={!levelsPolygonHidden} onClick={toggleLevelsPolygonHidden}>
           {levelsPolygonHidden ? "Show chart" : "Hide chart"}
         </Button>
       </div>
 
       <div ref={exportRef} className="flex w-full min-w-0 flex-col self-stretch">
         {showHeading ? (
-          <h2 id="competency-chart-heading" className="relative z-[1] mb-2 w-full text-center text-xl font-semibold text-[#222]">{title}</h2>
+          <h2 id="competency-chart-heading" className="relative z-[1] mb-2 w-full text-center text-xl font-semibold text-[#222]">
+            {title}
+          </h2>
         ) : (
-          <h2 id="competency-chart-heading" className="sr-only">Chart</h2>
+          <h2 id="competency-chart-heading" className="sr-only">
+            Chart
+          </h2>
         )}
 
         <div ref={legendRef} className="pointer-events-none mb-0 max-w-full self-start pl-2 leading-none" aria-hidden>
