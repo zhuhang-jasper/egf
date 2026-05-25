@@ -1,9 +1,11 @@
-import { CLUSTERS, FE_UI, PILLAR_GROUPS } from "@/lib/constants";
+import { CLUSTERS, FE_UI, getAiPillarIndices, PILLAR_GROUPS } from "@/lib/constants";
 
 /** Clockwise arc order for a cluster's pillar indices on the radar (handles wrap-around). */
 function sortClusterArc(indices, total) {
   const sorted = [...new Set(indices)].filter((i) => i >= 0 && i < total).sort((a, b) => a - b);
-  if (sorted.length <= 1) {return sorted;}
+  if (sorted.length <= 1) {
+    return sorted;
+  }
 
   let maxGap = -1;
   let gapAfter = -1;
@@ -32,7 +34,9 @@ function getOuterEdgeMidpoint(scale, fromIndex, toIndex, value) {
 }
 
 function drawClusterWedge(ctx, scale, indices, color, total) {
-  if (indices.length === 0) {return;}
+  if (indices.length === 0) {
+    return;
+  }
   const { xCenter: cx, yCenter: cy, max } = scale;
   const [first] = indices;
   const last = indices.at(-1);
@@ -61,8 +65,11 @@ function drawRadarPolygonBorder(ctx, scale, count) {
   ctx.beginPath();
   for (let i = 0; i < count; i++) {
     const pt = scale.getPointPositionForValue(i, scale.max);
-    if (i === 0) {ctx.moveTo(pt.x, pt.y);}
-    else {ctx.lineTo(pt.x, pt.y);}
+    if (i === 0) {
+      ctx.moveTo(pt.x, pt.y);
+    } else {
+      ctx.lineTo(pt.x, pt.y);
+    }
   }
   ctx.closePath();
   ctx.strokeStyle = ch.clusterBorderColor;
@@ -75,16 +82,22 @@ export function createClusterBackgroundPlugin() {
     id: "clusterBackground",
     beforeDraw(chart) {
       const scale = chart.scales.r;
-      if (!scale) {return;}
+      if (!scale) {
+        return;
+      }
 
       const count = chart.data.labels?.length ?? 0;
-      if (count < 3) {return;}
+      if (count < 3) {
+        return;
+      }
 
       const { ctx } = chart;
       ctx.save();
       for (const group of PILLAR_GROUPS) {
         const cluster = CLUSTERS[group.id];
-        if (!cluster?.color) {continue;}
+        if (!cluster?.color) {
+          continue;
+        }
         const indices = sortClusterArc(
           group.pillars.map((p) => p.index),
           count,
@@ -99,7 +112,7 @@ export function createClusterBackgroundPlugin() {
 
 const FE_TECH_ASTERISK = {
   color: FE_UI.datasetAi.stroke,
-  indices: [0, 1, 2],
+  indices: getAiPillarIndices(),
   text: "AI",
   texts: null,
   offsetXPx: 8,
@@ -116,20 +129,28 @@ export function createTechnicalAsteriskPlugin() {
     id: "technicalAsteriskPointLabels",
     afterDraw(chart) {
       const scale = chart.scales.r;
-      if (!scale || !scale._pointLabelItems || !scale._pointLabels) {return;}
-      const {ctx} = chart;
+      if (!scale || !scale._pointLabelItems || !scale._pointLabels) {
+        return;
+      }
+      const { ctx } = chart;
       const pl = scale.options.pointLabels;
       for (const i of FE_TECH_ASTERISK.indices) {
         const item = scale._pointLabelItems[i];
-        if (!item || !item.visible) {continue;}
+        if (!item || !item.visible) {
+          continue;
+        }
         const text = scale._pointLabels[i];
-        if (text == null || text === "") {continue;}
-        const {texts} = FE_TECH_ASTERISK;
+        if (text == null || text === "") {
+          continue;
+        }
+        const { texts } = FE_TECH_ASTERISK;
         const idxInList = FE_TECH_ASTERISK.indices.indexOf(i);
         let marker =
           Array.isArray(texts) && texts.length === FE_TECH_ASTERISK.indices.length && idxInList >= 0 ? texts[idxInList] : FE_TECH_ASTERISK.text;
         marker = marker != null ? String(marker) : "*";
-        if (!marker) {continue;}
+        if (!marker) {
+          continue;
+        }
         const optsAtIndex = pl.setContext(scale.getPointLabelContext(i));
         const f = optsAtIndex.font || {};
         const labelFontSize = Number(f.size) || 12;
@@ -146,9 +167,13 @@ export function createTechnicalAsteriskPlugin() {
         ctx.fillStyle = c;
         const align = item.textAlign;
         let starX = item.x;
-        if (align === "left") {starX = item.x + w + 1;}
-        else if (align === "center") {starX = item.x + w / 2 + 1;}
-        else if (align === "right") {starX = item.x + 1;}
+        if (align === "left") {
+          starX = item.x + w + 1;
+        } else if (align === "center") {
+          starX = item.x + w / 2 + 1;
+        } else if (align === "right") {
+          starX = item.x + 1;
+        }
         ctx.textAlign = "left";
         const starY = item.y + lineHeight / 2 + (Number(FE_TECH_ASTERISK.offsetYPx) || 0);
         const ox = Number(FE_TECH_ASTERISK.offsetXPx) || 0;

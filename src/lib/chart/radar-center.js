@@ -2,7 +2,9 @@ import { FE_UI } from "@/lib/constants";
 
 function radarTickBackdropHalf(scale) {
   const tickOpts = scale.options.ticks;
-  if (!tickOpts.display || !scale.options.display) {return 0;}
+  if (!tickOpts.display || !scale.options.display) {
+    return 0;
+  }
   const bp = tickOpts.backdropPadding || {};
   const padY = (Number(bp.top) || 0) + (Number(bp.bottom) || 0);
   const fs = (tickOpts.font && tickOpts.font.size) || 12;
@@ -16,20 +18,32 @@ function radarNormAngleRad(a) {
 }
 
 function radarTextAlignForDeg(angle) {
-  if (angle === 0 || angle === 180) {return "center";}
-  if (angle < 180) {return "left";}
+  if (angle === 0 || angle === 180) {
+    return "center";
+  }
+  if (angle < 180) {
+    return "left";
+  }
   return "right";
 }
 
 function radarLeftForAlign(x, w, align) {
-  if (align === "right") {return x - w;}
-  if (align === "center") {return x - w / 2;}
+  if (align === "right") {
+    return x - w;
+  }
+  if (align === "center") {
+    return x - w / 2;
+  }
   return x;
 }
 
 function radarYForDeg(y, h, angle) {
-  if (angle === 90 || angle === 270) {return y - h / 2;}
-  if (angle > 270 || angle < 90) {return y - h;}
+  if (angle === 90 || angle === 270) {
+    return y - h / 2;
+  }
+  if (angle > 270 || angle < 90) {
+    return y - h;
+  }
   return y;
 }
 
@@ -44,14 +58,16 @@ function radarMeasureLabel(ctx, fontWeight, fontSizePx, family, text) {
 function rebuildRadarPointLabelItems(scale) {
   const labels = scale._pointLabels;
   const count = labels && labels.length;
-  if (!count || !scale.ctx) {return;}
+  if (!count || !scale.ctx) {
+    return;
+  }
 
   const plOpts = scale.options.pointLabels;
   const valueCount = count;
   const addAngle = plOpts.centerPointLabels ? Math.PI / valueCount : 0;
   const extra = radarTickBackdropHalf(scale);
   const items = [];
-  const {ctx} = scale;
+  const { ctx } = scale;
 
   for (let i = 0; i < valueCount; i++) {
     const opts = plOpts.setContext(scale.getPointLabelContext(i));
@@ -59,12 +75,14 @@ function rebuildRadarPointLabelItems(scale) {
     const f = opts.font || {};
     const fSize = f.size || 12;
     const fWeight = f.weight || "normal";
-    const {family} = f;
+    const { family } = f;
     const size = radarMeasureLabel(ctx, fWeight, fSize, family, labels[i]);
     const pos = scale.getPointPosition(i, scale.drawingArea + extra + pad, addAngle);
     let angleDeg = Math.round((radarNormAngleRad(pos.angle + Math.PI / 2) * 180) / Math.PI);
     angleDeg %= 360;
-    if (angleDeg < 0) {angleDeg += 360;}
+    if (angleDeg < 0) {
+      angleDeg += 360;
+    }
     const align = radarTextAlignForDeg(angleDeg);
     const y = radarYForDeg(pos.y, size.h, angleDeg);
     const left = radarLeftForAlign(pos.x, size.w, align);
@@ -84,10 +102,14 @@ function rebuildRadarPointLabelItems(scale) {
 
 export function applyRadarCenterFit(scale) {
   const u = FE_UI.chart;
-  if (!u.radarCenterFix) {return;}
-  const {chart} = scale;
+  if (!u.radarCenterFix) {
+    return;
+  }
+  const { chart } = scale;
   const area = chart.chartArea;
-  if (!area || area.width < 2 || area.height < 2) {return;}
+  if (!area || area.width < 2 || area.height < 2) {
+    return;
+  }
 
   const cx = area.left + area.width / 2;
   const cy = area.top + area.height / 2;
@@ -104,7 +126,9 @@ export function applyRadarCenterFit(scale) {
 
 export function syncFontsForChart(chart) {
   const w = chart.width;
-  if (!w) {return;}
+  if (!w) {
+    return;
+  }
   const cf = FE_UI.chartFonts;
   const ch = FE_UI.chart;
   const tickSize = Math.max(cf.tickMinPx, Math.round(w / cf.tickWidthDivisor));
@@ -120,7 +144,9 @@ export function syncFontsForChart(chart) {
   const rScale = chart.options.scales.r;
   const tickFont = rScale.ticks.font || {};
   const plFont = rScale.pointLabels.font || {};
-  if (tickFont.size === tickSize && plFont.size === labelSize) {return;}
+  if (tickFont.size === tickSize && plFont.size === labelSize) {
+    return;
+  }
   rScale.ticks.font = { ...tickFont, size: tickSize };
   rScale.pointLabels.font = {
     ...plFont,

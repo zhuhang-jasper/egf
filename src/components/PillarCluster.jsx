@@ -1,7 +1,7 @@
 import { LevelInput } from "@/components/LevelInput";
 
 import { CLUSTERS } from "@/lib/constants";
-import { AI_FEATURE_ENABLED } from "@/lib/flags";
+import { AI_AUGMENTATION_ENABLED } from "@/lib/flags";
 
 import { useAppStore } from "@/store/useAppStore";
 
@@ -17,7 +17,7 @@ export function PillarCluster({ group }) {
       {group.pillars.map((pillar) => (
         <label key={pillar.index} className="field-row">
           <span>{pillar.label}</span>
-          {pillar.hasAi && AI_FEATURE_ENABLED ? (
+          {pillar.hasAi && AI_AUGMENTATION_ENABLED ? (
             <span className="field-row__nums">
               <LevelInput
                 value={levels[pillar.index]}

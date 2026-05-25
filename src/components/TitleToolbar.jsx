@@ -6,7 +6,7 @@ import { ProfilePicker } from "@/components/ProfilePicker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-import { AI_FEATURE_ENABLED } from "@/lib/flags";
+import { AI_AUGMENTATION_ENABLED } from "@/lib/flags";
 import { cn } from "@/lib/utils";
 
 import { useAppStore } from "@/store/useAppStore";
@@ -21,9 +21,14 @@ export function TitleToolbar() {
   const [saveLabel, setSaveLabel] = useState("Save");
 
   useEffect(() => {
-    if (!saveFeedback) {return;}
-    if (saveFeedback === "saved") {setSaveLabel("Saved");}
-    else if (saveFeedback === "add-title") {setSaveLabel("Add title");}
+    if (!saveFeedback) {
+      return;
+    }
+    if (saveFeedback === "saved") {
+      setSaveLabel("Saved");
+    } else if (saveFeedback === "add-title") {
+      setSaveLabel("Add title");
+    }
     const t = setTimeout(() => {
       setSaveLabel("Save");
       clearSaveFeedback();
@@ -36,7 +41,13 @@ export function TitleToolbar() {
   return (
     <div className="flex w-full flex-wrap items-center gap-2">
       <div className="relative min-w-0 flex-[0_1_50%] basis-[50%]">
-        <Input id="chart-title-input" value={title} placeholder="Chart title" onChange={(e) => setTitle(e.target.value)} className="pr-9 shadow-none" />
+        <Input
+          id="chart-title-input"
+          value={title}
+          placeholder="Chart title"
+          onChange={(e) => setTitle(e.target.value)}
+          className="pr-9 shadow-none"
+        />
         <button
           type="button"
           aria-label="Clear chart title"
@@ -64,8 +75,8 @@ export function TitleToolbar() {
         size="icon"
         className="ml-auto"
         onClick={resetLevels}
-        aria-label={AI_FEATURE_ENABLED ? "Reset pillars and AI scores to default values" : "Reset pillars to default values"}
-        title={AI_FEATURE_ENABLED ? "Reset pillars and AI scores to default values" : "Reset pillars to default values"}
+        aria-label={AI_AUGMENTATION_ENABLED ? "Reset pillars and AI scores to default values" : "Reset pillars to default values"}
+        title={AI_AUGMENTATION_ENABLED ? "Reset pillars and AI scores to default values" : "Reset pillars to default values"}
       >
         <RotateCcw className="h-4 w-4" />
       </Button>

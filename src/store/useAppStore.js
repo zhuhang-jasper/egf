@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-import { DEFAULT_STATE } from "@/lib/constants";
+import { DEFAULT_STATE, isAiPillarIndex, PILLAR_COUNT, PILLAR_SCHEMA } from "@/lib/constants";
 import { getDefaultChartState, newSavedProfileId, normalizeSavedState } from "@/lib/levels";
 import { loadDraftFromStorage, loadProfilesFromStorage, saveDraftToStorage, writeProfilesToStorage } from "@/lib/storage";
 
@@ -28,7 +28,7 @@ export const useAppStore = create((set, get) => ({
 
   persistDraft: () => {
     const { title, levels, aiLevels } = get();
-    saveDraftToStorage({ title, levels, aiLevels });
+    saveDraftToStorage({ title, levels, aiLevels, pillarSchema: PILLAR_SCHEMA });
   },
 
   setTitle: (title) => {
@@ -38,10 +38,15 @@ export const useAppStore = create((set, get) => ({
 
   setLevel: (index, value, { isAi = false } = {}) => {
     if (isAi) {
+      if (!isAiPillarIndex(index)) {
+        return;
+      }
       const aiLevels = [...get().aiLevels];
       aiLevels[index] = value;
-      for (let j = 3; j < 7; j++) {
-        aiLevels[j] = 0;
+      for (let j = 0; j < PILLAR_COUNT; j++) {
+        if (!isAiPillarIndex(j)) {
+          aiLevels[j] = 0;
+        }
       }
       set({ aiLevels });
     } else {
@@ -133,6 +138,7 @@ export const useAppStore = create((set, get) => ({
       title: state.title,
       levels: state.levels,
       aiLevels: state.aiLevels,
+      pillarSchema: state.pillarSchema,
       savedAt: Date.now(),
     };
     const next = replaceIdx >= 0 ? existing.map((p, i) => (i === replaceIdx ? row : p)) : [...existing, row];
