@@ -6,8 +6,6 @@ on:
 
 permissions:
   contents: write
-  issues: read
-  pull-requests: read
 
 jobs:
   main_push_create-tag-release:
@@ -77,11 +75,26 @@ jobs:
         git push origin "$TAG" --force
         echo "Pushed tag $TAG to origin"
 
+    - name: Build release notes
+      if: steps.verify_semver_increment.outputs.changed == 'true'
+      id: release_notes
+      run: |
+        TAG="${{ steps.create_tag.outputs.full_tag }}"
+        REPO="${{ github.repository }}"
+        PREV=$(git describe --tags --abbrev=0 --exclude="$TAG" HEAD 2>/dev/null || true)
+        if [ -n "$PREV" ]; then
+          BODY="**Full Changelog**: https://github.com/${REPO}/compare/${PREV}...${TAG}"
+        else
+          BODY="**Full Changelog**: https://github.com/${REPO}/releases/tag/${TAG}"
+        fi
+        echo "body=$BODY" >> $GITHUB_OUTPUT
+
     - name: Create GitHub Release
       if: steps.verify_semver_increment.outputs.changed == 'true'
       uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ steps.create_tag.outputs.full_tag }}
         name: ${{ steps.create_tag.outputs.full_tag }}
-        generate_release_notes: true
+        body: ${{ steps.release_notes.outputs.body }}
+        generate_release_notes: false
         draft: false
