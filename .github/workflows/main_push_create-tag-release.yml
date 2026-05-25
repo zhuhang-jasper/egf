@@ -2,7 +2,7 @@ name: Create production tag and release
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
 
 permissions:
   contents: write
@@ -38,7 +38,7 @@ jobs:
           echo "release_label=Chore" >> $GITHUB_OUTPUT
           echo "Chore branch → tag suffix: chore"
         else
-          echo "::error::Push to main must come from a PR merged from release/sprint-xx, hotfix/*, or chore/*. Use 'Create a merge commit' when merging (squash merge does not include branch name)."
+          echo "::error::Push to master must come from a PR merged from release/sprint-xx, hotfix/*, or chore/*. Use 'Create a merge commit' when merging (squash merge does not include branch name)."
           exit 1
         fi
 
@@ -47,7 +47,7 @@ jobs:
       run: |
         CURRENT=$(node -p "JSON.parse(require('fs').readFileSync('package.json','utf8')).version")
         echo "VERSION=$CURRENT" >> $GITHUB_OUTPUT
-        # Compare with tip of main *before* this push (works for 1, 2, or N commits)
+        # Compare with tip of master *before* this push (works for 1, 2, or N commits)
         git show ${{ github.event.before }}:package.json > prev_package.json 2>/dev/null || true
         if [ -f prev_package.json ]; then
           PREV=$(node -p "JSON.parse(require('fs').readFileSync('prev_package.json','utf8')).version")

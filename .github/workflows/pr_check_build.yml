@@ -2,7 +2,7 @@ name: PR check build
 
 on:
   pull_request:
-    branches: [ uat, staging, develop, main ]
+    branches: [ uat, staging, develop, master ]
 
 permissions:
   contents: read

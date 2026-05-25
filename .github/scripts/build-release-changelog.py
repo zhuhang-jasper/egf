@@ -14,7 +14,7 @@ BOT_LOGINS = frozenset({"dependabot[bot]", "github-actions[bot]"})
 
 MENTION_RE = re.compile(r"^\s*@([A-Za-z0-9-]+)\s*-\s*(.+)$")
 MERGE_PR_RE = re.compile(r"Merge pull request #(\d+)")
-# hotfix/sprint-*: always omitted at top (transport merge to main), like release/sprint-*.
+# hotfix/sprint-*: always omitted at top (transport merge to master), like release/sprint-*.
 HOTFIX_SPRINT_BRANCH_SKIP_RE = re.compile(r"^hotfix/sprint-", re.I)
 LOG_PREFIX = "[build-release-changelog]"
 
