@@ -1,7 +1,128 @@
-import html2canvas from "html2canvas";
-
 import { syncFontsForChart } from "@/lib/chart/radar-center";
 import { FE_UI } from "@/lib/constants";
+
+const UNSUPPORTED_COLOR_RE = /(?:oklch|oklab|lab\(|lch\(|color\()/i;
+
+function sanitizeColorForHtml2Canvas(value) {
+  const trimmed = String(value ?? "").trim();
+  if (!trimmed || trimmed === "transparent") {return trimmed;}
+  if (!UNSUPPORTED_COLOR_RE.test(trimmed)) {return trimmed;}
+
+  try {
+    const probe = document.createElement("canvas");
+    probe.width = 1;
+    probe.height = 1;
+    const ctx = probe.getContext("2d");
+    if (!ctx) {return "#000000";}
+    ctx.fillStyle = "#000000";
+    ctx.fillStyle = trimmed;
+    return ctx.fillStyle;
+  } catch {
+    return "#000000";
+  }
+}
+
+function getRelativeRect(el, rootRect, scaleX, scaleY) {
+  const rect = el.getBoundingClientRect();
+  return {
+    x: (rect.left - rootRect.left) * scaleX,
+    y: (rect.top - rootRect.top) * scaleY,
+    w: rect.width * scaleX,
+    h: rect.height * scaleY,
+  };
+}
+
+function buildFont(cs, scaleY) {
+  const size = Number.parseFloat(cs.fontSize) || 14;
+  const weight = cs.fontWeight || "400";
+  const family = cs.fontFamily || "system-ui, sans-serif";
+  return `${weight} ${size * scaleY}px ${family}`;
+}
+
+function drawRoundedRect(ctx, x, y, w, h, radius, fill, stroke, lineWidth) {
+  const r = Math.max(0, Math.min(radius, w / 2, h / 2));
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+  ctx.fillStyle = fill;
+  ctx.fill();
+  if (stroke && lineWidth > 0) {
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = lineWidth;
+    ctx.stroke();
+  }
+}
+
+function isVisuallyHidden(el) {
+  const cs = window.getComputedStyle(el);
+  if (cs.display === "none" || cs.visibility === "hidden") {return true;}
+  if (el.classList.contains("sr-only")) {return true;}
+  const w = Number.parseFloat(cs.width);
+  const h = Number.parseFloat(cs.height);
+  return cs.position === "absolute" && w <= 1 && h <= 1;
+}
+
+function renderExportDom(ctx, exportRoot, scaleX, scaleY) {
+  const rootRect = exportRoot.getBoundingClientRect();
+
+  const title = exportRoot.querySelector("#competency-chart-heading");
+  if (title && !isVisuallyHidden(title)) {
+    const text = title.textContent?.trim();
+    if (text) {
+      const cs = window.getComputedStyle(title);
+      const { x, y, w, h } = getRelativeRect(title, rootRect, scaleX, scaleY);
+      ctx.fillStyle = sanitizeColorForHtml2Canvas(cs.color);
+      ctx.font = buildFont(cs, scaleY);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, x + w / 2, y + h / 2);
+    }
+  }
+
+  const legendImg = exportRoot.querySelector("img");
+  if (legendImg?.complete && legendImg.naturalWidth > 0) {
+    const { x, y, w, h } = getRelativeRect(legendImg, rootRect, scaleX, scaleY);
+    ctx.drawImage(legendImg, x, y, w, h);
+  }
+
+  const averagesGrid = exportRoot.querySelector("[aria-label]");
+  if (averagesGrid) {
+    for (const card of averagesGrid.children) {
+      if (!(card instanceof HTMLElement)) {continue;}
+      const cs = window.getComputedStyle(card);
+      const { x, y, w, h } = getRelativeRect(card, rootRect, scaleX, scaleY);
+      const radius = (Number.parseFloat(cs.borderTopLeftRadius) || 8) * scaleX;
+      const lineWidth = (Number.parseFloat(cs.borderTopWidth) || 1) * scaleX;
+      drawRoundedRect(
+        ctx,
+        x,
+        y,
+        w,
+        h,
+        radius,
+        sanitizeColorForHtml2Canvas(cs.backgroundColor),
+        sanitizeColorForHtml2Canvas(cs.borderTopColor),
+        lineWidth,
+      );
+
+      for (const span of card.querySelectorAll("span")) {
+        const text = span.textContent?.trim();
+        if (!text) {continue;}
+        const scs = window.getComputedStyle(span);
+        const sr = getRelativeRect(span, rootRect, scaleX, scaleY);
+        ctx.fillStyle = sanitizeColorForHtml2Canvas(scs.color);
+        ctx.font = buildFont(scs, scaleY);
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(text, sr.x + sr.w / 2, sr.y + sr.h / 2);
+      }
+    }
+  }
+}
 
 function getChartExportableCaptureHeight(el) {
   const root = el.getBoundingClientRect();
@@ -15,9 +136,6 @@ function getChartExportableCaptureHeight(el) {
 
 export async function copyChartAsImageToClipboard({ exportRoot, canvas, chart, titleText }) {
   if (!exportRoot || !canvas || !chart) {return { ok: false, method: null };}
-  if (typeof html2canvas !== "function") {
-    throw new Error("html2canvas not loaded");
-  }
 
   const cssW = Math.max(1, Math.round(exportRoot.getBoundingClientRect().width));
   const cssH = Math.max(1, getChartExportableCaptureHeight(exportRoot));
@@ -39,17 +157,13 @@ export async function copyChartAsImageToClipboard({ exportRoot, canvas, chart, t
 
     if (canvas.width < 2 || canvas.height < 2) {return { ok: false, method: null };}
 
-    const snap = await html2canvas(exportRoot, {
-      x: 0,
-      y: 0,
-      width: cssW,
-      height: cssH,
-      scale: pxPerCssX,
-      backgroundColor: "#ffffff",
-      useCORS: true,
-      logging: false,
-      ignoreElements: (el) => el === canvas,
-    });
+    const out = document.createElement("canvas");
+    out.width = exportW;
+    out.height = exportH;
+    const octx = out.getContext("2d");
+    octx.fillStyle = "#ffffff";
+    octx.fillRect(0, 0, exportW, exportH);
+    renderExportDom(octx, exportRoot, pxPerCssX, pxPerCssY);
 
     const rootRect = exportRoot.getBoundingClientRect();
     const canvasRect = canvas.getBoundingClientRect();
@@ -57,14 +171,6 @@ export async function copyChartAsImageToClipboard({ exportRoot, canvas, chart, t
     const slotY = Math.round((canvasRect.top - rootRect.top) * pxPerCssY);
     const slotW = Math.max(1, Math.round(canvasRect.width * pxPerCssX));
     const slotH = Math.max(1, Math.round(canvasRect.height * pxPerCssY));
-
-    const out = document.createElement("canvas");
-    out.width = exportW;
-    out.height = exportH;
-    const octx = out.getContext("2d");
-    octx.fillStyle = "#ffffff";
-    octx.fillRect(0, 0, exportW, exportH);
-    octx.drawImage(snap, 0, 0, snap.width, snap.height, 0, 0, exportW, exportH);
 
     const ratioDiff = Math.abs(slotW / canvas.width - 1) + Math.abs(slotH / canvas.height - 1);
     octx.imageSmoothingEnabled = ratioDiff > 0.04;

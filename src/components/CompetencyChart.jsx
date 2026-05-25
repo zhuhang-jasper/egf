@@ -81,6 +81,8 @@ export function CompetencyChart({ canvasRef, onChartReady, onResize }) {
     const plugins = [createHeptagonBackgroundPlugin(heptagonImg)];
     if (AI_FEATURE_ENABLED) {plugins.push(createTechnicalAsteriskPlugin());}
 
+    let cancelled = false;
+
     const ch = FE_UI.chart;
     const chart = new Chart(canvas, {
       type: "radar",
@@ -142,15 +144,22 @@ export function CompetencyChart({ canvasRef, onChartReady, onResize }) {
     onChartReady?.(chart);
 
     const onLoad = () => {
+      if (cancelled || chartRef.current !== chart) {return;}
       chart.update();
-      requestAnimationFrame(() => syncFontsForChart(chart));
+      requestAnimationFrame(() => {
+        if (!cancelled && chartRef.current === chart) {syncFontsForChart(chart);}
+      });
     };
     if (heptagonImg.complete) {onLoad();}
     else {heptagonImg.addEventListener("load", onLoad);}
 
-    requestAnimationFrame(() => syncFontsForChart(chart));
+    requestAnimationFrame(() => {
+      if (!cancelled && chartRef.current === chart) {syncFontsForChart(chart);}
+    });
 
     return () => {
+      cancelled = true;
+      heptagonImg.removeEventListener("load", onLoad);
       chart.destroy();
       chartRef.current = null;
     };
