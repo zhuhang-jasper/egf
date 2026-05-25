@@ -11,7 +11,11 @@ import { manualChunks } from "./vite.chunksplit";
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 
+/** Project site: https://<owner>.github.io/egf/ */
+const pagesBase = process.env.GITHUB_PAGES === "true" ? "/egf/" : "/";
+
 export default defineConfig({
+  base: pagesBase,
   plugins: [react(), tailwindcss(), generateMetaPlugin()],
   resolve: {
     alias: {
