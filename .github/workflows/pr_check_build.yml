@@ -1,0 +1,51 @@
+name: PR check build
+
+on:
+  pull_request:
+    branches: [ uat, staging, develop, main ]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  detect-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      build: ${{ steps.filter.outputs.build }}
+    steps:
+    - uses: dorny/paths-filter@v4
+      id: filter
+      with:
+        filters: |
+          build:
+            - 'src/**'
+            - 'public/**'
+            - 'index.html'
+            - 'package.json'
+            - 'package-lock.json'
+            - 'vite.chunksplit.js'
+            - 'vite.config.js'
+            - 'vite-plugins/**'
+            - 'env/**'
+
+  build:
+    name: Build
+    needs: detect-changes
+    if: needs.detect-changes.outputs.build == 'true'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - uses: ./.github/actions/setup-node
+      with:
+        perform_npm_ci: true
+
+    - name: Vite build (no minify)
+      run: npx vite build --minify false
+      env:
+        NODE_OPTIONS: --max-old-space-size=5632
