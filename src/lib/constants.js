@@ -35,6 +35,25 @@ export const CHART_LABELS = PILLAR_ORDER.map((id) => PILLARS[id].label);
 
 export const PILLAR_COUNT = PILLAR_ORDER.length;
 
+export const SENIORITY_LEVEL_COUNT = 5;
+
+/** Site title and intro; uses 7 pillars / 35 points (`?ai=0`|`?ai=1`) or 8 / 40 (`?ai=2`). */
+export function getSiteCopy() {
+  const pillarCount = PILLAR_COUNT;
+  const pointCount = pillarCount * SENIORITY_LEVEL_COUNT;
+  const tagline = "A spider chart to measure software engineering mastery.";
+  const detail = `Supported by a ${pointCount}-point competency matrix across ${SENIORITY_LEVEL_COUNT} seniority levels.`;
+  const byline = "— Jasper Loo Zhu Hang";
+  return {
+    title: `The ${pillarCount}-Pillar Engineer Growth Framework`,
+    tagline,
+    detail,
+    byline,
+    shortName: `${pillarCount}-Pillar Growth`,
+    metaDescription: `${tagline} ${detail} Jasper Loo Zhu Hang.`,
+  };
+}
+
 function buildDefaultState() {
   const levels = new Array(PILLAR_COUNT).fill(3);
   const aiLevels = new Array(PILLAR_COUNT).fill(0);
