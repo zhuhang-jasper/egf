@@ -2,6 +2,8 @@ import { useCallback, useRef, useState } from "react";
 
 import { ChartAverages } from "@/components/ChartAverages";
 import { CompetencyChart } from "@/components/CompetencyChart";
+import { TrackBadge } from "@/components/TrackBadge";
+import { TrackToggle } from "@/components/TrackToggle";
 import { Button } from "@/components/ui/button";
 
 import { useChartFrameMargins } from "@/hooks/useChartFrameMargins";
@@ -22,6 +24,7 @@ export function ChartSection() {
   const [copyLabel, setCopyLabel] = useState("Copy image");
 
   const title = useAppStore((s) => s.title);
+  const trackVariant = useAppStore((s) => s.trackVariant);
   const levelsPolygonHidden = useAppStore((s) => s.levelsPolygonHidden);
   const setLevelsPolygonHidden = useAppStore((s) => s.setLevelsPolygonHidden);
 
@@ -66,18 +69,21 @@ export function ChartSection() {
 
   return (
     <div className="flex w-full min-w-0 flex-col items-center">
-      <div className="relative z-[2] mb-4 flex w-full justify-end gap-2">
-        <Button type="button" variant="outline" size="sm" onClick={handleCopy}>
-          {copyLabel}
-        </Button>
-        <Button type="button" variant="outline" size="sm" aria-expanded={!levelsPolygonHidden} onClick={toggleLevelsPolygonHidden}>
-          {levelsPolygonHidden ? "Show chart" : "Hide chart"}
-        </Button>
+      <div className="relative z-[2] mb-4 flex w-full min-w-0 items-center justify-between gap-2">
+        <TrackToggle />
+        <div className="flex shrink-0 items-center gap-2">
+          <Button type="button" variant="outline" size="sm" onClick={handleCopy}>
+            {copyLabel}
+          </Button>
+          <Button type="button" variant="outline" size="sm" aria-expanded={!levelsPolygonHidden} onClick={toggleLevelsPolygonHidden}>
+            {levelsPolygonHidden ? "Show chart" : "Hide chart"}
+          </Button>
+        </div>
       </div>
 
       <div ref={exportRef} className="flex w-full min-w-0 flex-col self-stretch">
         {showHeading ? (
-          <h2 id="competency-chart-heading" className="relative z-[1] mb-2 w-full text-center text-2xl font-bold text-black">
+          <h2 id="competency-chart-heading" className="relative z-[1] w-full text-center text-2xl font-bold text-black">
             {title}
           </h2>
         ) : (
@@ -86,15 +92,17 @@ export function ChartSection() {
           </h2>
         )}
 
-        <div ref={legendRef} className="pointer-events-none mb-0 max-w-full self-start pl-2 leading-none" aria-hidden>
+        <div ref={legendRef} className="mb-0 flex w-full min-w-0 items-start justify-between gap-2 px-2 leading-none">
           <img
             src={clusterLegendImage}
             width={200}
             height={116}
             alt=""
-            className="block h-auto max-w-[min(125px,18vw)] w-auto"
+            aria-hidden
+            className="pointer-events-none block h-auto max-w-[min(125px,18vw)] w-auto"
             onLoad={syncMargins}
           />
+          <TrackBadge variant={trackVariant} size="md" className="shrink-0" />
         </div>
 
         <div ref={frameRef} className="relative z-0 mx-auto w-full max-w-full box-border">

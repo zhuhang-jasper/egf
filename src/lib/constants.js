@@ -29,9 +29,59 @@ export const PILLARS = {
   uiUx: { label: "👀 UI/UX" },
 };
 
+/** Product-cluster pillar whose label switches with the FE/BE track toggle. */
+export const PRODUCT_PILLAR_ID = "uiUx";
+
+export const PRODUCT_PILLAR_LABELS = {
+  fe: "👀 UI/UX",
+  be: "👃 Business Logic",
+};
+
+export const TRACK_VARIANTS = ["fe", "be"];
+
+export const TRACK_VARIANT_UI = {
+  fe: {
+    shortLabel: "FE",
+    label: "Frontend",
+    pillClass: "bg-track-fe text-track-fe-foreground",
+    toggleActiveClass: "bg-track-fe",
+  },
+  be: {
+    shortLabel: "BE",
+    label: "Backend",
+    pillClass: "bg-track-be text-track-be-foreground",
+    toggleActiveClass: "bg-track-be",
+  },
+};
+
+/** Profiles/drafts without `trackVariant` are treated as front-end (FE). */
+export function normalizeTrackVariant(value) {
+  return value === "be" ? "be" : "fe";
+}
+
+export function getPillarLabel(pillarId, trackVariant = "fe") {
+  if (pillarId === PRODUCT_PILLAR_ID) {
+    return PRODUCT_PILLAR_LABELS[normalizeTrackVariant(trackVariant)];
+  }
+  return PILLARS[pillarId]?.label ?? "";
+}
+
 export const PILLAR_ORDER = AI_PILLAR_ENABLED ? PILLAR_ORDER_WITH_AI : PILLAR_ORDER_BASE;
 
-export const CHART_LABELS = PILLAR_ORDER.map((id) => PILLARS[id].label);
+export function getChartLabels(trackVariant = "fe") {
+  return PILLAR_ORDER.map((id) => getPillarLabel(id, trackVariant));
+}
+
+/** Chart layout labels: product pillar always uses the longer FE/BE text so radar size stays stable. */
+export function getChartLayoutLabels() {
+  return PILLAR_ORDER.map((id) => {
+    if (id === PRODUCT_PILLAR_ID) {
+      const { fe, be } = PRODUCT_PILLAR_LABELS;
+      return fe.length >= be.length ? fe : be;
+    }
+    return PILLARS[id]?.label ?? "";
+  });
+}
 
 export const PILLAR_COUNT = PILLAR_ORDER.length;
 
@@ -41,7 +91,7 @@ export const SENIORITY_LEVEL_COUNT = 5;
 export function getSiteCopy() {
   const pillarCount = PILLAR_COUNT;
   const pointCount = pillarCount * SENIORITY_LEVEL_COUNT;
-  const tagline = "A spider chart to measure software engineering mastery.";
+  const tagline = "A spider chart to measure software engineering mastery, identify core interests, and guide career paths.";
   const detail = `Supported by a ${pointCount}-point competency matrix across ${SENIORITY_LEVEL_COUNT} seniority levels.`;
   const byline = "— Jasper Loo Zhu Hang";
   return {
@@ -82,7 +132,7 @@ export const CLUSTERS = {
   behavioural: { label: "Behavioural", color: "#bddbb5" },
 };
 
-const PILLAR_GROUP_ORDER = [
+export const PILLAR_GROUP_ORDER = [
   {
     id: "technical",
     pillars: AI_PILLAR_ENABLED ? ["coding", "architecture", "ai", "process"] : ["coding", "architecture", "process"],
@@ -91,30 +141,33 @@ const PILLAR_GROUP_ORDER = [
   { id: "behavioural", pillars: ["communication", "ownership"] },
 ];
 
-function buildPillarRef(pillarId) {
+function buildPillarRef(pillarId, trackVariant) {
   const meta = PILLARS[pillarId];
   return {
     id: pillarId,
     index: PILLAR_ORDER.indexOf(pillarId),
-    label: meta.label,
+    label: getPillarLabel(pillarId, trackVariant),
     ...(meta.hasAi && AI_AUGMENTATION_ENABLED ? { hasAi: true } : {}),
   };
 }
 
 /** Form pillar definitions (index matches chart label order). */
-export const PILLAR_GROUPS = PILLAR_GROUP_ORDER.map(({ id, pillars }) => ({
-  id,
-  title: CLUSTERS[id].label,
-  pillars: pillars.map(buildPillarRef),
-}));
+export function getPillarGroups(trackVariant = "fe") {
+  const track = normalizeTrackVariant(trackVariant);
+  return PILLAR_GROUP_ORDER.map(({ id, pillars }) => ({
+    id,
+    title: CLUSTERS[id].label,
+    pillars: pillars.map((pillarId) => buildPillarRef(pillarId, track)),
+  }));
+}
 
 export function getPillarIdByIndex(index) {
   return PILLAR_ORDER[index] ?? null;
 }
 
-export function getPillarLabelByIndex(index) {
+export function getPillarLabelByIndex(index, trackVariant = "fe") {
   const id = getPillarIdByIndex(index);
-  return id ? PILLARS[id].label : "";
+  return id ? getPillarLabel(id, trackVariant) : "";
 }
 
 export function getAiPillarIndices() {
@@ -136,10 +189,10 @@ export function isAiPillarIndex(index) {
 export const FE_UI = {
   page: { maxWidthPx: 650, minWidthPx: 350 },
   chartFrame: {
-    marginTopMinPx: -30,
-    marginTopMaxPx: -60,
-    marginBottomMinPx: -40,
-    marginBottomMaxPx: -80,
+    marginTopMinPx: -15,
+    marginTopMaxPx: -45,
+    marginBottomMinPx: -55,
+    marginBottomMaxPx: -85,
     minChartHeightPx: 120,
   },
   chart: {

@@ -1,4 +1,6 @@
-import { CLUSTERS, FE_UI, getAiPillarIndices, PILLAR_GROUPS } from "@/lib/constants";
+import { CLUSTERS, FE_UI, getAiPillarIndices, getChartLabels, PILLAR_GROUP_ORDER, PILLAR_ORDER } from "@/lib/constants";
+
+import { useAppStore } from "@/store/useAppStore";
 
 /** Clockwise arc order for a cluster's pillar indices on the radar (handles wrap-around). */
 function sortClusterArc(indices, total) {
@@ -93,13 +95,13 @@ export function createClusterBackgroundPlugin() {
 
       const { ctx } = chart;
       ctx.save();
-      for (const group of PILLAR_GROUPS) {
+      for (const group of PILLAR_GROUP_ORDER) {
         const cluster = CLUSTERS[group.id];
         if (!cluster?.color) {
           continue;
         }
         const indices = sortClusterArc(
-          group.pillars.map((p) => p.index),
+          group.pillars.map((pillarId) => PILLAR_ORDER.indexOf(pillarId)),
           count,
         );
         drawClusterWedge(ctx, scale, indices, cluster.color, count);
@@ -207,6 +209,46 @@ export function createTechnicalAsteriskPlugin() {
         }
         ctx.fillStyle = c;
         ctx.fillText(marker, mx, starY);
+        ctx.restore();
+      }
+    },
+  };
+}
+
+/** Draws track-specific pillar labels after Chart.js lays out using {@link getChartLayoutLabels}. */
+export function createTrackPointLabelPlugin() {
+  return {
+    id: "trackPointLabels",
+    afterDraw(chart) {
+      const scale = chart.scales.r;
+      const items = scale?._pointLabelItems;
+      if (!scale?.ctx || !items?.length) {
+        return;
+      }
+
+      const labels = getChartLabels(useAppStore.getState().trackVariant);
+      const { ctx } = scale;
+      const { pointLabels } = scale.options;
+      const color = FE_UI.chart.pointLabelColor;
+
+      for (let i = items.length - 1; i >= 0; i--) {
+        const item = items[i];
+        if (!item.visible) {
+          continue;
+        }
+        const opts = pointLabels.setContext(scale.getPointLabelContext(i));
+        const f = opts.font || {};
+        const size = typeof f.size === "number" ? f.size : FE_UI.chart.pointLabelPx;
+        const weight = f.weight || FE_UI.chart.pointLabelWeight;
+        const family = f.family || "system-ui, sans-serif";
+        const lineHeight = size * 1.2;
+
+        ctx.save();
+        ctx.font = `${weight} ${size}px ${family}`;
+        ctx.fillStyle = color;
+        ctx.textAlign = item.textAlign;
+        ctx.textBaseline = "middle";
+        ctx.fillText(labels[i] ?? "", item.x, item.y + lineHeight / 2);
         ctx.restore();
       }
     },
