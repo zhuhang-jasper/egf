@@ -5,14 +5,6 @@ export const PROFILES_STORAGE_KEY = "fe-growth-framework:profiles:v1";
 export const LEVEL_STEP = 0.5;
 export const HUMAN_STRENGTH_TOP_K = 3;
 
-/** Official site title, intro copy, and meta strings (HTML, PWA, app header). */
-export const SITE_COPY = {
-  title: "The 8-Pillar Engineer Growth Framework",
-  tagline: "A spider chart to measure software engineering mastery.",
-  detail: "Supported by a 40-point competency matrix across 5 seniority levels.",
-  byline: "— Jasper Loo Zhu Hang",
-};
-
 /** Chart order when the dedicated AI pillar is included (`?ai=2`). */
 export const PILLAR_ORDER_WITH_AI = ["coding", "architecture", "ai", "process", "ownership", "communication", "productSense", "uiUx"];
 
@@ -42,6 +34,25 @@ export const PILLAR_ORDER = AI_PILLAR_ENABLED ? PILLAR_ORDER_WITH_AI : PILLAR_OR
 export const CHART_LABELS = PILLAR_ORDER.map((id) => PILLARS[id].label);
 
 export const PILLAR_COUNT = PILLAR_ORDER.length;
+
+export const SENIORITY_LEVEL_COUNT = 5;
+
+/** Site title and intro; uses 7 pillars / 35 points (`?ai=0`|`?ai=1`) or 8 / 40 (`?ai=2`). */
+export function getSiteCopy() {
+  const pillarCount = PILLAR_COUNT;
+  const pointCount = pillarCount * SENIORITY_LEVEL_COUNT;
+  const tagline = "A spider chart to measure software engineering mastery.";
+  const detail = `Supported by a ${pointCount}-point competency matrix across ${SENIORITY_LEVEL_COUNT} seniority levels.`;
+  const byline = "— Jasper Loo Zhu Hang";
+  return {
+    title: `The ${pillarCount}-Pillar Engineer Growth Framework`,
+    tagline,
+    detail,
+    byline,
+    shortName: `${pillarCount}-Pillar Growth`,
+    metaDescription: `${tagline} ${detail} Jasper Loo Zhu Hang.`,
+  };
+}
 
 function buildDefaultState() {
   const levels = new Array(PILLAR_COUNT).fill(3);
