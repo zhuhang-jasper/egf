@@ -5,7 +5,7 @@ import { Chart, Filler, Legend, LineElement, PointElement, RadarController, Radi
 import { syncLevelDatasetsVisibility } from "@/lib/chart/dataset-visibility";
 import { createClusterBackgroundPlugin, createTechnicalAsteriskPlugin } from "@/lib/chart/plugins";
 import { applyRadarCenterFit, syncFontsForChart } from "@/lib/chart/radar-center";
-import { CHART_LABELS, FE_UI, PILLAR_COUNT } from "@/lib/constants";
+import { FE_UI, getChartLabels, PILLAR_COUNT } from "@/lib/constants";
 import { AI_AUGMENTATION_ENABLED } from "@/lib/flags";
 
 import { useAppStore } from "@/store/useAppStore";
@@ -76,6 +76,7 @@ export function CompetencyChart({ canvasRef, onChartReady, onResize }) {
   const levels = useAppStore((s) => s.levels);
   const aiLevels = useAppStore((s) => s.aiLevels);
   const title = useAppStore((s) => s.title);
+  const trackVariant = useAppStore((s) => s.trackVariant);
   const levelsPolygonHidden = useAppStore((s) => s.levelsPolygonHidden);
 
   useEffect(() => {
@@ -95,7 +96,7 @@ export function CompetencyChart({ canvasRef, onChartReady, onResize }) {
     const chart = new Chart(canvas, {
       type: "radar",
       data: {
-        labels: CHART_LABELS,
+        labels: getChartLabels(useAppStore.getState().trackVariant),
         datasets: [
           buildHumanDataset(" ", new Array(PILLAR_COUNT).fill(0)),
           ...(AI_AUGMENTATION_ENABLED ? [buildAiDataset(new Array(PILLAR_COUNT).fill(0))] : []),
@@ -179,6 +180,17 @@ export function CompetencyChart({ canvasRef, onChartReady, onResize }) {
     syncChartDatasets(chart, { levels, aiLevels, title });
     chart.update("none");
   }, [levels, aiLevels, title]);
+
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart) {
+      return;
+    }
+
+    chart.data.labels = getChartLabels(trackVariant);
+    syncFontsForChart(chart);
+    chart.update("none");
+  }, [trackVariant]);
 
   useEffect(() => {
     const chart = chartRef.current;

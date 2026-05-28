@@ -1,4 +1,4 @@
-import { CLUSTERS, FE_UI, getAiPillarIndices, PILLAR_GROUPS } from "@/lib/constants";
+import { CLUSTERS, FE_UI, getAiPillarIndices, PILLAR_GROUP_ORDER, PILLAR_ORDER } from "@/lib/constants";
 
 /** Clockwise arc order for a cluster's pillar indices on the radar (handles wrap-around). */
 function sortClusterArc(indices, total) {
@@ -93,13 +93,13 @@ export function createClusterBackgroundPlugin() {
 
       const { ctx } = chart;
       ctx.save();
-      for (const group of PILLAR_GROUPS) {
+      for (const group of PILLAR_GROUP_ORDER) {
         const cluster = CLUSTERS[group.id];
         if (!cluster?.color) {
           continue;
         }
         const indices = sortClusterArc(
-          group.pillars.map((p) => p.index),
+          group.pillars.map((pillarId) => PILLAR_ORDER.indexOf(pillarId)),
           count,
         );
         drawClusterWedge(ctx, scale, indices, cluster.color, count);

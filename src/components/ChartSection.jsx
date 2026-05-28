@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from "react";
 
 import { ChartAverages } from "@/components/ChartAverages";
 import { CompetencyChart } from "@/components/CompetencyChart";
+import { TrackToggle } from "@/components/TrackToggle";
 import { Button } from "@/components/ui/button";
 
 import { useChartFrameMargins } from "@/hooks/useChartFrameMargins";
@@ -66,13 +67,16 @@ export function ChartSection() {
 
   return (
     <div className="flex w-full min-w-0 flex-col items-center">
-      <div className="relative z-[2] mb-4 flex w-full justify-end gap-2">
-        <Button type="button" variant="outline" size="sm" onClick={handleCopy}>
-          {copyLabel}
-        </Button>
-        <Button type="button" variant="outline" size="sm" aria-expanded={!levelsPolygonHidden} onClick={toggleLevelsPolygonHidden}>
-          {levelsPolygonHidden ? "Show chart" : "Hide chart"}
-        </Button>
+      <div className="relative z-[2] mb-4 flex w-full min-w-0 items-center justify-between gap-2">
+        <TrackToggle />
+        <div className="flex shrink-0 items-center gap-2">
+          <Button type="button" variant="outline" size="sm" onClick={handleCopy}>
+            {copyLabel}
+          </Button>
+          <Button type="button" variant="outline" size="sm" aria-expanded={!levelsPolygonHidden} onClick={toggleLevelsPolygonHidden}>
+            {levelsPolygonHidden ? "Show chart" : "Hide chart"}
+          </Button>
+        </div>
       </div>
 
       <div ref={exportRef} className="flex w-full min-w-0 flex-col self-stretch">

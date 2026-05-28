@@ -5,6 +5,7 @@ import {
   FULL_PILLAR_COUNT,
   isAiPillarIndex,
   LEVEL_STEP,
+  normalizeTrackVariant,
   PILLAR_COUNT,
   PILLAR_SCHEMA,
 } from "@/lib/constants";
@@ -92,31 +93,14 @@ function insertAiPillarIntoAiLevels(aiLevels) {
   if (aiLevels.length !== BASE_PILLAR_COUNT) {
     return null;
   }
-  return normalizeAiLevels([
-    aiLevels[0],
-    aiLevels[1],
-    0,
-    aiLevels[2],
-    aiLevels[3],
-    aiLevels[4],
-    aiLevels[5],
-    aiLevels[6],
-  ]);
+  return normalizeAiLevels([aiLevels[0], aiLevels[1], 0, aiLevels[2], aiLevels[3], aiLevels[4], aiLevels[5], aiLevels[6]]);
 }
 
 function removeAiPillarFromAiLevels(aiLevels) {
   if (aiLevels.length !== FULL_PILLAR_COUNT) {
     return null;
   }
-  return normalizeAiLevels([
-    aiLevels[0],
-    aiLevels[1],
-    aiLevels[3],
-    aiLevels[4],
-    aiLevels[5],
-    aiLevels[6],
-    aiLevels[7],
-  ]);
+  return normalizeAiLevels([aiLevels[0], aiLevels[1], aiLevels[3], aiLevels[4], aiLevels[5], aiLevels[6], aiLevels[7]]);
 }
 
 function resizeLevelsToTarget(levels, schema = 0) {
@@ -211,7 +195,13 @@ export function normalizeSavedState(parsed) {
     return null;
   }
   const aiLevels = resizeAiLevelsToTarget(parsed.aiLevels, schema) ?? fallbackAiLevels(levelsMapped);
-  return { title: parsed.title, levels: levelsMapped, aiLevels, pillarSchema: PILLAR_SCHEMA };
+  return {
+    title: parsed.title,
+    levels: levelsMapped,
+    aiLevels,
+    pillarSchema: PILLAR_SCHEMA,
+    trackVariant: normalizeTrackVariant(parsed.trackVariant),
+  };
 }
 
 export function newSavedProfileId() {
@@ -235,6 +225,7 @@ export function normalizeStoredProfile(p) {
     levels: inner.levels,
     aiLevels: inner.aiLevels,
     pillarSchema: inner.pillarSchema,
+    trackVariant: inner.trackVariant,
     savedAt: Number.isFinite(p.savedAt) ? p.savedAt : 0,
   };
 }
@@ -245,5 +236,6 @@ export function getDefaultChartState() {
     levels: [...DEFAULT_STATE.levels],
     aiLevels: [...DEFAULT_STATE.aiLevels],
     pillarSchema: PILLAR_SCHEMA,
+    trackVariant: "fe",
   };
 }

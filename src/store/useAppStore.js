@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-import { DEFAULT_STATE, isAiPillarIndex, PILLAR_COUNT, PILLAR_SCHEMA } from "@/lib/constants";
+import { DEFAULT_STATE, isAiPillarIndex, normalizeTrackVariant, PILLAR_COUNT, PILLAR_SCHEMA } from "@/lib/constants";
 import { getDefaultChartState, newSavedProfileId, normalizeSavedState } from "@/lib/levels";
 import { loadDraftFromStorage, loadProfilesFromStorage, saveDraftToStorage, writeProfilesToStorage } from "@/lib/storage";
 
@@ -10,6 +10,7 @@ export const useAppStore = create((set, get) => ({
   title: initialDraft.title,
   levels: [...initialDraft.levels],
   aiLevels: [...initialDraft.aiLevels],
+  trackVariant: normalizeTrackVariant(initialDraft.trackVariant),
   levelsPolygonHidden: false,
   activeSavedProfileId: null,
   profiles: loadProfilesFromStorage(),
@@ -22,13 +23,19 @@ export const useAppStore = create((set, get) => ({
       title: draft.title,
       levels: [...draft.levels],
       aiLevels: [...draft.aiLevels],
+      trackVariant: normalizeTrackVariant(draft.trackVariant),
       profiles: loadProfilesFromStorage(),
     });
   },
 
   persistDraft: () => {
-    const { title, levels, aiLevels } = get();
-    saveDraftToStorage({ title, levels, aiLevels, pillarSchema: PILLAR_SCHEMA });
+    const { title, levels, aiLevels, trackVariant } = get();
+    saveDraftToStorage({ title, levels, aiLevels, trackVariant, pillarSchema: PILLAR_SCHEMA });
+  },
+
+  setTrackVariant: (trackVariant) => {
+    set({ trackVariant: normalizeTrackVariant(trackVariant) });
+    get().persistDraft();
   },
 
   setTitle: (title) => {
@@ -62,6 +69,7 @@ export const useAppStore = create((set, get) => ({
       title: state.title,
       levels: [...state.levels],
       aiLevels: [...state.aiLevels],
+      trackVariant: normalizeTrackVariant(state.trackVariant),
       activeSavedProfileId: profileId,
     });
     get().persistDraft();
@@ -108,6 +116,7 @@ export const useAppStore = create((set, get) => ({
       title: trimmed,
       levels: get().levels,
       aiLevels: get().aiLevels,
+      trackVariant: get().trackVariant,
     });
     if (!state) {
       return false;
@@ -139,6 +148,7 @@ export const useAppStore = create((set, get) => ({
       levels: state.levels,
       aiLevels: state.aiLevels,
       pillarSchema: state.pillarSchema,
+      trackVariant: state.trackVariant,
       savedAt: Date.now(),
     };
     const next = replaceIdx >= 0 ? existing.map((p, i) => (i === replaceIdx ? row : p)) : [...existing, row];
