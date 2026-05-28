@@ -41,7 +41,8 @@ export const SENIORITY_LEVEL_COUNT = 5;
 export function getSiteCopy() {
   const pillarCount = PILLAR_COUNT;
   const pointCount = pillarCount * SENIORITY_LEVEL_COUNT;
-  const tagline = "A spider chart to measure software engineering mastery.";
+  const tagline =
+    "A spider chart to measure software engineering mastery, identify core interests, and guide career paths.";
   const detail = `Supported by a ${pointCount}-point competency matrix across ${SENIORITY_LEVEL_COUNT} seniority levels.`;
   const byline = "— Jasper Loo Zhu Hang";
   return {
