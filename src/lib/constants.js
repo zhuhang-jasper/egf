@@ -56,6 +56,17 @@ export function getChartLabels(trackVariant = "fe") {
   return PILLAR_ORDER.map((id) => getPillarLabel(id, trackVariant));
 }
 
+/** Chart layout labels: product pillar always uses the longer FE/BE text so radar size stays stable. */
+export function getChartLayoutLabels() {
+  return PILLAR_ORDER.map((id) => {
+    if (id === PRODUCT_PILLAR_ID) {
+      const { fe, be } = PRODUCT_PILLAR_LABELS;
+      return fe.length >= be.length ? fe : be;
+    }
+    return PILLARS[id]?.label ?? "";
+  });
+}
+
 export const PILLAR_COUNT = PILLAR_ORDER.length;
 
 export const SENIORITY_LEVEL_COUNT = 5;

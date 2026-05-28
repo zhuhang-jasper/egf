@@ -3,9 +3,13 @@ import { useEffect, useRef } from "react";
 import { Chart, Filler, Legend, LineElement, PointElement, RadarController, RadialLinearScale, Tooltip } from "chart.js";
 
 import { syncLevelDatasetsVisibility } from "@/lib/chart/dataset-visibility";
-import { createClusterBackgroundPlugin, createTechnicalAsteriskPlugin } from "@/lib/chart/plugins";
+import {
+  createClusterBackgroundPlugin,
+  createTechnicalAsteriskPlugin,
+  createTrackPointLabelPlugin,
+} from "@/lib/chart/plugins";
 import { applyRadarCenterFit, syncFontsForChart } from "@/lib/chart/radar-center";
-import { FE_UI, getChartLabels, PILLAR_COUNT } from "@/lib/constants";
+import { FE_UI, getChartLayoutLabels, PILLAR_COUNT } from "@/lib/constants";
 import { AI_AUGMENTATION_ENABLED } from "@/lib/flags";
 
 import { useAppStore } from "@/store/useAppStore";
@@ -85,7 +89,7 @@ export function CompetencyChart({ canvasRef, onChartReady, onResize }) {
       return;
     }
 
-    const plugins = [createClusterBackgroundPlugin()];
+    const plugins = [createClusterBackgroundPlugin(), createTrackPointLabelPlugin()];
     if (AI_AUGMENTATION_ENABLED) {
       plugins.push(createTechnicalAsteriskPlugin());
     }
@@ -96,7 +100,7 @@ export function CompetencyChart({ canvasRef, onChartReady, onResize }) {
     const chart = new Chart(canvas, {
       type: "radar",
       data: {
-        labels: getChartLabels(useAppStore.getState().trackVariant),
+        labels: getChartLayoutLabels(),
         datasets: [
           buildHumanDataset(" ", new Array(PILLAR_COUNT).fill(0)),
           ...(AI_AUGMENTATION_ENABLED ? [buildAiDataset(new Array(PILLAR_COUNT).fill(0))] : []),
@@ -142,7 +146,7 @@ export function CompetencyChart({ canvasRef, onChartReady, onResize }) {
               centerPointLabels: ch.centerPointLabels,
               padding: ch.pointLabelPadding,
               font: { size: ch.pointLabelPx, weight: ch.pointLabelWeight },
-              color: ch.pointLabelColor,
+              color: "transparent",
             },
             angleLines: { color: ch.gridColor },
             grid: { circular: false, color: ch.gridColor },
@@ -187,8 +191,6 @@ export function CompetencyChart({ canvasRef, onChartReady, onResize }) {
       return;
     }
 
-    chart.data.labels = getChartLabels(trackVariant);
-    syncFontsForChart(chart);
     chart.update("none");
   }, [trackVariant]);
 
