@@ -77,7 +77,7 @@ export function ChartSection() {
 
       <div ref={exportRef} className="flex w-full min-w-0 flex-col self-stretch">
         {showHeading ? (
-          <h2 id="competency-chart-heading" className="relative z-[1] mb-2 w-full text-center text-xl font-semibold text-[#222]">
+          <h2 id="competency-chart-heading" className="relative z-[1] mb-2 w-full text-center text-2xl font-bold text-[#000]">
             {title}
           </h2>
         ) : (

@@ -63,6 +63,14 @@ function writeDatasetInPlace(ds, values) {
   d.length = values.length;
 }
 
+function syncChartDatasets(chart, { levels, aiLevels, title }) {
+  writeDatasetInPlace(chart.data.datasets[0], levels);
+  chart.data.datasets[0].label = String(title).trim() || " ";
+  if (chart.data.datasets[1]) {
+    writeDatasetInPlace(chart.data.datasets[1], aiLevels);
+  }
+}
+
 export function CompetencyChart({ canvasRef, onChartReady, onResize }) {
   const chartRef = useRef(null);
   const levels = useAppStore((s) => s.levels);
@@ -145,6 +153,8 @@ export function CompetencyChart({ canvasRef, onChartReady, onResize }) {
     });
 
     chartRef.current = chart;
+    syncChartDatasets(chart, useAppStore.getState());
+    chart.update("none");
     onChartReady?.(chart);
 
     requestAnimationFrame(() => {
@@ -166,11 +176,7 @@ export function CompetencyChart({ canvasRef, onChartReady, onResize }) {
       return;
     }
 
-    writeDatasetInPlace(chart.data.datasets[0], levels);
-    chart.data.datasets[0].label = String(title).trim() || " ";
-    if (chart.data.datasets[1]) {
-      writeDatasetInPlace(chart.data.datasets[1], aiLevels);
-    }
+    syncChartDatasets(chart, { levels, aiLevels, title });
     chart.update("none");
   }, [levels, aiLevels, title]);
 
