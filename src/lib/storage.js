@@ -7,7 +7,12 @@ export function loadDraftFromStorage() {
     if (!raw) {
       return null;
     }
-    return normalizeSavedState(JSON.parse(raw));
+    const parsed = JSON.parse(raw);
+    const normalized = normalizeSavedState(parsed);
+    if (normalized && parsed.trackVariant == null) {
+      saveDraftToStorage(normalized);
+    }
+    return normalized;
   } catch {
     return null;
   }
@@ -21,6 +26,10 @@ export function saveDraftToStorage(state) {
   }
 }
 
+function profileNeedsTrackVariantMigration(row) {
+  return row != null && typeof row === "object" && row.trackVariant == null;
+}
+
 export function loadProfilesFromStorage() {
   try {
     const raw = localStorage.getItem(PROFILES_STORAGE_KEY);
@@ -30,13 +39,24 @@ export function loadProfilesFromStorage() {
     const parsed = JSON.parse(raw);
     const arr = Array.isArray(parsed.profiles) ? parsed.profiles : [];
     const out = [];
+    let migrated = false;
+
     for (const row of arr) {
+      if (profileNeedsTrackVariantMigration(row)) {
+        migrated = true;
+      }
       const n = normalizeStoredProfile(row);
       if (n) {
         out.push(n);
       }
     }
+
     out.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
+
+    if (migrated) {
+      writeProfilesToStorage(out);
+    }
+
     return out;
   } catch {
     return [];

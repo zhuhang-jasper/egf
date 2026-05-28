@@ -1,3 +1,4 @@
+import { TRACK_VARIANT_UI } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 import { useAppStore } from "@/store/useAppStore";
@@ -19,8 +20,9 @@ export function TrackToggle() {
         <span
           aria-hidden
           className={cn(
-            "pointer-events-none absolute top-0.5 bottom-0.5 w-[calc(50%-0.25rem)] rounded-full bg-primary transition-[left] duration-200 ease-out",
+            "pointer-events-none absolute top-0.5 bottom-0.5 w-[calc(50%-0.25rem)] rounded-full transition-[left,background-color] duration-200 ease-out",
             isBe ? "left-[calc(50%+0.0625rem)]" : "left-0.5",
+            TRACK_VARIANT_UI[trackVariant].toggleActiveClass,
           )}
         />
         {SEGMENTS.map(({ id, label }) => (
@@ -29,7 +31,7 @@ export function TrackToggle() {
             type="button"
             className={cn(
               "relative z-10 flex-1 basis-0 rounded-full px-2.5 text-xs font-medium whitespace-nowrap transition-colors",
-              trackVariant === id ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground/80",
+              trackVariant === id ? "text-white" : "text-muted-foreground hover:text-foreground/80",
             )}
             aria-pressed={trackVariant === id}
             onClick={() => setTrackVariant(id)}

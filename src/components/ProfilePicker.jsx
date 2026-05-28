@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 
 import { ChevronDown, X } from "lucide-react";
 
+import { TrackBadge } from "@/components/TrackBadge";
 import { Button } from "@/components/ui/button";
 
 import { useAppStore } from "@/store/useAppStore";
@@ -56,10 +57,11 @@ export function ProfilePicker() {
                     <button
                       type="button"
                       role="menuitem"
-                      className="min-w-0 flex-1 px-3 py-2 text-left text-sm hover:bg-muted/60"
+                      className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted/60"
                       onClick={() => loadProfile(pr.id)}
                     >
-                      {label}
+                      <span className="min-w-0 truncate">{label}</span>
+                      <TrackBadge variant={pr.trackVariant} />
                     </button>
                     <button
                       type="button"

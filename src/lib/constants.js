@@ -39,6 +39,20 @@ export const PRODUCT_PILLAR_LABELS = {
 
 export const TRACK_VARIANTS = ["fe", "be"];
 
+export const TRACK_VARIANT_UI = {
+  fe: {
+    shortLabel: "FE",
+    pillClass: "bg-track-fe text-track-fe-foreground",
+    toggleActiveClass: "bg-track-fe",
+  },
+  be: {
+    shortLabel: "BE",
+    pillClass: "bg-track-be text-track-be-foreground",
+    toggleActiveClass: "bg-track-be",
+  },
+};
+
+/** Profiles/drafts without `trackVariant` are treated as front-end (FE). */
 export function normalizeTrackVariant(value) {
   return value === "be" ? "be" : "fe";
 }
