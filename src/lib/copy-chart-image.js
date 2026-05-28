@@ -99,6 +99,32 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY) {
     ctx.drawImage(legendImg, x, y, w, h);
   }
 
+  const trackBadge = exportRoot.querySelector("[data-chart-export='track-badge']");
+  if (trackBadge instanceof HTMLElement && !isVisuallyHidden(trackBadge)) {
+    const text = trackBadge.textContent?.trim();
+    if (text) {
+      const cs = window.getComputedStyle(trackBadge);
+      const { x, y, w, h } = getRelativeRect(trackBadge, rootRect, scaleX, scaleY);
+      const radius = (Number.parseFloat(cs.borderRadius) || 6) * scaleX;
+      drawRoundedRect(
+        ctx,
+        x,
+        y,
+        w,
+        h,
+        radius,
+        sanitizeColorForHtml2Canvas(cs.backgroundColor),
+        null,
+        0,
+      );
+      ctx.fillStyle = sanitizeColorForHtml2Canvas(cs.color);
+      ctx.font = buildFont(cs, scaleY);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, x + w / 2, y + h / 2);
+    }
+  }
+
   const averagesGrid = exportRoot.querySelector("[aria-label]");
   if (averagesGrid) {
     for (const card of averagesGrid.children) {

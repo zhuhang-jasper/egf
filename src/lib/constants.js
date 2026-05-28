@@ -42,11 +42,13 @@ export const TRACK_VARIANTS = ["fe", "be"];
 export const TRACK_VARIANT_UI = {
   fe: {
     shortLabel: "FE",
+    label: "Frontend",
     pillClass: "bg-track-fe text-track-fe-foreground",
     toggleActiveClass: "bg-track-fe",
   },
   be: {
     shortLabel: "BE",
+    label: "Backend",
     pillClass: "bg-track-be text-track-be-foreground",
     toggleActiveClass: "bg-track-be",
   },
@@ -187,10 +189,10 @@ export function isAiPillarIndex(index) {
 export const FE_UI = {
   page: { maxWidthPx: 650, minWidthPx: 350 },
   chartFrame: {
-    marginTopMinPx: 20,
-    marginTopMaxPx: -60,
-    marginBottomMinPx: -40,
-    marginBottomMaxPx: -80,
+    marginTopMinPx: -15,
+    marginTopMaxPx: -45,
+    marginBottomMinPx: -55,
+    marginBottomMaxPx: -85,
     minChartHeightPx: 120,
   },
   chart: {

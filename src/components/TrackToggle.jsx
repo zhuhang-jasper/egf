@@ -1,12 +1,7 @@
-import { TRACK_VARIANT_UI } from "@/lib/constants";
+import { TRACK_VARIANT_UI, TRACK_VARIANTS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 import { useAppStore } from "@/store/useAppStore";
-
-const SEGMENTS = [
-  { id: "fe", label: "Frontend" },
-  { id: "be", label: "Backend" },
-];
 
 export function TrackToggle() {
   const trackVariant = useAppStore((s) => s.trackVariant);
@@ -25,7 +20,7 @@ export function TrackToggle() {
             TRACK_VARIANT_UI[trackVariant].toggleActiveClass,
           )}
         />
-        {SEGMENTS.map(({ id, label }) => (
+        {TRACK_VARIANTS.map((id) => (
           <button
             key={id}
             type="button"
@@ -36,7 +31,7 @@ export function TrackToggle() {
             aria-pressed={trackVariant === id}
             onClick={() => setTrackVariant(id)}
           >
-            {label}
+            {TRACK_VARIANT_UI[id].label}
           </button>
         ))}
       </div>

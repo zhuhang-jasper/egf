@@ -3,11 +3,7 @@ import { useEffect, useRef } from "react";
 import { Chart, Filler, Legend, LineElement, PointElement, RadarController, RadialLinearScale, Tooltip } from "chart.js";
 
 import { syncLevelDatasetsVisibility } from "@/lib/chart/dataset-visibility";
-import {
-  createClusterBackgroundPlugin,
-  createTechnicalAsteriskPlugin,
-  createTrackPointLabelPlugin,
-} from "@/lib/chart/plugins";
+import { createClusterBackgroundPlugin, createTechnicalAsteriskPlugin, createTrackPointLabelPlugin } from "@/lib/chart/plugins";
 import { applyRadarCenterFit, syncFontsForChart } from "@/lib/chart/radar-center";
 import { FE_UI, getChartLayoutLabels, PILLAR_COUNT } from "@/lib/constants";
 import { AI_AUGMENTATION_ENABLED } from "@/lib/flags";
