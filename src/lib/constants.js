@@ -34,7 +34,7 @@ export const PRODUCT_PILLAR_ID = "uiUx";
 
 export const PRODUCT_PILLAR_LABELS = {
   fe: "👀 UI/UX",
-  be: "👃 Domain Expertise",
+  be: "👃 Business Logic",
 };
 
 export const TRACK_VARIANTS = ["fe", "be"];
