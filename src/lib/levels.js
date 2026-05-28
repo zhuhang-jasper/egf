@@ -64,7 +64,7 @@ function insertAiPillarIntoLevels(levels) {
   return [
     clampLevel(levels[0]),
     clampLevel(levels[1]),
-    DEFAULT_STATE.levels[AI_PILLAR_CHART_INDEX],
+    0,
     clampLevel(levels[2]),
     clampLevel(levels[3]),
     clampLevel(levels[4]),
@@ -126,7 +126,7 @@ function resizeLevelsToTarget(levels, schema = 0) {
 
   let mapped = levels.map((v) => clampLevel(v));
 
-  if (mapped.length === FULL_PILLAR_COUNT && schema < PILLAR_SCHEMA) {
+  if (mapped.length === FULL_PILLAR_COUNT && schema === 1) {
     mapped = migrateAiBeforeProcessLevels(mapped);
   }
 
@@ -152,7 +152,7 @@ function resizeAiLevelsToTarget(aiLevels, schema = 0) {
 
   let mapped = aiLevels.map((v) => clampLevel(v));
 
-  if (mapped.length === FULL_PILLAR_COUNT && schema < PILLAR_SCHEMA) {
+  if (mapped.length === FULL_PILLAR_COUNT && schema === 1) {
     mapped = migrateAiBeforeProcessAiLevels(mapped);
   }
 
@@ -205,7 +205,7 @@ export function normalizeSavedState(parsed) {
   if (typeof parsed.title !== "string") {
     return null;
   }
-  const schema = Number.isFinite(parsed.pillarSchema) ? parsed.pillarSchema : 0;
+  const schema = Number.isFinite(parsed.pillarSchema) ? parsed.pillarSchema : PILLAR_SCHEMA;
   const levelsMapped = resizeLevelsToTarget(parsed.levels, schema);
   if (!levelsMapped) {
     return null;
