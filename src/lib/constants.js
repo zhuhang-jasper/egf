@@ -5,6 +5,14 @@ export const PROFILES_STORAGE_KEY = "fe-growth-framework:profiles:v1";
 export const LEVEL_STEP = 0.5;
 export const HUMAN_STRENGTH_TOP_K = 3;
 
+/** Official site title, intro copy, and meta strings (HTML, PWA, app header). */
+export const SITE_COPY = {
+  title: "The 8-Pillar Engineer Growth Framework",
+  tagline: "A spider chart to measure software engineering mastery.",
+  detail: "Supported by a 40-point competency matrix across 5 seniority levels.",
+  byline: "— Jasper Loo Zhu Hang",
+};
+
 /** Chart order when the dedicated AI pillar is included (`?ai=2`). */
 export const PILLAR_ORDER_WITH_AI = ["coding", "architecture", "ai", "process", "ownership", "communication", "productSense", "uiUx"];
 
