@@ -1,10 +1,36 @@
+import { useState } from "react";
+
 import { LEVEL_STEP } from "@/lib/constants";
 import { clampLevel, formatLevelForInput } from "@/lib/levels";
 
+function normalizeTypingValue(raw) {
+  let s = String(raw).replace(",", ".").trim();
+  if (s.startsWith(".")) {
+    s = `0${s}`;
+  }
+  return s;
+}
+
+function isPartialLevelInput(s) {
+  return s === "" || /^\d*\.?\d*$/.test(s);
+}
+
+function shouldCommitWhileTyping(s) {
+  return s !== "" && !s.endsWith(".");
+}
+
 export function LevelInput({ value, onChange, isAi = false, ariaLabel, ariaLabelUp, ariaLabelDown }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+
   const bump = (dir) => {
+    setEditing(false);
     const next = clampLevel(clampLevel(value) + dir * LEVEL_STEP);
     onChange(next);
+  };
+
+  const commit = (raw) => {
+    onChange(clampLevel(raw === "" ? value : raw));
   };
 
   return (
@@ -16,9 +42,28 @@ export function LevelInput({ value, onChange, isAi = false, ariaLabel, ariaLabel
         spellCheck={false}
         aria-label={ariaLabel}
         data-ai={isAi ? "true" : undefined}
-        value={formatLevelForInput(value)}
-        onChange={(e) => onChange(clampLevel(e.target.value))}
-        onBlur={(e) => onChange(clampLevel(e.target.value))}
+        value={editing ? draft : formatLevelForInput(value)}
+        onFocus={() => {
+          setEditing(true);
+          setDraft(formatLevelForInput(value));
+        }}
+        onChange={(e) => {
+          const s = normalizeTypingValue(e.target.value);
+          if (!isPartialLevelInput(s)) {
+            return;
+          }
+          setDraft(s);
+          if (shouldCommitWhileTyping(s)) {
+            const n = parseFloat(s);
+            if (Number.isFinite(n)) {
+              onChange(clampLevel(n));
+            }
+          }
+        }}
+        onBlur={() => {
+          setEditing(false);
+          commit(draft);
+        }}
         onKeyDown={(e) => {
           if (e.key === "ArrowUp") {
             e.preventDefault();
@@ -26,6 +71,8 @@ export function LevelInput({ value, onChange, isAi = false, ariaLabel, ariaLabel
           } else if (e.key === "ArrowDown") {
             e.preventDefault();
             bump(-1);
+          } else if (e.key === "Enter") {
+            e.currentTarget.blur();
           }
         }}
         className="level-value"

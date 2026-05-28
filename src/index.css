@@ -53,33 +53,24 @@
   #competencyInputs .form-cluster {
     position: relative;
     box-sizing: border-box;
-    padding-left: 14px;
-  }
-
-  #competencyInputs .form-cluster::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    border-radius: 3px;
-    pointer-events: none;
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
-    background: var(--cluster-color);
+    width: 100%;
+    padding: 16px 16px 10px;
+    border-radius: var(--radius-md);
+    background-color: color-mix(in srgb, var(--cluster-color) 26%, #fff);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cluster-color) 40%, transparent);
   }
 
   #competencyInputs .form-section-title {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding-bottom: 8px;
+    padding-bottom: 10px;
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 500;
     line-height: 1.2;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: #333;
+    color: color-mix(in srgb, var(--cluster-color) 50%, #1a1a1a);
   }
 
   #competencyInputs .form-section-title::before {
@@ -105,7 +96,7 @@
 
   #competencyInputs .field-row > span:first-child {
     min-width: 0;
-    padding-left: 12px;
+    padding-left: 0;
     text-align: left;
   }
 
