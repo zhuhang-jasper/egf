@@ -1,7 +1,6 @@
 import { LevelInput } from "@/components/LevelInput";
 
-import { CLUSTERS } from "@/lib/constants";
-import { AI_AUGMENTATION_ENABLED } from "@/lib/flags";
+import { AI_AUGMENTATION_ENABLED, CLUSTERS } from "@/lib/constants";
 
 import { useAppStore } from "@/store/useAppStore";
 

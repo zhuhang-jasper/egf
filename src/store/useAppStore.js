@@ -13,6 +13,7 @@ export const useAppStore = create((set, get) => ({
   trackVariant: normalizeTrackVariant(initialDraft.trackVariant),
   levelsPolygonHidden: false,
   chartLegendHidden: false,
+  footerScoresHidden: false,
   activeSavedProfileId: null,
   profiles: loadProfilesFromStorage(),
   profilePickerOpen: false,
@@ -79,6 +80,8 @@ export const useAppStore = create((set, get) => ({
   setLevelsPolygonHidden: (hidden) => set({ levelsPolygonHidden: hidden }),
 
   setChartLegendHidden: (hidden) => set({ chartLegendHidden: hidden }),
+
+  setFooterScoresHidden: (hidden) => set({ footerScoresHidden: hidden }),
 
   setProfilePickerOpen: (open) => {
     set({ profilePickerOpen: open });
