@@ -1,5 +1,4 @@
-import { FE_UI, PILLAR_COUNT } from "@/lib/constants";
-import { AI_AUGMENTATION_ENABLED } from "@/lib/flags";
+import { AI_AUGMENTATION_ENABLED, PILLAR_COUNT } from "@/lib/constants";
 import { computeAverages, formatAvgScore } from "@/lib/scores";
 import { cn } from "@/lib/utils";
 
@@ -18,10 +17,9 @@ function AvgCard({ label, value, sub, className, title }) {
 export function ChartAverages() {
   const levels = useAppStore((s) => s.levels);
   const aiLevels = useAppStore((s) => s.aiLevels);
-  const hidden = useAppStore((s) => s.levelsPolygonHidden);
-  const show = FE_UI.chart.showFooterAverages !== false;
+  const scoresHidden = useAppStore((s) => s.footerScoresHidden);
 
-  if (!show || hidden) {
+  if (scoresHidden) {
     return null;
   }
 

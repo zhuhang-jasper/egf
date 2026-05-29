@@ -6,7 +6,7 @@ import { ProfilePicker } from "@/components/ProfilePicker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-import { AI_AUGMENTATION_ENABLED } from "@/lib/flags";
+import { AI_AUGMENTATION_ENABLED } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 import { useAppStore } from "@/store/useAppStore";

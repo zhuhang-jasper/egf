@@ -1,5 +1,10 @@
 import { PROFILES_STORAGE_KEY, STORAGE_KEY } from "@/lib/constants";
-import { normalizeSavedState, normalizeStoredProfile } from "@/lib/levels";
+import {
+  needsStorageUpgrade,
+  normalizeSavedState,
+  normalizeStoredProfile,
+  toCanonicalStoragePayload,
+} from "@/lib/levels";
 
 export function loadDraftFromStorage() {
   try {
@@ -9,8 +14,8 @@ export function loadDraftFromStorage() {
     }
     const parsed = JSON.parse(raw);
     const normalized = normalizeSavedState(parsed);
-    if (normalized && parsed.trackVariant == null) {
-      saveDraftToStorage(normalized);
+    if (normalized && needsStorageUpgrade(parsed)) {
+      saveDraftToStorage(toCanonicalStoragePayload(normalized));
     }
     return normalized;
   } catch {
@@ -26,8 +31,8 @@ export function saveDraftToStorage(state) {
   }
 }
 
-function profileNeedsTrackVariantMigration(row) {
-  return row != null && typeof row === "object" && row.trackVariant == null;
+function profileNeedsStorageMigration(row) {
+  return needsStorageUpgrade(row);
 }
 
 export function loadProfilesFromStorage() {
@@ -42,7 +47,7 @@ export function loadProfilesFromStorage() {
     let migrated = false;
 
     for (const row of arr) {
-      if (profileNeedsTrackVariantMigration(row)) {
+      if (profileNeedsStorageMigration(row)) {
         migrated = true;
       }
       const n = normalizeStoredProfile(row);

@@ -94,7 +94,7 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY) {
   }
 
   const legendImg = exportRoot.querySelector("img");
-  if (legendImg?.complete && legendImg.naturalWidth > 0) {
+  if (legendImg instanceof HTMLImageElement && !isVisuallyHidden(legendImg) && legendImg.complete && legendImg.naturalWidth > 0) {
     const { x, y, w, h } = getRelativeRect(legendImg, rootRect, scaleX, scaleY);
     ctx.drawImage(legendImg, x, y, w, h);
   }

@@ -1,4 +1,10 @@
-import { AI_AUGMENTATION_ENABLED, AI_PILLAR_ENABLED, SHOW_FOOTER_AVERAGES } from "@/lib/flags";
+const urlParams = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
+
+/** `?ai=1` — AI augmentation on Coding, Architecture, Process (second polygon). */
+export const AI_AUGMENTATION_ENABLED = urlParams.get("ai") === "1";
+
+/** `?ai=2` — dedicated AI pillar (8 pillars on chart and form). */
+export const AI_PILLAR_ENABLED = urlParams.get("ai") === "2";
 
 export const STORAGE_KEY = "fe-growth-framework:v1";
 export const PROFILES_STORAGE_KEY = "fe-growth-framework:profiles:v1";
@@ -17,11 +23,14 @@ export const BASE_PILLAR_COUNT = PILLAR_ORDER_BASE.length;
 /** Index of the 🤖 AI pillar when {@link PILLAR_ORDER_WITH_AI} is active. */
 export const AI_PILLAR_CHART_INDEX = PILLAR_ORDER_WITH_AI.indexOf("ai");
 
+/** Canonical storage indices for ai=1 augmentation scores (coding, architecture, process). */
+export const CANONICAL_AI_AUGMENT_INDICES = [0, 1, AI_PILLAR_CHART_INDEX + 1];
+
 /** Canonical pillar definitions (names and metadata). Chart order is {@link PILLAR_ORDER}. */
 export const PILLARS = {
   coding: { label: "🤲 Coding", hasAi: true },
   architecture: { label: "🧠 Architecture", hasAi: true },
-  ai: { label: "🤖 AI" },
+  ai: { label: "🤖 AI Proficiency" },
   process: { label: "🦴 Process", hasAi: true },
   ownership: { label: "✨ Ownership" },
   communication: { label: "🗣️ Communication" },
@@ -189,10 +198,10 @@ export function isAiPillarIndex(index) {
 export const FE_UI = {
   page: { maxWidthPx: 650, minWidthPx: 350 },
   chartFrame: {
-    marginTopMinPx: -15,
-    marginTopMaxPx: -45,
-    marginBottomMinPx: -55,
-    marginBottomMaxPx: -85,
+    marginTopMinPx: -20,
+    marginTopMaxPx: -50,
+    marginBottomMinPx: -50,
+    marginBottomMaxPx: -80,
     minChartHeightPx: 120,
   },
   chart: {
@@ -212,7 +221,6 @@ export const FE_UI = {
     tickBackdropColor: "rgba(255, 255, 255, 0.5)",
     exportImageCssScale: 8,
     exportImageCssScaleMax: 12,
-    showFooterAverages: SHOW_FOOTER_AVERAGES,
     clusterBorderColor: "rgba(0, 0, 0, 0.22)",
     clusterBorderWidth: 1,
   },
