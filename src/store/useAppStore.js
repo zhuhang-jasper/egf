@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-import { isAiPillarIndex, normalizeTrackVariant, PILLAR_COUNT, PILLAR_SCHEMA } from "@/lib/constants";
+import { isAiPillarIndex, normalizeTrackVariant, PILLAR_COUNT, PILLAR_SCHEMA, SCORES_VISIBLE_FROM_URL } from "@/lib/constants";
 import {
   getDefaultChartState,
   mergeViewIntoCanonical,
@@ -32,7 +32,7 @@ export const useAppStore = create((set, get) => ({
   levelsPolygonHidden: false,
   chartLegendHidden: false,
   chartTitleHidden: false,
-  footerScoresHidden: false,
+  footerScoresHidden: !SCORES_VISIBLE_FROM_URL,
   activeSavedProfileId: null,
   profiles: loadProfilesFromStorage(),
   profilePickerOpen: false,
