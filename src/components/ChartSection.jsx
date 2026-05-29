@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 
 import { useCompetencyChart } from "@/hooks/useCompetencyChart";
 
-import { FE_UI } from "@/lib/constants";
+import { FE_UI, SCORES_VISIBLE_FROM_URL } from "@/lib/constants";
 import { copyChartAsImageToClipboard } from "@/lib/copy-chart-image";
 import { cn } from "@/lib/utils";
 
@@ -90,7 +90,9 @@ function ChartDisplayMenu() {
           <DisplayCheckbox label="Title" checked={!chartTitleHidden} onChange={(v) => setChartTitleHidden(!v)} />
           <DisplayCheckbox label="Legend" checked={!chartLegendHidden} onChange={(v) => setChartLegendHidden(!v)} />
           <DisplayCheckbox label="Chart" checked={!levelsPolygonHidden} onChange={(v) => setLevelsPolygonHidden(!v)} />
-          <DisplayCheckbox label="Scores" checked={!footerScoresHidden} onChange={(v) => setFooterScoresHidden(!v)} />
+          {SCORES_VISIBLE_FROM_URL ? (
+            <DisplayCheckbox label="Scores" checked={!footerScoresHidden} onChange={(v) => setFooterScoresHidden(!v)} />
+          ) : null}
         </div>
       ) : null}
     </div>

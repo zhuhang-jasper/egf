@@ -6,6 +6,9 @@ export const AI_AUGMENTATION_ENABLED = urlParams.get("ai") === "1";
 /** `?ai=2` — dedicated AI pillar (8 pillars on chart and form). */
 export const AI_PILLAR_ENABLED = urlParams.get("ai") === "2";
 
+/** `?score=1` — show Scores in chart settings (checked by default) and footer averages. */
+export const SCORES_VISIBLE_FROM_URL = urlParams.get("score") === "1";
+
 export const STORAGE_KEY = "fe-growth-framework:v1";
 export const PROFILES_STORAGE_KEY = "fe-growth-framework:profiles:v1";
 export const LEVEL_STEP = 0.5;
