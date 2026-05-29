@@ -148,7 +148,10 @@ export function CompetencyChart({ canvasRef, onChartReady, onResize }) {
             grid: { circular: false, color: ch.gridColor },
           },
         },
-        plugins: { legend: { display: false } },
+        plugins: {
+          legend: { display: false },
+          tooltip: { enabled: false },
+        },
       },
       plugins,
     });
