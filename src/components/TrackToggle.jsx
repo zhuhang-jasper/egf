@@ -25,7 +25,7 @@ export function TrackToggle() {
             key={id}
             type="button"
             className={cn(
-              "relative z-10 flex-1 basis-0 rounded-full px-2.5 text-xs font-medium whitespace-nowrap transition-colors",
+              "relative z-10 flex-1 basis-0 cursor-pointer rounded-full px-2.5 text-xs font-medium whitespace-nowrap transition-colors",
               trackVariant === id ? "text-white" : "text-muted-foreground hover:text-foreground/80",
             )}
             aria-pressed={trackVariant === id}
