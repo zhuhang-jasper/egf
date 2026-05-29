@@ -21,7 +21,7 @@ export const AI_PILLAR_CHART_INDEX = PILLAR_ORDER_WITH_AI.indexOf("ai");
 export const PILLARS = {
   coding: { label: "🤲 Coding", hasAi: true },
   architecture: { label: "🧠 Architecture", hasAi: true },
-  ai: { label: "🤖 AI" },
+  ai: { label: "🤖 AI Proficiency" },
   process: { label: "🦴 Process", hasAi: true },
   ownership: { label: "✨ Ownership" },
   communication: { label: "🗣️ Communication" },
