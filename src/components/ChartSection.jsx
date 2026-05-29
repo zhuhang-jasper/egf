@@ -1,6 +1,9 @@
 import { useCallback, useRef, useState } from "react";
 
+import { ArrowUpFromLine } from "lucide-react";
+
 import { ChartAverages } from "@/components/ChartAverages";
+import { ChartDisplaySettings } from "@/components/ChartDisplaySettings";
 import { CompetencyChart } from "@/components/CompetencyChart";
 import { TrackBadge } from "@/components/TrackBadge";
 import { TrackToggle } from "@/components/TrackToggle";
@@ -8,7 +11,6 @@ import { Button } from "@/components/ui/button";
 
 import { useChartFrameMargins } from "@/hooks/useChartFrameMargins";
 
-import { syncLevelDatasetsVisibility } from "@/lib/chart/dataset-visibility";
 import { copyChartAsImageToClipboard } from "@/lib/copy-chart-image";
 import { cn } from "@/lib/utils";
 
@@ -26,10 +28,7 @@ export function ChartSection() {
 
   const title = useAppStore((s) => s.title);
   const trackVariant = useAppStore((s) => s.trackVariant);
-  const levelsPolygonHidden = useAppStore((s) => s.levelsPolygonHidden);
-  const setLevelsPolygonHidden = useAppStore((s) => s.setLevelsPolygonHidden);
   const chartLegendHidden = useAppStore((s) => s.chartLegendHidden);
-  const setChartLegendHidden = useAppStore((s) => s.setChartLegendHidden);
 
   const syncMargins = useChartFrameMargins(frameRef, legendRef);
   const onChartReady = useCallback((chart) => {
@@ -38,19 +37,6 @@ export function ChartSection() {
 
   const trimmedTitle = String(title).trim();
   const showHeading = trimmedTitle.length > 0;
-
-  const toggleLevelsPolygonHidden = useCallback(() => {
-    const nextHidden = !levelsPolygonHidden;
-    const chart = chartInstanceRef.current;
-    if (chart && syncLevelDatasetsVisibility(chart, nextHidden)) {
-      chart.update("none");
-    }
-    setLevelsPolygonHidden(nextHidden);
-  }, [levelsPolygonHidden, setLevelsPolygonHidden]);
-
-  const toggleChartLegendHidden = useCallback(() => {
-    setChartLegendHidden(!chartLegendHidden);
-  }, [chartLegendHidden, setChartLegendHidden]);
 
   const handleCopy = async () => {
     try {
@@ -80,14 +66,10 @@ export function ChartSection() {
         <TrackToggle />
         <div className="flex shrink-0 items-center gap-2">
           <Button type="button" variant="outline" size="sm" onClick={handleCopy}>
+            <ArrowUpFromLine className="h-3.5 w-3.5 shrink-0" aria-hidden />
             {copyLabel}
           </Button>
-          <Button type="button" variant="outline" size="sm" aria-expanded={!chartLegendHidden} onClick={toggleChartLegendHidden}>
-            {chartLegendHidden ? "Show legend" : "Hide legend"}
-          </Button>
-          <Button type="button" variant="outline" size="sm" aria-expanded={!levelsPolygonHidden} onClick={toggleLevelsPolygonHidden}>
-            {levelsPolygonHidden ? "Show chart" : "Hide chart"}
-          </Button>
+          <ChartDisplaySettings chartRef={chartInstanceRef} />
         </div>
       </div>
 
