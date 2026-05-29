@@ -25,12 +25,13 @@ export function useChartFrameMargins(frameRef, legendRef) {
       legendH = legend.offsetHeight + (parseFloat(cs.marginTop) || 0) + (parseFloat(cs.marginBottom) || 0);
     }
 
-    const marginTop = top - legendH;
-    frame.style.margin = `${marginTop}px auto ${bot}px`;
+    const marginTop = Math.round(top - legendH);
+    const marginBottom = Math.round(bot);
 
     const shrink = (top < 0 ? -top : 0) + (bot < 0 ? -bot : 0);
     const minH = cf.minChartHeightPx ?? 120;
-    const innerH = Math.max(minH, w - shrink);
+    const innerH = Math.round(Math.max(minH, w - shrink));
+    frame.style.margin = `${marginTop}px auto ${marginBottom}px`;
     frame.style.aspectRatio = "unset";
     frame.style.height = `${innerH}px`;
   }, [frameRef, legendRef]);

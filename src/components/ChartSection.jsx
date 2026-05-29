@@ -10,6 +10,7 @@ import { useChartFrameMargins } from "@/hooks/useChartFrameMargins";
 
 import { syncLevelDatasetsVisibility } from "@/lib/chart/dataset-visibility";
 import { copyChartAsImageToClipboard } from "@/lib/copy-chart-image";
+import { cn } from "@/lib/utils";
 
 import { useAppStore } from "@/store/useAppStore";
 
@@ -27,6 +28,8 @@ export function ChartSection() {
   const trackVariant = useAppStore((s) => s.trackVariant);
   const levelsPolygonHidden = useAppStore((s) => s.levelsPolygonHidden);
   const setLevelsPolygonHidden = useAppStore((s) => s.setLevelsPolygonHidden);
+  const chartLegendHidden = useAppStore((s) => s.chartLegendHidden);
+  const setChartLegendHidden = useAppStore((s) => s.setChartLegendHidden);
 
   const syncMargins = useChartFrameMargins(frameRef, legendRef);
   const onChartReady = useCallback((chart) => {
@@ -44,6 +47,10 @@ export function ChartSection() {
     }
     setLevelsPolygonHidden(nextHidden);
   }, [levelsPolygonHidden, setLevelsPolygonHidden]);
+
+  const toggleChartLegendHidden = useCallback(() => {
+    setChartLegendHidden(!chartLegendHidden);
+  }, [chartLegendHidden, setChartLegendHidden]);
 
   const handleCopy = async () => {
     try {
@@ -75,6 +82,9 @@ export function ChartSection() {
           <Button type="button" variant="outline" size="sm" onClick={handleCopy}>
             {copyLabel}
           </Button>
+          <Button type="button" variant="outline" size="sm" aria-expanded={!chartLegendHidden} onClick={toggleChartLegendHidden}>
+            {chartLegendHidden ? "Show legend" : "Hide legend"}
+          </Button>
           <Button type="button" variant="outline" size="sm" aria-expanded={!levelsPolygonHidden} onClick={toggleLevelsPolygonHidden}>
             {levelsPolygonHidden ? "Show chart" : "Hide chart"}
           </Button>
@@ -92,7 +102,14 @@ export function ChartSection() {
           </h2>
         )}
 
-        <div ref={legendRef} className="mb-0 flex w-full min-w-0 items-start justify-between gap-2 px-2 leading-none">
+        <div
+          ref={legendRef}
+          className={cn(
+            "mb-0 flex w-full min-w-0 items-start justify-between gap-2 px-2 leading-none",
+            chartLegendHidden && "invisible pointer-events-none",
+          )}
+          aria-hidden={chartLegendHidden || undefined}
+        >
           <img
             src={clusterLegendImage}
             width={200}
