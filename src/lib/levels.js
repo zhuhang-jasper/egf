@@ -217,12 +217,40 @@ export function normalizeAiLevels(arr) {
   return base;
 }
 
-function fallbackCanonicalAiLevels(levelsCanonical) {
-  const base = new Array(FULL_PILLAR_COUNT).fill(0);
-  for (const i of CANONICAL_AI_AUGMENT_INDICES) {
-    base[i] = clampLevel(levelsCanonical[i] ?? 2);
+function emptyCanonicalAiLevels() {
+  return new Array(FULL_PILLAR_COUNT).fill(0);
+}
+
+/** True when stored arrays used the pre-canonical 7-pillar shape (or missing AI data). */
+export function isLegacyShortProfile(parsed) {
+  if (!parsed || typeof parsed !== "object") {
+    return false;
   }
-  return base;
+  const levelsLen = Array.isArray(parsed.levels) ? parsed.levels.length : 0;
+  const aiLen = Array.isArray(parsed.aiLevels) ? parsed.aiLevels.length : 0;
+  return levelsLen === BASE_PILLAR_COUNT || aiLen === BASE_PILLAR_COUNT || !Array.isArray(parsed.aiLevels);
+}
+
+/** True when draft/profile JSON should be rewritten to canonical 8-pillar + latest schema. */
+export function needsStorageUpgrade(parsed) {
+  if (!parsed || typeof parsed !== "object") {
+    return false;
+  }
+  const schema = Number.isFinite(parsed.pillarSchema) ? parsed.pillarSchema : null;
+  const levelsLen = Array.isArray(parsed.levels) ? parsed.levels.length : 0;
+  const aiLen = Array.isArray(parsed.aiLevels) ? parsed.aiLevels.length : 0;
+  return schema !== PILLAR_SCHEMA || levelsLen !== FULL_PILLAR_COUNT || aiLen !== FULL_PILLAR_COUNT;
+}
+
+/** Persistable canonical snapshot (for localStorage migration). */
+export function toCanonicalStoragePayload(state) {
+  return {
+    title: state.title,
+    levels: state.canonicalLevels,
+    aiLevels: state.canonicalAiLevels,
+    pillarSchema: PILLAR_SCHEMA,
+    trackVariant: state.trackVariant,
+  };
 }
 
 /** Parse stored JSON into canonical 8-pillar arrays (mode-independent). */
@@ -233,12 +261,15 @@ export function parseToCanonicalState(parsed) {
   if (typeof parsed.title !== "string") {
     return null;
   }
-  const schema = Number.isFinite(parsed.pillarSchema) ? parsed.pillarSchema : PILLAR_SCHEMA;
+  const schema = Number.isFinite(parsed.pillarSchema) ? parsed.pillarSchema : 0;
+  const legacyShort = isLegacyShortProfile(parsed);
   const levels = resizeLevelsToCanonical(parsed.levels, schema);
   if (!levels) {
     return null;
   }
-  const aiLevels = resizeAiLevelsToCanonical(parsed.aiLevels, schema) ?? fallbackCanonicalAiLevels(levels);
+  const aiLevels = legacyShort
+    ? emptyCanonicalAiLevels()
+    : (resizeAiLevelsToCanonical(parsed.aiLevels, schema) ?? emptyCanonicalAiLevels());
   return {
     title: parsed.title,
     levels,

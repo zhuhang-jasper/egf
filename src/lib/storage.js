@@ -1,5 +1,10 @@
-import { FULL_PILLAR_COUNT, PROFILES_STORAGE_KEY, STORAGE_KEY } from "@/lib/constants";
-import { normalizeSavedState, normalizeStoredProfile } from "@/lib/levels";
+import { PROFILES_STORAGE_KEY, STORAGE_KEY } from "@/lib/constants";
+import {
+  needsStorageUpgrade,
+  normalizeSavedState,
+  normalizeStoredProfile,
+  toCanonicalStoragePayload,
+} from "@/lib/levels";
 
 export function loadDraftFromStorage() {
   try {
@@ -9,8 +14,8 @@ export function loadDraftFromStorage() {
     }
     const parsed = JSON.parse(raw);
     const normalized = normalizeSavedState(parsed);
-    if (normalized && parsed.trackVariant == null) {
-      saveDraftToStorage(normalized);
+    if (normalized && needsStorageUpgrade(parsed)) {
+      saveDraftToStorage(toCanonicalStoragePayload(normalized));
     }
     return normalized;
   } catch {
@@ -27,18 +32,7 @@ export function saveDraftToStorage(state) {
 }
 
 function profileNeedsStorageMigration(row) {
-  if (row == null || typeof row !== "object") {
-    return false;
-  }
-  if (row.trackVariant == null) {
-    return true;
-  }
-  return (
-    !Array.isArray(row.levels) ||
-    row.levels.length !== FULL_PILLAR_COUNT ||
-    !Array.isArray(row.aiLevels) ||
-    row.aiLevels.length !== FULL_PILLAR_COUNT
-  );
+  return needsStorageUpgrade(row);
 }
 
 export function loadProfilesFromStorage() {
