@@ -1,6 +1,6 @@
 import { LevelInput } from "@/components/LevelInput";
 
-import { AI_AUGMENTATION_ENABLED, CLUSTERS } from "@/lib/constants";
+import { AI_AUGMENTATION_ENABLED, CLUSTERS, getPillarLabel } from "@/lib/constants";
 
 import { useAppStore } from "@/store/useAppStore";
 
@@ -8,6 +8,7 @@ export function PillarCluster({ group }) {
   const levels = useAppStore((s) => s.levels);
   const aiLevels = useAppStore((s) => s.aiLevels);
   const setLevel = useAppStore((s) => s.setLevel);
+  const trackVariant = useAppStore((s) => s.trackVariant);
   const cluster = CLUSTERS[group.id];
 
   return (
@@ -15,7 +16,7 @@ export function PillarCluster({ group }) {
       <div className="form-section-title">{group.title}</div>
       {group.pillars.map((pillar) => (
         <label key={pillar.index} className="field-row">
-          <span>{pillar.label}</span>
+          <span>{getPillarLabel(pillar.id, trackVariant)}</span>
           {pillar.hasAi && AI_AUGMENTATION_ENABLED ? (
             <span className="field-row__nums">
               <LevelInput

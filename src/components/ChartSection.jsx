@@ -40,6 +40,8 @@ function ChartDisplayMenu() {
   const setChartLegendHidden = useAppStore((s) => s.setChartLegendHidden);
   const levelsPolygonHidden = useAppStore((s) => s.levelsPolygonHidden);
   const setLevelsPolygonHidden = useAppStore((s) => s.setLevelsPolygonHidden);
+  const chartTitleHidden = useAppStore((s) => s.chartTitleHidden);
+  const setChartTitleHidden = useAppStore((s) => s.setChartTitleHidden);
   const footerScoresHidden = useAppStore((s) => s.footerScoresHidden);
   const setFooterScoresHidden = useAppStore((s) => s.setFooterScoresHidden);
 
@@ -85,6 +87,7 @@ function ChartDisplayMenu() {
           aria-label="Chart display settings"
           className="absolute right-0 top-[calc(100%+4px)] z-50 min-w-[10.5rem] rounded-lg border border-border bg-card py-1 shadow-md"
         >
+          <DisplayCheckbox label="Title" checked={!chartTitleHidden} onChange={(v) => setChartTitleHidden(!v)} />
           <DisplayCheckbox label="Legend" checked={!chartLegendHidden} onChange={(v) => setChartLegendHidden(!v)} />
           <DisplayCheckbox label="Chart" checked={!levelsPolygonHidden} onChange={(v) => setLevelsPolygonHidden(!v)} />
           <DisplayCheckbox label="Scores" checked={!footerScoresHidden} onChange={(v) => setFooterScoresHidden(!v)} />
@@ -104,11 +107,16 @@ export function ChartSection() {
   const title = useAppStore((s) => s.title);
   const trackVariant = useAppStore((s) => s.trackVariant);
   const chartLegendHidden = useAppStore((s) => s.chartLegendHidden);
+  const chartTitleHidden = useAppStore((s) => s.chartTitleHidden);
 
   const { chartRef, relayout } = useCompetencyChart(canvasRef, frameRef, legendRef);
 
   const trimmedTitle = String(title).trim();
-  const showHeading = trimmedTitle.length > 0;
+  const showVisibleTitle = !chartTitleHidden && trimmedTitle.length > 0;
+
+  useEffect(() => {
+    relayout();
+  }, [chartTitleHidden, relayout]);
 
   const handleCopy = async () => {
     try {
@@ -146,7 +154,7 @@ export function ChartSection() {
       </div>
 
       <div ref={exportRef} className="flex w-full min-w-0 flex-col self-stretch">
-        {showHeading ? (
+        {showVisibleTitle ? (
           <h2 id="competency-chart-heading" className="relative z-[1] w-full text-center text-2xl font-bold text-black">
             {title}
           </h2>

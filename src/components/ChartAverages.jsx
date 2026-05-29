@@ -17,10 +17,9 @@ function AvgCard({ label, value, sub, className, title }) {
 export function ChartAverages() {
   const levels = useAppStore((s) => s.levels);
   const aiLevels = useAppStore((s) => s.aiLevels);
-  const chartHidden = useAppStore((s) => s.levelsPolygonHidden);
   const scoresHidden = useAppStore((s) => s.footerScoresHidden);
 
-  if (chartHidden || scoresHidden) {
+  if (scoresHidden) {
     return null;
   }
 

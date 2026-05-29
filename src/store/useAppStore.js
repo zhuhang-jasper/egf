@@ -1,18 +1,37 @@
 import { create } from "zustand";
 
-import { DEFAULT_STATE, isAiPillarIndex, normalizeTrackVariant, PILLAR_COUNT, PILLAR_SCHEMA } from "@/lib/constants";
-import { getDefaultChartState, newSavedProfileId, normalizeSavedState } from "@/lib/levels";
+import { isAiPillarIndex, normalizeTrackVariant, PILLAR_COUNT, PILLAR_SCHEMA } from "@/lib/constants";
+import {
+  getDefaultChartState,
+  mergeViewIntoCanonical,
+  newSavedProfileId,
+  normalizeSavedState,
+  parseToCanonicalState,
+  viewIndexToCanonicalIndex,
+} from "@/lib/levels";
 import { loadDraftFromStorage, loadProfilesFromStorage, saveDraftToStorage, writeProfilesToStorage } from "@/lib/storage";
 
 const initialDraft = loadDraftFromStorage() ?? getDefaultChartState();
+
+function canonicalFromStore(state) {
+  return mergeViewIntoCanonical({
+    levels: state.levels,
+    aiLevels: state.aiLevels,
+    canonicalLevels: state.canonicalLevels,
+    canonicalAiLevels: state.canonicalAiLevels,
+  });
+}
 
 export const useAppStore = create((set, get) => ({
   title: initialDraft.title,
   levels: [...initialDraft.levels],
   aiLevels: [...initialDraft.aiLevels],
+  canonicalLevels: [...initialDraft.canonicalLevels],
+  canonicalAiLevels: [...initialDraft.canonicalAiLevels],
   trackVariant: normalizeTrackVariant(initialDraft.trackVariant),
   levelsPolygonHidden: false,
   chartLegendHidden: false,
+  chartTitleHidden: false,
   footerScoresHidden: false,
   activeSavedProfileId: null,
   profiles: loadProfilesFromStorage(),
@@ -25,13 +44,16 @@ export const useAppStore = create((set, get) => ({
       title: draft.title,
       levels: [...draft.levels],
       aiLevels: [...draft.aiLevels],
+      canonicalLevels: [...draft.canonicalLevels],
+      canonicalAiLevels: [...draft.canonicalAiLevels],
       trackVariant: normalizeTrackVariant(draft.trackVariant),
       profiles: loadProfilesFromStorage(),
     });
   },
 
   persistDraft: () => {
-    const { title, levels, aiLevels, trackVariant } = get();
+    const { title, trackVariant } = get();
+    const { levels, aiLevels } = canonicalFromStore(get());
     saveDraftToStorage({ title, levels, aiLevels, trackVariant, pillarSchema: PILLAR_SCHEMA });
   },
 
@@ -46,22 +68,28 @@ export const useAppStore = create((set, get) => ({
   },
 
   setLevel: (index, value, { isAi = false } = {}) => {
+    const canonicalIndex = viewIndexToCanonicalIndex(index);
     if (isAi) {
       if (!isAiPillarIndex(index)) {
         return;
       }
       const aiLevels = [...get().aiLevels];
+      const canonicalAiLevels = [...get().canonicalAiLevels];
       aiLevels[index] = value;
+      canonicalAiLevels[canonicalIndex] = value;
       for (let j = 0; j < PILLAR_COUNT; j++) {
         if (!isAiPillarIndex(j)) {
           aiLevels[j] = 0;
+          canonicalAiLevels[viewIndexToCanonicalIndex(j)] = 0;
         }
       }
-      set({ aiLevels });
+      set({ aiLevels, canonicalAiLevels });
     } else {
       const levels = [...get().levels];
+      const canonicalLevels = [...get().canonicalLevels];
       levels[index] = value;
-      set({ levels });
+      canonicalLevels[canonicalIndex] = value;
+      set({ levels, canonicalLevels });
     }
     get().persistDraft();
   },
@@ -71,6 +99,8 @@ export const useAppStore = create((set, get) => ({
       title: state.title,
       levels: [...state.levels],
       aiLevels: [...state.aiLevels],
+      canonicalLevels: [...state.canonicalLevels],
+      canonicalAiLevels: [...state.canonicalAiLevels],
       trackVariant: normalizeTrackVariant(state.trackVariant),
       activeSavedProfileId: profileId,
     });
@@ -80,6 +110,8 @@ export const useAppStore = create((set, get) => ({
   setLevelsPolygonHidden: (hidden) => set({ levelsPolygonHidden: hidden }),
 
   setChartLegendHidden: (hidden) => set({ chartLegendHidden: hidden }),
+
+  setChartTitleHidden: (hidden) => set({ chartTitleHidden: hidden }),
 
   setFooterScoresHidden: (hidden) => set({ footerScoresHidden: hidden }),
 
@@ -118,10 +150,11 @@ export const useAppStore = create((set, get) => ({
       set({ saveFeedback: "add-title" });
       return false;
     }
-    const state = normalizeSavedState({
+    const { levels, aiLevels } = canonicalFromStore(get());
+    const state = parseToCanonicalState({
       title: trimmed,
-      levels: get().levels,
-      aiLevels: get().aiLevels,
+      levels,
+      aiLevels,
       trackVariant: get().trackVariant,
     });
     if (!state) {
@@ -163,6 +196,8 @@ export const useAppStore = create((set, get) => ({
     set({
       profiles: next,
       activeSavedProfileId: id,
+      canonicalLevels: [...state.levels],
+      canonicalAiLevels: [...state.aiLevels],
       saveFeedback: "saved",
     });
     get().persistDraft();
@@ -172,9 +207,12 @@ export const useAppStore = create((set, get) => ({
   clearSaveFeedback: () => set({ saveFeedback: null }),
 
   resetLevels: () => {
+    const defaults = getDefaultChartState();
     set({
-      levels: [...DEFAULT_STATE.levels],
-      aiLevels: [...DEFAULT_STATE.aiLevels],
+      levels: [...defaults.levels],
+      aiLevels: [...defaults.aiLevels],
+      canonicalLevels: [...defaults.canonicalLevels],
+      canonicalAiLevels: [...defaults.canonicalAiLevels],
       activeSavedProfileId: null,
     });
     get().persistDraft();

@@ -23,6 +23,9 @@ export const BASE_PILLAR_COUNT = PILLAR_ORDER_BASE.length;
 /** Index of the 🤖 AI pillar when {@link PILLAR_ORDER_WITH_AI} is active. */
 export const AI_PILLAR_CHART_INDEX = PILLAR_ORDER_WITH_AI.indexOf("ai");
 
+/** Canonical storage indices for ai=1 augmentation scores (coding, architecture, process). */
+export const CANONICAL_AI_AUGMENT_INDICES = [0, 1, AI_PILLAR_CHART_INDEX + 1];
+
 /** Canonical pillar definitions (names and metadata). Chart order is {@link PILLAR_ORDER}. */
 export const PILLARS = {
   coding: { label: "🤲 Coding", hasAi: true },

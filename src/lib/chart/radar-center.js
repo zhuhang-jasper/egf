@@ -1,4 +1,4 @@
-import { FE_UI } from "@/lib/constants";
+import { FE_UI, getChartLayoutLabels } from "@/lib/constants";
 
 function radarTickBackdropHalf(scale) {
   const tickOpts = scale.options.ticks;
@@ -56,12 +56,12 @@ function radarMeasureLabel(ctx, fontWeight, fontSizePx, family, text) {
 }
 
 function rebuildRadarPointLabelItems(scale) {
-  const labels = scale._pointLabels;
-  const count = labels && labels.length;
+  const count = scale._pointLabels?.length;
   if (!count || !scale.ctx) {
     return;
   }
 
+  const layoutLabels = getChartLayoutLabels();
   const plOpts = scale.options.pointLabels;
   const valueCount = count;
   const addAngle = plOpts.centerPointLabels ? Math.PI / valueCount : 0;
@@ -76,7 +76,7 @@ function rebuildRadarPointLabelItems(scale) {
     const fSize = f.size || 12;
     const fWeight = f.weight || "normal";
     const { family } = f;
-    const size = radarMeasureLabel(ctx, fWeight, fSize, family, labels[i]);
+    const size = radarMeasureLabel(ctx, fWeight, fSize, family, layoutLabels[i] ?? "");
     const pos = scale.getPointPosition(i, scale.drawingArea + extra + pad, addAngle);
     let angleDeg = Math.round((radarNormAngleRad(pos.angle + Math.PI / 2) * 180) / Math.PI);
     angleDeg %= 360;

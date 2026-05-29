@@ -1,8 +1,8 @@
 import { Chart, Filler, Legend, LineElement, PointElement, RadarController, RadialLinearScale, Tooltip } from "chart.js";
 
-import { createClusterBackgroundPlugin, createTechnicalAsteriskPlugin, createTrackPointLabelPlugin } from "@/lib/chart/plugins";
+import { createClusterBackgroundPlugin, createTechnicalAsteriskPlugin } from "@/lib/chart/plugins";
 import { applyRadarCenterFit, syncFontsForChart } from "@/lib/chart/radar-center";
-import { AI_AUGMENTATION_ENABLED, FE_UI, getChartLayoutLabels, PILLAR_COUNT } from "@/lib/constants";
+import { AI_AUGMENTATION_ENABLED, FE_UI, getChartLabels, PILLAR_COUNT } from "@/lib/constants";
 
 Chart.register(RadarController, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
 
@@ -69,11 +69,16 @@ function syncPolygonVisibility(chart, hidden) {
   }
 }
 
+function syncChartLabels(chart, trackVariant) {
+  chart.data.labels = getChartLabels(trackVariant);
+}
+
 /** Push app state into the chart and redraw. */
 export function applyChartState(chart, state) {
   if (!chart) {
     return;
   }
+  syncChartLabels(chart, state.trackVariant);
   syncDatasets(chart, state);
   syncPolygonVisibility(chart, state.levelsPolygonHidden);
   chart.update("none");
@@ -89,16 +94,16 @@ export function refreshChart(chart, state) {
 }
 
 export function createCompetencyChart(canvas) {
-  const plugins = [createClusterBackgroundPlugin(), createTrackPointLabelPlugin()];
+  const plugins = [createClusterBackgroundPlugin()];
   if (AI_AUGMENTATION_ENABLED) {
     plugins.push(createTechnicalAsteriskPlugin());
   }
 
   const ch = FE_UI.chart;
-  return new Chart(canvas, {
+  const chart = new Chart(canvas, {
     type: "radar",
     data: {
-      labels: getChartLayoutLabels(),
+      labels: getChartLabels("fe"),
       datasets: [
         buildHumanDataset(" ", new Array(PILLAR_COUNT).fill(0)),
         ...(AI_AUGMENTATION_ENABLED ? [buildAiDataset(new Array(PILLAR_COUNT).fill(0))] : []),
@@ -141,7 +146,7 @@ export function createCompetencyChart(canvas) {
             centerPointLabels: ch.centerPointLabels,
             padding: ch.pointLabelPadding,
             font: { size: ch.pointLabelPx, weight: ch.pointLabelWeight },
-            color: "transparent",
+            color: ch.pointLabelColor,
           },
           angleLines: { color: ch.gridColor },
           grid: { circular: false, color: ch.gridColor },
@@ -154,4 +159,5 @@ export function createCompetencyChart(canvas) {
     },
     plugins,
   });
+  return chart;
 }
