@@ -1,10 +1,40 @@
-import { PROFILES_STORAGE_KEY, STORAGE_KEY } from "@/lib/constants";
-import {
-  needsStorageUpgrade,
-  normalizeSavedState,
-  normalizeStoredProfile,
-  toCanonicalStoragePayload,
-} from "@/lib/levels";
+import { PILLAR_SCHEMA, PROFILES_STORAGE_KEY, SCORES_VISIBLE_FROM_URL, STORAGE_KEY } from "@/lib/constants";
+import { needsStorageUpgrade, normalizeSavedState, normalizeStoredProfile, toCanonicalStoragePayload } from "@/lib/levels";
+
+export function getDefaultChartDisplay() {
+  return {
+    levelsPolygonHidden: false,
+    chartLegendHidden: false,
+    chartTitleHidden: false,
+    footerScoresHidden: !SCORES_VISIBLE_FROM_URL,
+  };
+}
+
+export function parseChartDisplay(parsed) {
+  if (!parsed || typeof parsed !== "object") {
+    return getDefaultChartDisplay();
+  }
+  const defaults = getDefaultChartDisplay();
+  return {
+    levelsPolygonHidden: parsed.levelsPolygonHidden === true,
+    chartLegendHidden: parsed.chartLegendHidden === true,
+    chartTitleHidden: parsed.chartTitleHidden === true,
+    footerScoresHidden:
+      typeof parsed.footerScoresHidden === "boolean" ? parsed.footerScoresHidden : defaults.footerScoresHidden,
+  };
+}
+
+/** Draft JSON: canonical pillar data + session chart display toggles. */
+export function toDraftStoragePayload(state) {
+  return {
+    ...toCanonicalStoragePayload(state),
+    pillarSchema: PILLAR_SCHEMA,
+    levelsPolygonHidden: state.levelsPolygonHidden,
+    chartLegendHidden: state.chartLegendHidden,
+    chartTitleHidden: state.chartTitleHidden,
+    footerScoresHidden: state.footerScoresHidden,
+  };
+}
 
 export function loadDraftFromStorage() {
   try {
@@ -14,10 +44,15 @@ export function loadDraftFromStorage() {
     }
     const parsed = JSON.parse(raw);
     const normalized = normalizeSavedState(parsed);
-    if (normalized && needsStorageUpgrade(parsed)) {
-      saveDraftToStorage(toCanonicalStoragePayload(normalized));
+    if (!normalized) {
+      return null;
     }
-    return normalized;
+    const display = parseChartDisplay(parsed);
+    const draft = { ...normalized, ...display };
+    if (needsStorageUpgrade(parsed)) {
+      saveDraftToStorage(toDraftStoragePayload(draft));
+    }
+    return draft;
   } catch {
     return null;
   }
@@ -25,7 +60,7 @@ export function loadDraftFromStorage() {
 
 export function saveDraftToStorage(state) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(toDraftStoragePayload(state)));
   } catch {
     /* quota / private mode */
   }
