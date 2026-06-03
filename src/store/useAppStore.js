@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-import { isAiPillarIndex, normalizeTrackVariant, PILLAR_COUNT, PILLAR_SCHEMA, SCORES_VISIBLE_FROM_URL } from "@/lib/constants";
+import { isAiPillarIndex, normalizeTrackVariant, PILLAR_COUNT } from "@/lib/constants";
 import {
   getDefaultChartState,
   mergeViewIntoCanonical,
@@ -9,9 +9,15 @@ import {
   parseToCanonicalState,
   viewIndexToCanonicalIndex,
 } from "@/lib/levels";
-import { loadDraftFromStorage, loadProfilesFromStorage, saveDraftToStorage, writeProfilesToStorage } from "@/lib/storage";
+import {
+  getDefaultChartDisplay,
+  loadDraftFromStorage,
+  loadProfilesFromStorage,
+  saveDraftToStorage,
+  writeProfilesToStorage,
+} from "@/lib/storage";
 
-const initialDraft = loadDraftFromStorage() ?? getDefaultChartState();
+const initialDraft = loadDraftFromStorage() ?? { ...getDefaultChartState(), ...getDefaultChartDisplay() };
 
 function canonicalFromStore(state) {
   return mergeViewIntoCanonical({
@@ -29,17 +35,17 @@ export const useAppStore = create((set, get) => ({
   canonicalLevels: [...initialDraft.canonicalLevels],
   canonicalAiLevels: [...initialDraft.canonicalAiLevels],
   trackVariant: normalizeTrackVariant(initialDraft.trackVariant),
-  levelsPolygonHidden: false,
-  chartLegendHidden: false,
-  chartTitleHidden: false,
-  footerScoresHidden: !SCORES_VISIBLE_FROM_URL,
+  levelsPolygonHidden: initialDraft.levelsPolygonHidden,
+  chartLegendHidden: initialDraft.chartLegendHidden,
+  chartTitleHidden: initialDraft.chartTitleHidden,
+  footerScoresHidden: initialDraft.footerScoresHidden,
   activeSavedProfileId: null,
   profiles: loadProfilesFromStorage(),
   profilePickerOpen: false,
   saveFeedback: null,
 
   hydrate: () => {
-    const draft = loadDraftFromStorage() ?? getDefaultChartState();
+    const draft = loadDraftFromStorage() ?? { ...getDefaultChartState(), ...getDefaultChartDisplay() };
     set({
       title: draft.title,
       levels: [...draft.levels],
@@ -47,14 +53,16 @@ export const useAppStore = create((set, get) => ({
       canonicalLevels: [...draft.canonicalLevels],
       canonicalAiLevels: [...draft.canonicalAiLevels],
       trackVariant: normalizeTrackVariant(draft.trackVariant),
+      levelsPolygonHidden: draft.levelsPolygonHidden,
+      chartLegendHidden: draft.chartLegendHidden,
+      chartTitleHidden: draft.chartTitleHidden,
+      footerScoresHidden: draft.footerScoresHidden,
       profiles: loadProfilesFromStorage(),
     });
   },
 
   persistDraft: () => {
-    const { title, trackVariant } = get();
-    const { levels, aiLevels } = canonicalFromStore(get());
-    saveDraftToStorage({ title, levels, aiLevels, trackVariant, pillarSchema: PILLAR_SCHEMA });
+    saveDraftToStorage(get());
   },
 
   setTrackVariant: (trackVariant) => {
@@ -107,13 +115,25 @@ export const useAppStore = create((set, get) => ({
     get().persistDraft();
   },
 
-  setLevelsPolygonHidden: (hidden) => set({ levelsPolygonHidden: hidden }),
+  setLevelsPolygonHidden: (hidden) => {
+    set({ levelsPolygonHidden: hidden });
+    get().persistDraft();
+  },
 
-  setChartLegendHidden: (hidden) => set({ chartLegendHidden: hidden }),
+  setChartLegendHidden: (hidden) => {
+    set({ chartLegendHidden: hidden });
+    get().persistDraft();
+  },
 
-  setChartTitleHidden: (hidden) => set({ chartTitleHidden: hidden }),
+  setChartTitleHidden: (hidden) => {
+    set({ chartTitleHidden: hidden });
+    get().persistDraft();
+  },
 
-  setFooterScoresHidden: (hidden) => set({ footerScoresHidden: hidden }),
+  setFooterScoresHidden: (hidden) => {
+    set({ footerScoresHidden: hidden });
+    get().persistDraft();
+  },
 
   setProfilePickerOpen: (open) => {
     set({ profilePickerOpen: open });
