@@ -1,14 +1,12 @@
 import { LevelInput } from "@/components/LevelInput";
 
-import { AI_AUGMENTATION_ENABLED, CLUSTERS, getPillarLabel } from "@/lib/constants";
+import { CLUSTERS } from "@/lib/constants";
 
 import { useAppStore } from "@/store/useAppStore";
 
 export function PillarCluster({ group }) {
   const levels = useAppStore((s) => s.levels);
-  const aiLevels = useAppStore((s) => s.aiLevels);
   const setLevel = useAppStore((s) => s.setLevel);
-  const trackVariant = useAppStore((s) => s.trackVariant);
   const cluster = CLUSTERS[group.id];
 
   return (
@@ -16,37 +14,14 @@ export function PillarCluster({ group }) {
       <div className="form-section-title">{group.title}</div>
       {group.pillars.map((pillar) => (
         <label key={pillar.index} className="field-row">
-          <span>{getPillarLabel(pillar.id, trackVariant)}</span>
-          {pillar.hasAi && AI_AUGMENTATION_ENABLED ? (
-            <span className="field-row__nums">
-              <LevelInput
-                value={levels[pillar.index]}
-                onChange={(v) => setLevel(pillar.index, v)}
-                ariaLabel={`${pillar.label} level`}
-                ariaLabelUp="Increase level"
-                ariaLabelDown="Decrease level"
-              />
-              <span className="field-row__ai">
-                <span className="field-row__ai-label">AI:</span>
-                <LevelInput
-                  value={aiLevels[pillar.index]}
-                  onChange={(v) => setLevel(pillar.index, v, { isAi: true })}
-                  isAi
-                  ariaLabel={`${pillar.label} AI level`}
-                  ariaLabelUp="Increase AI level"
-                  ariaLabelDown="Decrease AI level"
-                />
-              </span>
-            </span>
-          ) : (
-            <LevelInput
-              value={levels[pillar.index]}
-              onChange={(v) => setLevel(pillar.index, v)}
-              ariaLabel={`${pillar.label} level`}
-              ariaLabelUp="Increase level"
-              ariaLabelDown="Decrease level"
-            />
-          )}
+          <span>{pillar.label}</span>
+          <LevelInput
+            value={levels[pillar.index]}
+            onChange={(v) => setLevel(pillar.index, v)}
+            ariaLabel={`${pillar.label} level`}
+            ariaLabelUp="Increase level"
+            ariaLabelDown="Decrease level"
+          />
         </label>
       ))}
     </div>

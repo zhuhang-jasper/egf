@@ -19,7 +19,7 @@ function shouldCommitWhileTyping(s) {
   return s !== "" && !s.endsWith(".");
 }
 
-export function LevelInput({ value, onChange, isAi = false, ariaLabel, ariaLabelUp, ariaLabelDown }) {
+export function LevelInput({ value, onChange, ariaLabel, ariaLabelUp, ariaLabelDown }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
 
@@ -41,7 +41,6 @@ export function LevelInput({ value, onChange, isAi = false, ariaLabel, ariaLabel
         autoComplete="off"
         spellCheck={false}
         aria-label={ariaLabel}
-        data-ai={isAi ? "true" : undefined}
         value={editing ? draft : formatLevelForInput(value)}
         onFocus={() => {
           setEditing(true);

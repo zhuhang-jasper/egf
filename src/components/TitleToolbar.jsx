@@ -6,7 +6,6 @@ import { ProfilePicker } from "@/components/ProfilePicker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-import { AI_AUGMENTATION_ENABLED } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 import { useAppStore } from "@/store/useAppStore";
@@ -75,8 +74,8 @@ export function TitleToolbar() {
         size="icon"
         className="ml-auto"
         onClick={resetLevels}
-        aria-label={AI_AUGMENTATION_ENABLED ? "Reset pillars and AI scores to default values" : "Reset pillars to default values"}
-        title={AI_AUGMENTATION_ENABLED ? "Reset pillars and AI scores to default values" : "Reset pillars to default values"}
+        aria-label="Reset pillars to default values"
+        title="Reset pillars to default values"
       >
         <RotateCcw className="h-4 w-4" />
       </Button>

@@ -61,7 +61,8 @@ function rebuildRadarPointLabelItems(scale) {
     return;
   }
 
-  const layoutLabels = getChartLayoutLabels();
+  const trackVariant = scale.chart?.options?.plugins?.clusterBackground?.trackVariant ?? "fe";
+  const layoutLabels = getChartLayoutLabels(trackVariant);
   const plOpts = scale.options.pointLabels;
   const valueCount = count;
   const addAngle = plOpts.centerPointLabels ? Math.PI / valueCount : 0;
