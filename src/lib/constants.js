@@ -49,7 +49,7 @@ export const TRACKS = {
     pillarGroups: [
       { id: "technical", pillars: ["coding", "domainLogic", "architecture", "ai"] },
       { id: "product", pillars: ["uiUx", "productSense"] },
-      { id: "behavioural", pillars: ["process", "communication", "ownership"] },
+      { id: "operational", pillars: ["process", "communication", "ownership"] },
     ],
   },
   be: {
@@ -57,7 +57,7 @@ export const TRACKS = {
     pillarGroups: [
       { id: "technical", pillars: ["coding", "domainLogic", "architecture", "ai"] },
       { id: "product", pillars: ["productSense"] },
-      { id: "behavioural", pillars: ["process", "communication", "ownership"] },
+      { id: "operational", pillars: ["process", "communication", "ownership"] },
     ],
   },
 };
@@ -131,7 +131,7 @@ export function getSiteCopy(trackVariant = "fe") {
 export const CLUSTERS = {
   technical: { label: "Technical", color: "#cdbdd8" },
   product: { label: "Product", color: "#f5b39d" },
-  behavioural: { label: "Behavioural", color: "#bddbb5" },
+  operational: { label: "Operational", color: "#bddbb5" },
 };
 
 function buildPillarRef(pillarId, trackVariant) {
