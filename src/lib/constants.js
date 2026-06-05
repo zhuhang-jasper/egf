@@ -11,15 +11,15 @@ export const DEFAULT_PILLAR_LEVEL = 3;
 
 /** Master pillar catalog (id → label). Add/remove pillars here; wire into tracks below. */
 export const PILLARS = {
-  coding: { label: "🤲 Coding" },
-  architecture: { label: "🧠 Architecture" },
-  ai: { label: "🤖 AI Proficiency" },
-  process: { label: "🦴 Process" },
-  communication: { label: "🗣️ Communication" },
-  ownership: { label: "✨ Ownership" },
-  productSense: { label: "💡 Product Sense" },
-  uiUx: { label: "👀 UI/UX" },
-  domainLogic: { label: "👃 Domain Logic" },
+  coding: { label: "🤲 Coding (Hands)" },
+  domainLogic: { label: "👃 Domain Logic (Nose)" },
+  architecture: { label: "🧠 Architecture (Brain)" },
+  ai: { label: "🤖 AI Proficiency (Machine)" },
+  uiUx: { label: "👀 UI/UX (Eyes)" },
+  productSense: { label: "💡 Product Sense (Gut)" },
+  process: { label: "🦴 Process (Spine)" },
+  communication: { label: "🗣️ Communication (Voice)" },
+  ownership: { label: "✨ Ownership (Soul)" },
 };
 
 export const TRACK_VARIANTS = ["fe", "be"];
@@ -47,7 +47,7 @@ export const TRACKS = {
   fe: {
     pillarOrder: ["coding", "architecture", "ai", "process", "ownership", "communication", "productSense", "uiUx", "domainLogic"],
     pillarGroups: [
-      { id: "technical", pillars: ["coding", "architecture", "ai", "domainLogic"] },
+      { id: "technical", pillars: ["coding", "domainLogic", "architecture", "ai"] },
       { id: "product", pillars: ["uiUx", "productSense"] },
       { id: "behavioural", pillars: ["process", "communication", "ownership"] },
     ],
@@ -55,7 +55,7 @@ export const TRACKS = {
   be: {
     pillarOrder: ["coding", "architecture", "ai", "process", "ownership", "communication", "productSense", "domainLogic"],
     pillarGroups: [
-      { id: "technical", pillars: ["coding", "architecture", "ai", "domainLogic"] },
+      { id: "technical", pillars: ["coding", "domainLogic", "architecture", "ai"] },
       { id: "product", pillars: ["productSense"] },
       { id: "behavioural", pillars: ["process", "communication", "ownership"] },
     ],
