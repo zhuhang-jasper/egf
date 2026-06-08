@@ -24,6 +24,6 @@ export {
   LEVEL_STEP,
   SENIORITY_LEVEL_COUNT,
 } from "@/lib/constants/scoring";
-export { getSiteCopy } from "@/lib/constants/site";
+export { SITE_COPY } from "@/lib/constants/site";
 export { PROFILES_STORAGE_KEY, STORAGE_KEY } from "@/lib/constants/storage";
 export { FE_UI } from "@/lib/constants/ui";

@@ -1,9 +1,9 @@
 import { useEffect } from "react";
 
-import { getSiteCopy } from "@/lib/constants";
+import { SITE_COPY } from "@/lib/constants";
 
 export function AppIntro() {
-  const copy = getSiteCopy();
+  const copy = SITE_COPY;
 
   useEffect(() => {
     document.title = copy.title;
