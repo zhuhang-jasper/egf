@@ -126,6 +126,31 @@ export function applyRadarCenterFit(scale) {
   rebuildRadarPointLabelItems(scale);
 }
 
+/** Vertical span of axis point labels — used to fit the frame height to content, not a square canvas. */
+export function getRadarContentHeightPx(chart) {
+  const scale = chart.scales?.r;
+  const items = scale?._pointLabelItems;
+  if (!items?.length) {
+    return null;
+  }
+
+  let minY = Infinity;
+  let maxY = -Infinity;
+  for (const item of items) {
+    if (!item?.visible) {
+      continue;
+    }
+    minY = Math.min(minY, item.top);
+    maxY = Math.max(maxY, item.bottom);
+  }
+  if (!Number.isFinite(minY) || !Number.isFinite(maxY)) {
+    return null;
+  }
+
+  const pad = FE_UI.chartFrame.contentPadPx ?? 6;
+  return Math.ceil(maxY - minY + pad * 2);
+}
+
 export function syncFontsForChart(chart) {
   const w = chart.width;
   if (!w) {

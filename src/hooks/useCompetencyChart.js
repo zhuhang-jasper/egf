@@ -1,30 +1,28 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 
-import { getChartFrameMarginBottomPx, getChartFrameMarginTopPx } from "@/lib/chart/fonts";
+import { applyChartFrameLayout, isChartMinimalChrome } from "@/lib/chart/fonts";
 import { applyChartState, createCompetencyChart, refreshChart } from "@/lib/chart/instance";
-import { FE_UI } from "@/lib/constants";
+import { getRadarContentHeightPx } from "@/lib/chart/radar-center";
 
 import { useAppStore } from "@/store/useAppStore";
 
-function syncFrameMargins(frameRef) {
+function getLayoutOptions() {
+  return { minimalChrome: isChartMinimalChrome(useAppStore.getState()) };
+}
+
+function fitFrameToChart(frameRef, chart) {
   const frame = frameRef.current;
-  if (!frame) {
+  if (!frame?.offsetWidth || !chart) {
     return;
   }
 
   const w = frame.offsetWidth;
-  const top = getChartFrameMarginTopPx(w);
-  const bot = getChartFrameMarginBottomPx(w);
-
-  const marginTop = Math.round(top);
-  const marginBottom = Math.round(bot);
-  const shrink = (top < 0 ? -top : 0) + (bot < 0 ? -bot : 0);
-  const minH = FE_UI.chartFrame.minChartHeightPx ?? 120;
-  const innerH = Math.round(Math.max(minH, w - shrink));
-
-  frame.style.margin = `${marginTop}px auto ${marginBottom}px`;
-  frame.style.aspectRatio = "unset";
-  frame.style.height = `${innerH}px`;
+  const layout = getLayoutOptions();
+  const contentH = getRadarContentHeightPx(chart);
+  if (contentH) {
+    applyChartFrameLayout(frame, w, contentH, layout);
+    chart.resize();
+  }
 }
 
 /**
@@ -39,8 +37,20 @@ export function useCompetencyChart(canvasRef, frameRef) {
   const levelsPolygonHidden = useAppStore((s) => s.levelsPolygonHidden);
 
   const relayout = useCallback(() => {
-    syncFrameMargins(frameRef);
-    refreshChart(chartRef.current, useAppStore.getState());
+    const chart = chartRef.current;
+    const frame = frameRef.current;
+    if (!frame?.offsetWidth) {
+      return;
+    }
+
+    const layout = getLayoutOptions();
+    applyChartFrameLayout(frame, frame.offsetWidth, null, layout);
+    if (!chart) {
+      return;
+    }
+
+    refreshChart(chart, useAppStore.getState());
+    fitFrameToChart(frameRef, chart);
   }, [frameRef]);
 
   const relayoutRef = useRef(relayout);

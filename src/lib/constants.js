@@ -164,12 +164,12 @@ export function getPillarIdByIndex(index, trackVariant = "fe") {
 export const FE_UI = {
   page: { maxWidthPx: 650, minWidthPx: 350 },
   chartFrame: {
-    /** Visible space between content above the chart and top axis labels. */
-    badgeToChartGap: { minPx: 6, maxPx: 4 },
-    /** Extra upward pull on wide layouts where label reserve leaves excess whitespace. */
-    marginTopExtraPull: { minPx: 0, maxPx: 18 },
-    marginBottomMinPx: -32,
-    marginBottomMaxPx: -84,
+    /** Fallback frame height before Chart.js label bounds are measured (radar fits a wide rect, not a square). */
+    heightWidthRatio: { minRatio: 0.76, maxRatio: 0.84 },
+    /** Responsive trim applied below the chart frame — collapses leftover canvas slack. */
+    marginBottomTrim: { minPx: -14, maxPx: -36 },
+    /** Padding around measured axis-label span when fitting frame height to content. */
+    contentPadPx: 6,
     minChartHeightPx: 120,
   },
   chart: {
@@ -179,7 +179,7 @@ export const FE_UI = {
     radarCenterFix: true,
     radarLabelReservedPx: 62,
     radarLabelReserved: { minPx: 38, maxPx: 54 },
-    legendMarginTop: { minPx: 12, maxPx: 24 },
+    legendMarginTop: { minPx: 14, maxPx: 36 },
     /** Track badge + cluster legend — slightly below axis pillar labels, same width scaling. */
     secondaryLabelMultiplier: 0.9,
     /** md badge min width (em) — sized for "Frontend" so title does not shift on track toggle. */

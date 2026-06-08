@@ -59,24 +59,45 @@ export function getChartTitleSizePx(chartWidthPx) {
   return Math.min(maxPx, Math.max(minPx, Math.round(labelPx * labelMultiplier)));
 }
 
-function getChartFrameBadgeToChartGapPx(chartWidthPx) {
+/**
+ * Fixed chart frame margins — independent of legend visibility.
+ * Top gap comes from the title row; frame height is fitted to label bounds.
+ * Bottom trim collapses slack; legend spacing is on the legend card.
+ */
+export function getChartFrameMarginTopPx() {
+  return 0;
+}
+
+export function getChartFrameMarginBottomPx(chartWidthPx, { minimalChrome = false } = {}) {
+  if (minimalChrome) {
+    return 0;
+  }
   const u = getChartWidthUnit(chartWidthPx);
-  const { minPx, maxPx } = FE_UI.chartFrame.badgeToChartGap;
+  const { minPx, maxPx } = FE_UI.chartFrame.marginBottomTrim;
   return Math.round(minPx + u * (maxPx - minPx));
 }
 
-/** Pull the chart frame up so top axis labels sit within the layout band above the chart. */
-export function getChartFrameMarginTopPx(chartWidthPx) {
-  const u = getChartWidthUnit(chartWidthPx);
-  const reserve = getRadarLabelReservedPx(chartWidthPx);
-  const visibleGap = getChartFrameBadgeToChartGapPx(chartWidthPx);
-  const { minPx, maxPx } = FE_UI.chartFrame.marginTopExtraPull;
-  const extraPull = Math.round(minPx + u * (maxPx - minPx));
-  return -(reserve - visibleGap + extraPull);
+export function isChartMinimalChrome({ chartLegendHidden, chartTitleHidden, title }) {
+  const showVisibleTitle = !chartTitleHidden && String(title).trim().length > 0;
+  return !showVisibleTitle && chartLegendHidden;
 }
 
-export function getChartFrameMarginBottomPx(chartWidthPx) {
+/** Initial frame height before label bounds are measured from the live chart. */
+export function getChartFrameEstimatedHeightPx(chartWidthPx) {
   const u = getChartWidthUnit(chartWidthPx);
-  const cf = FE_UI.chartFrame;
-  return Math.round(cf.marginBottomMinPx + u * (cf.marginBottomMaxPx - cf.marginBottomMinPx));
+  const { minRatio, maxRatio } = FE_UI.chartFrame.heightWidthRatio;
+  const ratio = minRatio + u * (maxRatio - minRatio);
+  const minH = FE_UI.chartFrame.minChartHeightPx ?? 120;
+  return Math.round(Math.max(minH, chartWidthPx * ratio));
+}
+
+export function applyChartFrameLayout(frameEl, chartWidthPx, contentHeightPx = null, { minimalChrome = false } = {}) {
+  const marginTop = getChartFrameMarginTopPx();
+  const marginBottom = getChartFrameMarginBottomPx(chartWidthPx, { minimalChrome });
+  const minH = FE_UI.chartFrame.minChartHeightPx ?? 120;
+  const innerH = Math.round(Math.max(minH, contentHeightPx ?? getChartFrameEstimatedHeightPx(chartWidthPx)));
+
+  frameEl.style.margin = `${marginTop}px auto ${marginBottom}px`;
+  frameEl.style.aspectRatio = "unset";
+  frameEl.style.height = `${innerH}px`;
 }
