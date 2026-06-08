@@ -1,9 +1,3 @@
-export const STORAGE_KEY = "fe-growth-framework:v1";
-export const PROFILES_STORAGE_KEY = "fe-growth-framework:profiles:v1";
-export const LEVEL_STEP = 0.5;
-export const HUMAN_STRENGTH_TOP_K = 3;
-export const DEFAULT_PILLAR_LEVEL = 3;
-
 /** Master pillar catalog (id → label). Add/remove pillars here; wire into tracks below. */
 export const PILLARS = {
   coding: { label: "🤲 Coding (Hands)" },
@@ -17,6 +11,16 @@ export const PILLARS = {
   ownership: { label: "✨ Ownership (Soul)" },
 };
 
+export const CLUSTERS = {
+  technical: { label: "Technical", color: "#cdbdd8" },
+  product: { label: "Product", color: "#f5b39d" },
+  operational: { label: "Operational", color: "#bddbb5" },
+};
+
+/**
+ * Per-track chart order and form clusters (ids reference {@link PILLARS}).
+ * To drop a pillar from a track: remove its id from `pillarOrder` and cluster lists.
+ */
 export const TRACK_VARIANTS = ["fe", "be"];
 
 export const TRACK_VARIANT_UI = {
@@ -34,10 +38,6 @@ export const TRACK_VARIANT_UI = {
   },
 };
 
-/**
- * Per-track chart order and form clusters (ids reference {@link PILLARS}).
- * To drop a pillar from a track: remove its id from `pillarOrder` and cluster lists.
- */
 export const TRACKS = {
   fe: {
     pillarOrder: ["coding", "architecture", "ai", "process", "ownership", "communication", "productSense", "uiUx", "domainLogic"],
@@ -110,30 +110,6 @@ export function getChartLayoutLabels(trackVariant = "fe") {
   return order.map((id) => (id === lastId ? reserved : getChartPillarLabel(id)));
 }
 
-export const SENIORITY_LEVEL_COUNT = 5;
-
-export function getSiteCopy(trackVariant = "fe") {
-  const pillarCount = getPillarOrder(trackVariant).length;
-  const pointCount = pillarCount * SENIORITY_LEVEL_COUNT;
-  const tagline = "A spider chart to measure software engineering mastery, identify core interests, and guide career paths.";
-  const detail = `Supported by a ${pointCount}-point competency matrix across ${SENIORITY_LEVEL_COUNT} seniority levels.`;
-  const byline = "— Jasper Loo Zhu Hang";
-  return {
-    title: `The ${pillarCount}-Pillar Engineer Growth Framework`,
-    tagline,
-    detail,
-    byline,
-    shortName: `${pillarCount}-Pillar Growth`,
-    metaDescription: `${tagline} ${detail} Jasper Loo Zhu Hang.`,
-  };
-}
-
-export const CLUSTERS = {
-  technical: { label: "Technical", color: "#cdbdd8" },
-  product: { label: "Product", color: "#f5b39d" },
-  operational: { label: "Operational", color: "#bddbb5" },
-};
-
 function buildPillarRef(pillarId, trackVariant) {
   const order = getPillarOrder(trackVariant);
   return {
@@ -155,75 +131,3 @@ export function getPillarGroups(trackVariant = "fe") {
 export function getPillarIdByIndex(index, trackVariant = "fe") {
   return getPillarOrder(trackVariant)[index] ?? null;
 }
-
-export const FE_UI = {
-  page: { maxWidthPx: 650, minWidthPx: 350 },
-  chartFrame: {
-    /** Fallback frame height before Chart.js label bounds are measured (radar fits a wide rect, not a square). */
-    heightWidthRatio: { minRatio: 0.76, maxRatio: 0.84 },
-    /** Responsive trim applied below the chart frame — collapses leftover canvas slack. */
-    marginBottomTrim: { minPx: -14, maxPx: -36 },
-    /** Padding around measured axis-label span when fitting frame height to content. */
-    contentPadPx: 6,
-    minChartHeightPx: 120,
-  },
-  chart: {
-    title: { labelMultiplier: 1.4, minPx: 14, maxPx: 22 },
-    layoutPadding: { top: 0, right: 30, bottom: 0, left: 30 },
-    layoutPaddingHorizontal: { minPx: 14, maxPx: 30 },
-    radarCenterFix: true,
-    radarLabelReservedPx: 62,
-    radarLabelReserved: { minPx: 38, maxPx: 54 },
-    legendMarginTop: { minPx: 14, maxPx: 36 },
-    /** Track badge + cluster legend — slightly below axis pillar labels, same width scaling. */
-    secondaryLabelMultiplier: 0.9,
-    /** md badge min width (em) — sized for "Frontend" so title does not shift on track toggle. */
-    trackBadgeMdMinWidthEm: 6.75,
-    /** Swatch edge length vs legend label font size — just taller than text cap height. */
-    legendSwatchLabelMultiplier: 1.2,
-    pointLabelPadding: 5,
-    pointLabelPx: 11,
-    pointLabelScaleWithChart: true,
-    pointLabelWeight: "bold",
-    pointLabelColor: "#333",
-    gridColor: "rgba(0, 0, 0, 0.15)",
-    tickLabelColor: "rgba(0, 0, 0, 0.3)",
-    centerPointLabels: false,
-    tickInitialPx: 12,
-    tickBackdropPad: { top: 2, bottom: 2, left: 3, right: 3 },
-    tickBackdropColor: "rgba(255, 255, 255, 0.5)",
-    exportImageCssScale: 8,
-    exportImageCssScaleMax: 12,
-    clusterBorderColor: "rgba(0, 0, 0, 0.22)",
-    clusterBorderWidth: 1,
-  },
-  chartFonts: {
-    tickMinPx: 8,
-    tickWidthDivisor: 48,
-    pointLabelMinPx: 9,
-    pointLabelMaxPx: 18,
-    pointLabelRefWidthPx: 380,
-  },
-  dataset: {
-    fill: "rgba(56, 56, 56, 0.58)",
-    stroke: "#3a3a3a",
-    lineWidth: 2,
-    pointRadius: 2,
-    pointHoverRadius: 4,
-    pointStyle: "circle",
-    pointFill: "#404040",
-    pointStroke: "#404040",
-    pointBorderWidth: 0,
-    pointHoverFill: "rgba(64, 64, 64, 0.95)",
-    pointHoverStroke: "#404040",
-    pointHoverBorderWidth: 0,
-  },
-};
-
-export const CAREER_LEVEL_BY_AVG_BAND = [
-  { code: "L1", phase: "Adherence / Learning", role: "Junior (Early)" },
-  { code: "L2", phase: "Practitioner / Autonomy", role: "Junior (Late)" },
-  { code: "L3", phase: "Proficient / Complexity", role: "Mid-Level" },
-  { code: "L4", phase: "Influential", role: "Senior" },
-  { code: "L5", phase: "Impact / Strategic", role: "Lead" },
-];
