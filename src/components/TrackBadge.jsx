@@ -10,6 +10,7 @@ export function TrackBadge({ variant, className, size = "sm", hidden = false, ch
   const scaledBadgeStyle = isLarge
     ? {
         fontSize: scaledLabelPx,
+        minWidth: `${FE_UI.chart.trackBadgeMdMinWidthEm}em`,
         paddingLeft: Math.round(scaledLabelPx * 0.85),
         paddingRight: Math.round(scaledLabelPx * 0.85),
         paddingTop: Math.round(scaledLabelPx * 0.4),
@@ -22,7 +23,7 @@ export function TrackBadge({ variant, className, size = "sm", hidden = false, ch
       data-chart-export="track-badge"
       className={cn(
         "inline-flex shrink-0 items-center leading-none",
-        isLarge ? "rounded-md font-bold" : "rounded px-1.5 py-0.5 text-[10px] font-semibold tracking-wide",
+        isLarge ? "justify-center rounded-md font-bold" : "rounded px-1.5 py-0.5 text-[10px] font-semibold tracking-wide",
         !isLarge && "font-medium",
         ui.pillClass,
         hidden && "invisible pointer-events-none",

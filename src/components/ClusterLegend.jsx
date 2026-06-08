@@ -1,8 +1,4 @@
-import {
-  getChartSecondaryLabelSizePx,
-  getClusterLegendMarginTopPx,
-  getClusterLegendSwatchPx,
-} from "@/lib/chart/fonts";
+import { getChartSecondaryLabelSizePx, getClusterLegendSwatchPx } from "@/lib/chart/fonts";
 import { CLUSTERS, FE_UI, getPillarGroupOrder } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -19,11 +15,10 @@ export function ClusterLegend({ className, hidden = false, chartWidth = 0 }) {
     <ul
       data-chart-export="cluster-legend"
       className={cn(
-        "m-0 flex w-full list-none flex-wrap items-center justify-center gap-x-8 gap-y-2 p-0",
+        "m-0 flex list-none flex-wrap items-center justify-center gap-x-5 gap-y-2 p-0",
         hidden && "invisible pointer-events-none",
         className,
       )}
-      style={{ marginTop: getClusterLegendMarginTopPx(width) }}
       aria-hidden={hidden || undefined}
       aria-label="Pillar clusters"
     >

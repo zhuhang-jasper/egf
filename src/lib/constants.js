@@ -164,7 +164,7 @@ export function getPillarIdByIndex(index, trackVariant = "fe") {
 export const FE_UI = {
   page: { maxWidthPx: 650, minWidthPx: 350 },
   chartFrame: {
-    /** Visible space between track badge and top axis label. */
+    /** Visible space between content above the chart and top axis labels. */
     badgeToChartGap: { minPx: 6, maxPx: 4 },
     /** Extra upward pull on wide layouts where label reserve leaves excess whitespace. */
     marginTopExtraPull: { minPx: 0, maxPx: 18 },
@@ -174,15 +174,16 @@ export const FE_UI = {
   },
   chart: {
     title: { labelMultiplier: 1.4, minPx: 14, maxPx: 22 },
-    trackBadgeMarginBottom: { minPx: 2, maxPx: 6 },
     layoutPadding: { top: 0, right: 30, bottom: 0, left: 30 },
     layoutPaddingHorizontal: { minPx: 14, maxPx: 30 },
     radarCenterFix: true,
     radarLabelReservedPx: 62,
     radarLabelReserved: { minPx: 38, maxPx: 54 },
-    legendMarginTop: { minPx: 20, maxPx: 36 },
+    legendMarginTop: { minPx: 12, maxPx: 24 },
     /** Track badge + cluster legend — slightly below axis pillar labels, same width scaling. */
     secondaryLabelMultiplier: 0.9,
+    /** md badge min width (em) — sized for "Frontend" so title does not shift on track toggle. */
+    trackBadgeMdMinWidthEm: 6.75,
     /** Swatch edge length vs legend label font size — just taller than text cap height. */
     legendSwatchLabelMultiplier: 1.2,
     pointLabelPadding: 5,

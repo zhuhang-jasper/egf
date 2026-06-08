@@ -59,27 +59,20 @@ export function getChartTitleSizePx(chartWidthPx) {
   return Math.min(maxPx, Math.max(minPx, Math.round(labelPx * labelMultiplier)));
 }
 
-export function getTrackBadgeMarginBottomPx(chartWidthPx) {
-  const u = getChartWidthUnit(chartWidthPx);
-  const { minPx, maxPx } = FE_UI.chart.trackBadgeMarginBottom;
-  return Math.round(minPx + u * (maxPx - minPx));
-}
-
 function getChartFrameBadgeToChartGapPx(chartWidthPx) {
   const u = getChartWidthUnit(chartWidthPx);
   const { minPx, maxPx } = FE_UI.chartFrame.badgeToChartGap;
   return Math.round(minPx + u * (maxPx - minPx));
 }
 
-/** Pull the chart frame up so top axis labels sit just below the track badge. */
+/** Pull the chart frame up so top axis labels sit within the layout band above the chart. */
 export function getChartFrameMarginTopPx(chartWidthPx) {
   const u = getChartWidthUnit(chartWidthPx);
   const reserve = getRadarLabelReservedPx(chartWidthPx);
-  const badgeGap = getTrackBadgeMarginBottomPx(chartWidthPx);
   const visibleGap = getChartFrameBadgeToChartGapPx(chartWidthPx);
   const { minPx, maxPx } = FE_UI.chartFrame.marginTopExtraPull;
   const extraPull = Math.round(minPx + u * (maxPx - minPx));
-  return -(reserve + badgeGap - visibleGap + extraPull);
+  return -(reserve - visibleGap + extraPull);
 }
 
 export function getChartFrameMarginBottomPx(chartWidthPx) {

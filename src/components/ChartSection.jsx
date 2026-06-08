@@ -11,9 +11,10 @@ import { Button } from "@/components/ui/button";
 import { useCompetencyChart } from "@/hooks/useCompetencyChart";
 import { useElementWidth } from "@/hooks/useElementWidth";
 
-import { getChartTitleSizePx, getTrackBadgeMarginBottomPx } from "@/lib/chart/fonts";
+import { getChartTitleSizePx, getClusterLegendMarginTopPx } from "@/lib/chart/fonts";
 import { FE_UI, SCORES_VISIBLE_FROM_URL } from "@/lib/constants";
 import { copyChartAsImageToClipboard } from "@/lib/copy-chart-image";
+import { cn } from "@/lib/utils";
 
 import { useAppStore } from "@/store/useAppStore";
 
@@ -117,7 +118,7 @@ export function ChartSection() {
   const showVisibleTitle = !chartTitleHidden && trimmedTitle.length > 0;
   const layoutWidth = chartWidth || FE_UI.page.minWidthPx;
   const titleSizePx = getChartTitleSizePx(layoutWidth);
-  const badgeMarginBottomPx = getTrackBadgeMarginBottomPx(layoutWidth);
+  const legendMarginTopPx = getClusterLegendMarginTopPx(layoutWidth);
 
   useEffect(() => {
     relayout();
@@ -159,22 +160,17 @@ export function ChartSection() {
       </div>
 
       <div ref={exportRef} className="flex w-full min-w-0 flex-col self-stretch">
-        {showVisibleTitle ? (
-          <h2
-            id="competency-chart-heading"
-            className="relative z-[1] mb-1 w-full text-center font-bold text-black"
-            style={{ fontSize: titleSizePx }}
-          >
-            {title}
-          </h2>
-        ) : (
-          <h2 id="competency-chart-heading" className="sr-only">
-            Chart
-          </h2>
-        )}
-
-        <div className="flex w-full min-w-0 items-start px-2 leading-none" style={{ marginBottom: badgeMarginBottomPx }}>
+        <div className="relative z-[1] mb-1 flex w-full min-w-0 items-center gap-3 px-2 leading-none">
           <TrackBadge variant={trackVariant} size="md" className="shrink-0" hidden={chartLegendHidden} chartWidth={chartWidth} />
+          {showVisibleTitle ? (
+            <h2 id="competency-chart-heading" className="min-w-0 flex-1 truncate text-left font-bold text-black" style={{ fontSize: titleSizePx }}>
+              {title}
+            </h2>
+          ) : (
+            <h2 id="competency-chart-heading" className="sr-only">
+              Chart
+            </h2>
+          )}
         </div>
 
         <div ref={frameRef} className="relative z-0 mx-auto w-full max-w-full box-border" style={{ minHeight: FE_UI.chartFrame.minChartHeightPx }}>
@@ -183,7 +179,17 @@ export function ChartSection() {
           </div>
         </div>
 
-        <ClusterLegend hidden={chartLegendHidden} chartWidth={chartWidth} />
+        <div
+          data-chart-export="chart-legend-card"
+          className={cn(
+            "mx-auto flex w-fit max-w-full items-center justify-center rounded-lg border border-border bg-muted px-6 py-2.5 leading-none",
+            chartLegendHidden && "invisible pointer-events-none",
+          )}
+          style={{ marginTop: legendMarginTopPx }}
+          aria-hidden={chartLegendHidden || undefined}
+        >
+          <ClusterLegend hidden={chartLegendHidden} chartWidth={chartWidth} />
+        </div>
 
         <ChartAverages />
       </div>

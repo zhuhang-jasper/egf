@@ -87,10 +87,29 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY) {
       const { x, y, w, h } = getRelativeRect(title, rootRect, scaleX, scaleY);
       ctx.fillStyle = sanitizeColorForHtml2Canvas(cs.color);
       ctx.font = buildFont(cs, scaleY);
-      ctx.textAlign = "center";
+      ctx.textAlign = cs.textAlign === "center" ? "center" : "left";
       ctx.textBaseline = "middle";
-      ctx.fillText(text, x + w / 2, y + h / 2);
+      ctx.fillText(text, ctx.textAlign === "center" ? x + w / 2 : x, y + h / 2);
     }
+  }
+
+  const legendCard = exportRoot.querySelector("[data-chart-export='chart-legend-card']");
+  if (legendCard instanceof HTMLElement && !isVisuallyHidden(legendCard)) {
+    const cs = window.getComputedStyle(legendCard);
+    const { x, y, w, h } = getRelativeRect(legendCard, rootRect, scaleX, scaleY);
+    const radius = (Number.parseFloat(cs.borderTopLeftRadius) || 8) * scaleX;
+    const lineWidth = (Number.parseFloat(cs.borderTopWidth) || 1) * scaleX;
+    drawRoundedRect(
+      ctx,
+      x,
+      y,
+      w,
+      h,
+      radius,
+      sanitizeColorForHtml2Canvas(cs.backgroundColor),
+      sanitizeColorForHtml2Canvas(cs.borderTopColor),
+      lineWidth,
+    );
   }
 
   const legend = exportRoot.querySelector("[data-chart-export='cluster-legend']");
