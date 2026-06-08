@@ -14,7 +14,7 @@ const pageWidthStyle = {
 export default function App() {
   return (
     <div className="flex min-h-dvh flex-col items-center gap-4 bg-black p-3">
-      <main className="grid w-full grid-cols-1 items-stretch gap-4 rounded-[14px] bg-white p-2 shadow-sm sm:p-3" style={pageWidthStyle}>
+      <main className="grid w-full grid-cols-1 items-stretch rounded-[14px] bg-white p-2 shadow-sm sm:p-3" style={pageWidthStyle}>
         <AppIntro />
         <ChartSection />
         <FormPanel />
