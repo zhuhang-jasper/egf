@@ -43,7 +43,7 @@
   }
 
   body {
-    @apply bg-background text-foreground font-medium antialiased;
+    @apply bg-black text-foreground font-medium antialiased;
   }
 
   #competencyInputs {

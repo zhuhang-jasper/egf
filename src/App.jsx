@@ -6,29 +6,20 @@ import { FE_UI } from "@/lib/constants";
 
 const appVersion = import.meta.env.VITE_APP_VERSION;
 
+const pageWidthStyle = {
+  maxWidth: FE_UI.page.maxWidthPx,
+  minWidth: FE_UI.page.minWidthPx,
+};
+
 export default function App() {
   return (
-    <div className="flex min-h-dvh flex-col items-center gap-4 p-3">
-      <div
-        className="w-full"
-        style={{
-          maxWidth: FE_UI.page.maxWidthPx,
-          minWidth: FE_UI.page.minWidthPx,
-        }}
-      >
+    <div className="flex min-h-dvh flex-col items-center gap-4 bg-black p-3">
+      <main className="grid w-full grid-cols-1 items-stretch gap-4 rounded-[14px] bg-white p-2 shadow-sm sm:p-3" style={pageWidthStyle}>
         <AppIntro />
-      </div>
-      <main
-        className="grid w-full grid-cols-1 items-stretch rounded-[14px] border border-[#e8e8e8] bg-white p-3 pb-4 shadow-sm"
-        style={{
-          maxWidth: FE_UI.page.maxWidthPx,
-          minWidth: FE_UI.page.minWidthPx,
-        }}
-      >
         <ChartSection />
         <FormPanel />
       </main>
-      <p className="mt-auto text-center text-[12px] tabular-nums text-muted-foreground/60">v{appVersion}</p>
+      <p className="mt-auto mb-2 text-center text-[14px] tabular-nums text-white/50">v{appVersion}</p>
     </div>
   );
 }
