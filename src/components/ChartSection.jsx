@@ -164,7 +164,7 @@ export function ChartSection() {
           <div className="relative z-[1] flex w-full min-w-0 items-center gap-3 px-2 leading-none">
             {!chartLegendHidden ? <TrackBadge variant={trackVariant} size="md" className="shrink-0" chartWidth={chartWidth} /> : null}
             {showVisibleTitle ? (
-              <h2 id="competency-chart-heading" className="min-w-0 flex-1 truncate text-left font-bold text-black" style={{ fontSize: titleSizePx }}>
+              <h2 id="competency-chart-heading" className="min-w-0 flex-1 text-left font-bold text-black" style={{ fontSize: titleSizePx }}>
                 {title}
               </h2>
             ) : (

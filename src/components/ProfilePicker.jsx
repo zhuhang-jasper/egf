@@ -60,7 +60,7 @@ export function ProfilePicker() {
                       className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted/60"
                       onClick={() => loadProfile(pr.id)}
                     >
-                      <span className="min-w-0 truncate">{label}</span>
+                      <span className="min-w-0">{label}</span>
                       <TrackBadge variant={pr.trackVariant} />
                     </button>
                     <button
