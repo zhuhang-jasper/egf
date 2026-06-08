@@ -24,6 +24,11 @@ export function getChartPointLabelSizePx(chartWidthPx) {
   return labelSize;
 }
 
+/** Track badge + cluster legend — scales with chart width, slightly below axis labels. */
+export function getChartSecondaryLabelSizePx(chartWidthPx) {
+  return Math.max(1, Math.round(getChartPointLabelSizePx(chartWidthPx) * FE_UI.chart.secondaryLabelMultiplier));
+}
+
 export function getChartLayoutPadding(chartWidthPx) {
   const u = getChartWidthUnit(chartWidthPx);
   const base = FE_UI.chart.layoutPadding;
@@ -39,7 +44,7 @@ export function getRadarLabelReservedPx(chartWidthPx) {
 }
 
 export function getClusterLegendSwatchPx(chartWidthPx) {
-  return Math.round(getChartPointLabelSizePx(chartWidthPx) * 1.55);
+  return Math.round(getChartSecondaryLabelSizePx(chartWidthPx) * FE_UI.chart.legendSwatchLabelMultiplier);
 }
 
 export function getClusterLegendMarginTopPx(chartWidthPx) {

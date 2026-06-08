@@ -1,5 +1,5 @@
 import {
-  getChartPointLabelSizePx,
+  getChartSecondaryLabelSizePx,
   getClusterLegendMarginTopPx,
   getClusterLegendSwatchPx,
 } from "@/lib/chart/fonts";
@@ -12,7 +12,7 @@ export function ClusterLegend({ className, hidden = false, chartWidth = 0 }) {
   const trackVariant = useAppStore((s) => s.trackVariant);
   const groups = getPillarGroupOrder(trackVariant);
   const width = chartWidth || FE_UI.page.minWidthPx;
-  const labelPx = getChartPointLabelSizePx(width);
+  const labelPx = getChartSecondaryLabelSizePx(width);
   const swatchPx = getClusterLegendSwatchPx(width);
 
   return (

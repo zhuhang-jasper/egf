@@ -1,4 +1,4 @@
-import { getChartPointLabelSizePx } from "@/lib/chart/fonts";
+import { getChartSecondaryLabelSizePx } from "@/lib/chart/fonts";
 import { FE_UI, normalizeTrackVariant, TRACK_VARIANT_UI } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -6,7 +6,7 @@ export function TrackBadge({ variant, className, size = "sm", hidden = false, ch
   const track = normalizeTrackVariant(variant);
   const ui = TRACK_VARIANT_UI[track];
   const isLarge = size === "md";
-  const scaledLabelPx = getChartPointLabelSizePx(chartWidth || FE_UI.page.minWidthPx);
+  const scaledLabelPx = getChartSecondaryLabelSizePx(chartWidth || FE_UI.page.minWidthPx);
   const scaledBadgeStyle = isLarge
     ? {
         fontSize: scaledLabelPx,

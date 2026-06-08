@@ -181,6 +181,10 @@ export const FE_UI = {
     radarLabelReservedPx: 62,
     radarLabelReserved: { minPx: 38, maxPx: 54 },
     legendMarginTop: { minPx: 20, maxPx: 36 },
+    /** Track badge + cluster legend — slightly below axis pillar labels, same width scaling. */
+    secondaryLabelMultiplier: 0.9,
+    /** Swatch edge length vs legend label font size — just taller than text cap height. */
+    legendSwatchLabelMultiplier: 1.2,
     pointLabelPadding: 5,
     pointLabelPx: 11,
     pointLabelScaleWithChart: true,
