@@ -231,4 +231,22 @@ export const useAppStore = create((set, get) => ({
     );
     get().persistDraft();
   },
+
+  createNew: () => {
+    if (String(get().title).trim()) {
+      get().saveProfile();
+    }
+
+    const defaults = getDefaultChartState();
+    set(
+      withSyncedLevels({
+        ...get(),
+        title: "",
+        pillarLevels: { ...defaults.pillarLevels },
+        levels: [...defaults.levels],
+        activeSavedProfileId: null,
+      }),
+    );
+    get().persistDraft();
+  },
 }));

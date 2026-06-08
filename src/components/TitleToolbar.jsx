@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { RotateCcw, Save, X } from "lucide-react";
+import { Plus, RotateCcw, Save, X } from "lucide-react";
 
 import { ProfilePicker } from "@/components/ProfilePicker";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ export function TitleToolbar() {
   const saveFeedback = useAppStore((s) => s.saveFeedback);
   const clearSaveFeedback = useAppStore((s) => s.clearSaveFeedback);
   const resetLevels = useAppStore((s) => s.resetLevels);
+  const createNew = useAppStore((s) => s.createNew);
   const [saveLabel, setSaveLabel] = useState("Save");
 
   useEffect(() => {
@@ -39,6 +40,19 @@ export function TitleToolbar() {
 
   return (
     <div className="flex w-full flex-wrap items-center gap-2">
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        onClick={() => {
+          createNew();
+          document.getElementById("chart-title-input")?.focus();
+        }}
+        aria-label="Create new chart"
+        title="Create new chart"
+      >
+        <Plus className="h-4 w-4" />
+      </Button>
       <div className="relative min-w-0 flex-[0_1_50%] basis-[50%]">
         <Input
           id="chart-title-input"
