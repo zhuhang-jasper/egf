@@ -87,16 +87,64 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY) {
       const { x, y, w, h } = getRelativeRect(title, rootRect, scaleX, scaleY);
       ctx.fillStyle = sanitizeColorForHtml2Canvas(cs.color);
       ctx.font = buildFont(cs, scaleY);
-      ctx.textAlign = "center";
+      ctx.textAlign = cs.textAlign === "center" ? "center" : "left";
       ctx.textBaseline = "middle";
-      ctx.fillText(text, x + w / 2, y + h / 2);
+      ctx.fillText(text, ctx.textAlign === "center" ? x + w / 2 : x, y + h / 2);
     }
   }
 
-  const legendImg = exportRoot.querySelector("img");
-  if (legendImg instanceof HTMLImageElement && !isVisuallyHidden(legendImg) && legendImg.complete && legendImg.naturalWidth > 0) {
-    const { x, y, w, h } = getRelativeRect(legendImg, rootRect, scaleX, scaleY);
-    ctx.drawImage(legendImg, x, y, w, h);
+  const legendCard = exportRoot.querySelector("[data-chart-export='chart-legend-card']");
+  if (legendCard instanceof HTMLElement && !isVisuallyHidden(legendCard)) {
+    const cs = window.getComputedStyle(legendCard);
+    const { x, y, w, h } = getRelativeRect(legendCard, rootRect, scaleX, scaleY);
+    const radius = (Number.parseFloat(cs.borderTopLeftRadius) || 8) * scaleX;
+    const lineWidth = (Number.parseFloat(cs.borderTopWidth) || 1) * scaleX;
+    drawRoundedRect(
+      ctx,
+      x,
+      y,
+      w,
+      h,
+      radius,
+      sanitizeColorForHtml2Canvas(cs.backgroundColor),
+      sanitizeColorForHtml2Canvas(cs.borderTopColor),
+      lineWidth,
+    );
+  }
+
+  const legend = exportRoot.querySelector("[data-chart-export='cluster-legend']");
+  if (legend instanceof HTMLElement && !isVisuallyHidden(legend)) {
+    for (const item of legend.querySelectorAll("[data-chart-export='cluster-legend-item']")) {
+      if (!(item instanceof HTMLElement)) {
+        continue;
+      }
+      const swatch = item.querySelector("[data-chart-export='cluster-legend-swatch']");
+      const label = item.querySelector("[data-chart-export='cluster-legend-label']");
+      if (swatch instanceof HTMLElement) {
+        const scs = window.getComputedStyle(swatch);
+        const sr = getRelativeRect(swatch, rootRect, scaleX, scaleY);
+        const borderW = (Number.parseFloat(scs.borderTopWidth) || 1) * scaleX;
+        ctx.fillStyle = sanitizeColorForHtml2Canvas(scs.backgroundColor);
+        ctx.fillRect(sr.x, sr.y, sr.w, sr.h);
+        if (borderW > 0) {
+          ctx.strokeStyle = sanitizeColorForHtml2Canvas(scs.borderTopColor);
+          ctx.lineWidth = borderW;
+          ctx.strokeRect(sr.x + borderW / 2, sr.y + borderW / 2, sr.w - borderW, sr.h - borderW);
+        }
+      }
+      if (label instanceof HTMLElement) {
+        const text = label.textContent?.trim();
+        if (text) {
+          const lcs = window.getComputedStyle(label);
+          const lr = getRelativeRect(label, rootRect, scaleX, scaleY);
+          ctx.fillStyle = sanitizeColorForHtml2Canvas(lcs.color);
+          ctx.font = buildFont(lcs, scaleY);
+          ctx.textAlign = "left";
+          ctx.textBaseline = "middle";
+          ctx.fillText(text, lr.x, lr.y + lr.h / 2);
+        }
+      }
+    }
   }
 
   const trackBadge = exportRoot.querySelector("[data-chart-export='track-badge']");
@@ -125,7 +173,7 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY) {
     }
   }
 
-  const averagesGrid = exportRoot.querySelector("[aria-label]");
+  const averagesGrid = exportRoot.querySelector("[data-chart-export='chart-averages']");
   if (averagesGrid) {
     for (const card of averagesGrid.children) {
       if (!(card instanceof HTMLElement)) {

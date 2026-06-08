@@ -1,3 +1,4 @@
+import { getChartLayoutPadding, getChartPointLabelSizePx, getRadarLabelReservedPx } from "@/lib/chart/fonts";
 import { FE_UI, getChartLayoutLabels } from "@/lib/constants";
 
 function radarTickBackdropHalf(scale) {
@@ -114,7 +115,7 @@ export function applyRadarCenterFit(scale) {
 
   const cx = area.left + area.width / 2;
   const cy = area.top + area.height / 2;
-  const reserve = u.radarLabelReservedPx;
+  const reserve = getRadarLabelReservedPx(chart.width);
   const maxR = Math.min(cx - area.left - reserve, area.right - cx - reserve, cy - area.top - reserve, area.bottom - cy - reserve);
 
   scale.xCenter = cx;
@@ -125,6 +126,31 @@ export function applyRadarCenterFit(scale) {
   rebuildRadarPointLabelItems(scale);
 }
 
+/** Vertical span of axis point labels — used to fit the frame height to content, not a square canvas. */
+export function getRadarContentHeightPx(chart) {
+  const scale = chart.scales?.r;
+  const items = scale?._pointLabelItems;
+  if (!items?.length) {
+    return null;
+  }
+
+  let minY = Infinity;
+  let maxY = -Infinity;
+  for (const item of items) {
+    if (!item?.visible) {
+      continue;
+    }
+    minY = Math.min(minY, item.top);
+    maxY = Math.max(maxY, item.bottom);
+  }
+  if (!Number.isFinite(minY) || !Number.isFinite(maxY)) {
+    return null;
+  }
+
+  const pad = FE_UI.chartFrame.contentPadPx ?? 6;
+  return Math.ceil(maxY - minY + pad * 2);
+}
+
 export function syncFontsForChart(chart) {
   const w = chart.width;
   if (!w) {
@@ -133,21 +159,21 @@ export function syncFontsForChart(chart) {
   const cf = FE_UI.chartFonts;
   const ch = FE_UI.chart;
   const tickSize = Math.max(cf.tickMinPx, Math.round(w / cf.tickWidthDivisor));
-  let labelSize = ch.pointLabelPx;
-  if (ch.pointLabelScaleWithChart) {
-    const ref = cf.pointLabelRefWidthPx || 380;
-    labelSize = Math.round((ch.pointLabelPx * w) / ref);
-    labelSize = Math.max(cf.pointLabelMinPx, labelSize);
-    if (cf.pointLabelMaxPx != null) {
-      labelSize = Math.min(cf.pointLabelMaxPx, labelSize);
-    }
-  }
+  const labelSize = getChartPointLabelSizePx(w);
+  const padding = getChartLayoutPadding(w);
   const rScale = chart.options.scales.r;
   const tickFont = rScale.ticks.font || {};
   const plFont = rScale.pointLabels.font || {};
-  if (tickFont.size === tickSize && plFont.size === labelSize) {
+  const layoutPad = chart.options.layout.padding;
+  const paddingUnchanged =
+    layoutPad?.top === padding.top &&
+    layoutPad?.right === padding.right &&
+    layoutPad?.bottom === padding.bottom &&
+    layoutPad?.left === padding.left;
+  if (tickFont.size === tickSize && plFont.size === labelSize && paddingUnchanged) {
     return;
   }
+  chart.options.layout.padding = padding;
   rScale.ticks.font = { ...tickFont, size: tickSize };
   rScale.pointLabels.font = {
     ...plFont,

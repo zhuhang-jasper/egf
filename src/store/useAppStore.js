@@ -78,7 +78,7 @@ export const useAppStore = create((set, get) => ({
   },
 
   setLevel: (index, value) => {
-    const trackVariant = get().trackVariant;
+    const {trackVariant} = get();
     const pillarId = getPillarIdByIndex(index, trackVariant);
     if (!pillarId) {
       return;
@@ -224,6 +224,24 @@ export const useAppStore = create((set, get) => ({
     set(
       withSyncedLevels({
         ...get(),
+        pillarLevels: { ...defaults.pillarLevels },
+        levels: [...defaults.levels],
+        activeSavedProfileId: null,
+      }),
+    );
+    get().persistDraft();
+  },
+
+  createNew: () => {
+    if (String(get().title).trim()) {
+      get().saveProfile();
+    }
+
+    const defaults = getDefaultChartState();
+    set(
+      withSyncedLevels({
+        ...get(),
+        title: "",
         pillarLevels: { ...defaults.pillarLevels },
         levels: [...defaults.levels],
         activeSavedProfileId: null,

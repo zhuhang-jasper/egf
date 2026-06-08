@@ -91,14 +91,19 @@ export function getPillarLabel(pillarId) {
   return PILLARS[pillarId]?.label ?? "";
 }
 
+/** Chart axis labels omit the organ name in parentheses (e.g. "🤲 Coding" not "🤲 Coding (Hands)"). */
+function getChartPillarLabel(pillarId) {
+  return getPillarLabel(pillarId).replace(/\s*\([^)]*\)\s*$/, "");
+}
+
 export function getChartLabels(trackVariant = "fe") {
-  return getPillarOrder(trackVariant).map((id) => getPillarLabel(id));
+  return getPillarOrder(trackVariant).map((id) => getChartPillarLabel(id));
 }
 
 /** Longest label on the active track — reserved on the last axis so radar padding stays stable. */
 function getChartLayoutReservedLabel(trackVariant = "fe") {
   return getPillarOrder(trackVariant).reduce((longest, id) => {
-    const label = getPillarLabel(id);
+    const label = getChartPillarLabel(id);
     return label.length > longest.length ? label : longest;
   }, "");
 }
@@ -107,7 +112,7 @@ export function getChartLayoutLabels(trackVariant = "fe") {
   const order = getPillarOrder(trackVariant);
   const reserved = getChartLayoutReservedLabel(trackVariant);
   const lastId = order.at(-1);
-  return order.map((id) => (id === lastId ? reserved : getPillarLabel(id)));
+  return order.map((id) => (id === lastId ? reserved : getChartPillarLabel(id)));
 }
 
 export const SENIORITY_LEVEL_COUNT = 5;
@@ -159,16 +164,28 @@ export function getPillarIdByIndex(index, trackVariant = "fe") {
 export const FE_UI = {
   page: { maxWidthPx: 650, minWidthPx: 350 },
   chartFrame: {
-    marginTopMinPx: -20,
-    marginTopMaxPx: -50,
-    marginBottomMinPx: -50,
-    marginBottomMaxPx: -80,
+    /** Fallback frame height before Chart.js label bounds are measured (radar fits a wide rect, not a square). */
+    heightWidthRatio: { minRatio: 0.76, maxRatio: 0.84 },
+    /** Responsive trim applied below the chart frame — collapses leftover canvas slack. */
+    marginBottomTrim: { minPx: -14, maxPx: -36 },
+    /** Padding around measured axis-label span when fitting frame height to content. */
+    contentPadPx: 6,
     minChartHeightPx: 120,
   },
   chart: {
+    title: { labelMultiplier: 1.4, minPx: 14, maxPx: 22 },
     layoutPadding: { top: 0, right: 30, bottom: 0, left: 30 },
+    layoutPaddingHorizontal: { minPx: 14, maxPx: 30 },
     radarCenterFix: true,
     radarLabelReservedPx: 62,
+    radarLabelReserved: { minPx: 38, maxPx: 54 },
+    legendMarginTop: { minPx: 14, maxPx: 36 },
+    /** Track badge + cluster legend — slightly below axis pillar labels, same width scaling. */
+    secondaryLabelMultiplier: 0.9,
+    /** md badge min width (em) — sized for "Frontend" so title does not shift on track toggle. */
+    trackBadgeMdMinWidthEm: 6.75,
+    /** Swatch edge length vs legend label font size — just taller than text cap height. */
+    legendSwatchLabelMultiplier: 1.2,
     pointLabelPadding: 5,
     pointLabelPx: 11,
     pointLabelScaleWithChart: true,

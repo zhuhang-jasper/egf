@@ -17,7 +17,7 @@ export default function App() {
         <AppIntro />
       </div>
       <main
-        className="grid w-full grid-cols-1 items-stretch gap-4 rounded-[14px] border border-[#e8e8e8] bg-white p-3 pb-4 shadow-sm"
+        className="grid w-full grid-cols-1 items-stretch rounded-[14px] border border-[#e8e8e8] bg-white p-3 pb-4 shadow-sm"
         style={{
           maxWidth: FE_UI.page.maxWidthPx,
           minWidth: FE_UI.page.minWidthPx,

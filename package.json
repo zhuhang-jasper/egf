@@ -1,7 +1,7 @@
 {
   "name": "engineer-growth-framework",
   "private": true,
-  "version": "3.0.0",
+  "version": "3.1.0",
   "type": "module",
   "engines": {
     "node": ">=24.0.0",
@@ -10,7 +10,7 @@
   "scripts": {
     "check-node-version": "node scripts/check-node-version.js",
     "prebuild": "npm run -s check-node-version",
-    "dev": "npm run -s prebuild && vite",
+    "dev": "npm run -s prebuild && vite --port=5174",
     "build": "vite build",
     "lint+format:check": "npm run lint:check && npm run format:check",
     "lint+format:fix": "npm run lint:fix && npm run format:fix",

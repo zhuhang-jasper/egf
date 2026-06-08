@@ -1,48 +1,34 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 
+import { applyChartFrameLayout, isChartMinimalChrome } from "@/lib/chart/fonts";
 import { applyChartState, createCompetencyChart, refreshChart } from "@/lib/chart/instance";
-import { FE_UI } from "@/lib/constants";
+import { getRadarContentHeightPx } from "@/lib/chart/radar-center";
 
 import { useAppStore } from "@/store/useAppStore";
 
-function syncFrameMargins(frameRef, legendRef) {
+function getLayoutOptions() {
+  return { minimalChrome: isChartMinimalChrome(useAppStore.getState()) };
+}
+
+function fitFrameToChart(frameRef, chart) {
   const frame = frameRef.current;
-  if (!frame) {
+  if (!frame?.offsetWidth || !chart) {
     return;
   }
 
-  const p = FE_UI.page;
-  const cf = FE_UI.chartFrame;
   const w = frame.offsetWidth;
-  const w0 = p.minWidthPx;
-  const w1 = p.maxWidthPx;
-  const u = w1 > w0 ? Math.max(0, Math.min(1, (w - w0) / (w1 - w0))) : 1;
-  const top = cf.marginTopMinPx + u * (cf.marginTopMaxPx - cf.marginTopMinPx);
-  const bot = cf.marginBottomMinPx + u * (cf.marginBottomMaxPx - cf.marginBottomMinPx);
-
-  let legendH = 0;
-  const legend = legendRef?.current;
-  if (legend) {
-    const cs = getComputedStyle(legend);
-    legendH = legend.offsetHeight + (parseFloat(cs.marginTop) || 0) + (parseFloat(cs.marginBottom) || 0);
+  const layout = getLayoutOptions();
+  const contentH = getRadarContentHeightPx(chart);
+  if (contentH) {
+    applyChartFrameLayout(frame, w, contentH, layout);
+    chart.resize();
   }
-
-  const marginTop = Math.round(top - legendH);
-  const marginBottom = Math.round(bot);
-  const shrink = (top < 0 ? -top : 0) + (bot < 0 ? -bot : 0);
-  const minH = cf.minChartHeightPx ?? 120;
-  const innerH = Math.round(Math.max(minH, w - shrink));
-
-  frame.style.margin = `${marginTop}px auto ${marginBottom}px`;
-  frame.style.aspectRatio = "unset";
-  frame.style.height = `${innerH}px`;
 }
 
 /**
  * Frame margins (layout) + Chart.js lifecycle (effect after paint).
- * Returns chart ref and a layout sync helper for legend image onLoad.
  */
-export function useCompetencyChart(canvasRef, frameRef, legendRef) {
+export function useCompetencyChart(canvasRef, frameRef) {
   const chartRef = useRef(null);
 
   const levels = useAppStore((s) => s.levels);
@@ -51,9 +37,21 @@ export function useCompetencyChart(canvasRef, frameRef, legendRef) {
   const levelsPolygonHidden = useAppStore((s) => s.levelsPolygonHidden);
 
   const relayout = useCallback(() => {
-    syncFrameMargins(frameRef, legendRef);
-    refreshChart(chartRef.current, useAppStore.getState());
-  }, [frameRef, legendRef]);
+    const chart = chartRef.current;
+    const frame = frameRef.current;
+    if (!frame?.offsetWidth) {
+      return;
+    }
+
+    const layout = getLayoutOptions();
+    applyChartFrameLayout(frame, frame.offsetWidth, null, layout);
+    if (!chart) {
+      return;
+    }
+
+    refreshChart(chart, useAppStore.getState());
+    fitFrameToChart(frameRef, chart);
+  }, [frameRef]);
 
   const relayoutRef = useRef(relayout);
   relayoutRef.current = relayout;
