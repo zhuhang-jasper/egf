@@ -183,11 +183,12 @@ export function ChartSection() {
           </div>
         </div>
 
+        <div aria-hidden className="shrink-0" style={{ height: legendMarginTopPx }} />
+
         {!chartLegendHidden ? (
           <div
             data-chart-export="chart-legend-card"
-            className="mx-auto flex w-fit max-w-full items-center justify-center rounded-lg border border-border bg-muted px-6 py-2.5 leading-none"
-            style={{ marginTop: legendMarginTopPx }}
+            className="mx-auto mb-3 flex w-fit max-w-full items-center justify-center rounded-lg border border-border bg-muted px-6 py-2.5 leading-none"
           >
             <ClusterLegend chartWidth={chartWidth} />
           </div>
