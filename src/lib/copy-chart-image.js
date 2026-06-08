@@ -173,7 +173,7 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY) {
     }
   }
 
-  const averagesGrid = exportRoot.querySelector("[aria-label]");
+  const averagesGrid = exportRoot.querySelector("[data-chart-export='chart-averages']");
   if (averagesGrid) {
     for (const card of averagesGrid.children) {
       if (!(card instanceof HTMLElement)) {
