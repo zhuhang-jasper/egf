@@ -78,7 +78,7 @@ export const useAppStore = create((set, get) => ({
   },
 
   setLevel: (index, value) => {
-    const trackVariant = get().trackVariant;
+    const {trackVariant} = get();
     const pillarId = getPillarIdByIndex(index, trackVariant);
     if (!pillarId) {
       return;

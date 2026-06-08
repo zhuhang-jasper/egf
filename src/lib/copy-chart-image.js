@@ -93,10 +93,39 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY) {
     }
   }
 
-  const legendImg = exportRoot.querySelector("img");
-  if (legendImg instanceof HTMLImageElement && !isVisuallyHidden(legendImg) && legendImg.complete && legendImg.naturalWidth > 0) {
-    const { x, y, w, h } = getRelativeRect(legendImg, rootRect, scaleX, scaleY);
-    ctx.drawImage(legendImg, x, y, w, h);
+  const legend = exportRoot.querySelector("[data-chart-export='cluster-legend']");
+  if (legend instanceof HTMLElement && !isVisuallyHidden(legend)) {
+    for (const item of legend.querySelectorAll("[data-chart-export='cluster-legend-item']")) {
+      if (!(item instanceof HTMLElement)) {
+        continue;
+      }
+      const swatch = item.querySelector("[data-chart-export='cluster-legend-swatch']");
+      const label = item.querySelector("[data-chart-export='cluster-legend-label']");
+      if (swatch instanceof HTMLElement) {
+        const scs = window.getComputedStyle(swatch);
+        const sr = getRelativeRect(swatch, rootRect, scaleX, scaleY);
+        const borderW = (Number.parseFloat(scs.borderTopWidth) || 1) * scaleX;
+        ctx.fillStyle = sanitizeColorForHtml2Canvas(scs.backgroundColor);
+        ctx.fillRect(sr.x, sr.y, sr.w, sr.h);
+        if (borderW > 0) {
+          ctx.strokeStyle = sanitizeColorForHtml2Canvas(scs.borderTopColor);
+          ctx.lineWidth = borderW;
+          ctx.strokeRect(sr.x + borderW / 2, sr.y + borderW / 2, sr.w - borderW, sr.h - borderW);
+        }
+      }
+      if (label instanceof HTMLElement) {
+        const text = label.textContent?.trim();
+        if (text) {
+          const lcs = window.getComputedStyle(label);
+          const lr = getRelativeRect(label, rootRect, scaleX, scaleY);
+          ctx.fillStyle = sanitizeColorForHtml2Canvas(lcs.color);
+          ctx.font = buildFont(lcs, scaleY);
+          ctx.textAlign = "left";
+          ctx.textBaseline = "middle";
+          ctx.fillText(text, lr.x, lr.y + lr.h / 2);
+        }
+      }
+    }
   }
 
   const trackBadge = exportRoot.querySelector("[data-chart-export='track-badge']");

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowUpFromLine, Settings } from "lucide-react";
 
 import { ChartAverages } from "@/components/ChartAverages";
+import { ClusterLegend } from "@/components/ClusterLegend";
 import { TrackBadge } from "@/components/TrackBadge";
 import { TrackToggle } from "@/components/TrackToggle";
 import { Button } from "@/components/ui/button";
@@ -11,11 +12,8 @@ import { useCompetencyChart } from "@/hooks/useCompetencyChart";
 
 import { FE_UI, SCORES_VISIBLE_FROM_URL } from "@/lib/constants";
 import { copyChartAsImageToClipboard } from "@/lib/copy-chart-image";
-import { cn } from "@/lib/utils";
 
 import { useAppStore } from "@/store/useAppStore";
-
-import clusterLegendImage from "@/assets/cluster-legend-export.png";
 
 function DisplayCheckbox({ label, checked, onChange }) {
   return (
@@ -103,7 +101,6 @@ export function ChartSection() {
   const exportRef = useRef(null);
   const canvasRef = useRef(null);
   const frameRef = useRef(null);
-  const legendRef = useRef(null);
   const [copyLabel, setCopyLabel] = useState("Copy image");
 
   const title = useAppStore((s) => s.title);
@@ -111,7 +108,7 @@ export function ChartSection() {
   const chartLegendHidden = useAppStore((s) => s.chartLegendHidden);
   const chartTitleHidden = useAppStore((s) => s.chartTitleHidden);
 
-  const { chartRef, relayout } = useCompetencyChart(canvasRef, frameRef, legendRef);
+  const { chartRef, relayout } = useCompetencyChart(canvasRef, frameRef);
 
   const trimmedTitle = String(title).trim();
   const showVisibleTitle = !chartTitleHidden && trimmedTitle.length > 0;
@@ -144,7 +141,7 @@ export function ChartSection() {
 
   return (
     <div className="flex w-full min-w-0 flex-col items-center">
-      <div className="relative z-[2] mb-4 flex w-full min-w-0 items-center justify-between gap-2">
+      <div className="relative z-[2] mb-3 flex w-full min-w-0 items-center justify-between gap-2 border-b pb-3 border-border">
         <TrackToggle />
         <div className="flex shrink-0 items-center gap-2">
           <Button type="button" variant="outline" size="sm" onClick={handleCopy}>
@@ -166,35 +163,17 @@ export function ChartSection() {
           </h2>
         )}
 
-        <div
-          ref={legendRef}
-          className={cn(
-            "mb-0 flex w-full min-w-0 items-start justify-between gap-2 px-2 leading-none",
-            chartLegendHidden && "invisible pointer-events-none",
-          )}
-          aria-hidden={chartLegendHidden || undefined}
-        >
-          <img
-            src={clusterLegendImage}
-            width={200}
-            height={116}
-            alt=""
-            aria-hidden
-            className="pointer-events-none block h-auto max-w-[min(125px,18vw)] w-auto"
-            onLoad={relayout}
-          />
-          <TrackBadge variant={trackVariant} size="md" className="shrink-0" />
+        <div className="mb-6 flex w-full min-w-0 items-start px-2 leading-none">
+          <TrackBadge variant={trackVariant} size="md" className="shrink-0" hidden={chartLegendHidden} />
         </div>
 
-        <div
-          ref={frameRef}
-          className="relative z-0 mx-auto w-full max-w-full box-border"
-          style={{ minHeight: FE_UI.chartFrame.minChartHeightPx }}
-        >
+        <div ref={frameRef} className="relative z-0 mx-auto w-full max-w-full box-border" style={{ minHeight: FE_UI.chartFrame.minChartHeightPx }}>
           <div className="absolute inset-0 min-h-0 min-w-0">
             <canvas ref={canvasRef} id="competencyChart" aria-labelledby="competency-chart-heading" />
           </div>
         </div>
+
+        <ClusterLegend hidden={chartLegendHidden} />
 
         <ChartAverages />
       </div>

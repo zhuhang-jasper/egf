@@ -5,7 +5,7 @@ import { FE_UI } from "@/lib/constants";
 
 import { useAppStore } from "@/store/useAppStore";
 
-function syncFrameMargins(frameRef, legendRef) {
+function syncFrameMargins(frameRef) {
   const frame = frameRef.current;
   if (!frame) {
     return;
@@ -20,14 +20,7 @@ function syncFrameMargins(frameRef, legendRef) {
   const top = cf.marginTopMinPx + u * (cf.marginTopMaxPx - cf.marginTopMinPx);
   const bot = cf.marginBottomMinPx + u * (cf.marginBottomMaxPx - cf.marginBottomMinPx);
 
-  let legendH = 0;
-  const legend = legendRef?.current;
-  if (legend) {
-    const cs = getComputedStyle(legend);
-    legendH = legend.offsetHeight + (parseFloat(cs.marginTop) || 0) + (parseFloat(cs.marginBottom) || 0);
-  }
-
-  const marginTop = Math.round(top - legendH);
+  const marginTop = Math.round(top);
   const marginBottom = Math.round(bot);
   const shrink = (top < 0 ? -top : 0) + (bot < 0 ? -bot : 0);
   const minH = cf.minChartHeightPx ?? 120;
@@ -40,9 +33,8 @@ function syncFrameMargins(frameRef, legendRef) {
 
 /**
  * Frame margins (layout) + Chart.js lifecycle (effect after paint).
- * Returns chart ref and a layout sync helper for legend image onLoad.
  */
-export function useCompetencyChart(canvasRef, frameRef, legendRef) {
+export function useCompetencyChart(canvasRef, frameRef) {
   const chartRef = useRef(null);
 
   const levels = useAppStore((s) => s.levels);
@@ -51,9 +43,9 @@ export function useCompetencyChart(canvasRef, frameRef, legendRef) {
   const levelsPolygonHidden = useAppStore((s) => s.levelsPolygonHidden);
 
   const relayout = useCallback(() => {
-    syncFrameMargins(frameRef, legendRef);
+    syncFrameMargins(frameRef);
     refreshChart(chartRef.current, useAppStore.getState());
-  }, [frameRef, legendRef]);
+  }, [frameRef]);
 
   const relayoutRef = useRef(relayout);
   relayoutRef.current = relayout;

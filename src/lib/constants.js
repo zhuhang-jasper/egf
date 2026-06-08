@@ -91,14 +91,19 @@ export function getPillarLabel(pillarId) {
   return PILLARS[pillarId]?.label ?? "";
 }
 
+/** Chart axis labels omit the organ name in parentheses (e.g. "🤲 Coding" not "🤲 Coding (Hands)"). */
+function getChartPillarLabel(pillarId) {
+  return getPillarLabel(pillarId).replace(/\s*\([^)]*\)\s*$/, "");
+}
+
 export function getChartLabels(trackVariant = "fe") {
-  return getPillarOrder(trackVariant).map((id) => getPillarLabel(id));
+  return getPillarOrder(trackVariant).map((id) => getChartPillarLabel(id));
 }
 
 /** Longest label on the active track — reserved on the last axis so radar padding stays stable. */
 function getChartLayoutReservedLabel(trackVariant = "fe") {
   return getPillarOrder(trackVariant).reduce((longest, id) => {
-    const label = getPillarLabel(id);
+    const label = getChartPillarLabel(id);
     return label.length > longest.length ? label : longest;
   }, "");
 }
@@ -107,7 +112,7 @@ export function getChartLayoutLabels(trackVariant = "fe") {
   const order = getPillarOrder(trackVariant);
   const reserved = getChartLayoutReservedLabel(trackVariant);
   const lastId = order.at(-1);
-  return order.map((id) => (id === lastId ? reserved : getPillarLabel(id)));
+  return order.map((id) => (id === lastId ? reserved : getChartPillarLabel(id)));
 }
 
 export const SENIORITY_LEVEL_COUNT = 5;
@@ -159,10 +164,10 @@ export function getPillarIdByIndex(index, trackVariant = "fe") {
 export const FE_UI = {
   page: { maxWidthPx: 650, minWidthPx: 350 },
   chartFrame: {
-    marginTopMinPx: -20,
-    marginTopMaxPx: -50,
-    marginBottomMinPx: -50,
-    marginBottomMaxPx: -80,
+    marginTopMinPx: -60,
+    marginTopMaxPx: -90,
+    marginBottomMinPx: -60,
+    marginBottomMaxPx: -90,
     minChartHeightPx: 120,
   },
   chart: {
