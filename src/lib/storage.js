@@ -1,5 +1,5 @@
-import { PILLAR_SCHEMA, PROFILES_STORAGE_KEY, SCORES_VISIBLE_FROM_URL, STORAGE_KEY } from "@/lib/constants";
-import { needsStorageUpgrade, normalizeSavedState, normalizeStoredProfile, toCanonicalStoragePayload } from "@/lib/levels";
+import { PROFILES_STORAGE_KEY, SCORES_VISIBLE_FROM_URL, STORAGE_KEY } from "@/lib/constants";
+import { normalizeSavedState, normalizeStoredProfile, toCanonicalStoragePayload } from "@/lib/levels";
 
 export function getDefaultChartDisplay() {
   return {
@@ -24,11 +24,10 @@ export function parseChartDisplay(parsed) {
   };
 }
 
-/** Draft JSON: canonical pillar data + session chart display toggles. */
+/** Draft JSON: pillar key-value data + session chart display toggles. */
 export function toDraftStoragePayload(state) {
   return {
     ...toCanonicalStoragePayload(state),
-    pillarSchema: PILLAR_SCHEMA,
     levelsPolygonHidden: state.levelsPolygonHidden,
     chartLegendHidden: state.chartLegendHidden,
     chartTitleHidden: state.chartTitleHidden,
@@ -48,11 +47,7 @@ export function loadDraftFromStorage() {
       return null;
     }
     const display = parseChartDisplay(parsed);
-    const draft = { ...normalized, ...display };
-    if (needsStorageUpgrade(parsed)) {
-      saveDraftToStorage(toDraftStoragePayload(draft));
-    }
-    return draft;
+    return { ...normalized, ...display };
   } catch {
     return null;
   }
@@ -66,10 +61,6 @@ export function saveDraftToStorage(state) {
   }
 }
 
-function profileNeedsStorageMigration(row) {
-  return needsStorageUpgrade(row);
-}
-
 export function loadProfilesFromStorage() {
   try {
     const raw = localStorage.getItem(PROFILES_STORAGE_KEY);
@@ -79,24 +70,13 @@ export function loadProfilesFromStorage() {
     const parsed = JSON.parse(raw);
     const arr = Array.isArray(parsed.profiles) ? parsed.profiles : [];
     const out = [];
-    let migrated = false;
-
     for (const row of arr) {
-      if (profileNeedsStorageMigration(row)) {
-        migrated = true;
-      }
       const n = normalizeStoredProfile(row);
       if (n) {
         out.push(n);
       }
     }
-
     out.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
-
-    if (migrated) {
-      writeProfilesToStorage(out);
-    }
-
     return out;
   } catch {
     return [];

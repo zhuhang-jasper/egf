@@ -1,4 +1,4 @@
-import { CAREER_LEVEL_BY_AVG_BAND, getAiPillarIndices, HUMAN_STRENGTH_TOP_K } from "@/lib/constants";
+import { CAREER_LEVEL_BY_AVG_BAND, HUMAN_STRENGTH_TOP_K } from "@/lib/constants";
 
 export function formatAvgScore(n) {
   if (!Number.isFinite(n)) {
@@ -34,21 +34,6 @@ export function computeHumanStrengthIndex(levels) {
   return sum / k;
 }
 
-export function computeAvgAiThree(aiLevels) {
-  if (!aiLevels?.length) {
-    return NaN;
-  }
-  const indices = getAiPillarIndices();
-  if (indices.length === 0) {
-    return NaN;
-  }
-  let sum = 0;
-  for (const i of indices) {
-    sum += aiLevels[i] ?? 0;
-  }
-  return sum / indices.length;
-}
-
 export function careerLevelFromStrengthIndex(avg) {
   if (!Number.isFinite(avg)) {
     return null;
@@ -69,12 +54,11 @@ export function careerLevelFromStrengthIndex(avg) {
   return CAREER_LEVEL_BY_AVG_BAND[4];
 }
 
-export function computeAverages(levels, aiLevels) {
+export function computeAverages(levels) {
   const humanIndex = computeHumanStrengthIndex(levels);
   return {
     overall: computeOverallPillarAvg(levels),
     human: humanIndex,
-    ai: computeAvgAiThree(aiLevels),
     career: careerLevelFromStrengthIndex(humanIndex),
   };
 }

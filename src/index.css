@@ -22,7 +22,7 @@
   --color-ring: hsl(0 0% 63%);
   --color-cluster-technical: #cdbdd8;
   --color-cluster-product: #f5b39d;
-  --color-cluster-behavioural: #bddbb5;
+  --color-cluster-operational: #bddbb5;
   --color-ai: #4f46e5;
   --color-track-fe: hsl(4 72% 54%);
   --color-track-fe-foreground: hsl(0 0% 100%);
@@ -49,7 +49,7 @@
   #competencyInputs {
     --cluster-technical: var(--color-cluster-technical);
     --cluster-product: var(--color-cluster-product);
-    --cluster-behavioural: var(--color-cluster-behavioural);
+    --cluster-operational: var(--color-cluster-operational);
     --level-num-w: 3rem;
     --level-spin-w: 22px;
   }

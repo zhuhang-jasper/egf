@@ -46,7 +46,6 @@ export function useCompetencyChart(canvasRef, frameRef, legendRef) {
   const chartRef = useRef(null);
 
   const levels = useAppStore((s) => s.levels);
-  const aiLevels = useAppStore((s) => s.aiLevels);
   const title = useAppStore((s) => s.title);
   const trackVariant = useAppStore((s) => s.trackVariant);
   const levelsPolygonHidden = useAppStore((s) => s.levelsPolygonHidden);
@@ -104,7 +103,7 @@ export function useCompetencyChart(canvasRef, frameRef, legendRef) {
       return;
     }
     applyChartState(chart, useAppStore.getState());
-  }, [levels, aiLevels, title, trackVariant, levelsPolygonHidden]);
+  }, [levels, title, trackVariant, levelsPolygonHidden]);
 
   return { chartRef, relayout };
 }

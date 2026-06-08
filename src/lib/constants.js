@@ -1,11 +1,5 @@
 const urlParams = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
 
-/** `?ai=1` — AI augmentation on Coding, Architecture, Process (second polygon). */
-export const AI_AUGMENTATION_ENABLED = urlParams.get("ai") === "1";
-
-/** `?ai=2` — dedicated AI pillar (8 pillars on chart and form). */
-export const AI_PILLAR_ENABLED = urlParams.get("ai") === "2";
-
 /** `?score=1` — show Scores in chart settings (checked by default) and footer averages. */
 export const SCORES_VISIBLE_FROM_URL = urlParams.get("score") === "1";
 
@@ -13,40 +7,19 @@ export const STORAGE_KEY = "fe-growth-framework:v1";
 export const PROFILES_STORAGE_KEY = "fe-growth-framework:profiles:v1";
 export const LEVEL_STEP = 0.5;
 export const HUMAN_STRENGTH_TOP_K = 3;
+export const DEFAULT_PILLAR_LEVEL = 3;
 
-/** Chart order when the dedicated AI pillar is included (`?ai=2`). */
-export const PILLAR_ORDER_WITH_AI = ["coding", "architecture", "ai", "process", "ownership", "communication", "productSense", "uiUx"];
-
-/** Default 7-pillar order (no dedicated AI pillar; used for default and `?ai=1`). */
-export const PILLAR_ORDER_BASE = ["coding", "architecture", "process", "ownership", "communication", "productSense", "uiUx"];
-
-export const FULL_PILLAR_COUNT = PILLAR_ORDER_WITH_AI.length;
-export const BASE_PILLAR_COUNT = PILLAR_ORDER_BASE.length;
-
-/** Index of the 🤖 AI pillar when {@link PILLAR_ORDER_WITH_AI} is active. */
-export const AI_PILLAR_CHART_INDEX = PILLAR_ORDER_WITH_AI.indexOf("ai");
-
-/** Canonical storage indices for ai=1 augmentation scores (coding, architecture, process). */
-export const CANONICAL_AI_AUGMENT_INDICES = [0, 1, AI_PILLAR_CHART_INDEX + 1];
-
-/** Canonical pillar definitions (names and metadata). Chart order is {@link PILLAR_ORDER}. */
+/** Master pillar catalog (id → label). Add/remove pillars here; wire into tracks below. */
 export const PILLARS = {
-  coding: { label: "🤲 Coding", hasAi: true },
-  architecture: { label: "🧠 Architecture", hasAi: true },
-  ai: { label: "🤖 AI Proficiency" },
-  process: { label: "🦴 Process", hasAi: true },
-  ownership: { label: "✨ Ownership" },
-  communication: { label: "🗣️ Communication" },
-  productSense: { label: "💡 Product Sense" },
-  uiUx: { label: "👀 UI/UX" },
-};
-
-/** Product-cluster pillar whose label switches with the FE/BE track toggle. */
-export const PRODUCT_PILLAR_ID = "uiUx";
-
-export const PRODUCT_PILLAR_LABELS = {
-  fe: "👀 UI/UX",
-  be: "👃 Business Logic",
+  coding: { label: "🤲 Coding (Hands)" },
+  domainLogic: { label: "👃 Domain Logic (Nose)" },
+  architecture: { label: "🧠 Architecture (Brain)" },
+  ai: { label: "🤖 AI Proficiency (Machine)" },
+  uiUx: { label: "👀 UI/UX (Eyes)" },
+  productSense: { label: "💡 Product Sense (Gut)" },
+  process: { label: "🦴 Process (Spine)" },
+  communication: { label: "🗣️ Communication (Voice)" },
+  ownership: { label: "✨ Ownership (Soul)" },
 };
 
 export const TRACK_VARIANTS = ["fe", "be"];
@@ -66,42 +39,81 @@ export const TRACK_VARIANT_UI = {
   },
 };
 
+/**
+ * Per-track chart order and form clusters (ids reference {@link PILLARS}).
+ * To drop a pillar from a track: remove its id from `pillarOrder` and cluster lists.
+ */
+export const TRACKS = {
+  fe: {
+    pillarOrder: ["coding", "architecture", "ai", "process", "ownership", "communication", "productSense", "uiUx", "domainLogic"],
+    pillarGroups: [
+      { id: "technical", pillars: ["coding", "domainLogic", "architecture", "ai"] },
+      { id: "product", pillars: ["uiUx", "productSense"] },
+      { id: "operational", pillars: ["process", "communication", "ownership"] },
+    ],
+  },
+  be: {
+    pillarOrder: ["coding", "architecture", "ai", "process", "ownership", "communication", "productSense", "domainLogic"],
+    pillarGroups: [
+      { id: "technical", pillars: ["coding", "domainLogic", "architecture", "ai"] },
+      { id: "product", pillars: ["productSense"] },
+      { id: "operational", pillars: ["process", "communication", "ownership"] },
+    ],
+  },
+};
+
+/** Pillar ids persisted in profiles (union of all track orders; missing keys default on load). */
+export const CANONICAL_PILLAR_IDS = [...new Set(TRACK_VARIANTS.flatMap((track) => TRACKS[track].pillarOrder))];
+
 /** Profiles/drafts without `trackVariant` are treated as front-end (FE). */
 export function normalizeTrackVariant(value) {
   return value === "be" ? "be" : "fe";
 }
 
-export function getPillarLabel(pillarId, trackVariant = "fe") {
-  if (pillarId === PRODUCT_PILLAR_ID) {
-    return PRODUCT_PILLAR_LABELS[normalizeTrackVariant(trackVariant)];
-  }
-  return PILLARS[pillarId]?.label ?? "";
+export function getTrackConfig(trackVariant = "fe") {
+  return TRACKS[normalizeTrackVariant(trackVariant)];
 }
 
-export const PILLAR_ORDER = AI_PILLAR_ENABLED ? PILLAR_ORDER_WITH_AI : PILLAR_ORDER_BASE;
-
-export function getChartLabels(trackVariant = "fe") {
-  return PILLAR_ORDER.map((id) => getPillarLabel(id, trackVariant));
+export function getPillarOrder(trackVariant = "fe") {
+  return getTrackConfig(trackVariant).pillarOrder;
 }
 
-/** Chart layout labels: product pillar always uses the longer FE/BE text so radar size stays stable. */
-export function getChartLayoutLabels() {
-  return PILLAR_ORDER.map((id) => {
-    if (id === PRODUCT_PILLAR_ID) {
-      const { fe, be } = PRODUCT_PILLAR_LABELS;
-      return fe.length >= be.length ? fe : be;
-    }
-    return PILLARS[id]?.label ?? "";
-  });
-}
+/** Default-track chart order — used where track is not yet available. */
+export const PILLAR_ORDER = getPillarOrder("fe");
 
 export const PILLAR_COUNT = PILLAR_ORDER.length;
 
+export function getPillarGroupOrder(trackVariant = "fe") {
+  return getTrackConfig(trackVariant).pillarGroups;
+}
+
+export function getPillarLabel(pillarId) {
+  return PILLARS[pillarId]?.label ?? "";
+}
+
+export function getChartLabels(trackVariant = "fe") {
+  return getPillarOrder(trackVariant).map((id) => getPillarLabel(id));
+}
+
+/** Longest label on the active track — reserved on the last axis so radar padding stays stable. */
+function getChartLayoutReservedLabel(trackVariant = "fe") {
+  return getPillarOrder(trackVariant).reduce((longest, id) => {
+    const label = getPillarLabel(id);
+    return label.length > longest.length ? label : longest;
+  }, "");
+}
+
+export function getChartLayoutLabels(trackVariant = "fe") {
+  const order = getPillarOrder(trackVariant);
+  const reserved = getChartLayoutReservedLabel(trackVariant);
+  const lastId = order.at(-1);
+  return order.map((id) => (id === lastId ? reserved : getPillarLabel(id)));
+}
+
 export const SENIORITY_LEVEL_COUNT = 5;
 
-/** Site title and intro; uses 7 pillars / 35 points (`?ai=0`|`?ai=1`) or 8 / 40 (`?ai=2`). */
-export function getSiteCopy() {
-  const pillarCount = PILLAR_COUNT;
+export function getSiteCopy(trackVariant = "fe") {
+  const pillarCount = getPillarOrder(trackVariant).length;
   const pointCount = pillarCount * SENIORITY_LEVEL_COUNT;
   const tagline = "A spider chart to measure software engineering mastery, identify core interests, and guide career paths.";
   const detail = `Supported by a ${pointCount}-point competency matrix across ${SENIORITY_LEVEL_COUNT} seniority levels.`;
@@ -116,86 +128,32 @@ export function getSiteCopy() {
   };
 }
 
-function buildDefaultState() {
-  const levels = new Array(PILLAR_COUNT).fill(3);
-  const aiLevels = new Array(PILLAR_COUNT).fill(0);
-  if (AI_AUGMENTATION_ENABLED) {
-    PILLAR_ORDER.forEach((id, index) => {
-      if (PILLARS[id].hasAi) {
-        aiLevels[index] = 2;
-      }
-    });
-  }
-  return {
-    title: "Engineer Growth Framework",
-    levels,
-    aiLevels,
-  };
-}
-
-export const DEFAULT_STATE = buildDefaultState();
-
-/** Bumped when pillar order changes; used to migrate saved profiles. */
-export const PILLAR_SCHEMA = 2;
-
 export const CLUSTERS = {
   technical: { label: "Technical", color: "#cdbdd8" },
   product: { label: "Product", color: "#f5b39d" },
-  behavioural: { label: "Behavioural", color: "#bddbb5" },
+  operational: { label: "Operational", color: "#bddbb5" },
 };
 
-export const PILLAR_GROUP_ORDER = [
-  {
-    id: "technical",
-    pillars: AI_PILLAR_ENABLED ? ["coding", "architecture", "ai", "process"] : ["coding", "architecture", "process"],
-  },
-  { id: "product", pillars: ["uiUx", "productSense"] },
-  { id: "behavioural", pillars: ["communication", "ownership"] },
-];
-
 function buildPillarRef(pillarId, trackVariant) {
-  const meta = PILLARS[pillarId];
+  const order = getPillarOrder(trackVariant);
   return {
     id: pillarId,
-    index: PILLAR_ORDER.indexOf(pillarId),
-    label: getPillarLabel(pillarId, trackVariant),
-    ...(meta.hasAi && AI_AUGMENTATION_ENABLED ? { hasAi: true } : {}),
+    index: order.indexOf(pillarId),
+    label: getPillarLabel(pillarId),
   };
 }
 
-/** Form pillar definitions (index matches chart label order). */
 export function getPillarGroups(trackVariant = "fe") {
   const track = normalizeTrackVariant(trackVariant);
-  return PILLAR_GROUP_ORDER.map(({ id, pillars }) => ({
+  return getPillarGroupOrder(track).map(({ id, pillars }) => ({
     id,
     title: CLUSTERS[id].label,
     pillars: pillars.map((pillarId) => buildPillarRef(pillarId, track)),
   }));
 }
 
-export function getPillarIdByIndex(index) {
-  return PILLAR_ORDER[index] ?? null;
-}
-
-export function getPillarLabelByIndex(index, trackVariant = "fe") {
-  const id = getPillarIdByIndex(index);
-  return id ? getPillarLabel(id, trackVariant) : "";
-}
-
-export function getAiPillarIndices() {
-  if (!AI_AUGMENTATION_ENABLED) {
-    return [];
-  }
-  return PILLAR_ORDER.reduce((indices, id, index) => {
-    if (PILLARS[id].hasAi) {
-      indices.push(index);
-    }
-    return indices;
-  }, []);
-}
-
-export function isAiPillarIndex(index) {
-  return AI_AUGMENTATION_ENABLED && getAiPillarIndices().includes(index);
+export function getPillarIdByIndex(index, trackVariant = "fe") {
+  return getPillarOrder(trackVariant)[index] ?? null;
 }
 
 export const FE_UI = {
@@ -246,21 +204,6 @@ export const FE_UI = {
     pointBorderWidth: 0,
     pointHoverFill: "rgba(64, 64, 64, 0.95)",
     pointHoverStroke: "#404040",
-    pointHoverBorderWidth: 0,
-  },
-  datasetAi: {
-    label: "AI",
-    fill: "rgba(99, 102, 241, 0.42)",
-    stroke: "#4f46e5",
-    lineWidth: 2,
-    pointRadius: 2,
-    pointHoverRadius: 4,
-    pointStyle: "circle",
-    pointFill: "#6366f1",
-    pointStroke: "#4f46e5",
-    pointBorderWidth: 0,
-    pointHoverBackgroundColor: "rgba(99, 102, 241, 0.95)",
-    pointHoverBorderColor: "#4338ca",
     pointHoverBorderWidth: 0,
   },
 };

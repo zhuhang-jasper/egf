@@ -1,14 +1,9 @@
 import {
-  AI_PILLAR_CHART_INDEX,
-  BASE_PILLAR_COUNT,
-  CANONICAL_AI_AUGMENT_INDICES,
-  DEFAULT_STATE,
-  FULL_PILLAR_COUNT,
-  isAiPillarIndex,
+  CANONICAL_PILLAR_IDS,
+  DEFAULT_PILLAR_LEVEL,
+  getPillarOrder,
   LEVEL_STEP,
   normalizeTrackVariant,
-  PILLAR_COUNT,
-  PILLAR_SCHEMA,
 } from "@/lib/constants";
 
 export function clampLevel(v) {
@@ -45,294 +40,61 @@ export function formatLevelForInput(v) {
   return stepped.toFixed(decimals);
 }
 
-/** Schema 1 had Process at 2 and AI at 3; current schema swaps them. */
-function migrateAiBeforeProcessLevels(levels) {
-  const next = levels.map((v) => clampLevel(v));
-  [next[2], next[3]] = [next[3], next[2]];
+export function createDefaultPillarLevels() {
+  const levels = {};
+  for (const id of CANONICAL_PILLAR_IDS) {
+    levels[id] = DEFAULT_PILLAR_LEVEL;
+  }
+  return levels;
+}
+
+/** Fill missing pillar keys with defaults (forward-compatible when new pillars are added). */
+export function fillPillarLevels(map) {
+  const next = {};
+  for (const id of CANONICAL_PILLAR_IDS) {
+    next[id] = clampLevel(map?.[id] ?? DEFAULT_PILLAR_LEVEL);
+  }
   return next;
 }
 
-function migrateAiBeforeProcessAiLevels(aiLevels) {
-  const next = aiLevels.map((v) => clampLevel(v));
-  next[3] = next[2];
-  next[AI_PILLAR_CHART_INDEX] = 0;
-  return next;
+export function pillarLevelsToArray(pillarLevels, trackVariant = "fe") {
+  const order = getPillarOrder(trackVariant);
+  return order.map((id) => clampLevel(pillarLevels[id] ?? DEFAULT_PILLAR_LEVEL));
 }
 
-function insertAiPillarIntoLevels(levels) {
-  if (levels.length !== BASE_PILLAR_COUNT) {
-    return null;
-  }
-  return [
-    clampLevel(levels[0]),
-    clampLevel(levels[1]),
-    0,
-    clampLevel(levels[2]),
-    clampLevel(levels[3]),
-    clampLevel(levels[4]),
-    clampLevel(levels[5]),
-    clampLevel(levels[6]),
-  ];
+export function syncLevelsArrayFromMap({ pillarLevels, trackVariant }) {
+  return {
+    levels: pillarLevelsToArray(pillarLevels, normalizeTrackVariant(trackVariant)),
+  };
 }
 
-function removeAiPillarFromLevels(levels) {
-  if (levels.length !== FULL_PILLAR_COUNT) {
-    return null;
-  }
-  return [
-    clampLevel(levels[0]),
-    clampLevel(levels[1]),
-    clampLevel(levels[3]),
-    clampLevel(levels[4]),
-    clampLevel(levels[5]),
-    clampLevel(levels[6]),
-    clampLevel(levels[7]),
-  ];
+function isPillarLevelsMap(value) {
+  return value && typeof value === "object" && !Array.isArray(value);
 }
 
-function insertAiPillarIntoAiLevels(aiLevels) {
-  if (aiLevels.length !== BASE_PILLAR_COUNT) {
-    return null;
-  }
-  return [
-    clampLevel(aiLevels[0]),
-    clampLevel(aiLevels[1]),
-    0,
-    clampLevel(aiLevels[2]),
-    clampLevel(aiLevels[3]),
-    clampLevel(aiLevels[4]),
-    clampLevel(aiLevels[5]),
-    clampLevel(aiLevels[6]),
-  ];
-}
-
-function removeAiPillarFromAiLevels(aiLevels) {
-  if (aiLevels.length !== FULL_PILLAR_COUNT) {
-    return null;
-  }
-  return [
-    clampLevel(aiLevels[0]),
-    clampLevel(aiLevels[1]),
-    clampLevel(aiLevels[3]),
-    clampLevel(aiLevels[4]),
-    clampLevel(aiLevels[5]),
-    clampLevel(aiLevels[6]),
-    clampLevel(aiLevels[7]),
-  ];
-}
-
-/** Map a view pillar index to the canonical 8-pillar storage index. */
-export function viewIndexToCanonicalIndex(viewIndex) {
-  if (PILLAR_COUNT === FULL_PILLAR_COUNT) {
-    return viewIndex;
-  }
-  return viewIndex < AI_PILLAR_CHART_INDEX ? viewIndex : viewIndex + 1;
-}
-
-function resizeLevelsToCanonical(levels, schema = 0) {
-  if (!Array.isArray(levels)) {
-    return null;
-  }
-
-  let mapped = levels.map((v) => clampLevel(v));
-
-  if (mapped.length === FULL_PILLAR_COUNT && schema === 1) {
-    mapped = migrateAiBeforeProcessLevels(mapped);
-  }
-
-  if (mapped.length === FULL_PILLAR_COUNT) {
-    return mapped;
-  }
-
-  if (mapped.length === BASE_PILLAR_COUNT) {
-    return insertAiPillarIntoLevels(mapped);
-  }
-
-  return null;
-}
-
-function resizeAiLevelsToCanonical(aiLevels, schema = 0) {
-  if (!Array.isArray(aiLevels)) {
-    return null;
-  }
-
-  let mapped = aiLevels.map((v) => clampLevel(v));
-
-  if (mapped.length === FULL_PILLAR_COUNT && schema === 1) {
-    mapped = migrateAiBeforeProcessAiLevels(mapped);
-  }
-
-  if (mapped.length === FULL_PILLAR_COUNT) {
-    return normalizeCanonicalAiLevels(mapped);
-  }
-
-  if (mapped.length === BASE_PILLAR_COUNT) {
-    const inserted = insertAiPillarIntoAiLevels(mapped);
-    return inserted ? normalizeCanonicalAiLevels(inserted) : null;
-  }
-
-  return null;
-}
-
-function resizeLevelsToTarget(levels, schema = 0) {
-  const canonical = resizeLevelsToCanonical(levels, schema);
-  if (!canonical) {
-    return null;
-  }
-  if (PILLAR_COUNT === FULL_PILLAR_COUNT) {
-    return canonical;
-  }
-  return removeAiPillarFromLevels(canonical);
-}
-
-function resizeAiLevelsToTarget(aiLevels, schema = 0) {
-  const canonical = resizeAiLevelsToCanonical(aiLevels, schema);
-  if (!canonical) {
-    return null;
-  }
-  if (PILLAR_COUNT === FULL_PILLAR_COUNT) {
-    return normalizeAiLevels(canonical);
-  }
-  return normalizeAiLevels(removeAiPillarFromAiLevels(canonical));
-}
-
-function normalizeCanonicalAiLevels(arr) {
-  return Array.from({ length: FULL_PILLAR_COUNT }, (_, i) => clampLevel(arr[i] ?? 0));
-}
-
-/** @deprecated Use {@link resizeLevelsToTarget}. */
-export const migrateLevelsToCurrent = resizeLevelsToTarget;
-
-/** @deprecated Use {@link resizeAiLevelsToTarget}. */
-export const migrateAiLevelsToCurrent = resizeAiLevelsToTarget;
-
-export function normalizeAiLevels(arr) {
-  const base = new Array(PILLAR_COUNT).fill(0);
-  if (!Array.isArray(arr)) {
-    return base;
-  }
-  for (let i = 0; i < PILLAR_COUNT; i++) {
-    base[i] = isAiPillarIndex(i) ? clampLevel(arr[i] ?? 0) : 0;
-  }
-  return base;
-}
-
-function emptyCanonicalAiLevels() {
-  return new Array(FULL_PILLAR_COUNT).fill(0);
-}
-
-/** True when stored arrays used the pre-canonical 7-pillar shape (or missing AI data). */
-export function isLegacyShortProfile(parsed) {
-  if (!parsed || typeof parsed !== "object") {
-    return false;
-  }
-  const levelsLen = Array.isArray(parsed.levels) ? parsed.levels.length : 0;
-  const aiLen = Array.isArray(parsed.aiLevels) ? parsed.aiLevels.length : 0;
-  return levelsLen === BASE_PILLAR_COUNT || aiLen === BASE_PILLAR_COUNT || !Array.isArray(parsed.aiLevels);
-}
-
-/** True when draft/profile JSON should be rewritten to canonical 8-pillar + latest schema. */
-export function needsStorageUpgrade(parsed) {
-  if (!parsed || typeof parsed !== "object") {
-    return false;
-  }
-  const schema = Number.isFinite(parsed.pillarSchema) ? parsed.pillarSchema : null;
-  const levelsLen = Array.isArray(parsed.levels) ? parsed.levels.length : 0;
-  const aiLen = Array.isArray(parsed.aiLevels) ? parsed.aiLevels.length : 0;
-  return schema !== PILLAR_SCHEMA || levelsLen !== FULL_PILLAR_COUNT || aiLen !== FULL_PILLAR_COUNT;
-}
-
-/** Persistable canonical snapshot (for localStorage migration). */
+/** Persistable snapshot for drafts and saved profiles. */
 export function toCanonicalStoragePayload(state) {
   return {
     title: state.title,
-    levels: state.canonicalLevels,
-    aiLevels: state.canonicalAiLevels,
-    pillarSchema: PILLAR_SCHEMA,
-    trackVariant: state.trackVariant,
+    pillarLevels: fillPillarLevels(state.pillarLevels ?? {}),
+    trackVariant: normalizeTrackVariant(state.trackVariant),
   };
 }
 
-/** Parse stored JSON into canonical 8-pillar arrays (mode-independent). */
+/** Parse stored JSON into canonical key-value pillar maps. */
 export function parseToCanonicalState(parsed) {
-  if (!parsed || typeof parsed !== "object") {
+  if (!parsed || typeof parsed !== "object" || typeof parsed.title !== "string") {
     return null;
   }
-  if (typeof parsed.title !== "string") {
+  if (!isPillarLevelsMap(parsed.pillarLevels)) {
     return null;
   }
-  const schema = Number.isFinite(parsed.pillarSchema) ? parsed.pillarSchema : 0;
-  const legacyShort = isLegacyShortProfile(parsed);
-  const levels = resizeLevelsToCanonical(parsed.levels, schema);
-  if (!levels) {
-    return null;
-  }
-  const aiLevels = legacyShort
-    ? emptyCanonicalAiLevels()
-    : (resizeAiLevelsToCanonical(parsed.aiLevels, schema) ?? emptyCanonicalAiLevels());
+
   return {
     title: parsed.title,
-    levels,
-    aiLevels,
-    pillarSchema: PILLAR_SCHEMA,
+    pillarLevels: fillPillarLevels(parsed.pillarLevels),
     trackVariant: normalizeTrackVariant(parsed.trackVariant),
   };
-}
-
-/** Project canonical storage into arrays sized for the current URL mode. */
-export function toViewState(canonical) {
-  const levels =
-    PILLAR_COUNT === FULL_PILLAR_COUNT ? canonical.levels.map(clampLevel) : removeAiPillarFromLevels(canonical.levels);
-  if (!levels) {
-    return null;
-  }
-  const aiSource =
-    PILLAR_COUNT === FULL_PILLAR_COUNT ? canonical.aiLevels : removeAiPillarFromAiLevels(canonical.aiLevels);
-  const aiLevels = normalizeAiLevels(aiSource ?? []);
-  return { levels, aiLevels };
-}
-
-function isCanonicalAiAugmentIndex(index) {
-  return CANONICAL_AI_AUGMENT_INDICES.includes(index);
-}
-
-/** Merge live view edits into canonical storage without dropping hidden pillar or augmentation slots. */
-export function mergeViewIntoCanonical({ levels, aiLevels, canonicalLevels, canonicalAiLevels }) {
-  const nextLevels = [...(canonicalLevels ?? new Array(FULL_PILLAR_COUNT).fill(0))];
-  const nextAi = [...(canonicalAiLevels ?? new Array(FULL_PILLAR_COUNT).fill(0))];
-
-  if (PILLAR_COUNT === FULL_PILLAR_COUNT) {
-    for (let i = 0; i < FULL_PILLAR_COUNT; i++) {
-      nextLevels[i] = clampLevel(levels[i]);
-    }
-    for (let i = 0; i < FULL_PILLAR_COUNT; i++) {
-      if (isCanonicalAiAugmentIndex(i)) {
-        continue;
-      }
-      nextAi[i] = clampLevel(aiLevels[i]);
-    }
-    return { levels: nextLevels, aiLevels: nextAi };
-  }
-
-  nextLevels[0] = clampLevel(levels[0]);
-  nextLevels[1] = clampLevel(levels[1]);
-  nextLevels[3] = clampLevel(levels[2]);
-  nextLevels[4] = clampLevel(levels[3]);
-  nextLevels[5] = clampLevel(levels[4]);
-  nextLevels[6] = clampLevel(levels[5]);
-  nextLevels[7] = clampLevel(levels[6]);
-
-  nextAi[0] = clampLevel(aiLevels[0]);
-  nextAi[1] = clampLevel(aiLevels[1]);
-  nextAi[3] = clampLevel(aiLevels[2]);
-  for (let i = 0; i < FULL_PILLAR_COUNT; i++) {
-    if (i === AI_PILLAR_CHART_INDEX || isCanonicalAiAugmentIndex(i)) {
-      continue;
-    }
-    nextAi[i] = 0;
-  }
-
-  return { levels: nextLevels, aiLevels: nextAi };
 }
 
 export function normalizeSavedState(parsed) {
@@ -340,17 +102,11 @@ export function normalizeSavedState(parsed) {
   if (!canonical) {
     return null;
   }
-  const view = toViewState(canonical);
-  if (!view) {
-    return null;
-  }
+  const view = syncLevelsArrayFromMap(canonical);
   return {
     title: canonical.title,
+    pillarLevels: canonical.pillarLevels,
     levels: view.levels,
-    aiLevels: view.aiLevels,
-    canonicalLevels: canonical.levels,
-    canonicalAiLevels: canonical.aiLevels,
-    pillarSchema: canonical.pillarSchema,
     trackVariant: canonical.trackVariant,
   };
 }
@@ -373,35 +129,34 @@ export function normalizeStoredProfile(p) {
   return {
     id: p.id,
     title: canonical.title,
-    levels: canonical.levels,
-    aiLevels: canonical.aiLevels,
-    pillarSchema: canonical.pillarSchema,
+    pillarLevels: canonical.pillarLevels,
     trackVariant: canonical.trackVariant,
     savedAt: Number.isFinite(p.savedAt) ? p.savedAt : 0,
   };
 }
 
 export function getDefaultChartState() {
-  const levels = new Array(FULL_PILLAR_COUNT).fill(3);
-  const aiLevels = new Array(FULL_PILLAR_COUNT).fill(0);
-  for (const i of CANONICAL_AI_AUGMENT_INDICES) {
-    aiLevels[i] = 2;
-  }
-  const canonical = {
-    title: DEFAULT_STATE.title,
-    levels,
-    aiLevels,
-    pillarSchema: PILLAR_SCHEMA,
-    trackVariant: "fe",
-  };
-  const view = toViewState(canonical);
+  const pillarLevels = createDefaultPillarLevels();
+  const trackVariant = "fe";
+  const view = syncLevelsArrayFromMap({ pillarLevels, trackVariant });
   return {
-    title: canonical.title,
-    levels: view?.levels ?? [...DEFAULT_STATE.levels],
-    aiLevels: view?.aiLevels ?? [...DEFAULT_STATE.aiLevels],
-    canonicalLevels: canonical.levels,
-    canonicalAiLevels: canonical.aiLevels,
-    pillarSchema: PILLAR_SCHEMA,
-    trackVariant: "fe",
+    title: "Engineer Growth Framework",
+    pillarLevels,
+    levels: view.levels,
+    trackVariant,
   };
+}
+
+export function mergeViewIntoCanonical({ levels, pillarLevels, trackVariant }) {
+  const order = getPillarOrder(trackVariant);
+  const nextLevels = { ...pillarLevels };
+
+  for (let i = 0; i < order.length; i++) {
+    const id = order[i];
+    if (levels[i] !== undefined) {
+      nextLevels[id] = clampLevel(levels[i]);
+    }
+  }
+
+  return { pillarLevels: fillPillarLevels(nextLevels) };
 }

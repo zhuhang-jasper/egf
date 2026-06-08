@@ -1,8 +1,8 @@
 import { Chart, Filler, Legend, LineElement, PointElement, RadarController, RadialLinearScale, Tooltip } from "chart.js";
 
-import { createClusterBackgroundPlugin, createTechnicalAsteriskPlugin } from "@/lib/chart/plugins";
+import { createClusterBackgroundPlugin } from "@/lib/chart/plugins";
 import { applyRadarCenterFit, syncFontsForChart } from "@/lib/chart/radar-center";
-import { AI_AUGMENTATION_ENABLED, FE_UI, getChartLabels, PILLAR_COUNT } from "@/lib/constants";
+import { FE_UI, getChartLabels, getPillarOrder, normalizeTrackVariant, PILLAR_COUNT } from "@/lib/constants";
 
 Chart.register(RadarController, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
 
@@ -26,35 +26,12 @@ function buildHumanDataset(label, data) {
   };
 }
 
-function buildAiDataset(data) {
-  const d = FE_UI.datasetAi;
-  return {
-    label: d.label,
-    data,
-    backgroundColor: d.fill,
-    borderColor: d.stroke,
-    borderWidth: d.lineWidth,
-    pointRadius: d.pointRadius,
-    pointHoverRadius: d.pointHoverRadius,
-    pointStyle: d.pointStyle,
-    pointBackgroundColor: d.pointFill,
-    pointBorderColor: d.pointStroke,
-    pointBorderWidth: d.pointBorderWidth,
-    pointHoverBackgroundColor: d.pointHoverBackgroundColor,
-    pointHoverBorderColor: d.pointHoverBorderColor,
-    pointHoverBorderWidth: d.pointHoverBorderWidth,
-  };
-}
-
-function syncDatasets(chart, { levels, aiLevels, title }) {
+function syncDatasets(chart, { levels, title }) {
   if (!chart?.data?.datasets?.[0]) {
     return;
   }
   chart.data.datasets[0].data = Array.isArray(levels) ? [...levels] : [];
   chart.data.datasets[0].label = String(title).trim() || " ";
-  if (chart.data.datasets[1]) {
-    chart.data.datasets[1].data = Array.isArray(aiLevels) ? [...aiLevels] : [];
-  }
 }
 
 function syncPolygonVisibility(chart, hidden) {
@@ -62,10 +39,8 @@ function syncPolygonVisibility(chart, hidden) {
     return;
   }
   const visible = !hidden;
-  for (let i = 0; i < chart.data.datasets.length; i++) {
-    if (chart.isDatasetVisible(i) !== visible) {
-      chart.setDatasetVisibility(i, visible);
-    }
+  if (chart.isDatasetVisible(0) !== visible) {
+    chart.setDatasetVisibility(0, visible);
   }
 }
 
@@ -73,13 +48,26 @@ function syncChartLabels(chart, trackVariant) {
   chart.data.labels = getChartLabels(trackVariant);
 }
 
+function syncChartPlugins(chart, trackVariant) {
+  const track = normalizeTrackVariant(trackVariant);
+  chart.options.plugins.clusterBackground = {
+    ...(chart.options.plugins.clusterBackground ?? {}),
+    trackVariant: track,
+  };
+}
+
 /** Push app state into the chart and redraw. */
 export function applyChartState(chart, state) {
   if (!chart) {
     return;
   }
-  syncChartLabels(chart, state.trackVariant);
-  syncDatasets(chart, state);
+  const trackVariant = normalizeTrackVariant(state.trackVariant);
+  const orderLen = getPillarOrder(trackVariant).length;
+  syncChartPlugins(chart, trackVariant);
+  syncChartLabels(chart, trackVariant);
+  const levels = Array.isArray(state.levels) ? state.levels : [];
+  chart.data.datasets[0].data = levels.length === orderLen ? [...levels] : new Array(orderLen).fill(0);
+  syncDatasets(chart, { levels: chart.data.datasets[0].data, title: state.title });
   syncPolygonVisibility(chart, state.levelsPolygonHidden);
   chart.update("none");
 }
@@ -94,20 +82,12 @@ export function refreshChart(chart, state) {
 }
 
 export function createCompetencyChart(canvas) {
-  const plugins = [createClusterBackgroundPlugin()];
-  if (AI_AUGMENTATION_ENABLED) {
-    plugins.push(createTechnicalAsteriskPlugin());
-  }
-
   const ch = FE_UI.chart;
   const chart = new Chart(canvas, {
     type: "radar",
     data: {
       labels: getChartLabels("fe"),
-      datasets: [
-        buildHumanDataset(" ", new Array(PILLAR_COUNT).fill(0)),
-        ...(AI_AUGMENTATION_ENABLED ? [buildAiDataset(new Array(PILLAR_COUNT).fill(0))] : []),
-      ],
+      datasets: [buildHumanDataset(" ", new Array(PILLAR_COUNT).fill(0))],
     },
     options: {
       responsive: true,
@@ -157,7 +137,7 @@ export function createCompetencyChart(canvas) {
         tooltip: { enabled: false },
       },
     },
-    plugins,
+    plugins: [createClusterBackgroundPlugin()],
   });
   return chart;
 }
