@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 
+import { getChartFrameMarginBottomPx, getChartFrameMarginTopPx } from "@/lib/chart/fonts";
 import { applyChartState, createCompetencyChart, refreshChart } from "@/lib/chart/instance";
 import { FE_UI } from "@/lib/constants";
 
@@ -11,19 +12,14 @@ function syncFrameMargins(frameRef) {
     return;
   }
 
-  const p = FE_UI.page;
-  const cf = FE_UI.chartFrame;
   const w = frame.offsetWidth;
-  const w0 = p.minWidthPx;
-  const w1 = p.maxWidthPx;
-  const u = w1 > w0 ? Math.max(0, Math.min(1, (w - w0) / (w1 - w0))) : 1;
-  const top = cf.marginTopMinPx + u * (cf.marginTopMaxPx - cf.marginTopMinPx);
-  const bot = cf.marginBottomMinPx + u * (cf.marginBottomMaxPx - cf.marginBottomMinPx);
+  const top = getChartFrameMarginTopPx(w);
+  const bot = getChartFrameMarginBottomPx(w);
 
   const marginTop = Math.round(top);
   const marginBottom = Math.round(bot);
   const shrink = (top < 0 ? -top : 0) + (bot < 0 ? -bot : 0);
-  const minH = cf.minChartHeightPx ?? 120;
+  const minH = FE_UI.chartFrame.minChartHeightPx ?? 120;
   const innerH = Math.round(Math.max(minH, w - shrink));
 
   frame.style.margin = `${marginTop}px auto ${marginBottom}px`;

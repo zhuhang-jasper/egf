@@ -9,7 +9,9 @@ import { TrackToggle } from "@/components/TrackToggle";
 import { Button } from "@/components/ui/button";
 
 import { useCompetencyChart } from "@/hooks/useCompetencyChart";
+import { useElementWidth } from "@/hooks/useElementWidth";
 
+import { getChartTitleSizePx, getTrackBadgeMarginBottomPx } from "@/lib/chart/fonts";
 import { FE_UI, SCORES_VISIBLE_FROM_URL } from "@/lib/constants";
 import { copyChartAsImageToClipboard } from "@/lib/copy-chart-image";
 
@@ -109,9 +111,13 @@ export function ChartSection() {
   const chartTitleHidden = useAppStore((s) => s.chartTitleHidden);
 
   const { chartRef, relayout } = useCompetencyChart(canvasRef, frameRef);
+  const chartWidth = useElementWidth(frameRef);
 
   const trimmedTitle = String(title).trim();
   const showVisibleTitle = !chartTitleHidden && trimmedTitle.length > 0;
+  const layoutWidth = chartWidth || FE_UI.page.minWidthPx;
+  const titleSizePx = getChartTitleSizePx(layoutWidth);
+  const badgeMarginBottomPx = getTrackBadgeMarginBottomPx(layoutWidth);
 
   useEffect(() => {
     relayout();
@@ -154,7 +160,11 @@ export function ChartSection() {
 
       <div ref={exportRef} className="flex w-full min-w-0 flex-col self-stretch">
         {showVisibleTitle ? (
-          <h2 id="competency-chart-heading" className="relative z-[1] w-full text-center text-2xl font-bold text-black">
+          <h2
+            id="competency-chart-heading"
+            className="relative z-[1] mb-1 w-full text-center font-bold text-black"
+            style={{ fontSize: titleSizePx }}
+          >
             {title}
           </h2>
         ) : (
@@ -163,8 +173,8 @@ export function ChartSection() {
           </h2>
         )}
 
-        <div className="mb-6 flex w-full min-w-0 items-start px-2 leading-none">
-          <TrackBadge variant={trackVariant} size="md" className="shrink-0" hidden={chartLegendHidden} />
+        <div className="flex w-full min-w-0 items-start px-2 leading-none" style={{ marginBottom: badgeMarginBottomPx }}>
+          <TrackBadge variant={trackVariant} size="md" className="shrink-0" hidden={chartLegendHidden} chartWidth={chartWidth} />
         </div>
 
         <div ref={frameRef} className="relative z-0 mx-auto w-full max-w-full box-border" style={{ minHeight: FE_UI.chartFrame.minChartHeightPx }}>
@@ -173,7 +183,7 @@ export function ChartSection() {
           </div>
         </div>
 
-        <ClusterLegend hidden={chartLegendHidden} />
+        <ClusterLegend hidden={chartLegendHidden} chartWidth={chartWidth} />
 
         <ChartAverages />
       </div>

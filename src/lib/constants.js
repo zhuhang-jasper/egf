@@ -164,16 +164,23 @@ export function getPillarIdByIndex(index, trackVariant = "fe") {
 export const FE_UI = {
   page: { maxWidthPx: 650, minWidthPx: 350 },
   chartFrame: {
-    marginTopMinPx: -60,
-    marginTopMaxPx: -90,
-    marginBottomMinPx: -60,
-    marginBottomMaxPx: -90,
+    /** Visible space between track badge and top axis label. */
+    badgeToChartGap: { minPx: 6, maxPx: 4 },
+    /** Extra upward pull on wide layouts where label reserve leaves excess whitespace. */
+    marginTopExtraPull: { minPx: 0, maxPx: 18 },
+    marginBottomMinPx: -32,
+    marginBottomMaxPx: -84,
     minChartHeightPx: 120,
   },
   chart: {
+    title: { labelMultiplier: 1.4, minPx: 14, maxPx: 22 },
+    trackBadgeMarginBottom: { minPx: 2, maxPx: 6 },
     layoutPadding: { top: 0, right: 30, bottom: 0, left: 30 },
+    layoutPaddingHorizontal: { minPx: 14, maxPx: 30 },
     radarCenterFix: true,
     radarLabelReservedPx: 62,
+    radarLabelReserved: { minPx: 38, maxPx: 54 },
+    legendMarginTop: { minPx: 20, maxPx: 36 },
     pointLabelPadding: 5,
     pointLabelPx: 11,
     pointLabelScaleWithChart: true,
