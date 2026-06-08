@@ -4,6 +4,8 @@ import { FormPanel } from "@/components/FormPanel";
 
 import { FE_UI } from "@/lib/constants";
 
+const appVersion = import.meta.env.VITE_APP_VERSION;
+
 export default function App() {
   return (
     <div className="flex min-h-dvh flex-col items-center gap-4 p-3">
@@ -26,6 +28,7 @@ export default function App() {
         <ChartSection />
         <FormPanel />
       </main>
+      <p className="mt-auto text-center text-[12px] tabular-nums text-muted-foreground/60">v{appVersion}</p>
     </div>
   );
 }
