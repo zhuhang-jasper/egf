@@ -39,60 +39,74 @@ export function TitleToolbar() {
   const showClear = title.length > 0;
 
   return (
-    <div className="flex w-full flex-wrap items-center gap-2">
-      <Button
-        type="button"
-        variant="outline"
-        size="icon"
-        onClick={() => {
-          createNew();
-          document.getElementById("chart-title-input")?.focus();
-        }}
-        aria-label="Create new chart"
-        title="Create new chart"
-      >
-        <Plus className="h-4 w-4" />
-      </Button>
-      <div className="relative min-w-0 flex-[0_1_50%] basis-[50%]">
-        <Input
-          id="chart-title-input"
-          value={title}
-          placeholder="Chart title"
-          onChange={(e) => setTitle(e.target.value)}
-          className="pr-9 shadow-none"
-        />
-        <button
+    <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
+      <div className="flex w-full min-w-0 items-center gap-2 sm:contents">
+        <Button
           type="button"
-          aria-label="Clear chart title"
-          title="Clear title"
-          hidden={!showClear}
+          variant="outline"
+          size="icon"
+          className="shrink-0"
           onClick={() => {
-            setTitle("");
+            createNew();
             document.getElementById("chart-title-input")?.focus();
           }}
-          className={cn(
-            "absolute right-0 top-0 flex h-full w-7 items-center justify-center text-muted-foreground hover:text-foreground",
-            !showClear && "pointer-events-none opacity-0",
-          )}
+          aria-label="Create new chart"
+          title="Create new chart"
         >
-          <X className="h-4 w-4" />
-        </button>
+          <Plus className="h-4 w-4" />
+        </Button>
+        <div className="relative min-w-0 flex-1 sm:flex-[0_1_50%] sm:basis-[50%]">
+          <Input
+            id="chart-title-input"
+            value={title}
+            placeholder="Chart title"
+            onChange={(e) => setTitle(e.target.value)}
+            className="pr-9 shadow-none"
+          />
+          <button
+            type="button"
+            aria-label="Clear chart title"
+            title="Clear title"
+            hidden={!showClear}
+            onClick={() => {
+              setTitle("");
+              document.getElementById("chart-title-input")?.focus();
+            }}
+            className={cn(
+              "absolute right-0 top-0 flex h-full w-7 items-center justify-center text-muted-foreground hover:text-foreground",
+              !showClear && "pointer-events-none opacity-0",
+            )}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="shrink-0"
+          onClick={() => saveProfile()}
+          aria-label={saveLabel}
+          title={saveLabel}
+        >
+          <Save className="h-4 w-4" />
+        </Button>
       </div>
-      <Button type="button" variant="outline" size="icon" onClick={() => saveProfile()} aria-label={saveLabel} title={saveLabel}>
-        <Save className="h-4 w-4" />
-      </Button>
-      <ProfilePicker />
-      <Button
-        type="button"
-        variant="outline"
-        size="icon"
-        className="ml-auto"
-        onClick={resetLevels}
-        aria-label="Reset pillars to default values"
-        title="Reset pillars to default values"
-      >
-        <RotateCcw className="h-4 w-4" />
-      </Button>
+      <div className="flex w-full items-center gap-2 sm:ml-auto sm:w-auto">
+        <ProfilePicker />
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="ml-auto gap-1.5"
+          onClick={resetLevels}
+          aria-label="Reset pillars to default values"
+          title="Reset pillars to default values"
+        >
+          <RotateCcw className="h-4 w-4" />
+          Reset
+        </Button>
+      </div>
     </div>
   );
 }
