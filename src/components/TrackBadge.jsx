@@ -15,6 +15,7 @@ export function TrackBadge({ variant, className, size = "sm", hidden = false, ch
         paddingRight: Math.round(scaledLabelPx * 0.85),
         paddingTop: Math.round(scaledLabelPx * 0.4),
         paddingBottom: Math.round(scaledLabelPx * 0.4),
+        borderRadius: Math.min(6, Math.max(4, Math.round(scaledLabelPx * 0.42))),
       }
     : undefined;
 
@@ -23,7 +24,7 @@ export function TrackBadge({ variant, className, size = "sm", hidden = false, ch
       data-chart-export="track-badge"
       className={cn(
         "inline-flex shrink-0 items-center leading-none",
-        isLarge ? "justify-center rounded-md font-bold" : "rounded px-1.5 py-0.5 text-[10px] font-semibold tracking-wide",
+        isLarge ? "justify-center font-bold" : "rounded px-1.5 py-0.5 text-[10px] font-semibold tracking-wide",
         !isLarge && "font-medium",
         ui.pillClass,
         hidden && "invisible pointer-events-none",
