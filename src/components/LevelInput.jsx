@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { LEVEL_STEP } from "@/lib/constants";
 import { clampLevel, formatLevelForInput } from "@/lib/levels";
 
+import { useAppStore } from "@/store/useAppStore";
+
 function useTouchPrimary() {
   const [touchPrimary, setTouchPrimary] = useState(
     () => typeof window !== "undefined" && window.matchMedia("(hover: none)").matches,
@@ -36,6 +38,8 @@ function shouldCommitWhileTyping(s) {
 
 export function LevelInput({ value, onChange, ariaLabel, ariaLabelUp, ariaLabelDown }) {
   const touchPrimary = useTouchPrimary();
+  const keyboardInputEnabled = useAppStore((s) => s.levelKeyboardInputEnabled);
+  const keyboardLocked = touchPrimary && !keyboardInputEnabled;
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
 
@@ -53,14 +57,14 @@ export function LevelInput({ value, onChange, ariaLabel, ariaLabelUp, ariaLabelD
     <span className="level-value-with-spin group/level">
       <input
         type="text"
-        inputMode="none"
-        readOnly={touchPrimary}
+        inputMode={keyboardLocked ? "none" : "decimal"}
+        readOnly={keyboardLocked}
         autoComplete="off"
         spellCheck={false}
         aria-label={ariaLabel}
         value={editing ? draft : formatLevelForInput(value)}
         onFocus={() => {
-          if (touchPrimary) {
+          if (keyboardLocked) {
             return;
           }
           setEditing(true);

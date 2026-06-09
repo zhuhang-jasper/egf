@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { Plus, RotateCcw, Save, X } from "lucide-react";
+import { Keyboard, Plus, RotateCcw, Save, X } from "lucide-react";
 
 import { ProfilePicker } from "@/components/ProfilePicker";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,8 @@ export function TitleToolbar() {
   const clearSaveFeedback = useAppStore((s) => s.clearSaveFeedback);
   const resetLevels = useAppStore((s) => s.resetLevels);
   const createNew = useAppStore((s) => s.createNew);
+  const levelKeyboardInputEnabled = useAppStore((s) => s.levelKeyboardInputEnabled);
+  const toggleLevelKeyboardInputEnabled = useAppStore((s) => s.toggleLevelKeyboardInputEnabled);
   const [saveLabel, setSaveLabel] = useState("Save");
 
   useEffect(() => {
@@ -93,12 +95,41 @@ export function TitleToolbar() {
         </Button>
       </div>
       <div className="flex w-full items-center gap-2 sm:ml-auto sm:w-auto">
-        <ProfilePicker />
+        <div className="flex items-center gap-2 sm:hidden">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            onClick={resetLevels}
+            aria-label="Reset pillars to default values"
+            title="Reset pillars to default values"
+          >
+            <RotateCcw className="h-4 w-4" />
+            Reset
+          </Button>
+          <Button
+            type="button"
+            variant={levelKeyboardInputEnabled ? "default" : "outline"}
+            size="sm"
+            className="gap-1.5"
+            onClick={toggleLevelKeyboardInputEnabled}
+            aria-label={levelKeyboardInputEnabled ? "Keyboard on — tap to turn off" : "Keyboard off — tap to turn on"}
+            aria-pressed={levelKeyboardInputEnabled}
+            title={levelKeyboardInputEnabled ? "KB on" : "KB off"}
+          >
+            <Keyboard className="h-4 w-4" />
+            {levelKeyboardInputEnabled ? "KB on" : "KB off"}
+          </Button>
+        </div>
+        <div className="ml-auto sm:ml-0">
+          <ProfilePicker />
+        </div>
         <Button
           type="button"
           variant="outline"
           size="sm"
-          className="ml-auto gap-1.5"
+          className="hidden gap-1.5 sm:ml-auto sm:inline-flex"
           onClick={resetLevels}
           aria-label="Reset pillars to default values"
           title="Reset pillars to default values"
