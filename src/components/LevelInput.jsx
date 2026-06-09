@@ -57,7 +57,7 @@ export function LevelInput({ value, onChange, ariaLabel, ariaLabelUp, ariaLabelD
     <span className="level-value-with-spin group/level">
       <input
         type="text"
-        inputMode={keyboardLocked ? "none" : "decimal"}
+        inputMode={touchPrimary && keyboardInputEnabled ? "decimal" : "none"}
         readOnly={keyboardLocked}
         autoComplete="off"
         spellCheck={false}
