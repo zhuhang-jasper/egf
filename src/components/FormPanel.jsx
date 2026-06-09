@@ -9,7 +9,7 @@ export function FormPanel() {
   const trackVariant = useAppStore((s) => s.trackVariant);
 
   return (
-    <aside className="relative z-10 w-full min-w-0 border-t border-border pt-3 mt-3">
+    <aside className="relative z-10 w-full min-w-0 border-t border-border pt-3">
       <TitleToolbar />
       <div id="competencyInputs" className="mt-4 flex flex-col gap-3">
         {getPillarGroups(trackVariant).map((group) => (

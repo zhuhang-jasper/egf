@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-import { ChevronDown, X } from "lucide-react";
+import { ChevronDown, Trash2 } from "lucide-react";
 
 import { TrackBadge } from "@/components/TrackBadge";
 import { Button } from "@/components/ui/button";
@@ -44,7 +44,7 @@ export function ProfilePicker() {
         <div
           role="menu"
           aria-label="Saved profiles"
-          className="absolute right-0 top-[calc(100%+4px)] z-50 max-h-60 min-w-[min(100vw-2rem,280px)] overflow-auto rounded-lg border border-border bg-card py-1 shadow-md"
+          className="absolute left-0 top-[calc(100%+4px)] z-50 max-h-60 w-max max-w-[calc(100vw-2rem)] overflow-auto rounded-lg border border-border bg-card py-1 shadow-md sm:left-auto sm:right-0 sm:max-w-[280px]"
         >
           {profiles.length === 0 ? (
             <p className="px-3 py-2 text-xs text-muted-foreground">No saved profiles yet.</p>
@@ -72,7 +72,7 @@ export function ProfilePicker() {
                         removeProfile(pr.id);
                       }}
                     >
-                      <X className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </li>
                 );

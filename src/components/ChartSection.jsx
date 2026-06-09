@@ -12,7 +12,7 @@ import { useCompetencyChart } from "@/hooks/useCompetencyChart";
 import { useElementWidth } from "@/hooks/useElementWidth";
 
 import { getChartTitleSizePx, getClusterLegendMarginTopPx } from "@/lib/chart/fonts";
-import { FE_UI, SCORES_VISIBLE_FROM_URL } from "@/lib/constants";
+import { FE_UI, FEATURE_SCORES_SETTINGS } from "@/lib/constants";
 import { copyChartAsImageToClipboard } from "@/lib/copy-chart-image";
 
 import { useAppStore } from "@/store/useAppStore";
@@ -90,7 +90,7 @@ function ChartDisplayMenu() {
           <DisplayCheckbox label="Title" checked={!chartTitleHidden} onChange={(v) => setChartTitleHidden(!v)} />
           <DisplayCheckbox label="Legend" checked={!chartLegendHidden} onChange={(v) => setChartLegendHidden(!v)} />
           <DisplayCheckbox label="Chart" checked={!levelsPolygonHidden} onChange={(v) => setLevelsPolygonHidden(!v)} />
-          {SCORES_VISIBLE_FROM_URL ? (
+          {FEATURE_SCORES_SETTINGS ? (
             <DisplayCheckbox label="Scores" checked={!footerScoresHidden} onChange={(v) => setFooterScoresHidden(!v)} />
           ) : null}
         </div>
@@ -185,17 +185,18 @@ export function ChartSection() {
           </div>
         </div>
 
+        <div aria-hidden className="shrink-0" style={{ height: legendMarginTopPx }} />
+
         {!chartLegendHidden ? (
           <div
             data-chart-export="chart-legend-card"
-            className="mx-auto flex w-fit max-w-full items-center justify-center rounded-lg border border-border bg-muted px-6 py-2.5 leading-none"
-            style={{ marginTop: legendMarginTopPx }}
+            className="mx-auto mb-3 flex w-fit max-w-full items-center justify-center rounded-lg border border-border bg-muted px-6 py-2.5 leading-none"
           >
             <ClusterLegend chartWidth={chartWidth} />
           </div>
         ) : null}
 
-        <ChartAverages />
+        {FEATURE_SCORES_SETTINGS ? <ChartAverages /> : null}
       </div>
     </div>
   );

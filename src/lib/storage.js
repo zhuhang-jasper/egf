@@ -1,4 +1,4 @@
-import { PROFILES_STORAGE_KEY, SCORES_VISIBLE_FROM_URL, STORAGE_KEY } from "@/lib/constants";
+import { PROFILES_STORAGE_KEY, STORAGE_KEY } from "@/lib/constants";
 import { normalizeSavedState, normalizeStoredProfile, toCanonicalStoragePayload } from "@/lib/levels";
 
 export function getDefaultChartDisplay() {
@@ -6,7 +6,7 @@ export function getDefaultChartDisplay() {
     levelsPolygonHidden: false,
     chartLegendHidden: false,
     chartTitleHidden: false,
-    footerScoresHidden: !SCORES_VISIBLE_FROM_URL,
+    footerScoresHidden: false,
   };
 }
 
