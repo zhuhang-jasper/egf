@@ -211,4 +211,16 @@
     background: #efefef;
     color: #111;
   }
+
+  @media (hover: none) {
+    #competencyInputs .level-value-spin__col {
+      border-left-color: #e0e0e0;
+      background: #f7f7f7;
+    }
+
+    #competencyInputs .level-value-spin__btn {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
 }

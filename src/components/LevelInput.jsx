@@ -1,7 +1,22 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { LEVEL_STEP } from "@/lib/constants";
 import { clampLevel, formatLevelForInput } from "@/lib/levels";
+
+function useTouchPrimary() {
+  const [touchPrimary, setTouchPrimary] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(hover: none)").matches,
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia("(hover: none)");
+    const onChange = () => setTouchPrimary(mq.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  return touchPrimary;
+}
 
 function normalizeTypingValue(raw) {
   let s = String(raw).replace(",", ".").trim();
@@ -20,6 +35,7 @@ function shouldCommitWhileTyping(s) {
 }
 
 export function LevelInput({ value, onChange, ariaLabel, ariaLabelUp, ariaLabelDown }) {
+  const touchPrimary = useTouchPrimary();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
 
@@ -37,12 +53,16 @@ export function LevelInput({ value, onChange, ariaLabel, ariaLabelUp, ariaLabelD
     <span className="level-value-with-spin group/level">
       <input
         type="text"
-        inputMode="decimal"
+        inputMode="none"
+        readOnly={touchPrimary}
         autoComplete="off"
         spellCheck={false}
         aria-label={ariaLabel}
         value={editing ? draft : formatLevelForInput(value)}
         onFocus={() => {
+          if (touchPrimary) {
+            return;
+          }
           setEditing(true);
           setDraft(formatLevelForInput(value));
         }}
