@@ -12,7 +12,7 @@ import { useCompetencyChart } from "@/hooks/useCompetencyChart";
 import { useElementWidth } from "@/hooks/useElementWidth";
 
 import { getChartTitleSizePx, getClusterLegendMarginTopPx } from "@/lib/chart/fonts";
-import { FE_UI } from "@/lib/constants";
+import { FE_UI, FEATURE_SCORES_SETTINGS } from "@/lib/constants";
 import { copyChartAsImageToClipboard } from "@/lib/copy-chart-image";
 
 import { useAppStore } from "@/store/useAppStore";
@@ -90,7 +90,9 @@ function ChartDisplayMenu() {
           <DisplayCheckbox label="Title" checked={!chartTitleHidden} onChange={(v) => setChartTitleHidden(!v)} />
           <DisplayCheckbox label="Legend" checked={!chartLegendHidden} onChange={(v) => setChartLegendHidden(!v)} />
           <DisplayCheckbox label="Chart" checked={!levelsPolygonHidden} onChange={(v) => setLevelsPolygonHidden(!v)} />
-          <DisplayCheckbox label="Scores" checked={!footerScoresHidden} onChange={(v) => setFooterScoresHidden(!v)} />
+          {FEATURE_SCORES_SETTINGS ? (
+            <DisplayCheckbox label="Scores" checked={!footerScoresHidden} onChange={(v) => setFooterScoresHidden(!v)} />
+          ) : null}
         </div>
       ) : null}
     </div>
@@ -194,7 +196,7 @@ export function ChartSection() {
           </div>
         ) : null}
 
-        <ChartAverages />
+        {FEATURE_SCORES_SETTINGS ? <ChartAverages /> : null}
       </div>
     </div>
   );
