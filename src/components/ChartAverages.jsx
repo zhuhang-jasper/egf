@@ -6,10 +6,16 @@ import { useAppStore } from "@/store/useAppStore";
 
 function AvgCard({ label, value, sub, className, title }) {
   return (
-    <div title={title} className={cn("flex min-w-0 flex-col items-center justify-center gap-0.3 rounded-lg border px-3 py-2 text-center", className)}>
-      <span className="max-w-[11rem] text-[11px] font-semibold tracking-wide">{label}</span>
-      <span className="text-lg font-extrabold tabular-nums">{value}</span>
-      {sub ? <span className="max-w-[12rem] text-[12px] font-bold opacity-95">{sub}</span> : null}
+    <div
+      title={title}
+      className={cn(
+        "flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-lg border px-2 py-1.5 text-center sm:gap-1 sm:px-4 sm:py-2.5",
+        className,
+      )}
+    >
+      <span className="max-w-[11rem] text-[10px] font-semibold tracking-wide sm:text-xs">{label}</span>
+      <span className="text-base font-extrabold tabular-nums sm:text-xl">{value}</span>
+      {sub ? <span className="max-w-[12rem] text-[10px] font-bold opacity-95 sm:text-sm">{sub}</span> : null}
     </div>
   );
 }
@@ -30,7 +36,7 @@ export function ChartAverages() {
   return (
     <div
       data-chart-export="chart-averages"
-      className="mb-3 grid w-full grid-cols-3 gap-3 px-2"
+      className="mb-3 grid w-full grid-cols-3 gap-2 px-2 sm:gap-4"
       aria-label="Breadth score, strength index, and career level"
     >
       <AvgCard

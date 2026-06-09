@@ -41,6 +41,7 @@ export const useAppStore = create((set, get) => ({
   profiles: loadProfilesFromStorage(),
   profilePickerOpen: false,
   saveFeedback: null,
+  levelKeyboardInputEnabled: false,
 
   hydrate: () => {
     const draft = loadDraftFromStorage() ?? { ...getDefaultChartState(), ...getDefaultChartDisplay() };
@@ -124,6 +125,14 @@ export const useAppStore = create((set, get) => ({
   setFooterScoresHidden: (hidden) => {
     set({ footerScoresHidden: hidden });
     get().persistDraft();
+  },
+
+  setLevelKeyboardInputEnabled: (enabled) => {
+    set({ levelKeyboardInputEnabled: enabled });
+  },
+
+  toggleLevelKeyboardInputEnabled: () => {
+    set({ levelKeyboardInputEnabled: !get().levelKeyboardInputEnabled });
   },
 
   setProfilePickerOpen: (open) => {
