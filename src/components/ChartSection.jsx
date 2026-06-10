@@ -206,7 +206,7 @@ export function ChartSection() {
           </div>
         ) : null}
 
-        {FEATURE_SCORES_SETTINGS ? <ChartAverages /> : null}
+        {FEATURE_SCORES_SETTINGS ? <ChartAverages chartWidth={chartWidth} /> : null}
       </div>
     </div>
   );
