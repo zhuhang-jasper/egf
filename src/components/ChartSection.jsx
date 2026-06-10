@@ -40,6 +40,8 @@ function ChartDisplayMenu() {
   const setChartLegendHidden = useAppStore((s) => s.setChartLegendHidden);
   const levelsPolygonHidden = useAppStore((s) => s.levelsPolygonHidden);
   const setLevelsPolygonHidden = useAppStore((s) => s.setLevelsPolygonHidden);
+  const chartLevelTicksHidden = useAppStore((s) => s.chartLevelTicksHidden);
+  const setChartLevelTicksHidden = useAppStore((s) => s.setChartLevelTicksHidden);
   const chartTitleHidden = useAppStore((s) => s.chartTitleHidden);
   const setChartTitleHidden = useAppStore((s) => s.setChartTitleHidden);
   const footerScoresHidden = useAppStore((s) => s.footerScoresHidden);
@@ -88,8 +90,9 @@ function ChartDisplayMenu() {
           className="absolute right-0 top-[calc(100%+4px)] z-50 min-w-[10.5rem] rounded-lg border border-border bg-card py-1 shadow-md"
         >
           <DisplayCheckbox label="Title" checked={!chartTitleHidden} onChange={(v) => setChartTitleHidden(!v)} />
-          <DisplayCheckbox label="Legend" checked={!chartLegendHidden} onChange={(v) => setChartLegendHidden(!v)} />
           <DisplayCheckbox label="Chart" checked={!levelsPolygonHidden} onChange={(v) => setLevelsPolygonHidden(!v)} />
+          <DisplayCheckbox label="Level labels" checked={!chartLevelTicksHidden} onChange={(v) => setChartLevelTicksHidden(!v)} />
+          <DisplayCheckbox label="Legend" checked={!chartLegendHidden} onChange={(v) => setChartLegendHidden(!v)} />
           {FEATURE_SCORES_SETTINGS ? (
             <DisplayCheckbox label="Scores" checked={!footerScoresHidden} onChange={(v) => setFooterScoresHidden(!v)} />
           ) : null}

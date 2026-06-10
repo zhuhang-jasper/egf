@@ -3,7 +3,7 @@ export const PILLARS = {
   coding: { label: "🤲 Coding (Hands)" },
   domainLogic: { label: "👃 Domain Logic (Nose)" },
   architecture: { label: "🧠 Architecture (Brain)" },
-  ai: { label: "🤖 AI Proficiency (Machine)" },
+  ai: { label: "🤖 AI Leverage (Machine)" },
   uiUx: { label: "👀 UI/UX (Eyes)" },
   productSense: { label: "💡 Product Sense (Gut)" },
   process: { label: "🦴 Process (Spine)" },

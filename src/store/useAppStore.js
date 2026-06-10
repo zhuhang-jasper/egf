@@ -34,9 +34,11 @@ export const useAppStore = create((set, get) => ({
   levels: [...initialDraft.levels],
   trackVariant: normalizeTrackVariant(initialDraft.trackVariant),
   levelsPolygonHidden: initialDraft.levelsPolygonHidden,
+  chartLevelTicksHidden: initialDraft.chartLevelTicksHidden,
   chartLegendHidden: initialDraft.chartLegendHidden,
   chartTitleHidden: initialDraft.chartTitleHidden,
   footerScoresHidden: initialDraft.footerScoresHidden,
+  footerScoresHiddenUserSet: initialDraft.footerScoresHiddenUserSet === true,
   activeSavedProfileId: null,
   profiles: loadProfilesFromStorage(),
   profilePickerOpen: false,
@@ -51,9 +53,11 @@ export const useAppStore = create((set, get) => ({
         pillarLevels: { ...draft.pillarLevels },
         trackVariant: normalizeTrackVariant(draft.trackVariant),
         levelsPolygonHidden: draft.levelsPolygonHidden,
+        chartLevelTicksHidden: draft.chartLevelTicksHidden,
         chartLegendHidden: draft.chartLegendHidden,
         chartTitleHidden: draft.chartTitleHidden,
         footerScoresHidden: draft.footerScoresHidden,
+        footerScoresHiddenUserSet: draft.footerScoresHiddenUserSet === true,
         levelKeyboardInputEnabled: draft.levelKeyboardInputEnabled === true,
       }),
     );
@@ -99,6 +103,7 @@ export const useAppStore = create((set, get) => ({
         pillarLevels: { ...state.pillarLevels },
         trackVariant: normalizeTrackVariant(state.trackVariant),
         levelsPolygonHidden: get().levelsPolygonHidden,
+        chartLevelTicksHidden: get().chartLevelTicksHidden,
         chartLegendHidden: get().chartLegendHidden,
         chartTitleHidden: get().chartTitleHidden,
         footerScoresHidden: get().footerScoresHidden,
@@ -113,6 +118,11 @@ export const useAppStore = create((set, get) => ({
     get().persistDraft();
   },
 
+  setChartLevelTicksHidden: (hidden) => {
+    set({ chartLevelTicksHidden: hidden });
+    get().persistDraft();
+  },
+
   setChartLegendHidden: (hidden) => {
     set({ chartLegendHidden: hidden });
     get().persistDraft();
@@ -124,7 +134,7 @@ export const useAppStore = create((set, get) => ({
   },
 
   setFooterScoresHidden: (hidden) => {
-    set({ footerScoresHidden: hidden });
+    set({ footerScoresHidden: hidden, footerScoresHiddenUserSet: true });
     get().persistDraft();
   },
 
