@@ -37,6 +37,7 @@ export const useAppStore = create((set, get) => ({
   chartLegendHidden: initialDraft.chartLegendHidden,
   chartTitleHidden: initialDraft.chartTitleHidden,
   footerScoresHidden: initialDraft.footerScoresHidden,
+  footerScoresHiddenUserSet: initialDraft.footerScoresHiddenUserSet === true,
   activeSavedProfileId: null,
   profiles: loadProfilesFromStorage(),
   profilePickerOpen: false,
@@ -54,6 +55,7 @@ export const useAppStore = create((set, get) => ({
         chartLegendHidden: draft.chartLegendHidden,
         chartTitleHidden: draft.chartTitleHidden,
         footerScoresHidden: draft.footerScoresHidden,
+        footerScoresHiddenUserSet: draft.footerScoresHiddenUserSet === true,
         levelKeyboardInputEnabled: draft.levelKeyboardInputEnabled === true,
       }),
     );
@@ -124,7 +126,7 @@ export const useAppStore = create((set, get) => ({
   },
 
   setFooterScoresHidden: (hidden) => {
-    set({ footerScoresHidden: hidden });
+    set({ footerScoresHidden: hidden, footerScoresHiddenUserSet: true });
     get().persistDraft();
   },
 

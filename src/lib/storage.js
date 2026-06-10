@@ -7,6 +7,7 @@ export function getDefaultChartDisplay() {
     chartLegendHidden: false,
     chartTitleHidden: false,
     footerScoresHidden: false,
+    footerScoresHiddenUserSet: false,
     levelKeyboardInputEnabled: false,
   };
 }
@@ -20,8 +21,10 @@ export function parseChartDisplay(parsed) {
     levelsPolygonHidden: parsed.levelsPolygonHidden === true,
     chartLegendHidden: parsed.chartLegendHidden === true,
     chartTitleHidden: parsed.chartTitleHidden === true,
-    footerScoresHidden:
-      typeof parsed.footerScoresHidden === "boolean" ? parsed.footerScoresHidden : defaults.footerScoresHidden,
+    footerScoresHidden: Object.hasOwn(parsed, "footerScoresHidden")
+      ? parsed.footerScoresHidden === true
+      : defaults.footerScoresHidden,
+    footerScoresHiddenUserSet: Object.hasOwn(parsed, "footerScoresHidden"),
     levelKeyboardInputEnabled: parsed.levelKeyboardInputEnabled === true,
   };
 }
@@ -33,7 +36,7 @@ export function toDraftStoragePayload(state) {
     levelsPolygonHidden: state.levelsPolygonHidden,
     chartLegendHidden: state.chartLegendHidden,
     chartTitleHidden: state.chartTitleHidden,
-    footerScoresHidden: state.footerScoresHidden,
+    ...(state.footerScoresHiddenUserSet ? { footerScoresHidden: state.footerScoresHidden === true } : {}),
     levelKeyboardInputEnabled: state.levelKeyboardInputEnabled === true,
   };
 }
