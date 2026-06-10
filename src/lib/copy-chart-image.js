@@ -212,23 +212,13 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY) {
   }
 }
 
-function getChartExportableCaptureHeight(el) {
-  const root = el.getBoundingClientRect();
-  let maxBottom = root.top;
-  for (const child of el.children) {
-    maxBottom = Math.max(maxBottom, child.getBoundingClientRect().bottom);
-  }
-  const fromKids = Math.ceil(maxBottom - root.top);
-  return Math.max(1, Math.min(el.offsetHeight, fromKids));
-}
-
 export async function copyChartAsImageToClipboard({ exportRoot, canvas, chart, titleText }) {
   if (!exportRoot || !canvas || !chart) {
     return { ok: false, method: null };
   }
 
-  const cssW = Math.max(1, Math.round(exportRoot.getBoundingClientRect().width));
-  const cssH = Math.max(1, getChartExportableCaptureHeight(exportRoot));
+  const cssW = Math.max(1, Math.round(exportRoot.offsetWidth));
+  const cssH = Math.max(1, Math.round(exportRoot.offsetHeight));
   const scaleMax = Math.max(1, Number(FE_UI.chart.exportImageCssScaleMax) || 12);
   const cssScale = Math.max(0.25, Math.min(scaleMax, Number(FE_UI.chart.exportImageCssScale) || 8));
   const exportW = Math.max(120, Math.round(cssW * cssScale));

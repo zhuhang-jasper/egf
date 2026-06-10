@@ -1,4 +1,9 @@
-import { getChartLayoutPadding, getChartPointLabelSizePx, getRadarLabelReservedPx } from "@/lib/chart/fonts";
+import {
+  getChartLayoutPadding,
+  getChartPointLabelSizePx,
+  getPointLabelPaddingPx,
+  getRadarLabelReservedPx,
+} from "@/lib/chart/fonts";
 import { FE_UI, getChartLayoutLabels } from "@/lib/constants";
 
 function radarTickBackdropHalf(scale) {
@@ -102,6 +107,22 @@ function rebuildRadarPointLabelItems(scale) {
   scale._pointLabelItems = items;
 }
 
+function getPointLabelExtents(items) {
+  let minY = Infinity;
+  let maxY = -Infinity;
+  for (const item of items ?? []) {
+    if (!item?.visible) {
+      continue;
+    }
+    minY = Math.min(minY, item.top);
+    maxY = Math.max(maxY, item.bottom);
+  }
+  if (!Number.isFinite(minY) || !Number.isFinite(maxY)) {
+    return null;
+  }
+  return { minY, maxY };
+}
+
 export function applyRadarCenterFit(scale) {
   const u = FE_UI.chart;
   if (!u.radarCenterFix) {
@@ -124,31 +145,28 @@ export function applyRadarCenterFit(scale) {
     scale.drawingArea = Math.min(scale.drawingArea, maxR);
   }
   rebuildRadarPointLabelItems(scale);
+
+  const extents = getPointLabelExtents(scale._pointLabelItems);
+  if (extents) {
+    const span = extents.maxY - extents.minY;
+    const centeredMinY = (chart.height - span) / 2;
+    const shiftY = extents.minY - centeredMinY;
+    if (Math.abs(shiftY) > 0.5) {
+      scale.yCenter -= shiftY;
+      rebuildRadarPointLabelItems(scale);
+    }
+  }
 }
 
-/** Vertical span of axis point labels — used to fit the frame height to content, not a square canvas. */
+/** Tight canvas height: label span plus equal top/bottom pad (labels centered vertically in afterFit). */
 export function getRadarContentHeightPx(chart) {
-  const scale = chart.scales?.r;
-  const items = scale?._pointLabelItems;
-  if (!items?.length) {
-    return null;
-  }
-
-  let minY = Infinity;
-  let maxY = -Infinity;
-  for (const item of items) {
-    if (!item?.visible) {
-      continue;
-    }
-    minY = Math.min(minY, item.top);
-    maxY = Math.max(maxY, item.bottom);
-  }
-  if (!Number.isFinite(minY) || !Number.isFinite(maxY)) {
+  const extents = getPointLabelExtents(chart.scales?.r?._pointLabelItems);
+  if (!extents) {
     return null;
   }
 
   const pad = FE_UI.chartFrame.contentPadPx ?? 6;
-  return Math.ceil(maxY - minY + pad * 2);
+  return Math.ceil(extents.maxY - extents.minY + pad * 2);
 }
 
 export function syncFontsForChart(chart) {
@@ -160,21 +178,24 @@ export function syncFontsForChart(chart) {
   const ch = FE_UI.chart;
   const tickSize = Math.max(cf.tickMinPx, Math.round(w / cf.tickWidthDivisor));
   const labelSize = getChartPointLabelSizePx(w);
+  const labelPadding = getPointLabelPaddingPx(w);
   const padding = getChartLayoutPadding(w);
   const rScale = chart.options.scales.r;
   const tickFont = rScale.ticks.font || {};
   const plFont = rScale.pointLabels.font || {};
+  const plOpts = rScale.pointLabels;
   const layoutPad = chart.options.layout.padding;
   const paddingUnchanged =
     layoutPad?.top === padding.top &&
     layoutPad?.right === padding.right &&
     layoutPad?.bottom === padding.bottom &&
     layoutPad?.left === padding.left;
-  if (tickFont.size === tickSize && plFont.size === labelSize && paddingUnchanged) {
+  if (tickFont.size === tickSize && plFont.size === labelSize && plOpts.padding === labelPadding && paddingUnchanged) {
     return;
   }
   chart.options.layout.padding = padding;
   rScale.ticks.font = { ...tickFont, size: tickSize };
+  rScale.pointLabels.padding = labelPadding;
   rScale.pointLabels.font = {
     ...plFont,
     size: labelSize,

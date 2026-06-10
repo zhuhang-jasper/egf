@@ -36,7 +36,7 @@ export function ChartAverages() {
   return (
     <div
       data-chart-export="chart-averages"
-      className="mb-3 grid w-full grid-cols-3 gap-2 px-2 sm:gap-4"
+      className="mb-3 grid w-full grid-cols-3 gap-2 sm:gap-4 last-of-type:mb-0"
       aria-label="Breadth score, strength index, and career level"
     >
       <AvgCard
