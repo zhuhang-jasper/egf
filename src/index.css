@@ -51,7 +51,7 @@
     --cluster-product: var(--color-cluster-product);
     --cluster-operational: var(--color-cluster-operational);
     --level-num-w: 3rem;
-    --level-spin-w: 22px;
+    --level-step-w: 28px;
   }
 
   #competencyInputs .form-cluster {
@@ -138,13 +138,13 @@
     white-space: nowrap;
   }
 
-  #competencyInputs .level-value-with-spin {
+  #competencyInputs .level-value-stepper {
     display: inline-flex;
     flex-direction: row;
     align-items: stretch;
     flex-shrink: 0;
     box-sizing: border-box;
-    width: calc(var(--level-num-w) + var(--level-spin-w));
+    width: calc(var(--level-num-w) + 2 * var(--level-step-w));
     max-width: 100%;
     border: 1px solid #ccc;
     border-radius: 8px;
@@ -152,93 +152,62 @@
     background: #fff;
   }
 
-  #competencyInputs .level-value-with-spin:focus-within {
+  #competencyInputs .level-value-stepper:focus-within {
     border-color: #888;
   }
 
-  #competencyInputs .level-value-with-spin > .level-value {
+  #competencyInputs .level-value-stepper > .level-value {
     box-sizing: border-box;
     text-align: center;
     border: none;
     border-radius: 0;
+    border-left: 1px solid #e0e0e0;
+    border-right: 1px solid #e0e0e0;
     flex: 1 1 auto;
     min-width: 0;
     width: 0;
     background: transparent;
     font-size: 13px;
-    padding: 7px 5px;
+    padding: 7px 4px;
   }
 
   @media (min-width: 640px) {
-    #competencyInputs .level-value-with-spin > .level-value {
+    #competencyInputs .level-value-stepper > .level-value {
       font-size: 14px;
-      padding: 8px 6px;
+      padding: 8px 4px;
     }
   }
 
-  #competencyInputs .level-value-with-spin > .level-value[data-ai="true"] {
+  #competencyInputs .level-value-stepper > .level-value[data-ai="true"] {
     color: var(--color-ai);
     font-weight: 600;
   }
 
-  #competencyInputs .level-value-spin__col {
-    display: flex;
-    flex-direction: column;
-    flex-shrink: 0;
-    width: var(--level-spin-w);
-    min-width: var(--level-spin-w);
-    background: #fff;
-    border-left: 1px solid transparent;
-    transition: border-color 0.12s ease;
-  }
-
-  #competencyInputs .level-value-with-spin:hover .level-value-spin__col,
-  #competencyInputs .level-value-with-spin:focus-within .level-value-spin__col {
-    border-left-color: #e0e0e0;
-    background: #f7f7f7;
-  }
-
-  #competencyInputs .level-value-spin__btn {
-    flex: 1 1 50%;
-    min-height: 0;
+  #competencyInputs .level-value-step__btn {
+    display: inline-flex;
+    flex: 0 0 var(--level-step-w);
+    align-items: center;
+    justify-content: center;
+    width: var(--level-step-w);
+    min-width: var(--level-step-w);
     padding: 0;
     margin: 0;
     border: none;
-    border-bottom: 1px solid #e0e0e0;
-    background: transparent;
-    font-size: 8px;
+    background: #f7f7f7;
+    font-size: 16px;
+    font-weight: 500;
     line-height: 1;
-    color: #555;
+    color: #444;
     cursor: pointer;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.12s ease;
+    user-select: none;
   }
 
-  #competencyInputs .level-value-with-spin:hover .level-value-spin__btn,
-  #competencyInputs .level-value-with-spin:focus-within .level-value-spin__btn {
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  #competencyInputs .level-value-spin__btn:last-child {
-    border-bottom: none;
-  }
-
-  #competencyInputs .level-value-spin__btn:hover {
+  #competencyInputs .level-value-step__btn:hover {
     background: #efefef;
     color: #111;
   }
 
-  @media (hover: none) {
-    #competencyInputs .level-value-spin__col {
-      border-left-color: #e0e0e0;
-      background: #f7f7f7;
-    }
-
-    #competencyInputs .level-value-spin__btn {
-      opacity: 1;
-      pointer-events: auto;
-    }
+  #competencyInputs .level-value-step__btn:active {
+    background: #e4e4e4;
   }
 }

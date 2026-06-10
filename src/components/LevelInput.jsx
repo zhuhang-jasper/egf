@@ -54,7 +54,16 @@ export function LevelInput({ value, onChange, ariaLabel, ariaLabelUp, ariaLabelD
   };
 
   return (
-    <span className="level-value-with-spin group/level">
+    <span className="level-value-stepper group/level">
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label={ariaLabelDown}
+        onClick={() => bump(-1)}
+        className="level-value-step__btn"
+      >
+        −
+      </button>
       <input
         type="text"
         inputMode={keyboardInputEnabled ? "decimal" : "none"}
@@ -100,14 +109,15 @@ export function LevelInput({ value, onChange, ariaLabel, ariaLabelUp, ariaLabelD
         }}
         className="level-value"
       />
-      <span className="level-value-spin__col">
-        <button type="button" tabIndex={-1} aria-label={ariaLabelUp} onClick={() => bump(1)} className="level-value-spin__btn">
-          ▲
-        </button>
-        <button type="button" tabIndex={-1} aria-label={ariaLabelDown} onClick={() => bump(-1)} className="level-value-spin__btn">
-          ▼
-        </button>
-      </span>
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label={ariaLabelUp}
+        onClick={() => bump(1)}
+        className="level-value-step__btn"
+      >
+        +
+      </button>
     </span>
   );
 }
