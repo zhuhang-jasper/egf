@@ -158,6 +158,7 @@
 
   #competencyInputs .level-value-stepper > .level-value {
     box-sizing: border-box;
+    order: 2;
     text-align: center;
     border: none;
     border-radius: 0;
@@ -169,6 +170,14 @@
     background: transparent;
     font-size: 13px;
     padding: 7px 4px;
+  }
+
+  #competencyInputs .level-value-step__btn--dec {
+    order: 1;
+  }
+
+  #competencyInputs .level-value-step__btn--inc {
+    order: 3;
   }
 
   @media (min-width: 640px) {
