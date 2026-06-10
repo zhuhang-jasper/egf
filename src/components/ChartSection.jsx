@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useCompetencyChart } from "@/hooks/useCompetencyChart";
 import { useElementWidth } from "@/hooks/useElementWidth";
 
-import { getChartTitleSizePx, getClusterLegendMarginTopPx } from "@/lib/chart/fonts";
+import { getChartTitleSizePx, getClusterLegendMarginTopPx, getTrackBadgeMdHeightPx } from "@/lib/chart/fonts";
 import { FE_UI, FEATURE_SCORES_SETTINGS } from "@/lib/constants";
 import { copyChartAsImageToClipboard } from "@/lib/copy-chart-image";
 
@@ -118,7 +118,8 @@ export function ChartSection() {
   const showTitleRow = showVisibleTitle || !chartLegendHidden;
   const layoutWidth = chartWidth || FE_UI.page.minWidthPx;
   const titleSizePx = getChartTitleSizePx(layoutWidth);
-  const legendMarginTopPx = getClusterLegendMarginTopPx(layoutWidth);
+  const titleRowHeightPx = getTrackBadgeMdHeightPx(layoutWidth);
+  const chartChromeGapPx = getClusterLegendMarginTopPx(layoutWidth);
 
   useEffect(() => {
     relayout();
@@ -148,7 +149,7 @@ export function ChartSection() {
 
   return (
     <div className="flex w-full min-w-0 flex-col items-center">
-      <div className="relative z-[2] mb-3 flex w-full min-w-0 items-center justify-between gap-2 border-b pb-3 border-border">
+      <div className="relative z-[2] flex w-full min-w-0 items-center justify-between gap-2 border-b pb-3 border-border mb-3">
         <TrackToggle />
         <div className="flex shrink-0 items-center gap-2">
           <Button type="button" variant="outline" size="sm" onClick={handleCopy}>
@@ -161,10 +162,14 @@ export function ChartSection() {
 
       <div ref={exportRef} className="flex w-full min-w-0 flex-col self-stretch">
         {showTitleRow ? (
-          <div className="relative z-[1] flex w-full min-w-0 items-center gap-3 px-2 leading-none">
+          <div className="relative z-[1] flex w-full min-w-0 items-center gap-3 leading-none" style={{ minHeight: titleRowHeightPx }}>
             {!chartLegendHidden ? <TrackBadge variant={trackVariant} size="md" className="shrink-0" chartWidth={chartWidth} /> : null}
             {showVisibleTitle ? (
-              <h2 id="competency-chart-heading" className="min-w-0 flex-1 text-left font-bold text-black" style={{ fontSize: titleSizePx }}>
+              <h2
+                id="competency-chart-heading"
+                className="m-0 min-w-0 flex-1 text-left font-bold text-black only:ml-2"
+                style={{ fontSize: titleSizePx, lineHeight: `${titleRowHeightPx}px` }}
+              >
                 {title}
               </h2>
             ) : (
@@ -179,18 +184,20 @@ export function ChartSection() {
           </h2>
         )}
 
+        <div aria-hidden className="shrink-0 first-of-type:hidden" style={{ height: chartChromeGapPx }} />
+
         <div ref={frameRef} className="relative z-0 mx-auto w-full max-w-full box-border" style={{ minHeight: FE_UI.chartFrame.minChartHeightPx }}>
           <div className="absolute inset-0 min-h-0 min-w-0">
             <canvas ref={canvasRef} id="competencyChart" aria-labelledby="competency-chart-heading" />
           </div>
         </div>
 
-        <div aria-hidden className="shrink-0" style={{ height: legendMarginTopPx }} />
+        <div aria-hidden className="shrink-0 last-of-type:hidden" style={{ height: chartChromeGapPx }} />
 
         {!chartLegendHidden ? (
           <div
             data-chart-export="chart-legend-card"
-            className="mx-auto mb-3 flex w-fit max-w-full items-center justify-center rounded-lg border border-border bg-muted px-6 py-2.5 leading-none"
+            className="mx-auto mb-3 flex w-fit max-w-full items-center justify-center rounded-lg border border-border bg-muted px-6 py-2.5 leading-none last-of-type:mb-0"
           >
             <ClusterLegend chartWidth={chartWidth} />
           </div>

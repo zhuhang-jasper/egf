@@ -18,8 +18,17 @@ function fitFrameToChart(frameRef, chart) {
 
   const w = frame.offsetWidth;
   const layout = getLayoutOptions();
-  const contentH = getRadarContentHeightPx(chart);
-  if (contentH) {
+
+  let prevContentH = null;
+  for (let pass = 0; pass < 3; pass++) {
+    const contentH = getRadarContentHeightPx(chart);
+    if (!contentH) {
+      return;
+    }
+    if (contentH === prevContentH) {
+      break;
+    }
+    prevContentH = contentH;
     applyChartFrameLayout(frame, w, contentH, layout);
     chart.resize();
   }

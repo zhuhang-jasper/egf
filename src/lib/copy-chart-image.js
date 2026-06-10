@@ -28,11 +28,15 @@ function sanitizeColorForHtml2Canvas(value) {
   }
 }
 
-function getRelativeRect(el, rootRect, scaleX, scaleY) {
+function getExportImagePaddingPx() {
+  return Math.max(0, Number(FE_UI.chart.exportImagePaddingPx) || 8);
+}
+
+function getRelativeRect(el, rootRect, scaleX, scaleY, offsetX = 0, offsetY = 0) {
   const rect = el.getBoundingClientRect();
   return {
-    x: (rect.left - rootRect.left) * scaleX,
-    y: (rect.top - rootRect.top) * scaleY,
+    x: (rect.left - rootRect.left + offsetX) * scaleX,
+    y: (rect.top - rootRect.top + offsetY) * scaleY,
     w: rect.width * scaleX,
     h: rect.height * scaleY,
   };
@@ -76,7 +80,7 @@ function isVisuallyHidden(el) {
   return cs.position === "absolute" && w <= 1 && h <= 1;
 }
 
-function renderExportDom(ctx, exportRoot, scaleX, scaleY) {
+function renderExportDom(ctx, exportRoot, scaleX, scaleY, padX, padY) {
   const rootRect = exportRoot.getBoundingClientRect();
 
   const title = exportRoot.querySelector("#competency-chart-heading");
@@ -84,7 +88,7 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY) {
     const text = title.textContent?.trim();
     if (text) {
       const cs = window.getComputedStyle(title);
-      const { x, y, w, h } = getRelativeRect(title, rootRect, scaleX, scaleY);
+      const { x, y, w, h } = getRelativeRect(title, rootRect, scaleX, scaleY, padX, padY);
       ctx.fillStyle = sanitizeColorForHtml2Canvas(cs.color);
       ctx.font = buildFont(cs, scaleY);
       ctx.textAlign = cs.textAlign === "center" ? "center" : "left";
@@ -96,7 +100,7 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY) {
   const legendCard = exportRoot.querySelector("[data-chart-export='chart-legend-card']");
   if (legendCard instanceof HTMLElement && !isVisuallyHidden(legendCard)) {
     const cs = window.getComputedStyle(legendCard);
-    const { x, y, w, h } = getRelativeRect(legendCard, rootRect, scaleX, scaleY);
+    const { x, y, w, h } = getRelativeRect(legendCard, rootRect, scaleX, scaleY, padX, padY);
     const radius = (Number.parseFloat(cs.borderTopLeftRadius) || 8) * scaleX;
     const lineWidth = (Number.parseFloat(cs.borderTopWidth) || 1) * scaleX;
     drawRoundedRect(
@@ -122,7 +126,7 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY) {
       const label = item.querySelector("[data-chart-export='cluster-legend-label']");
       if (swatch instanceof HTMLElement) {
         const scs = window.getComputedStyle(swatch);
-        const sr = getRelativeRect(swatch, rootRect, scaleX, scaleY);
+        const sr = getRelativeRect(swatch, rootRect, scaleX, scaleY, padX, padY);
         const borderW = (Number.parseFloat(scs.borderTopWidth) || 1) * scaleX;
         ctx.fillStyle = sanitizeColorForHtml2Canvas(scs.backgroundColor);
         ctx.fillRect(sr.x, sr.y, sr.w, sr.h);
@@ -136,7 +140,7 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY) {
         const text = label.textContent?.trim();
         if (text) {
           const lcs = window.getComputedStyle(label);
-          const lr = getRelativeRect(label, rootRect, scaleX, scaleY);
+          const lr = getRelativeRect(label, rootRect, scaleX, scaleY, padX, padY);
           ctx.fillStyle = sanitizeColorForHtml2Canvas(lcs.color);
           ctx.font = buildFont(lcs, scaleY);
           ctx.textAlign = "left";
@@ -152,7 +156,7 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY) {
     const text = trackBadge.textContent?.trim();
     if (text) {
       const cs = window.getComputedStyle(trackBadge);
-      const { x, y, w, h } = getRelativeRect(trackBadge, rootRect, scaleX, scaleY);
+      const { x, y, w, h } = getRelativeRect(trackBadge, rootRect, scaleX, scaleY, padX, padY);
       const radius = (Number.parseFloat(cs.borderRadius) || 6) * scaleX;
       drawRoundedRect(
         ctx,
@@ -180,7 +184,7 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY) {
         continue;
       }
       const cs = window.getComputedStyle(card);
-      const { x, y, w, h } = getRelativeRect(card, rootRect, scaleX, scaleY);
+      const { x, y, w, h } = getRelativeRect(card, rootRect, scaleX, scaleY, padX, padY);
       const radius = (Number.parseFloat(cs.borderTopLeftRadius) || 8) * scaleX;
       const lineWidth = (Number.parseFloat(cs.borderTopWidth) || 1) * scaleX;
       drawRoundedRect(
@@ -201,7 +205,7 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY) {
           continue;
         }
         const scs = window.getComputedStyle(span);
-        const sr = getRelativeRect(span, rootRect, scaleX, scaleY);
+        const sr = getRelativeRect(span, rootRect, scaleX, scaleY, padX, padY);
         ctx.fillStyle = sanitizeColorForHtml2Canvas(scs.color);
         ctx.font = buildFont(scs, scaleY);
         ctx.textAlign = "center";
@@ -212,27 +216,20 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY) {
   }
 }
 
-function getChartExportableCaptureHeight(el) {
-  const root = el.getBoundingClientRect();
-  let maxBottom = root.top;
-  for (const child of el.children) {
-    maxBottom = Math.max(maxBottom, child.getBoundingClientRect().bottom);
-  }
-  const fromKids = Math.ceil(maxBottom - root.top);
-  return Math.max(1, Math.min(el.offsetHeight, fromKids));
-}
-
 export async function copyChartAsImageToClipboard({ exportRoot, canvas, chart, titleText }) {
   if (!exportRoot || !canvas || !chart) {
     return { ok: false, method: null };
   }
 
-  const cssW = Math.max(1, Math.round(exportRoot.getBoundingClientRect().width));
-  const cssH = Math.max(1, getChartExportableCaptureHeight(exportRoot));
+  const padPx = getExportImagePaddingPx();
+  const contentW = Math.max(1, Math.round(exportRoot.offsetWidth));
+  const contentH = Math.max(1, Math.round(exportRoot.offsetHeight));
+  const cssW = contentW + padPx * 2;
+  const cssH = contentH + padPx * 2;
   const scaleMax = Math.max(1, Number(FE_UI.chart.exportImageCssScaleMax) || 12);
   const cssScale = Math.max(0.25, Math.min(scaleMax, Number(FE_UI.chart.exportImageCssScale) || 8));
   const exportW = Math.max(120, Math.round(cssW * cssScale));
-  const exportH = Math.max(2, Math.round((exportW * cssH) / cssW));
+  const exportH = Math.max(2, Math.round(cssH * cssScale));
   const pxPerCssX = exportW / cssW;
   const pxPerCssY = exportH / cssH;
 
@@ -255,12 +252,12 @@ export async function copyChartAsImageToClipboard({ exportRoot, canvas, chart, t
     const octx = out.getContext("2d");
     octx.fillStyle = "#ffffff";
     octx.fillRect(0, 0, exportW, exportH);
-    renderExportDom(octx, exportRoot, pxPerCssX, pxPerCssY);
+    renderExportDom(octx, exportRoot, pxPerCssX, pxPerCssY, padPx, padPx);
 
     const rootRect = exportRoot.getBoundingClientRect();
     const canvasRect = canvas.getBoundingClientRect();
-    const slotX = Math.round((canvasRect.left - rootRect.left) * pxPerCssX);
-    const slotY = Math.round((canvasRect.top - rootRect.top) * pxPerCssY);
+    const slotX = Math.round((canvasRect.left - rootRect.left + padPx) * pxPerCssX);
+    const slotY = Math.round((canvasRect.top - rootRect.top + padPx) * pxPerCssY);
     const slotW = Math.max(1, Math.round(canvasRect.width * pxPerCssX));
     const slotH = Math.max(1, Math.round(canvasRect.height * pxPerCssY));
 

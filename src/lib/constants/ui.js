@@ -3,8 +3,8 @@ export const FE_UI = {
   chartFrame: {
     /** Fallback frame height before Chart.js label bounds are measured (radar fits a wide rect, not a square). */
     heightWidthRatio: { minRatio: 0.76, maxRatio: 0.84 },
-    /** Responsive trim applied below the chart frame — collapses leftover canvas slack. */
-    marginBottomTrim: { minPx: -14, maxPx: -36 },
+    /** Responsive trim on chart frame top/bottom — pairs with chrome gap spacers. */
+    marginTrim: { minPx: -10, maxPx: -30 },
     /** Padding around measured axis-label span when fitting frame height to content. */
     contentPadPx: 6,
     minChartHeightPx: 120,
@@ -24,6 +24,8 @@ export const FE_UI = {
     /** Swatch edge length vs legend label font size — just taller than text cap height. */
     legendSwatchLabelMultiplier: 1.2,
     pointLabelPadding: 5,
+    /** Narrow charts need more radial padding so adjacent bottom labels (e.g. Ownership / Communication) do not overlap. */
+    pointLabelPaddingRange: { minPx: 5, maxPx: 12 },
     pointLabelPx: 11,
     pointLabelScaleWithChart: true,
     pointLabelWeight: "bold",
@@ -36,6 +38,8 @@ export const FE_UI = {
     tickBackdropColor: "rgba(255, 255, 255, 0.5)",
     exportImageCssScale: 8,
     exportImageCssScaleMax: 12,
+    /** White inset on copied image only (Tailwind p-2 = 8px). */
+    exportImagePaddingPx: 8,
     clusterBorderColor: "rgba(0, 0, 0, 0.22)",
     clusterBorderWidth: 1,
   },
