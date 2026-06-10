@@ -179,7 +179,7 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY, padX, padY) {
 
   const averagesGrid = exportRoot.querySelector("[data-chart-export='chart-averages']");
   if (averagesGrid) {
-    for (const card of averagesGrid.children) {
+    for (const card of averagesGrid.querySelectorAll("[data-chart-export='chart-avg-card']")) {
       if (!(card instanceof HTMLElement)) {
         continue;
       }
