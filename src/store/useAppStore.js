@@ -34,6 +34,7 @@ export const useAppStore = create((set, get) => ({
   levels: [...initialDraft.levels],
   trackVariant: normalizeTrackVariant(initialDraft.trackVariant),
   levelsPolygonHidden: initialDraft.levelsPolygonHidden,
+  chartLevelTicksHidden: initialDraft.chartLevelTicksHidden,
   chartLegendHidden: initialDraft.chartLegendHidden,
   chartTitleHidden: initialDraft.chartTitleHidden,
   footerScoresHidden: initialDraft.footerScoresHidden,
@@ -52,6 +53,7 @@ export const useAppStore = create((set, get) => ({
         pillarLevels: { ...draft.pillarLevels },
         trackVariant: normalizeTrackVariant(draft.trackVariant),
         levelsPolygonHidden: draft.levelsPolygonHidden,
+        chartLevelTicksHidden: draft.chartLevelTicksHidden,
         chartLegendHidden: draft.chartLegendHidden,
         chartTitleHidden: draft.chartTitleHidden,
         footerScoresHidden: draft.footerScoresHidden,
@@ -101,6 +103,7 @@ export const useAppStore = create((set, get) => ({
         pillarLevels: { ...state.pillarLevels },
         trackVariant: normalizeTrackVariant(state.trackVariant),
         levelsPolygonHidden: get().levelsPolygonHidden,
+        chartLevelTicksHidden: get().chartLevelTicksHidden,
         chartLegendHidden: get().chartLegendHidden,
         chartTitleHidden: get().chartTitleHidden,
         footerScoresHidden: get().footerScoresHidden,
@@ -112,6 +115,11 @@ export const useAppStore = create((set, get) => ({
 
   setLevelsPolygonHidden: (hidden) => {
     set({ levelsPolygonHidden: hidden });
+    get().persistDraft();
+  },
+
+  setChartLevelTicksHidden: (hidden) => {
+    set({ chartLevelTicksHidden: hidden });
     get().persistDraft();
   },
 

@@ -44,6 +44,23 @@ function syncPolygonVisibility(chart, hidden) {
   }
 }
 
+function syncLevelTicksVisibility(chart, hidden) {
+  const ticks = chart?.options?.scales?.r?.ticks;
+  if (!ticks) {
+    return;
+  }
+  const ch = FE_UI.chart;
+  ticks.display = true;
+  const color = hidden ? "transparent" : ch.tickLabelColor;
+  const backdropColor = hidden ? "transparent" : ch.tickBackdropColor;
+  if (ticks.color !== color) {
+    ticks.color = color;
+  }
+  if (ticks.backdropColor !== backdropColor) {
+    ticks.backdropColor = backdropColor;
+  }
+}
+
 function syncChartLabels(chart, trackVariant) {
   chart.data.labels = getChartLabels(trackVariant);
 }
@@ -69,6 +86,7 @@ export function applyChartState(chart, state) {
   chart.data.datasets[0].data = levels.length === orderLen ? [...levels] : new Array(orderLen).fill(0);
   syncDatasets(chart, { levels: chart.data.datasets[0].data, title: state.title });
   syncPolygonVisibility(chart, state.levelsPolygonHidden);
+  syncLevelTicksVisibility(chart, state.chartLevelTicksHidden);
   chart.update("none");
 }
 

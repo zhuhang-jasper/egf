@@ -4,6 +4,7 @@ import { normalizeSavedState, normalizeStoredProfile, toCanonicalStoragePayload 
 export function getDefaultChartDisplay() {
   return {
     levelsPolygonHidden: false,
+    chartLevelTicksHidden: false,
     chartLegendHidden: false,
     chartTitleHidden: false,
     footerScoresHidden: false,
@@ -19,6 +20,7 @@ export function parseChartDisplay(parsed) {
   const defaults = getDefaultChartDisplay();
   return {
     levelsPolygonHidden: parsed.levelsPolygonHidden === true,
+    chartLevelTicksHidden: parsed.chartLevelTicksHidden === true,
     chartLegendHidden: parsed.chartLegendHidden === true,
     chartTitleHidden: parsed.chartTitleHidden === true,
     footerScoresHidden: Object.hasOwn(parsed, "footerScoresHidden")
@@ -34,6 +36,7 @@ export function toDraftStoragePayload(state) {
   return {
     ...toCanonicalStoragePayload(state),
     levelsPolygonHidden: state.levelsPolygonHidden,
+    chartLevelTicksHidden: state.chartLevelTicksHidden,
     chartLegendHidden: state.chartLegendHidden,
     chartTitleHidden: state.chartTitleHidden,
     ...(state.footerScoresHiddenUserSet ? { footerScoresHidden: state.footerScoresHidden === true } : {}),
