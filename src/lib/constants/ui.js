@@ -38,6 +38,8 @@ export const FE_UI = {
     tickBackdropColor: "rgba(255, 255, 255, 0.5)",
     exportImageCssScale: 8,
     exportImageCssScaleMax: 12,
+    /** White inset on copied image only (Tailwind p-2 = 8px). */
+    exportImagePaddingPx: 8,
     clusterBorderColor: "rgba(0, 0, 0, 0.22)",
     clusterBorderWidth: 1,
   },
