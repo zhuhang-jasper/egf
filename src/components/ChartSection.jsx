@@ -90,13 +90,9 @@ function ChartDisplayMenu() {
           className="absolute right-0 top-[calc(100%+4px)] z-50 min-w-[10.5rem] rounded-lg border border-border bg-card py-1 shadow-md"
         >
           <DisplayCheckbox label="Title" checked={!chartTitleHidden} onChange={(v) => setChartTitleHidden(!v)} />
-          <DisplayCheckbox label="Legend" checked={!chartLegendHidden} onChange={(v) => setChartLegendHidden(!v)} />
           <DisplayCheckbox label="Chart" checked={!levelsPolygonHidden} onChange={(v) => setLevelsPolygonHidden(!v)} />
-          <DisplayCheckbox
-            label="Level labels"
-            checked={!chartLevelTicksHidden}
-            onChange={(v) => setChartLevelTicksHidden(!v)}
-          />
+          <DisplayCheckbox label="Level labels" checked={!chartLevelTicksHidden} onChange={(v) => setChartLevelTicksHidden(!v)} />
+          <DisplayCheckbox label="Legend" checked={!chartLegendHidden} onChange={(v) => setChartLegendHidden(!v)} />
           {FEATURE_SCORES_SETTINGS ? (
             <DisplayCheckbox label="Scores" checked={!footerScoresHidden} onChange={(v) => setFooterScoresHidden(!v)} />
           ) : null}
