@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useCompetencyChart } from "@/hooks/useCompetencyChart";
 import { useElementWidth } from "@/hooks/useElementWidth";
 
-import { getChartTitleSizePx, getClusterLegendMarginTopPx } from "@/lib/chart/fonts";
+import { getChartTitleSizePx, getClusterLegendMarginTopPx, getTrackBadgeMdHeightPx } from "@/lib/chart/fonts";
 import { FE_UI, FEATURE_SCORES_SETTINGS } from "@/lib/constants";
 import { copyChartAsImageToClipboard } from "@/lib/copy-chart-image";
 
@@ -118,6 +118,7 @@ export function ChartSection() {
   const showTitleRow = showVisibleTitle || !chartLegendHidden;
   const layoutWidth = chartWidth || FE_UI.page.minWidthPx;
   const titleSizePx = getChartTitleSizePx(layoutWidth);
+  const titleRowHeightPx = getTrackBadgeMdHeightPx(layoutWidth);
   const chartChromeGapPx = getClusterLegendMarginTopPx(layoutWidth);
 
   useEffect(() => {
@@ -161,10 +162,14 @@ export function ChartSection() {
 
       <div ref={exportRef} className="flex w-full min-w-0 flex-col self-stretch">
         {showTitleRow ? (
-          <div className="relative z-[1] flex w-full min-w-0 items-center gap-3 leading-none">
+          <div className="relative z-[1] flex w-full min-w-0 items-center gap-3 leading-none" style={{ minHeight: titleRowHeightPx }}>
             {!chartLegendHidden ? <TrackBadge variant={trackVariant} size="md" className="shrink-0" chartWidth={chartWidth} /> : null}
             {showVisibleTitle ? (
-              <h2 id="competency-chart-heading" className="min-w-0 flex-1 text-left font-bold text-black" style={{ fontSize: titleSizePx }}>
+              <h2
+                id="competency-chart-heading"
+                className="m-0 min-w-0 flex-1 text-left font-bold text-black only:ml-2"
+                style={{ fontSize: titleSizePx, lineHeight: `${titleRowHeightPx}px` }}
+              >
                 {title}
               </h2>
             ) : (

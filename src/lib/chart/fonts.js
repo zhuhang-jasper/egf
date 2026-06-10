@@ -29,6 +29,13 @@ export function getChartSecondaryLabelSizePx(chartWidthPx) {
   return Math.max(1, Math.round(getChartPointLabelSizePx(chartWidthPx) * FE_UI.chart.secondaryLabelMultiplier));
 }
 
+/** md track badge outer height — matches {@link TrackBadge} size="md" padding + leading-none text. */
+export function getTrackBadgeMdHeightPx(chartWidthPx) {
+  const labelPx = getChartSecondaryLabelSizePx(chartWidthPx);
+  const padY = Math.round(labelPx * 0.4);
+  return labelPx + padY * 2;
+}
+
 export function getPointLabelPaddingPx(chartWidthPx) {
   const u = getChartWidthUnit(chartWidthPx);
   const { minPx, maxPx } = FE_UI.chart.pointLabelPaddingRange ?? { minPx: 5, maxPx: 12 };
