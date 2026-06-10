@@ -7,6 +7,7 @@ export function getDefaultChartDisplay() {
     chartLegendHidden: false,
     chartTitleHidden: false,
     footerScoresHidden: false,
+    levelKeyboardInputEnabled: false,
   };
 }
 
@@ -21,6 +22,7 @@ export function parseChartDisplay(parsed) {
     chartTitleHidden: parsed.chartTitleHidden === true,
     footerScoresHidden:
       typeof parsed.footerScoresHidden === "boolean" ? parsed.footerScoresHidden : defaults.footerScoresHidden,
+    levelKeyboardInputEnabled: parsed.levelKeyboardInputEnabled === true,
   };
 }
 
@@ -32,6 +34,7 @@ export function toDraftStoragePayload(state) {
     chartLegendHidden: state.chartLegendHidden,
     chartTitleHidden: state.chartTitleHidden,
     footerScoresHidden: state.footerScoresHidden,
+    levelKeyboardInputEnabled: state.levelKeyboardInputEnabled === true,
   };
 }
 
