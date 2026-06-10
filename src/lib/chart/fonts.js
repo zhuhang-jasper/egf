@@ -71,6 +71,22 @@ export function getChartTitleSizePx(chartWidthPx) {
   return Math.min(maxPx, Math.max(minPx, Math.round(labelPx * labelMultiplier)));
 }
 
+/** Score card typography — label/sub track secondary labels; value tracks chart title. */
+export function getScoreCardFontSizesPx(chartWidthPx) {
+  const secondaryPx = getChartSecondaryLabelSizePx(chartWidthPx);
+  const u = getChartWidthUnit(chartWidthPx);
+  const labelScale = 1 - u * (1 - FE_UI.chart.scoreCardLabelMultiplier);
+  const labelPx = Math.min(
+    FE_UI.chart.scoreCardLabelMaxPx,
+    Math.max(1, Math.round(secondaryPx * labelScale)),
+  );
+  return {
+    labelPx,
+    valuePx: getChartTitleSizePx(chartWidthPx),
+    subPx: secondaryPx,
+  };
+}
+
 /** Negative frame margin — pairs with chrome gap spacers above/below the chart frame. */
 function getChartFrameMarginTrimPx(chartWidthPx, { minimalChrome = false } = {}) {
   if (minimalChrome) {
