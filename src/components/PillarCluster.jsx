@@ -1,6 +1,6 @@
 import { LevelInput } from "@/components/LevelInput";
 
-import { CLUSTERS } from "@/lib/constants";
+import { CLUSTERS, getClusterSurfaceBg } from "@/lib/constants";
 
 import { useAppStore } from "@/store/useAppStore";
 
@@ -10,7 +10,15 @@ export function PillarCluster({ group }) {
   const cluster = CLUSTERS[group.id];
 
   return (
-    <div className="form-cluster" data-cluster={group.id} style={{ "--cluster-color": cluster.color }}>
+    <div
+      className="form-cluster overflow-hidden rounded-xl border border-white/70 border-l-[3px] shadow-sm shadow-slate-200/40"
+      data-cluster={group.id}
+      style={{
+        "--cluster-text-color": cluster.textColor,
+        backgroundColor: getClusterSurfaceBg(cluster.color),
+        borderLeftColor: cluster.textColor,
+      }}
+    >
       <div className="form-section-title">{group.title}</div>
       {group.pillars.map((pillar) => (
         <label key={pillar.index} className="field-row">

@@ -1,11 +1,12 @@
 import { StaticCompetencyChart } from "@/components/StaticCompetencyChart";
 
+import { CLUSTERS, getClusterSurfaceBg } from "@/lib/constants";
 import { CAREER_TRACK_PROFILES, FOUNDATIONAL_PHASE, sortKeyFocusPillars } from "@/lib/constants/about-data";
 import { cn } from "@/lib/utils";
 
 const cardClass = "rounded-xl border border-slate-100 bg-white shadow-md shadow-slate-200/40";
 const levelBadgeClass =
-  "inline-flex h-[1.125rem] min-w-[1.75rem] shrink-0 items-center justify-center rounded px-1 text-[9px] font-bold leading-none tabular-nums";
+  "inline-flex py-1 min-w-[1.75rem] shrink-0 items-center justify-center rounded px-1 text-[10px] font-bold leading-none tabular-nums";
 
 function LevelBadge({ level, backgroundColor, color }) {
   return (
@@ -17,23 +18,23 @@ function LevelBadge({ level, backgroundColor, color }) {
 
 const TRACK_STYLE = {
   "deep-technical": {
-    accent: "#756085",
-    chipBg: "#cdbdd866",
-    textColor: "#756085",
+    accent: CLUSTERS.technical.textColor,
+    chipBg: getClusterSurfaceBg(CLUSTERS.technical.color),
+    textColor: CLUSTERS.technical.textColor,
     levelBadgeBg: "#c4b5d0",
     levelBadgeText: "#3f3549",
   },
   "product-focused": {
-    accent: "#b8653a",
-    chipBg: "#f5b39d66",
-    textColor: "#b8653a",
+    accent: CLUSTERS.product.textColor,
+    chipBg: getClusterSurfaceBg(CLUSTERS.product.color),
+    textColor: CLUSTERS.product.textColor,
     levelBadgeBg: "#e8b09a",
     levelBadgeText: "#5c2e14",
   },
   "people-delivery": {
-    accent: "#4d7356",
-    chipBg: "#bddbb566",
-    textColor: "#4d7356",
+    accent: CLUSTERS.operational.textColor,
+    chipBg: getClusterSurfaceBg(CLUSTERS.operational.color),
+    textColor: CLUSTERS.operational.textColor,
     levelBadgeBg: "#b0cdb0",
     levelBadgeText: "#1f3d28",
   },

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { ChevronDown } from "lucide-react";
 
+import { getClusterSurfaceBg } from "@/lib/constants";
 import { COMPETENCY_MATRIX, SENIORITY_LEVEL_DEFINITIONS } from "@/lib/constants/about-data";
 import { cn } from "@/lib/utils";
 
@@ -61,7 +62,6 @@ function PillarMatrixCard({
 }) {
   const panelId = `competency-matrix-${pillarId}`;
   const cardRef = useRef(null);
-  const clusterBg = `${color}75`;
 
   useEffect(() => {
     if (expanded) {
@@ -73,7 +73,7 @@ function PillarMatrixCard({
     <article
       ref={cardRef}
       className="scroll-mt-4 overflow-hidden rounded-xl border border-white/70 border-l-[3px] shadow-md shadow-slate-200/40"
-      style={{ backgroundColor: clusterBg, borderLeftColor: textColor }}
+      style={{ backgroundColor: getClusterSurfaceBg(color), borderLeftColor: textColor }}
     >
       <button
         type="button"

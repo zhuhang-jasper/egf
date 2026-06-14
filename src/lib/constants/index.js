@@ -19,6 +19,7 @@ export {
   TRACK_VARIANT_UI,
   TRACK_VARIANTS,
   TRACKS,
+  getClusterSurfaceBg,
 } from "@/lib/constants/framework";
 export {
   BREADTH_TOP_RATIO,

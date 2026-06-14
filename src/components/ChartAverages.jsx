@@ -6,6 +6,7 @@ import {
   CLUSTERS,
   FE_UI,
   FEATURE_SCORES_SETTINGS,
+  getClusterSurfaceBg,
   getPillarGroupOrder,
 } from "@/lib/constants";
 import { computeAverages, formatAvgScore } from "@/lib/scores";
@@ -13,33 +14,21 @@ import { cn } from "@/lib/utils";
 
 import { useAppStore } from "@/store/useAppStore";
 
-/** Cluster score cards — flat tint bg from cluster color; text/border tuned for contrast. */
-const CLUSTER_AVG_CARD = {
-  technical: {
+/** Cluster score cards — surface tint from cluster color; text/border from cluster tokens. */
+function getClusterAvgCardTheme(id) {
+  const cluster = CLUSTERS[id];
+  if (!cluster) {
+    return null;
+  }
+  return {
     cardStyle: {
-      backgroundColor: "#fcf1fe",
-      borderColor: "#94889c",
-      color: "#2e2832",
+      backgroundColor: getClusterSurfaceBg(cluster.color),
+      borderColor: cluster.textColor,
+      color: cluster.textColor,
     },
-    valueColor: "#443d4a",
-  },
-  product: {
-    cardStyle: {
-      backgroundColor: "#ffe7da",
-      borderColor: "#b08171",
-      color: "#35261e",
-    },
-    valueColor: "#5a4034",
-  },
-  operational: {
-    cardStyle: {
-      backgroundColor: "#e8f7e2",
-      borderColor: "#889e82",
-      color: "#283128",
-    },
-    valueColor: "#3f483c",
-  },
-};
+    valueColor: cluster.textColor,
+  };
+}
 
 function AvgCard({ label, value, sub, className, title, labelPx, valuePx, subPx, cardStyle, valueColor }) {
   return (
@@ -92,7 +81,7 @@ export function ChartAverages({ chartWidth = 0 }) {
       <div className="grid grid-cols-3 gap-2 min-[450px]:gap-4">
         {clusterGroups.map(({ id }) => {
           const cluster = CLUSTERS[id];
-          const theme = CLUSTER_AVG_CARD[id];
+          const theme = getClusterAvgCardTheme(id);
           if (!cluster || !theme) {
             return null;
           }

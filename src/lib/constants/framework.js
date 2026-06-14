@@ -17,6 +17,11 @@ export const CLUSTERS = {
   operational: { label: "Operational", color: "#bddbb5", textColor: "#4d7356" },
 };
 
+/** Cluster tint for cards, form, chips — hex alpha suffix `70` (~44%). */
+export function getClusterSurfaceBg(color) {
+  return `${color}70`;
+}
+
 /**
  * Per-track chart order and form clusters (ids reference {@link PILLARS}).
  * To drop a pillar from a track: remove its id from `pillarOrder` and cluster lists.
