@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef } from "react";
 
-import { getWindowScrollY, scrollWindowTo, scrollWindowToTop } from "@/lib/scroll";
+import { getWindowScrollY, scrollWindowTo } from "@/lib/scroll";
 
 /** Remember per-tab window scroll in memory; resets on page refresh. */
 export function useTabScrollMemory(activeTab) {
@@ -12,13 +12,17 @@ export function useTabScrollMemory(activeTab) {
   };
 
   useLayoutEffect(() => {
+    let y = scrollPositionsRef.current[activeTab] ?? 0;
     if (skipRestoreRef.current) {
       skipRestoreRef.current = false;
-      scrollWindowToTop();
-      return;
+      y = 0;
     }
 
-    scrollWindowTo(scrollPositionsRef.current[activeTab] ?? 0);
+    const frame = requestAnimationFrame(() => {
+      scrollWindowTo(y);
+    });
+
+    return () => cancelAnimationFrame(frame);
   }, [activeTab]);
 
   return { saveActiveTabScroll };

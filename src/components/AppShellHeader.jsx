@@ -23,6 +23,10 @@ function AppShellIntro() {
 
 function AppShellTabBar({ activeTab, onTabChange }) {
   const barRef = useRef(null);
+  const selectedIndex = Math.max(
+    0,
+    TABS.findIndex((tab) => tab.id === activeTab),
+  );
 
   useLayoutEffect(() => {
     const bar = barRef.current;
@@ -50,7 +54,15 @@ function AppShellTabBar({ activeTab, onTabChange }) {
       id="app-shell-tab-bar"
       className="sticky top-0 z-10 -mx-2 mt-3 bg-white px-2 py-2 shadow-sm sm:-mx-3 sm:px-3 print:static print:shadow-none"
     >
-      <div className="grid grid-cols-2 rounded-lg border border-slate-200 bg-slate-100/80 p-0.5" role="tablist" aria-label="App sections">
+      <div className="relative grid grid-cols-2 rounded-lg border border-slate-200 bg-slate-100/80 p-0.5" role="tablist" aria-label="App sections">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute top-0.5 bottom-0.5 left-0.5 rounded-md bg-slate-900 shadow-sm transition-transform duration-150 ease-out"
+          style={{
+            width: "calc(50% - 0.125rem)",
+            transform: `translateX(calc(${selectedIndex} * 100%))`,
+          }}
+        />
         {TABS.map(({ id, label }) => {
           const selected = activeTab === id;
           return (
@@ -61,8 +73,8 @@ function AppShellTabBar({ activeTab, onTabChange }) {
               aria-selected={selected}
               onClick={() => onTabChange(id)}
               className={cn(
-                "cursor-pointer rounded-md px-3 py-1.5 text-xs font-semibold transition-colors",
-                selected ? "bg-slate-900 text-white shadow-sm" : "text-slate-600 hover:text-slate-800",
+                "relative z-10 cursor-pointer rounded-md px-3 py-1.5 text-xs font-semibold",
+                selected ? "text-white" : "text-slate-600 hover:text-slate-800",
               )}
             >
               {label}
