@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
 import { ChevronDown } from "lucide-react";
 
 import { getClusterSurfaceBg } from "@/lib/constants";
 import { COMPETENCY_MATRIX, SENIORITY_LEVEL_DEFINITIONS } from "@/lib/constants/about-data";
+import { scrollBelowStickyHeader } from "@/lib/scroll";
 import { cn } from "@/lib/utils";
 
 const levelBadgeClass =
@@ -59,20 +60,14 @@ function PillarMatrixCard({
   levels,
   expanded,
   onToggle,
+  cardRef,
 }) {
   const panelId = `competency-matrix-${pillarId}`;
-  const cardRef = useRef(null);
-
-  useEffect(() => {
-    if (expanded) {
-      cardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }, [expanded]);
 
   return (
     <article
       ref={cardRef}
-      className="scroll-mt-4 overflow-hidden rounded-xl border border-white/70 border-l-[3px] shadow-md shadow-slate-200/40"
+      className="overflow-hidden rounded-xl border border-white/70 border-l-[3px] shadow-md shadow-slate-200/40"
       style={{ backgroundColor: getClusterSurfaceBg(color), borderLeftColor: textColor }}
     >
       <button
@@ -99,9 +94,9 @@ function PillarMatrixCard({
       </button>
 
       {expanded ? (
-        <div id={panelId} role="region" aria-labelledby={`${panelId}-trigger`}>
+        <section id={panelId} aria-labelledby={`${panelId}-trigger`}>
           <PillarMatrixLevels levels={levels} />
-        </div>
+        </section>
       ) : null}
     </article>
   );
@@ -109,10 +104,28 @@ function PillarMatrixCard({
 
 export function CompetencyMatrix() {
   const [expandedPillarId, setExpandedPillarId] = useState(null);
+  const cardRefs = useRef({});
 
   const handleToggle = (pillarId) => {
     setExpandedPillarId((current) => (current === pillarId ? null : pillarId));
   };
+
+  useLayoutEffect(() => {
+    if (!expandedPillarId) {
+      return undefined;
+    }
+
+    const card = cardRefs.current[expandedPillarId];
+    if (!card) {
+      return undefined;
+    }
+
+    const frame = requestAnimationFrame(() => {
+      scrollBelowStickyHeader(card);
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [expandedPillarId]);
 
   return (
     <div className="space-y-3">
@@ -122,6 +135,13 @@ export function CompetencyMatrix() {
           {...pillar}
           expanded={expandedPillarId === pillar.pillarId}
           onToggle={() => handleToggle(pillar.pillarId)}
+          cardRef={(node) => {
+            if (node) {
+              cardRefs.current[pillar.pillarId] = node;
+            } else {
+              delete cardRefs.current[pillar.pillarId];
+            }
+          }}
         />
       ))}
     </div>

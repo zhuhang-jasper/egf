@@ -1,4 +1,7 @@
+import { useLayoutEffect, useRef } from "react";
+
 import { SITE_COPY } from "@/lib/constants";
+import { clearStickyScrollOffset, setStickyScrollOffset } from "@/lib/scroll";
 import { cn } from "@/lib/utils";
 
 const TABS = [
@@ -19,8 +22,34 @@ function AppShellIntro() {
 }
 
 function AppShellTabBar({ activeTab, onTabChange }) {
+  const barRef = useRef(null);
+
+  useLayoutEffect(() => {
+    const bar = barRef.current;
+    if (!bar) {
+      return undefined;
+    }
+
+    const syncStickyOffset = () => {
+      setStickyScrollOffset(bar.getBoundingClientRect().height);
+    };
+
+    syncStickyOffset();
+    const observer = new ResizeObserver(syncStickyOffset);
+    observer.observe(bar);
+
+    return () => {
+      observer.disconnect();
+      clearStickyScrollOffset();
+    };
+  }, []);
+
   return (
-    <div className="sticky top-0 z-10 -mx-2 mt-3 bg-white px-2 py-2 shadow-sm sm:-mx-3 sm:px-3 print:static print:shadow-none">
+    <div
+      ref={barRef}
+      id="app-shell-tab-bar"
+      className="sticky top-0 z-10 -mx-2 mt-3 bg-white px-2 py-2 shadow-sm sm:-mx-3 sm:px-3 print:static print:shadow-none"
+    >
       <div className="grid grid-cols-2 rounded-lg border border-slate-200 bg-slate-100/80 p-0.5" role="tablist" aria-label="App sections">
         {TABS.map(({ id, label }) => {
           const selected = activeTab === id;

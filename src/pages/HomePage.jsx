@@ -4,6 +4,8 @@ import { AboutContent } from "@/components/AboutContent";
 import { AppShellIntro, AppShellTabBar } from "@/components/AppShellHeader";
 import { ToolContent } from "@/components/ToolContent";
 
+import { useTabScrollMemory } from "@/hooks/useTabScrollMemory";
+
 import { FE_UI } from "@/lib/constants";
 
 const appVersion = import.meta.env.VITE_APP_VERSION;
@@ -15,6 +17,15 @@ const pageWidthStyle = {
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState("tool");
+  const { saveActiveTabScroll } = useTabScrollMemory(activeTab);
+
+  const handleTabChange = (nextTab) => {
+    if (nextTab === activeTab) {
+      return;
+    }
+    saveActiveTabScroll();
+    setActiveTab(nextTab);
+  };
 
   return (
     <div className="flex min-h-dvh flex-col items-center gap-2 bg-black p-1.5 sm:p-3 print:bg-white print:p-0">
@@ -23,10 +34,25 @@ export default function HomePage() {
         style={pageWidthStyle}
       >
         <AppShellIntro />
-        <AppShellTabBar activeTab={activeTab} onTabChange={setActiveTab} />
+        <AppShellTabBar activeTab={activeTab} onTabChange={handleTabChange} />
 
-        <div className="mt-3" role="tabpanel" aria-label={activeTab === "documentation" ? "Documentation" : "Tool"}>
-          {activeTab === "documentation" ? <AboutContent /> : <ToolContent />}
+        <div
+          className="mt-3"
+          role="tabpanel"
+          hidden={activeTab !== "tool"}
+          aria-hidden={activeTab !== "tool"}
+          aria-label="Tool"
+        >
+          <ToolContent />
+        </div>
+        <div
+          className="mt-3"
+          role="tabpanel"
+          hidden={activeTab !== "documentation"}
+          aria-hidden={activeTab !== "documentation"}
+          aria-label="Documentation"
+        >
+          <AboutContent />
         </div>
       </main>
 
