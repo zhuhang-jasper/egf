@@ -4,11 +4,14 @@ import { ChevronDown } from "lucide-react";
 
 import { getClusterSurfaceBg } from "@/lib/constants";
 import { COMPETENCY_MATRIX, SENIORITY_LEVEL_DEFINITIONS } from "@/lib/constants/about-data";
+import { DOC_TEXT } from "@/lib/doc-typography";
 import { scrollBelowStickyHeader } from "@/lib/scroll";
 import { cn } from "@/lib/utils";
 
-const levelBadgeClass =
-  "flex size-5 shrink-0 items-center justify-center rounded-full bg-slate-900 text-[9px] font-bold leading-none text-white";
+const levelBadgeClass = cn(
+  "flex size-5 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white",
+  DOC_TEXT.badgeMicro,
+);
 
 function LevelCellContent({ level }) {
   if (!level?.persona) {
@@ -29,7 +32,7 @@ function PillarMatrixLevels({ levels }) {
         {SENIORITY_LEVEL_DEFINITIONS.map(({ code }) => (
           <div key={code} className="flex items-start gap-2 py-2">
             <span className={levelBadgeClass}>{code}</span>
-            <p className="min-w-0 flex-1 text-[11px] leading-snug text-slate-800">
+            <p className={cn("min-w-0 flex-1", DOC_TEXT.body)}>
               <LevelCellContent level={levels[code]} />
             </p>
           </div>
@@ -40,7 +43,7 @@ function PillarMatrixLevels({ levels }) {
         {SENIORITY_LEVEL_DEFINITIONS.map(({ code }) => (
           <div key={code} className="flex min-w-0 flex-col gap-1.5 border-r border-slate-300/50 px-1 last:border-r-0">
             <span className={levelBadgeClass}>{code}</span>
-            <p className="text-[11px] leading-snug text-slate-800">
+            <p className={DOC_TEXT.body}>
               <LevelCellContent level={levels[code]} />
             </p>
           </div>
@@ -82,10 +85,10 @@ function PillarMatrixCard({
         )}
       >
         <div className="min-w-0 flex-1 space-y-1.5">
-          <h3 className="text-[13px] font-semibold text-slate-900">
+          <h3 className={DOC_TEXT.cardTitlePlain}>
             {order}. {pillarName}
           </h3>
-          <p className="text-[11px] leading-snug text-slate-800">{focusSummary}</p>
+          <p className={DOC_TEXT.body}>{focusSummary}</p>
         </div>
         <ChevronDown
           className={cn("mt-0.5 size-4 shrink-0 text-slate-400 transition-transform", expanded && "rotate-180")}

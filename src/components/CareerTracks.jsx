@@ -2,11 +2,14 @@ import { StaticCompetencyChart } from "@/components/StaticCompetencyChart";
 
 import { CLUSTERS, getClusterSurfaceBg } from "@/lib/constants";
 import { CAREER_TRACK_PROFILES, FOUNDATIONAL_PHASE, sortKeyFocusPillars } from "@/lib/constants/about-data";
+import { DOC_TEXT } from "@/lib/doc-typography";
 import { cn } from "@/lib/utils";
 
 const cardClass = "rounded-xl border border-slate-100 bg-white shadow-md shadow-slate-200/40";
-const levelBadgeClass =
-  "inline-flex py-1 min-w-[1.75rem] shrink-0 items-center justify-center rounded px-1 text-[10px] font-bold leading-none tabular-nums";
+const levelBadgeClass = cn(
+  "inline-flex min-w-[1.75rem] shrink-0 items-center justify-center rounded px-1 py-1",
+  DOC_TEXT.badgeSm,
+);
 
 function LevelBadge({ level, backgroundColor, color }) {
   return (
@@ -47,9 +50,9 @@ const FOUNDATION_STYLE = {
 function RoleCellContent({ title, subtitle, note }) {
   return (
     <div className="min-w-0 flex-1">
-      <p className="text-[11px] font-medium leading-snug text-slate-800">{title}</p>
-      {subtitle ? <p className="text-[11px] font-medium leading-snug text-slate-800">{subtitle}</p> : null}
-      {note ? <p className="mt-0.5 text-[10px] leading-snug text-slate-500">{note}</p> : null}
+      <p className={DOC_TEXT.bodyMedium}>{title}</p>
+      {subtitle ? <p className={DOC_TEXT.bodyMedium}>{subtitle}</p> : null}
+      {note ? <p className={cn("mt-0.5", DOC_TEXT.metaBody)}>{note}</p> : null}
     </div>
   );
 }
@@ -100,11 +103,7 @@ function KeyPillarChips({ pillars, chipBg, textColor }) {
   return (
     <div className="flex flex-wrap gap-1">
       {pillars.map((pillar) => (
-        <span
-          key={pillar}
-          className="rounded-md px-1.5 py-0.5 text-[10px] font-medium leading-none"
-          style={{ backgroundColor: chipBg, color: textColor }}
-        >
+        <span key={pillar} className={cn("rounded-md px-1.5 py-0.5", DOC_TEXT.chip)} style={{ backgroundColor: chipBg, color: textColor }}>
           {pillar}
         </span>
       ))}
@@ -118,14 +117,14 @@ function FoundationalPhase() {
   return (
     <article className={cn(cardClass, "overflow-hidden border-l-[3px] p-3")} style={{ borderLeftColor: FOUNDATION_STYLE.accent }}>
       <div className="space-y-2.5">
-        <h3 className="text-[13px] font-semibold text-slate-900">{FOUNDATIONAL_PHASE.title}</h3>
+        <h3 className={DOC_TEXT.cardTitlePlain}>{FOUNDATIONAL_PHASE.title}</h3>
 
         <div className="space-y-2">
-          <p className="text-[11px] leading-snug text-slate-800">{FOUNDATIONAL_PHASE.intro}</p>
+          <p className={DOC_TEXT.body}>{FOUNDATIONAL_PHASE.intro}</p>
 
           <ul className="list-disc space-y-2 pl-4">
             {FOUNDATIONAL_PHASE.domains.map(({ label, body }) => (
-              <li key={label} className="text-[11px] leading-snug text-slate-800">
+              <li key={label} className={DOC_TEXT.body}>
                 <span className="font-bold">{label}:</span> {body}
               </li>
             ))}
@@ -146,7 +145,7 @@ function CareerTrackCard({ track }) {
   return (
     <article className={cn(cardClass, "overflow-hidden border-l-[3px]")} style={{ borderLeftColor: style.accent }}>
       <div className="space-y-2.5 p-3">
-        <h3 className="text-[13px] font-semibold" style={{ color: style.accent }}>
+        <h3 className={cn(DOC_TEXT.cardTitlePlain)} style={{ color: style.accent }}>
           {track.name}
         </h3>
 
@@ -158,7 +157,7 @@ function CareerTrackCard({ track }) {
           </div>
 
           <div className="order-1 space-y-1.5 min-[450px]:order-2">
-            <p className="text-[11px] leading-snug text-slate-800">{track.summary}</p>
+            <p className={DOC_TEXT.body}>{track.summary}</p>
             <KeyPillarChips pillars={sortKeyFocusPillars(track.keyFocusPillars)} chipBg={style.chipBg} textColor={style.textColor} />
           </div>
         </div>

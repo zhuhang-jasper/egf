@@ -3,6 +3,7 @@ import { CompetencyMatrix } from "@/components/CompetencyMatrix";
 import { PillarGrid } from "@/components/PillarGrid";
 
 import { CAREER_TRACKS_SECTION_INTRO, PILLARS_SECTION_INTRO, SENIORITY_LEVEL_DEFINITIONS, SENIORITY_SECTION_INTRO } from "@/lib/constants/about-data";
+import { DOC_SECTION, DOC_TEXT } from "@/lib/doc-typography";
 import { cn } from "@/lib/utils";
 
 const cardClass = "rounded-xl border border-slate-100 bg-white shadow-md shadow-slate-200/40";
@@ -10,8 +11,8 @@ const cardClass = "rounded-xl border border-slate-100 bg-white shadow-md shadow-
 function SectionHeading({ title, subtitle }) {
   return (
     <header className="space-y-1">
-      <h2 className="text-base font-semibold tracking-tight text-slate-900">{title}</h2>
-      {subtitle ? <p className="text-xs leading-snug text-slate-800">{subtitle}</p> : null}
+      <h2 className={DOC_SECTION.title}>{title}</h2>
+      {subtitle ? <p className={DOC_SECTION.intro}>{subtitle}</p> : null}
     </header>
   );
 }
@@ -28,13 +29,13 @@ function SeniorityStepper() {
       <div className="space-y-2 min-[450px]:hidden">
         {SENIORITY_LEVEL_DEFINITIONS.map(({ code, phase, description, seniority }) => (
           <div key={code} className={cn(cardClass, "flex items-center gap-2.5 p-3")}>
-            <span className={cn(levelBadgeClass, "size-7 text-[12px]")}>{code}</span>
+            <span className={cn(levelBadgeClass, "size-7", DOC_TEXT.badgeMd)}>{code}</span>
             <div className="min-w-0 space-y-1">
               <div className="flex items-baseline justify-between gap-2">
-                <p className="min-w-0 text-[12px] font-semibold text-slate-800">{phase}</p>
-                <p className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-slate-500">{seniority}</p>
+                <p className={cn("min-w-0", DOC_TEXT.bodySemibold)}>{phase}</p>
+                <p className={cn("shrink-0", DOC_TEXT.meta)}>{seniority}</p>
               </div>
-              <p className="text-[11px] leading-snug text-slate-800">{description}</p>
+              <p className={DOC_TEXT.body}>{description}</p>
             </div>
           </div>
         ))}
@@ -44,25 +45,25 @@ function SeniorityStepper() {
         <div className="grid grid-cols-5 gap-y-1.5">
           {SENIORITY_LEVEL_DEFINITIONS.map(({ code }, index) => (
             <div key={`${code}-badge`} className={cn(seniorityColumnClass(index), "flex justify-start")}>
-              <span className={cn(levelBadgeClass, "size-5 text-[9px]")}>{code}</span>
+              <span className={cn(levelBadgeClass, "size-5", DOC_TEXT.badgeMicro)}>{code}</span>
             </div>
           ))}
 
           {SENIORITY_LEVEL_DEFINITIONS.map(({ code, phase }, index) => (
             <div key={`${code}-phase`} className={seniorityColumnClass(index)}>
-              <p className="text-[11px] font-semibold leading-snug text-slate-800">{phase}</p>
+              <p className={DOC_TEXT.bodySemibold}>{phase}</p>
             </div>
           ))}
 
           {SENIORITY_LEVEL_DEFINITIONS.map(({ code, seniority }, index) => (
             <div key={`${code}-seniority`} className={seniorityColumnClass(index)}>
-              <p className="text-[10px] font-medium uppercase tracking-wide text-slate-500">{seniority}</p>
+              <p className={DOC_TEXT.meta}>{seniority}</p>
             </div>
           ))}
 
           {SENIORITY_LEVEL_DEFINITIONS.map(({ code, description }, index) => (
             <div key={`${code}-description`} className={seniorityColumnClass(index)}>
-              <p className="text-[11px] leading-snug text-slate-800">{description}</p>
+              <p className={DOC_TEXT.body}>{description}</p>
             </div>
           ))}
         </div>
