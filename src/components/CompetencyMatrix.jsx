@@ -82,7 +82,7 @@ function PillarMatrixCard({
         aria-controls={panelId}
         onClick={onToggle}
         className={cn(
-          "flex w-full items-start gap-2 px-3 py-2.5 pr-3 text-left transition-colors hover:bg-black/[0.03]",
+          "flex w-full cursor-pointer items-start gap-2 px-3 py-2.5 pr-3 text-left transition-colors hover:bg-black/[0.03]",
           expanded && "border-b border-slate-300/60",
         )}
       >

@@ -76,7 +76,7 @@ export function getPillarOrder(trackVariant = "fe") {
 /** Default-track chart order — used where track is not yet available. */
 export const PILLAR_ORDER = getPillarOrder("fe");
 
-export const PILLAR_COUNT = PILLAR_ORDER.length;
+export const PILLAR_COUNT = 9;
 
 export function getPillarGroupOrder(trackVariant = "fe") {
   return getTrackConfig(trackVariant).pillarGroups;

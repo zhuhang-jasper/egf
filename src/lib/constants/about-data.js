@@ -147,7 +147,7 @@ const ABOUT_PILLAR_SEQUENCE = getPillarGroups("fe").flatMap(({ pillars }) => pil
 
 const KEY_PILLAR_RANK = new Map(ABOUT_PILLAR_SEQUENCE.map((id, index) => [getPlainChartPillarLabel(id), index]));
 
-/** Sort career-track key pillar badges to match the About page pillar order. */
+/** Sort career-track key pillar badges to match the documentation pillar order. */
 export function sortKeyFocusPillars(pillarNames) {
   return [...pillarNames].sort((a, b) => (KEY_PILLAR_RANK.get(a) ?? Number.MAX_SAFE_INTEGER) - (KEY_PILLAR_RANK.get(b) ?? Number.MAX_SAFE_INTEGER));
 }

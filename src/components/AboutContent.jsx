@@ -2,7 +2,6 @@ import { CareerTracks } from "@/components/CareerTracks";
 import { CompetencyMatrix } from "@/components/CompetencyMatrix";
 import { PillarGrid } from "@/components/PillarGrid";
 
-import { SITE_COPY } from "@/lib/constants";
 import { CAREER_TRACKS_SECTION_INTRO, PILLARS_SECTION_INTRO, SENIORITY_LEVEL_DEFINITIONS, SENIORITY_SECTION_INTRO } from "@/lib/constants/about-data";
 import { cn } from "@/lib/utils";
 
@@ -72,44 +71,31 @@ function SeniorityStepper() {
   );
 }
 
-export default function AboutPage() {
+export function AboutContent() {
   return (
-    <div className="min-h-dvh bg-slate-50 py-4 print:bg-white print:py-0">
-      <div className="mx-auto w-full max-w-[40rem] space-y-6 px-4 print:max-w-none">
-        <header className="space-y-2 text-center">
-          <h1 className="text-balance text-xl font-bold tracking-tight text-slate-900">{SITE_COPY.title}</h1>
-          <p className="text-pretty text-xs leading-snug text-slate-800">
-            {SITE_COPY.tagline} {SITE_COPY.detail}
-          </p>
-          <p className="text-[11px] text-slate-500">{SITE_COPY.byline}</p>
-        </header>
+    <div className="space-y-6 print:max-w-none">
+      <section className="space-y-3">
+        <SectionHeading title="9 Big Pillars" subtitle={PILLARS_SECTION_INTRO} />
+        <PillarGrid />
+      </section>
 
-        <section className="space-y-3">
-          <SectionHeading title="9 Big Pillars" subtitle={PILLARS_SECTION_INTRO} />
-          <PillarGrid />
-        </section>
+      <section className="space-y-3">
+        <SectionHeading title="5 Seniority Levels" subtitle={SENIORITY_SECTION_INTRO} />
+        <SeniorityStepper />
+      </section>
 
-        <section className="space-y-3">
-          <SectionHeading title="5 Seniority Levels" subtitle={SENIORITY_SECTION_INTRO} />
-          <SeniorityStepper />
-        </section>
+      <section className="space-y-3">
+        <SectionHeading
+          title="The 45-Point Competency Matrix"
+          subtitle="The comprehensive behavioral matrix mapping expectations for all 9 pillars. Organized by the Technical, Product, and Operational clusters, and evaluated across the L1-L5 seniority scale."
+        />
+        <CompetencyMatrix />
+      </section>
 
-        <section className="space-y-3">
-          <SectionHeading
-            title="The 45-Point Competency Matrix"
-            subtitle="The comprehensive behavioral matrix mapping expectations for all 9 pillars. Organized by the Technical, Product, and Operational clusters, and evaluated across the L1-L5 seniority scale."
-          />
-          <CompetencyMatrix />
-        </section>
-
-        <section className="space-y-3">
-          <SectionHeading
-            title="3 Career Tracks"
-            subtitle={CAREER_TRACKS_SECTION_INTRO}
-          />
-          <CareerTracks />
-        </section>
-      </div>
+      <section className="space-y-3">
+        <SectionHeading title="3 Career Tracks" subtitle={CAREER_TRACKS_SECTION_INTRO} />
+        <CareerTracks />
+      </section>
     </div>
   );
 }

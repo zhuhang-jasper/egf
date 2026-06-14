@@ -1,6 +1,6 @@
 import { FE_UI, getChartLayoutLabels, getPlainChartLayoutLabels } from "@/lib/constants";
 
-/** Compact radar preset for /about static charts — smaller labels, tighter padding, no L ticks. */
+/** Compact radar preset for documentation static charts — smaller labels, tighter padding, no L ticks. */
 export const ABOUT_CHART_UI = {
   ...FE_UI,
   chart: {

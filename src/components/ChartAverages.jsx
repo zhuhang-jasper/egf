@@ -48,7 +48,7 @@ function AvgCard({ label, value, sub, className, title, labelPx, valuePx, subPx,
       title={title}
       style={cardStyle}
       className={cn(
-        "flex min-w-0 flex-col items-center justify-center gap-1 leading-none rounded-lg border px-2 py-1.5 text-center sm:px-4 sm:py-1.5",
+        "flex min-w-0 flex-col items-center justify-center gap-1 leading-none rounded-lg border px-2 py-1.5 text-center min-[450px]:px-4 min-[450px]:py-1.5",
         className,
       )}
     >
@@ -86,10 +86,10 @@ export function ChartAverages({ chartWidth = 0 }) {
   return (
     <div
       data-chart-export="chart-averages"
-      className="mb-3 flex flex-col gap-2 sm:gap-4 last-of-type:mb-0"
+      className="mb-3 flex flex-col gap-2 min-[450px]:gap-4 last-of-type:mb-0"
       aria-label="Cluster averages and score summary"
     >
-      <div className="grid grid-cols-3 gap-2 sm:gap-4">
+      <div className="grid grid-cols-3 gap-2 min-[450px]:gap-4">
         {clusterGroups.map(({ id }) => {
           const cluster = CLUSTERS[id];
           const theme = CLUSTER_AVG_CARD[id];
@@ -111,7 +111,7 @@ export function ChartAverages({ chartWidth = 0 }) {
           );
         })}
       </div>
-      <div className="grid grid-cols-4 gap-2 sm:gap-4">
+      <div className="grid grid-cols-4 gap-2 min-[450px]:gap-4">
         <AvgCard
           label="Breadth"
           value={formatAvgScore(breadth)}

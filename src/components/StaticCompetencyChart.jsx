@@ -5,7 +5,7 @@ import { useStaticCompetencyChart } from "@/hooks/useStaticCompetencyChart";
 import { cn } from "@/lib/utils";
 
 /**
- * Standalone radar chart for /about — compact labels, no L ticks, plain pillar names.
+ * Standalone radar chart for documentation — compact labels, no L ticks, plain pillar names.
  */
 export function StaticCompetencyChart({
   levels,
