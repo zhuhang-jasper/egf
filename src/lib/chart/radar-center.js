@@ -1,10 +1,5 @@
-import {
-  getChartLayoutPadding,
-  getChartPointLabelSizePx,
-  getPointLabelPaddingPx,
-  getRadarLabelReservedPx,
-} from "@/lib/chart/fonts";
-import { FE_UI, getChartLayoutLabels } from "@/lib/constants";
+import { getChartLayoutLabelsForChart, resolveChartUi } from "@/lib/chart/about-profile";
+import { getChartWidthUnit } from "@/lib/chart/fonts";
 
 function radarTickBackdropHalf(scale) {
   const tickOpts = scale.options.ticks;
@@ -68,7 +63,7 @@ function rebuildRadarPointLabelItems(scale) {
   }
 
   const trackVariant = scale.chart?.options?.plugins?.clusterBackground?.trackVariant ?? "fe";
-  const layoutLabels = getChartLayoutLabels(trackVariant);
+  const layoutLabels = getChartLayoutLabelsForChart(scale.chart, trackVariant);
   const plOpts = scale.options.pointLabels;
   const valueCount = count;
   const addAngle = plOpts.centerPointLabels ? Math.PI / valueCount : 0;
@@ -124,7 +119,8 @@ function getPointLabelExtents(items) {
 }
 
 export function applyRadarCenterFit(scale) {
-  const u = FE_UI.chart;
+  const ui = resolveChartUi(scale.chart);
+  const u = ui.chart;
   if (!u.radarCenterFix) {
     return;
   }
@@ -136,7 +132,9 @@ export function applyRadarCenterFit(scale) {
 
   const cx = area.left + area.width / 2;
   const cy = area.top + area.height / 2;
-  const reserve = getRadarLabelReservedPx(chart.width);
+  const uWidth = getChartWidthUnit(chart.width);
+  const { minPx, maxPx } = u.radarLabelReserved;
+  const reserve = Math.round(minPx + uWidth * (maxPx - minPx));
   const maxR = Math.min(cx - area.left - reserve, area.right - cx - reserve, cy - area.top - reserve, area.bottom - cy - reserve);
 
   scale.xCenter = cx;
@@ -165,8 +163,37 @@ export function getRadarContentHeightPx(chart) {
     return null;
   }
 
-  const pad = FE_UI.chartFrame.contentPadPx ?? 6;
+  const ui = resolveChartUi(chart);
+  const pad = ui.chartFrame.contentPadPx ?? 6;
   return Math.ceil(extents.maxY - extents.minY + pad * 2);
+}
+
+function getChartPointLabelSizePxForUi(chartWidthPx, ui) {
+  const cf = ui.chartFonts;
+  const ch = ui.chart;
+  let labelSize = ch.pointLabelPx;
+  if (ch.pointLabelScaleWithChart) {
+    const ref = cf.pointLabelRefWidthPx || 380;
+    labelSize = Math.round((ch.pointLabelPx * chartWidthPx) / ref);
+    labelSize = Math.max(cf.pointLabelMinPx, labelSize);
+    if (cf.pointLabelMaxPx != null) {
+      labelSize = Math.min(cf.pointLabelMaxPx, labelSize);
+    }
+  }
+  return labelSize;
+}
+
+function getPointLabelPaddingPxForUi(chartWidthPx, ui) {
+  const u = getChartWidthUnit(chartWidthPx);
+  const { minPx, maxPx } = ui.chart.pointLabelPaddingRange ?? { minPx: 5, maxPx: 12 };
+  return Math.round(minPx + (1 - u) * (maxPx - minPx));
+}
+
+function getChartLayoutPaddingForUi(chartWidthPx, ui) {
+  const u = getChartWidthUnit(chartWidthPx);
+  const { minPx, maxPx } = ui.chart.layoutPaddingHorizontal;
+  const horizontal = Math.round(minPx + u * (maxPx - minPx));
+  return { top: 0, right: horizontal, bottom: 0, left: horizontal };
 }
 
 export function syncFontsForChart(chart) {
@@ -174,12 +201,13 @@ export function syncFontsForChart(chart) {
   if (!w) {
     return;
   }
-  const cf = FE_UI.chartFonts;
-  const ch = FE_UI.chart;
+  const ui = resolveChartUi(chart);
+  const cf = ui.chartFonts;
+  const ch = ui.chart;
   const tickSize = Math.max(cf.tickMinPx, Math.round(w / cf.tickWidthDivisor));
-  const labelSize = getChartPointLabelSizePx(w);
-  const labelPadding = getPointLabelPaddingPx(w);
-  const padding = getChartLayoutPadding(w);
+  const labelSize = getChartPointLabelSizePxForUi(w, ui);
+  const labelPadding = getPointLabelPaddingPxForUi(w, ui);
+  const padding = getChartLayoutPaddingForUi(w, ui);
   const rScale = chart.options.scales.r;
   const tickFont = rScale.ticks.font || {};
   const plFont = rScale.pointLabels.font || {};
