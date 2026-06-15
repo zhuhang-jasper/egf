@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef } from "react";
 
 import { ChevronDown } from "lucide-react";
 
@@ -7,19 +7,7 @@ import { COMPETENCY_MATRIX, SENIORITY_LEVEL_DEFINITIONS } from "@/constants/theo
 import { DOC_TEXT } from "@/styles/doc-typography";
 import { cn } from "@/utils";
 import { scrollBelowStickyHeader } from "@/utils/scroll";
-
-const SESSION_KEY = "app:expandedPillar";
-
-function getPersistedPillar() {
-  try { return sessionStorage.getItem(SESSION_KEY) || null; } catch { return null; }
-}
-
-function persistPillar(id) {
-  try {
-    if (id) { sessionStorage.setItem(SESSION_KEY, id); }
-    else { sessionStorage.removeItem(SESSION_KEY); }
-  } catch {}
-}
+import { buildTheoryShareUrl, persistExpandedPillar, THEORY_SECTIONS } from "@/utils/theory-url";
 
 const levelBadgeClass = cn("flex size-5 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white", DOC_TEXT.badgeMicro);
 
@@ -38,7 +26,7 @@ function LevelCellContent({ level }) {
 function PillarMatrixLevels({ levels }) {
   return (
     <>
-      <div className="divide-y divide-slate-300/50 px-3 py-1 min-[470px]:hidden">
+      <div className="divide-y divide-slate-300/50 px-3 py-1 min-[650px]:hidden">
         {SENIORITY_LEVEL_DEFINITIONS.map(({ code }) => (
           <div key={code} className="flex items-start gap-2 py-2">
             <span className={levelBadgeClass}>{code}</span>
@@ -49,7 +37,7 @@ function PillarMatrixLevels({ levels }) {
         ))}
       </div>
 
-      <div className="hidden grid-cols-5 gap-2 px-3 py-2 min-[470px]:grid">
+      <div className="hidden grid-cols-5 gap-2 px-3 py-2 min-[650px]:grid">
         {SENIORITY_LEVEL_DEFINITIONS.map(({ code }) => (
           <div key={code} className="flex min-w-0 flex-col gap-1.5 border-r border-slate-300/50 px-1 last:border-r-0">
             <span className={levelBadgeClass}>{code}</span>
@@ -60,6 +48,43 @@ function PillarMatrixLevels({ levels }) {
         ))}
       </div>
     </>
+  );
+}
+
+function PillarShareButton({ pillarId }) {
+  const handleShare = async () => {
+    const url = buildTheoryShareUrl(THEORY_SECTIONS.matrix, pillarId);
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      window.prompt("Copy this link:", url);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      aria-label="Copy link to this pillar"
+      title="Copy link to this pillar"
+      onClick={handleShare}
+      className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2.5 py-1 text-xs text-slate-500 transition-colors hover:bg-black/[0.08] hover:text-slate-700"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="size-3.5"
+        aria-hidden="true"
+      >
+        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+      </svg>
+      Copy Link to this section
+    </button>
   );
 }
 
@@ -79,15 +104,15 @@ function PillarMatrixCard({ order, pillarId, pillarName, focusSummary, color, te
         aria-controls={panelId}
         onClick={onToggle}
         className={cn(
-          "flex w-full cursor-pointer items-start gap-2 px-3 py-2.5 pr-3 text-left transition-colors hover:bg-black/[0.03]",
-          expanded && "border-b border-slate-300/60",
+          "flex w-full cursor-pointer items-start gap-2 px-3 pt-2.5 text-left transition-colors hover:opacity-70",
+          expanded ? "pb-1.5 border-b border-slate-300/60" : "pb-2.5",
         )}
       >
-        <div className="min-w-0 flex-1 space-y-1.5">
-          <h3 className={DOC_TEXT.cardTitlePlain}>
+        <div className="min-w-0 flex-1 space-y-1">
+          <h3 className={cn("min-w-0", DOC_TEXT.cardTitlePlain)}>
             {order}. {pillarName}
           </h3>
-          <p className={DOC_TEXT.body}>{focusSummary}</p>
+          <p className={cn("min-w-0", DOC_TEXT.body)}>{focusSummary}</p>
         </div>
         <ChevronDown className={cn("mt-0.5 size-4 shrink-0 text-slate-800 transition-transform", expanded && "rotate-180")} aria-hidden />
       </button>
@@ -95,23 +120,23 @@ function PillarMatrixCard({ order, pillarId, pillarName, focusSummary, color, te
       {expanded ? (
         <section id={panelId} aria-labelledby={`${panelId}-trigger`}>
           <PillarMatrixLevels levels={levels} />
+          <div className="flex justify-center border-t border-slate-300/60 py-2">
+            <PillarShareButton pillarId={pillarId} />
+          </div>
         </section>
       ) : null}
     </article>
   );
 }
 
-export function CompetencyMatrix() {
-  const [expandedPillarId, setExpandedPillarId] = useState(getPersistedPillar);
+function CompetencyMatrix({ expandedPillar, onExpandedPillarChange }) {
   const cardRefs = useRef({});
   const isFirstMountRef = useRef(true);
 
   const handleToggle = (pillarId) => {
-    setExpandedPillarId((current) => {
-      const next = current === pillarId ? null : pillarId;
-      persistPillar(next);
-      return next;
-    });
+    const next = pillarId === expandedPillar ? null : pillarId;
+    persistExpandedPillar(next);
+    onExpandedPillarChange(next);
   };
 
   useLayoutEffect(() => {
@@ -120,11 +145,11 @@ export function CompetencyMatrix() {
       return undefined;
     }
 
-    if (!expandedPillarId) {
+    if (!expandedPillar) {
       return undefined;
     }
 
-    const card = cardRefs.current[expandedPillarId];
+    const card = cardRefs.current[expandedPillar];
     if (!card) {
       return undefined;
     }
@@ -134,7 +159,7 @@ export function CompetencyMatrix() {
     });
 
     return () => cancelAnimationFrame(frame);
-  }, [expandedPillarId]);
+  }, [expandedPillar]);
 
   return (
     <div className="space-y-3">
@@ -142,7 +167,7 @@ export function CompetencyMatrix() {
         <PillarMatrixCard
           key={pillar.pillarId}
           {...pillar}
-          expanded={expandedPillarId === pillar.pillarId}
+          expanded={expandedPillar === pillar.pillarId}
           onToggle={() => handleToggle(pillar.pillarId)}
           cardRef={(node) => {
             if (node) {
@@ -156,3 +181,5 @@ export function CompetencyMatrix() {
     </div>
   );
 }
+
+export { CompetencyMatrix };

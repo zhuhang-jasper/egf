@@ -19,7 +19,7 @@ export function PillarCluster({ group }) {
         "borderLeftColor": cluster.textColor,
       }}
     >
-      <div className="form-section-title">{group.title}</div>
+      <div className="form-section-title text-[11px]">{group.title}</div>
       {group.pillars.map((pillar) => (
         <label key={pillar.index} className="field-row">
           <span>{pillar.label}</span>

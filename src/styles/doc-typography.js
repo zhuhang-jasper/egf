@@ -4,6 +4,7 @@ export const DOC_TEXT = {
   bodyMedium: "text-[12px] font-medium leading-snug text-slate-600",
   bodySemibold: "text-[12px] font-semibold leading-snug text-slate-800",
   bodyItalic: "text-[12px] font-bold italic leading-snug text-slate-700",
+  bodyDimMedium: "text-[11px] font-medium leading-snug text-slate-600",
 
   cardTitle: "text-[14px] font-semibold leading-snug text-slate-900",
   cardTitlePlain: "text-[14px] font-semibold text-slate-900",
@@ -21,6 +22,6 @@ export const DOC_TEXT = {
 };
 
 export const DOC_SECTION = {
-  title: "text-base font-semibold tracking-tight text-slate-900",
-  intro: "text-xs leading-snug text-slate-800",
+  title: "text-[16px] font-semibold tracking-tight text-slate-900",
+  intro: "text-[12px] leading-snug text-slate-800",
 };

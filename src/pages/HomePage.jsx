@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { AppShellIntro, AppShellTabBar } from "@/components/AppShellHeader";
 import { TheoryContent } from "@/components/TheoryContent";
@@ -7,11 +7,23 @@ import { ToolContent } from "@/components/ToolContent";
 import { getPersistedActiveTab, useTabScrollMemory } from "@/hooks/useTabScrollMemory";
 
 import { FE_UI } from "@/constants";
+import { cleanTheoryDeepLinkParams, parseTheoryDeepLink } from "@/utils/theory-url";
 
 const appVersion = import.meta.env.VITE_APP_VERSION;
 
+// Parse once at module evaluation time so the URL is read before React renders.
+const BOOT_DEEP_LINK = parseTheoryDeepLink();
+
 export default function HomePage() {
-  const [activeTab, setActiveTab] = useState(() => getPersistedActiveTab(["tool", "theory"]) ?? "tool");
+  const [activeTab, setActiveTab] = useState(() => {
+    if (BOOT_DEEP_LINK) return "theory";
+    return getPersistedActiveTab(["tool", "theory"]) ?? "tool";
+  });
+
+  // Consumed-once ref: passed to TheoryContent on first render, then nulled so
+  // subsequent tab switches don't re-trigger the scroll/expand.
+  const deepLinkRef = useRef(BOOT_DEEP_LINK);
+
   const { saveActiveTabScroll } = useTabScrollMemory(activeTab);
 
   const handleTabChange = (nextTab) => {
@@ -41,7 +53,13 @@ export default function HomePage() {
           <ToolContent />
         </div>
         <div className="mt-3" role="tabpanel" hidden={activeTab !== "theory"} aria-hidden={activeTab !== "theory"} aria-label="Theory">
-          <TheoryContent />
+          <TheoryContent
+            deepLink={deepLinkRef.current}
+            onDeepLinkConsumed={() => {
+              deepLinkRef.current = null;
+              cleanTheoryDeepLinkParams();
+            }}
+          />
         </div>
       </main>
 
