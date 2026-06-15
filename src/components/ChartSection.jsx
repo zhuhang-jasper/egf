@@ -11,11 +11,11 @@ import { Button } from "@/components/ui/button";
 import { useCompetencyChart } from "@/hooks/useCompetencyChart";
 import { useElementWidth } from "@/hooks/useElementWidth";
 
+import { useAppStore } from "@/store/useAppStore";
+
 import { getChartTitleSizePx, getTrackBadgeMdHeightPx } from "@/chart/fonts";
 import { FE_UI, FEATURE_SCORES_SETTINGS } from "@/constants";
 import { copyChartAsImageToClipboard } from "@/utils/copy-chart-image";
-
-import { useAppStore } from "@/store/useAppStore";
 
 function DisplayCheckbox({ label, checked, onChange }) {
   return (

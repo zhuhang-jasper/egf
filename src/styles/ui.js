@@ -1,5 +1,5 @@
 export const FE_UI = {
-  page: { maxWidthPx: 640, minWidthPx: 350 },
+  page: { maxWidthPx: 640, minWidthPx: 350, theoryMaxWidthPx: 796 },
   chartFrame: {
     /** Fallback frame height before Chart.js label bounds are measured (radar fits a wide rect, not a square). */
     heightWidthRatio: { minRatio: 0.76, maxRatio: 0.84 },

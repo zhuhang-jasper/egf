@@ -23,7 +23,7 @@ function PillarCard({ pillar, clusterLabel, color, textColor }) {
 
 export function PillarGrid() {
   return (
-    <div className="grid grid-cols-1 gap-2 min-[450px]:grid-cols-2">
+    <div className="grid grid-cols-1 gap-2 min-[470px]:grid-cols-2 min-[650px]:grid-cols-3">
       {PILLAR_CLUSTER_GROUPS.flatMap((group) =>
         group.pillars.map((pillar) => (
           <PillarCard key={pillar.id} pillar={pillar} clusterLabel={group.label} color={group.color} textColor={group.textColor} />

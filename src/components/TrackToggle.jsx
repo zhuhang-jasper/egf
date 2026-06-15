@@ -1,7 +1,7 @@
+import { useAppStore } from "@/store/useAppStore";
+
 import { TRACK_VARIANT_UI, TRACK_VARIANTS } from "@/constants";
 import { cn } from "@/utils";
-
-import { useAppStore } from "@/store/useAppStore";
 
 export function TrackToggle() {
   const trackVariant = useAppStore((s) => s.trackVariant);

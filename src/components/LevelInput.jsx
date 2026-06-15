@@ -2,10 +2,10 @@ import { useState } from "react";
 
 import { useTouchPrimary } from "@/hooks/useTouchPrimary";
 
+import { useAppStore } from "@/store/useAppStore";
+
 import { LEVEL_STEP } from "@/constants";
 import { clampLevel, formatLevelForInput } from "@/constants/levels";
-
-import { useAppStore } from "@/store/useAppStore";
 
 function normalizeTypingValue(raw) {
   let s = String(raw).replace(",", ".").trim();

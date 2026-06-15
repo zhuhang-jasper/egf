@@ -1,7 +1,7 @@
 import { useState } from "react";
 
-import { TheoryContent } from "@/components/TheoryContent";
 import { AppShellIntro, AppShellTabBar } from "@/components/AppShellHeader";
+import { TheoryContent } from "@/components/TheoryContent";
 import { ToolContent } from "@/components/ToolContent";
 
 import { useTabScrollMemory } from "@/hooks/useTabScrollMemory";
@@ -9,11 +9,6 @@ import { useTabScrollMemory } from "@/hooks/useTabScrollMemory";
 import { FE_UI } from "@/constants";
 
 const appVersion = import.meta.env.VITE_APP_VERSION;
-
-const pageWidthStyle = {
-  maxWidth: FE_UI.page.maxWidthPx,
-  minWidth: FE_UI.page.minWidthPx,
-};
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState("tool");
@@ -25,6 +20,12 @@ export default function HomePage() {
     }
     saveActiveTabScroll();
     setActiveTab(nextTab);
+  };
+
+  const isTheory = activeTab === "theory";
+  const pageWidthStyle = {
+    maxWidth: isTheory ? FE_UI.page.theoryMaxWidthPx : FE_UI.page.maxWidthPx,
+    minWidth: FE_UI.page.minWidthPx,
   };
 
   return (

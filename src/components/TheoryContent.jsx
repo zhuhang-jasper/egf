@@ -2,12 +2,7 @@ import { CareerTracks } from "@/components/CareerTracks";
 import { CompetencyMatrix } from "@/components/CompetencyMatrix";
 import { PillarGrid } from "@/components/PillarGrid";
 
-import {
-  CAREER_TRACKS_SECTION_INTRO,
-  PILLARS_SECTION_INTRO,
-  SENIORITY_LEVEL_DEFINITIONS,
-  SENIORITY_SECTION_INTRO,
-} from "@/constants/theory-data";
+import { CAREER_TRACKS_SECTION_INTRO, PILLARS_SECTION_INTRO, SENIORITY_LEVEL_DEFINITIONS, SENIORITY_SECTION_INTRO } from "@/constants/theory-data";
 import { DOC_SECTION, DOC_TEXT } from "@/styles/doc-typography";
 import { cn } from "@/utils";
 
@@ -31,7 +26,7 @@ function seniorityColumnClass(columnIndex) {
 function SeniorityStepper() {
   return (
     <>
-      <div className="space-y-2 min-[450px]:hidden">
+      <div className="space-y-2 min-[470px]:hidden">
         {SENIORITY_LEVEL_DEFINITIONS.map(({ code, phase, description, seniority }) => (
           <div key={code} className={cn(cardClass, "flex items-center gap-2.5 p-3")}>
             <span className={cn(levelBadgeClass, "size-7", DOC_TEXT.badgeMd)}>{code}</span>
@@ -46,7 +41,7 @@ function SeniorityStepper() {
         ))}
       </div>
 
-      <div className={cn(cardClass, "hidden p-3 min-[450px]:block")}>
+      <div className={cn(cardClass, "hidden p-3 min-[470px]:block")}>
         <div className="grid grid-cols-5 gap-y-1.5">
           {SENIORITY_LEVEL_DEFINITIONS.map(({ code }, index) => (
             <div key={`${code}-badge`} className={cn(seniorityColumnClass(index), "flex justify-start")}>

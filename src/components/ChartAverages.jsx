@@ -1,3 +1,5 @@
+import { useAppStore } from "@/store/useAppStore";
+
 import { getScoreCardFontSizesPx } from "@/chart/fonts";
 import {
   BREADTH_TOP_RATIO,
@@ -11,8 +13,6 @@ import {
 } from "@/constants";
 import { computeAverages, formatAvgScore } from "@/constants/scores";
 import { cn } from "@/utils";
-
-import { useAppStore } from "@/store/useAppStore";
 
 /** Cluster score cards — surface tint from cluster color; text/border from cluster tokens. */
 function getClusterAvgCardTheme(id) {
@@ -37,7 +37,7 @@ function AvgCard({ label, value, sub, className, title, labelPx, valuePx, subPx,
       title={title}
       style={cardStyle}
       className={cn(
-        "flex min-w-0 flex-col items-center justify-center gap-1 leading-none rounded-lg border px-2 py-1.5 text-center min-[450px]:px-4 min-[450px]:py-1.5",
+        "flex min-w-0 flex-col items-center justify-center gap-1 leading-none rounded-lg border px-2 py-1.5 text-center min-[470px]:px-4 min-[470px]:py-1.5",
         className,
       )}
     >
@@ -73,8 +73,8 @@ export function ChartAverages({ chartWidth = 0 }) {
   const clusterGroups = getPillarGroupOrder(trackVariant);
 
   return (
-    <div data-chart-export="chart-averages" className="flex flex-col gap-2 min-[450px]:gap-3" aria-label="Cluster averages and score summary">
-      <div className="grid grid-cols-3 gap-2 min-[450px]:gap-3">
+    <div data-chart-export="chart-averages" className="flex flex-col gap-2 min-[470px]:gap-3" aria-label="Cluster averages and score summary">
+      <div className="grid grid-cols-3 gap-2 min-[470px]:gap-3">
         {clusterGroups.map(({ id }) => {
           const cluster = CLUSTERS[id];
           const theme = getClusterAvgCardTheme(id);
@@ -96,7 +96,7 @@ export function ChartAverages({ chartWidth = 0 }) {
           );
         })}
       </div>
-      <div className="grid grid-cols-4 gap-2 min-[450px]:gap-3">
+      <div className="grid grid-cols-4 gap-2 min-[470px]:gap-3">
         <AvgCard
           label="Breadth"
           value={formatAvgScore(breadth)}

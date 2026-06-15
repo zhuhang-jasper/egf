@@ -1,8 +1,8 @@
 import { LevelInput } from "@/components/LevelInput";
 
-import { CLUSTERS, getClusterSurfaceBg } from "@/constants";
-
 import { useAppStore } from "@/store/useAppStore";
+
+import { CLUSTERS, getClusterSurfaceBg } from "@/constants";
 
 export function PillarCluster({ group }) {
   const levels = useAppStore((s) => s.levels);

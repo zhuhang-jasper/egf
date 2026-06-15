@@ -3,8 +3,8 @@ import { useLayoutEffect, useRef } from "react";
 import { FileText, Radar } from "lucide-react";
 
 import { SITE_COPY } from "@/constants";
-import { clearStickyScrollOffset, setStickyScrollOffset } from "@/utils/scroll";
 import { cn } from "@/utils";
+import { clearStickyScrollOffset, setStickyScrollOffset } from "@/utils/scroll";
 
 const TABS = [
   { id: "tool", label: "Tool", icon: Radar },
@@ -56,7 +56,11 @@ function AppShellTabBar({ activeTab, onTabChange }) {
       id="app-shell-tab-bar"
       className="sticky top-0 z-10 -mx-2 mt-3 bg-white px-2 py-2 shadow-sm sm:-mx-3 sm:px-3 print:static print:shadow-none"
     >
-      <div className="relative grid grid-cols-2 rounded-lg border border-slate-200 bg-slate-100/80 p-0.5" role="tablist" aria-label="App sections">
+      <div
+        className="relative mx-auto grid max-w-xs grid-cols-2 rounded-lg border border-slate-200 bg-slate-100/80 p-0.5"
+        role="tablist"
+        aria-label="App sections"
+      >
         <div
           aria-hidden
           className="pointer-events-none absolute top-0.5 bottom-0.5 left-0.5 rounded-md bg-slate-900 shadow-sm transition-transform duration-150 ease-out"

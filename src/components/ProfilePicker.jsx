@@ -44,7 +44,7 @@ export function ProfilePicker() {
         <div
           role="menu"
           aria-label="Saved profiles"
-          className="absolute right-0 top-[calc(100%+4px)] z-50 max-h-60 w-max max-w-[calc(100vw-2rem)] overflow-auto rounded-lg border border-border bg-card py-1 shadow-md min-[450px]:max-w-[280px]"
+          className="absolute right-0 top-[calc(100%+4px)] z-50 max-h-60 w-max max-w-[calc(100vw-2rem)] overflow-auto rounded-lg border border-border bg-card py-1 shadow-md min-[470px]:max-w-[280px]"
         >
           {profiles.length === 0 ? (
             <p className="px-3 py-2 text-xs text-muted-foreground">No saved profiles yet.</p>
