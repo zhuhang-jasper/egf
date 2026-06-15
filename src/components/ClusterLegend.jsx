@@ -35,11 +35,7 @@ export function ClusterLegend({ className, hidden = false, chartWidth = 0 }) {
               style={{ backgroundColor: cluster.color, width: swatchPx, height: swatchPx }}
               aria-hidden
             />
-            <span
-              data-chart-export="cluster-legend-label"
-              className="font-bold text-foreground/90"
-              style={{ fontSize: labelPx }}
-            >
+            <span data-chart-export="cluster-legend-label" className="font-bold text-foreground/90" style={{ fontSize: labelPx }}>
               {cluster.label}
             </span>
           </li>

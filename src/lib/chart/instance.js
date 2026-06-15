@@ -1,8 +1,9 @@
 import { Chart, Filler, Legend, LineElement, PointElement, RadarController, RadialLinearScale, Tooltip } from "chart.js";
 
+import { ABOUT_CHART_UI } from "@/lib/chart/about-profile";
 import { createClusterBackgroundPlugin } from "@/lib/chart/plugins";
 import { applyRadarCenterFit, syncFontsForChart } from "@/lib/chart/radar-center";
-import { FE_UI, getChartLabels, getPillarOrder, normalizeTrackVariant, PILLAR_COUNT } from "@/lib/constants";
+import { FE_UI, getChartLabels, getPillarOrder, getPlainChartLabels, normalizeTrackVariant, PILLAR_COUNT } from "@/lib/constants";
 
 Chart.register(RadarController, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
 
@@ -49,6 +50,10 @@ function syncLevelTicksVisibility(chart, hidden) {
   if (!ticks) {
     return;
   }
+  if (chart?.options?.plugins?.competencyChart?.purpose === "about") {
+    ticks.display = false;
+    return;
+  }
   const ch = FE_UI.chart;
   ticks.display = true;
   const color = hidden ? "transparent" : ch.tickLabelColor;
@@ -61,8 +66,17 @@ function syncLevelTicksVisibility(chart, hidden) {
   }
 }
 
+function syncPointLabelsVisibility(chart, hidden) {
+  const pointLabels = chart?.options?.scales?.r?.pointLabels;
+  if (!pointLabels) {
+    return;
+  }
+  pointLabels.display = !hidden;
+}
+
 function syncChartLabels(chart, trackVariant) {
-  chart.data.labels = getChartLabels(trackVariant);
+  const plain = chart?.options?.plugins?.competencyChart?.plainLabels;
+  chart.data.labels = plain ? getPlainChartLabels(trackVariant) : getChartLabels(trackVariant);
 }
 
 function syncChartPlugins(chart, trackVariant) {
@@ -87,6 +101,7 @@ export function applyChartState(chart, state) {
   syncDatasets(chart, { levels: chart.data.datasets[0].data, title: state.title });
   syncPolygonVisibility(chart, state.levelsPolygonHidden);
   syncLevelTicksVisibility(chart, state.chartLevelTicksHidden);
+  syncPointLabelsVisibility(chart, Boolean(state.pointLabelsHidden));
   chart.update("none");
 }
 
@@ -99,12 +114,14 @@ export function refreshChart(chart, state) {
   syncFontsForChart(chart);
 }
 
-export function createCompetencyChart(canvas) {
-  const ch = FE_UI.chart;
+export function createCompetencyChart(canvas, { purpose = "default" } = {}) {
+  const isAbout = purpose === "about";
+  const ui = isAbout ? ABOUT_CHART_UI : FE_UI;
+  const ch = ui.chart;
   const chart = new Chart(canvas, {
     type: "radar",
     data: {
-      labels: getChartLabels("fe"),
+      labels: isAbout ? getPlainChartLabels("fe") : getChartLabels("fe"),
       datasets: [buildHumanDataset(" ", new Array(PILLAR_COUNT).fill(0))],
     },
     options: {
@@ -119,6 +136,7 @@ export function createCompetencyChart(canvas) {
           max: 5,
           afterFit: applyRadarCenterFit,
           ticks: {
+            display: !isAbout,
             color: ch.tickLabelColor,
             stepSize: 1,
             padding: 0,
@@ -153,6 +171,7 @@ export function createCompetencyChart(canvas) {
       plugins: {
         legend: { display: false },
         tooltip: { enabled: false },
+        competencyChart: { purpose, plainLabels: isAbout },
       },
     },
     plugins: [createClusterBackgroundPlugin()],

@@ -12,10 +12,15 @@ export const PILLARS = {
 };
 
 export const CLUSTERS = {
-  technical: { label: "Technical", color: "#cdbdd8" },
-  product: { label: "Product", color: "#f5b39d" },
-  operational: { label: "Operational", color: "#bddbb5" },
+  technical: { label: "Technical", color: "#cdbdd8", textColor: "#756085", badgeBg: "#c4b5d0", badgeText: "#3f3549" },
+  product: { label: "Product", color: "#f5b39d", textColor: "#b8653a", badgeBg: "#e8b09a", badgeText: "#5c2e14" },
+  operational: { label: "Operational", color: "#bddbb5", textColor: "#4d7356", badgeBg: "#b0cdb0", badgeText: "#1f3d28" },
 };
+
+/** Cluster tint for cards, form, chips — hex alpha suffix */
+export function getClusterSurfaceBg(color) {
+  return `${color}55`;
+}
 
 /**
  * Per-track chart order and form clusters (ids reference {@link PILLARS}).
@@ -76,7 +81,7 @@ export function getPillarOrder(trackVariant = "fe") {
 /** Default-track chart order — used where track is not yet available. */
 export const PILLAR_ORDER = getPillarOrder("fe");
 
-export const PILLAR_COUNT = PILLAR_ORDER.length;
+export const PILLAR_COUNT = 9;
 
 export function getPillarGroupOrder(trackVariant = "fe") {
   return getTrackConfig(trackVariant).pillarGroups;
@@ -108,6 +113,29 @@ export function getChartLayoutLabels(trackVariant = "fe") {
   const reserved = getChartLayoutReservedLabel(trackVariant);
   const lastId = order.at(-1);
   return order.map((id) => (id === lastId ? reserved : getChartPillarLabel(id)));
+}
+
+/** About/export charts — text-only pillar names (no emoji). */
+export function getPlainChartPillarLabel(pillarId) {
+  return getChartPillarLabel(pillarId).replace(/^[^\s]+\s+/, "");
+}
+
+export function getPlainChartLabels(trackVariant = "fe") {
+  return getPillarOrder(trackVariant).map((id) => getPlainChartPillarLabel(id));
+}
+
+function getPlainChartLayoutReservedLabel(trackVariant = "fe") {
+  return getPillarOrder(trackVariant).reduce((longest, id) => {
+    const label = getPlainChartPillarLabel(id);
+    return label.length > longest.length ? label : longest;
+  }, "");
+}
+
+export function getPlainChartLayoutLabels(trackVariant = "fe") {
+  const order = getPillarOrder(trackVariant);
+  const reserved = getPlainChartLayoutReservedLabel(trackVariant);
+  const lastId = order.at(-1);
+  return order.map((id) => (id === lastId ? reserved : getPlainChartPillarLabel(id)));
 }
 
 function buildPillarRef(pillarId, trackVariant) {

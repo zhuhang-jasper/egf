@@ -39,7 +39,7 @@ export function getTrackBadgeMdHeightPx(chartWidthPx) {
 export function getPointLabelPaddingPx(chartWidthPx) {
   const u = getChartWidthUnit(chartWidthPx);
   const { minPx, maxPx } = FE_UI.chart.pointLabelPaddingRange ?? { minPx: 5, maxPx: 12 };
-  return Math.round(minPx + (1 - u) * (maxPx - minPx));
+  return Math.round(minPx + u * (maxPx - minPx));
 }
 
 export function getChartLayoutPadding(chartWidthPx) {
@@ -59,12 +59,6 @@ export function getClusterLegendSwatchPx(chartWidthPx) {
   return Math.round(getChartSecondaryLabelSizePx(chartWidthPx) * FE_UI.chart.legendSwatchLabelMultiplier);
 }
 
-export function getClusterLegendMarginTopPx(chartWidthPx) {
-  const u = getChartWidthUnit(chartWidthPx);
-  const { minPx, maxPx } = FE_UI.chart.legendMarginTop;
-  return Math.round(minPx + u * (maxPx - minPx));
-}
-
 export function getChartTitleSizePx(chartWidthPx) {
   const labelPx = getChartPointLabelSizePx(chartWidthPx);
   const { labelMultiplier, minPx, maxPx } = FE_UI.chart.title;
@@ -76,38 +70,12 @@ export function getScoreCardFontSizesPx(chartWidthPx) {
   const secondaryPx = getChartSecondaryLabelSizePx(chartWidthPx);
   const u = getChartWidthUnit(chartWidthPx);
   const labelScale = 1 - u * (1 - FE_UI.chart.scoreCardLabelMultiplier);
-  const labelPx = Math.min(
-    FE_UI.chart.scoreCardLabelMaxPx,
-    Math.max(1, Math.round(secondaryPx * labelScale)),
-  );
+  const labelPx = Math.min(FE_UI.chart.scoreCardLabelMaxPx, Math.max(1, Math.round(secondaryPx * labelScale)));
   return {
     labelPx,
     valuePx: getChartTitleSizePx(chartWidthPx),
     subPx: secondaryPx,
   };
-}
-
-/** Negative frame margin — pairs with chrome gap spacers above/below the chart frame. */
-function getChartFrameMarginTrimPx(chartWidthPx, { minimalChrome = false } = {}) {
-  if (minimalChrome) {
-    return 0;
-  }
-  const u = getChartWidthUnit(chartWidthPx);
-  const { minPx, maxPx } = FE_UI.chartFrame.marginTrim;
-  return Math.round(minPx + u * (maxPx - minPx));
-}
-
-export function getChartFrameMarginTopPx(chartWidthPx, options) {
-  return getChartFrameMarginTrimPx(chartWidthPx, options);
-}
-
-export function getChartFrameMarginBottomPx(chartWidthPx, options) {
-  return getChartFrameMarginTrimPx(chartWidthPx, options);
-}
-
-export function isChartMinimalChrome({ chartLegendHidden, chartTitleHidden, title }) {
-  const showVisibleTitle = !chartTitleHidden && String(title).trim().length > 0;
-  return !showVisibleTitle && chartLegendHidden;
 }
 
 /** Initial frame height before label bounds are measured from the live chart. */
@@ -119,13 +87,11 @@ export function getChartFrameEstimatedHeightPx(chartWidthPx) {
   return Math.round(Math.max(minH, chartWidthPx * ratio));
 }
 
-export function applyChartFrameLayout(frameEl, chartWidthPx, contentHeightPx = null, { minimalChrome = false } = {}) {
-  const marginTop = getChartFrameMarginTopPx(chartWidthPx, { minimalChrome });
-  const marginBottom = getChartFrameMarginBottomPx(chartWidthPx, { minimalChrome });
+export function applyChartFrameLayout(frameEl, chartWidthPx, contentHeightPx = null) {
   const minH = FE_UI.chartFrame.minChartHeightPx ?? 120;
   const innerH = Math.round(Math.max(minH, contentHeightPx ?? getChartFrameEstimatedHeightPx(chartWidthPx)));
 
-  frameEl.style.margin = `${marginTop}px auto ${marginBottom}px`;
+  frameEl.style.margin = "0 auto";
   frameEl.style.aspectRatio = "unset";
   frameEl.style.height = `${innerH}px`;
 }

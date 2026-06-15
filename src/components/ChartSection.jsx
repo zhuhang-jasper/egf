@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useCompetencyChart } from "@/hooks/useCompetencyChart";
 import { useElementWidth } from "@/hooks/useElementWidth";
 
-import { getChartTitleSizePx, getClusterLegendMarginTopPx, getTrackBadgeMdHeightPx } from "@/lib/chart/fonts";
+import { getChartTitleSizePx, getTrackBadgeMdHeightPx } from "@/lib/chart/fonts";
 import { FE_UI, FEATURE_SCORES_SETTINGS } from "@/lib/constants";
 import { copyChartAsImageToClipboard } from "@/lib/copy-chart-image";
 
@@ -112,6 +112,7 @@ export function ChartSection() {
   const trackVariant = useAppStore((s) => s.trackVariant);
   const chartLegendHidden = useAppStore((s) => s.chartLegendHidden);
   const chartTitleHidden = useAppStore((s) => s.chartTitleHidden);
+  const footerScoresHidden = useAppStore((s) => s.footerScoresHidden);
 
   const { chartRef, relayout } = useCompetencyChart(canvasRef, frameRef);
   const chartWidth = useElementWidth(frameRef);
@@ -122,7 +123,6 @@ export function ChartSection() {
   const layoutWidth = chartWidth || FE_UI.page.minWidthPx;
   const titleSizePx = getChartTitleSizePx(layoutWidth);
   const titleRowHeightPx = getTrackBadgeMdHeightPx(layoutWidth);
-  const chartChromeGapPx = getClusterLegendMarginTopPx(layoutWidth);
 
   useEffect(() => {
     relayout();
@@ -165,7 +165,7 @@ export function ChartSection() {
 
       <div ref={exportRef} className="flex w-full min-w-0 flex-col self-stretch">
         {showTitleRow ? (
-          <div className="relative z-[1] flex w-full min-w-0 items-center gap-3 leading-none" style={{ minHeight: titleRowHeightPx }}>
+          <div className="relative z-[1] mb-3 flex w-full min-w-0 items-center gap-3 leading-none" style={{ minHeight: titleRowHeightPx }}>
             {!chartLegendHidden ? <TrackBadge variant={trackVariant} size="md" className="shrink-0" chartWidth={chartWidth} /> : null}
             {showVisibleTitle ? (
               <h2
@@ -187,26 +187,26 @@ export function ChartSection() {
           </h2>
         )}
 
-        <div aria-hidden className="shrink-0 first-of-type:hidden" style={{ height: chartChromeGapPx }} />
-
         <div ref={frameRef} className="relative z-0 mx-auto w-full max-w-full box-border" style={{ minHeight: FE_UI.chartFrame.minChartHeightPx }}>
           <div className="absolute inset-0 min-h-0 min-w-0">
             <canvas ref={canvasRef} id="competencyChart" aria-labelledby="competency-chart-heading" />
           </div>
         </div>
 
-        <div aria-hidden className="shrink-0 last-of-type:hidden" style={{ height: chartChromeGapPx }} />
-
         {!chartLegendHidden ? (
           <div
             data-chart-export="chart-legend-card"
-            className="mx-auto mb-3 flex w-fit max-w-full items-center justify-center rounded-lg border border-border bg-muted px-6 py-2.5 leading-none last-of-type:mb-0"
+            className="mx-auto mt-5 flex w-fit max-w-full items-center justify-center rounded-lg border border-border bg-muted px-6 py-2.5 leading-none"
           >
             <ClusterLegend chartWidth={chartWidth} />
           </div>
         ) : null}
 
-        {FEATURE_SCORES_SETTINGS ? <ChartAverages chartWidth={chartWidth} /> : null}
+        {FEATURE_SCORES_SETTINGS && !footerScoresHidden ? (
+          <div className="mt-5">
+            <ChartAverages chartWidth={chartWidth} />
+          </div>
+        ) : null}
       </div>
     </div>
   );

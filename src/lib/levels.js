@@ -1,10 +1,4 @@
-import {
-  CANONICAL_PILLAR_IDS,
-  DEFAULT_PILLAR_LEVEL,
-  getPillarOrder,
-  LEVEL_STEP,
-  normalizeTrackVariant,
-} from "@/lib/constants";
+import { CANONICAL_PILLAR_IDS, DEFAULT_PILLAR_LEVEL, getPillarOrder, LEVEL_STEP, normalizeTrackVariant } from "@/lib/constants";
 
 export function clampLevel(v) {
   const step = LEVEL_STEP;

@@ -1,24 +1,11 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+
+import { useTouchPrimary } from "@/hooks/useTouchPrimary";
 
 import { LEVEL_STEP } from "@/lib/constants";
 import { clampLevel, formatLevelForInput } from "@/lib/levels";
 
 import { useAppStore } from "@/store/useAppStore";
-
-function useTouchPrimary() {
-  const [touchPrimary, setTouchPrimary] = useState(
-    () => typeof window !== "undefined" && window.matchMedia("(hover: none)").matches,
-  );
-
-  useEffect(() => {
-    const mq = window.matchMedia("(hover: none)");
-    const onChange = () => setTouchPrimary(mq.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
-
-  return touchPrimary;
-}
 
 function normalizeTypingValue(raw) {
   let s = String(raw).replace(",", ".").trim();
