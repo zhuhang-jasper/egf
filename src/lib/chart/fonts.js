@@ -39,7 +39,7 @@ export function getTrackBadgeMdHeightPx(chartWidthPx) {
 export function getPointLabelPaddingPx(chartWidthPx) {
   const u = getChartWidthUnit(chartWidthPx);
   const { minPx, maxPx } = FE_UI.chart.pointLabelPaddingRange ?? { minPx: 5, maxPx: 12 };
-  return Math.round(minPx + (1 - u) * (maxPx - minPx));
+  return Math.round(minPx + u * (maxPx - minPx));
 }
 
 export function getChartLayoutPadding(chartWidthPx) {

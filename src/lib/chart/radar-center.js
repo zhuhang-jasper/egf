@@ -194,7 +194,7 @@ function getChartPointLabelSizePxForUi(chartWidthPx, ui) {
 function getPointLabelPaddingPxForUi(chartWidthPx, ui) {
   const u = getChartWidthUnit(chartWidthPx);
   const { minPx, maxPx } = ui.chart.pointLabelPaddingRange ?? { minPx: 5, maxPx: 12 };
-  return Math.round(minPx + (1 - u) * (maxPx - minPx));
+  return Math.round(minPx + u * (maxPx - minPx));
 }
 
 function getChartLayoutPaddingForUi(chartWidthPx, ui) {
