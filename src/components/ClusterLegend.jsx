@@ -1,8 +1,8 @@
+import { useAppStore } from "@/store/useAppStore";
+
 import { getChartSecondaryLabelSizePx, getClusterLegendSwatchPx } from "@/chart/fonts";
 import { CLUSTERS, FE_UI, getPillarGroupOrder } from "@/constants";
 import { cn } from "@/utils";
-
-import { useAppStore } from "@/store/useAppStore";
 
 export function ClusterLegend({ className, hidden = false, chartWidth = 0 }) {
   const trackVariant = useAppStore((s) => s.trackVariant);

@@ -1,9 +1,9 @@
 import { PillarCluster } from "@/components/PillarCluster";
 import { TitleToolbar } from "@/components/TitleToolbar";
 
-import { getPillarGroups } from "@/constants";
-
 import { useAppStore } from "@/store/useAppStore";
+
+import { getPillarGroups } from "@/constants";
 
 export function FormPanel() {
   const trackVariant = useAppStore((s) => s.trackVariant);

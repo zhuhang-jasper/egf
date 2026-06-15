@@ -16,6 +16,7 @@ export function StaticCompetencyChart({
   hidePointLabels = false,
   fillContainer = false,
   focusedPillars,
+  maxHeightPx,
   "aria-label": ariaLabel,
 }) {
   const canvasRef = useRef(null);
@@ -31,8 +32,9 @@ export function StaticCompetencyChart({
       chartLevelTicksHidden: true,
       pointLabelsHidden: hidePointLabels,
       focusedPillars,
+      maxHeightPx,
     }),
-    [levels, title, trackVariant, hidePolygon, hidePointLabels, focusedPillars],
+    [levels, title, trackVariant, hidePolygon, hidePointLabels, focusedPillars, maxHeightPx],
   );
 
   useStaticCompetencyChart(canvasRef, frameRef, chartState);
@@ -41,8 +43,8 @@ export function StaticCompetencyChart({
     <div
       ref={frameRef}
       className={cn(
-        "relative mx-auto box-border aspect-square w-full max-w-[16rem] min-[450px]:max-w-none min-[450px]:min-h-[80px]",
-        fillContainer && "h-full min-h-0 min-[450px]:min-h-0",
+        "relative mx-auto box-border aspect-square w-full max-w-[16rem] min-[470px]:max-w-none min-[470px]:min-h-[80px]",
+        fillContainer && "h-full min-h-0 min-[470px]:min-h-0",
         className,
       )}
     >

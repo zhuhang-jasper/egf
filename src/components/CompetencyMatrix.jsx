@@ -5,8 +5,8 @@ import { ChevronDown } from "lucide-react";
 import { getClusterSurfaceBg } from "@/constants";
 import { COMPETENCY_MATRIX, SENIORITY_LEVEL_DEFINITIONS } from "@/constants/theory-data";
 import { DOC_TEXT } from "@/styles/doc-typography";
-import { scrollBelowStickyHeader } from "@/utils/scroll";
 import { cn } from "@/utils";
+import { scrollBelowStickyHeader } from "@/utils/scroll";
 
 const levelBadgeClass = cn("flex size-5 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white", DOC_TEXT.badgeMicro);
 
@@ -25,22 +25,22 @@ function LevelCellContent({ level }) {
 function PillarMatrixLevels({ levels }) {
   return (
     <>
-      <div className="divide-y divide-slate-300/50 px-3 py-1 min-[450px]:hidden">
+      <div className="divide-y divide-slate-300/50 px-3 py-1 min-[470px]:hidden">
         {SENIORITY_LEVEL_DEFINITIONS.map(({ code }) => (
           <div key={code} className="flex items-start gap-2 py-2">
             <span className={levelBadgeClass}>{code}</span>
-            <p className={cn("min-w-0 flex-1", DOC_TEXT.body)}>
+            <p className={cn("min-w-0 flex-1", DOC_TEXT.bodyMedium)}>
               <LevelCellContent level={levels[code]} />
             </p>
           </div>
         ))}
       </div>
 
-      <div className="hidden grid-cols-5 gap-2 px-3 py-2 min-[450px]:grid">
+      <div className="hidden grid-cols-5 gap-2 px-3 py-2 min-[470px]:grid">
         {SENIORITY_LEVEL_DEFINITIONS.map(({ code }) => (
           <div key={code} className="flex min-w-0 flex-col gap-1.5 border-r border-slate-300/50 px-1 last:border-r-0">
             <span className={levelBadgeClass}>{code}</span>
-            <p className={DOC_TEXT.body}>
+            <p className={DOC_TEXT.bodyMedium}>
               <LevelCellContent level={levels[code]} />
             </p>
           </div>

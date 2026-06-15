@@ -4,7 +4,7 @@ import { applyChartFrameLayout } from "@/chart/fonts";
 import { applyChartState, createCompetencyChart, refreshChart } from "@/chart/instance";
 import { getRadarContentHeightPx } from "@/chart/radar-center";
 
-function fitFrameToChart(frameRef, chart) {
+function fitFrameToChart(frameRef, chart, maxHeightPx) {
   const frame = frameRef.current;
   if (!frame?.offsetWidth || !chart) {
     return;
@@ -14,9 +14,12 @@ function fitFrameToChart(frameRef, chart) {
 
   let prevContentH = null;
   for (let pass = 0; pass < 3; pass++) {
-    const contentH = getRadarContentHeightPx(chart);
+    let contentH = getRadarContentHeightPx(chart);
     if (!contentH) {
       return;
+    }
+    if (maxHeightPx) {
+      contentH = Math.min(contentH, maxHeightPx);
     }
     if (contentH === prevContentH) {
       break;
@@ -48,7 +51,7 @@ export function useStaticCompetencyChart(canvasRef, frameRef, chartState) {
     }
 
     refreshChart(chart, chartStateRef.current);
-    fitFrameToChart(frameRef, chart);
+    fitFrameToChart(frameRef, chart, chartStateRef.current.maxHeightPx);
   }, [frameRef]);
 
   const relayoutRef = useRef(relayout);

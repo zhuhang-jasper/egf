@@ -1,5 +1,5 @@
-import { getChartLayoutLabelsForChart, resolveChartUi } from "@/chart/theory-profile";
 import { getChartWidthUnit } from "@/chart/fonts";
+import { getChartLayoutLabelsForChart, resolveChartUi } from "@/chart/theory-profile";
 
 function radarTickBackdropHalf(scale) {
   const tickOpts = scale.options.ticks;

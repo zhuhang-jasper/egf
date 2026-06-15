@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 
+import { useAppStore } from "@/store/useAppStore";
+
 import { applyChartFrameLayout } from "@/chart/fonts";
 import { applyChartState, createCompetencyChart, refreshChart } from "@/chart/instance";
 import { getRadarContentHeightPx } from "@/chart/radar-center";
 import { getChartLabels } from "@/constants";
-
-import { useAppStore } from "@/store/useAppStore";
 
 function convergeContentHeight(frame, chart) {
   const w = frame.offsetWidth;

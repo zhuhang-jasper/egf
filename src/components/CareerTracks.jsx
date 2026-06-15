@@ -71,7 +71,7 @@ function TrackRoleSequence({ roleLevels, badgeBg, badgeColor, desktopGridColumns
 
   return (
     <>
-      <ol className="flex flex-col gap-1 min-[450px]:hidden">
+      <ol className="flex flex-col gap-1 min-[470px]:hidden">
         {roleLevels.map(({ level, title, subtitle, note }) => (
           <li
             key={`${level}-${title}-mobile`}
@@ -84,12 +84,12 @@ function TrackRoleSequence({ roleLevels, badgeBg, badgeColor, desktopGridColumns
       </ol>
 
       {centerDesktop ? (
-        <div className="hidden min-[450px]:flex min-[450px]:justify-center">
+        <div className="hidden min-[470px]:flex min-[470px]:justify-center">
           <ol className="w-2/5 min-w-0 list-none">{roleLevels.map((role) => desktopTile(role))}</ol>
         </div>
       ) : (
         <ol
-          className="hidden w-full list-none items-stretch gap-1 min-[450px]:grid"
+          className="hidden w-full list-none items-stretch gap-1 min-[470px]:grid"
           style={{ gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` }}
         >
           {roleLevels.map((role) => desktopTile(role))}
@@ -149,20 +149,21 @@ function CareerTrackCard({ track }) {
           {track.name}
         </h3>
 
-        <div className="grid grid-cols-1 gap-3 min-[450px]:grid-cols-2 min-[450px]:items-start min-[450px]:gap-x-4">
-          <div className="order-2 w-full min-[450px]:order-1">
+        <div className="grid grid-cols-1 gap-3 min-[470px]:grid-cols-2 min-[470px]:items-start min-[470px]:gap-x-4">
+          <div className="order-2 w-full min-[470px]:order-1">
             <div className="rounded-lg p-2" style={{ backgroundColor: style.chipBg }}>
               <StaticCompetencyChart
                 levels={track.levels}
                 title={track.name}
                 trackVariant="fe"
                 focusedPillars={track.keyFocusPillars}
+                maxHeightPx={180}
                 aria-label={`${track.name} competency profile`}
               />
             </div>
           </div>
 
-          <div className="order-1 space-y-1.5 min-[450px]:order-2">
+          <div className="order-1 space-y-1.5 min-[470px]:order-2">
             <p className={DOC_TEXT.bodyMedium}>{track.summary}</p>
             <KeyPillarChips pillars={sortKeyFocusPillars(track.keyFocusPillars)} chipBg={style.chipBg} textColor={style.textColor} />
           </div>
