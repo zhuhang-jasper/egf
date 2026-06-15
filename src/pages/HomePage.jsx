@@ -4,14 +4,14 @@ import { AppShellIntro, AppShellTabBar } from "@/components/AppShellHeader";
 import { TheoryContent } from "@/components/TheoryContent";
 import { ToolContent } from "@/components/ToolContent";
 
-import { useTabScrollMemory } from "@/hooks/useTabScrollMemory";
+import { getPersistedActiveTab, useTabScrollMemory } from "@/hooks/useTabScrollMemory";
 
 import { FE_UI } from "@/constants";
 
 const appVersion = import.meta.env.VITE_APP_VERSION;
 
 export default function HomePage() {
-  const [activeTab, setActiveTab] = useState("tool");
+  const [activeTab, setActiveTab] = useState(() => getPersistedActiveTab(["tool", "theory"]) ?? "tool");
   const { saveActiveTabScroll } = useTabScrollMemory(activeTab);
 
   const handleTabChange = (nextTab) => {

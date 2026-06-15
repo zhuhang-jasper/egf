@@ -8,6 +8,19 @@ import { DOC_TEXT } from "@/styles/doc-typography";
 import { cn } from "@/utils";
 import { scrollBelowStickyHeader } from "@/utils/scroll";
 
+const SESSION_KEY = "app:expandedPillar";
+
+function getPersistedPillar() {
+  try { return sessionStorage.getItem(SESSION_KEY) || null; } catch { return null; }
+}
+
+function persistPillar(id) {
+  try {
+    if (id) { sessionStorage.setItem(SESSION_KEY, id); }
+    else { sessionStorage.removeItem(SESSION_KEY); }
+  } catch {}
+}
+
 const levelBadgeClass = cn("flex size-5 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white", DOC_TEXT.badgeMicro);
 
 function LevelCellContent({ level }) {
@@ -89,14 +102,24 @@ function PillarMatrixCard({ order, pillarId, pillarName, focusSummary, color, te
 }
 
 export function CompetencyMatrix() {
-  const [expandedPillarId, setExpandedPillarId] = useState(null);
+  const [expandedPillarId, setExpandedPillarId] = useState(getPersistedPillar);
   const cardRefs = useRef({});
+  const isFirstMountRef = useRef(true);
 
   const handleToggle = (pillarId) => {
-    setExpandedPillarId((current) => (current === pillarId ? null : pillarId));
+    setExpandedPillarId((current) => {
+      const next = current === pillarId ? null : pillarId;
+      persistPillar(next);
+      return next;
+    });
   };
 
   useLayoutEffect(() => {
+    if (isFirstMountRef.current) {
+      isFirstMountRef.current = false;
+      return undefined;
+    }
+
     if (!expandedPillarId) {
       return undefined;
     }
