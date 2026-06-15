@@ -1,12 +1,14 @@
 import { useLayoutEffect, useRef } from "react";
 
+import { FileText, Radar } from "lucide-react";
+
 import { SITE_COPY } from "@/lib/constants";
 import { clearStickyScrollOffset, setStickyScrollOffset } from "@/lib/scroll";
 import { cn } from "@/lib/utils";
 
 const TABS = [
-  { id: "tool", label: "Tool" },
-  { id: "documentation", label: "Documentation" },
+  { id: "tool", label: "Tool", icon: Radar },
+  { id: "documentation", label: "Documentation", icon: FileText },
 ];
 
 function AppShellIntro() {
@@ -63,7 +65,7 @@ function AppShellTabBar({ activeTab, onTabChange }) {
             transform: `translateX(calc(${selectedIndex} * 100%))`,
           }}
         />
-        {TABS.map(({ id, label }) => {
+        {TABS.map(({ id, label, icon: Icon }) => {
           const selected = activeTab === id;
           return (
             <button
@@ -73,10 +75,11 @@ function AppShellTabBar({ activeTab, onTabChange }) {
               aria-selected={selected}
               onClick={() => onTabChange(id)}
               className={cn(
-                "relative z-10 cursor-pointer rounded-md px-3 py-1.5 text-xs font-semibold",
+                "relative z-10 flex cursor-pointer items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold",
                 selected ? "text-white" : "text-slate-600 hover:text-slate-800",
               )}
             >
+              <Icon className="size-3.5 shrink-0" aria-hidden />
               {label}
             </button>
           );
