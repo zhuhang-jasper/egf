@@ -8,7 +8,7 @@ import { clearStickyScrollOffset, setStickyScrollOffset } from "@/utils/scroll";
 
 const TABS = [
   { id: "tool", label: "Tool", icon: Radar },
-  { id: "theory", label: "Theory", icon: FileText },
+  { id: "theory", label: "Theory", icon: FileText, version: "v2.8" },
 ];
 
 function AppShellIntro() {
@@ -69,7 +69,7 @@ function AppShellTabBar({ activeTab, onTabChange }) {
             transform: `translateX(calc(${selectedIndex} * 100%))`,
           }}
         />
-        {TABS.map(({ id, label, icon: Icon }) => {
+        {TABS.map(({ id, label, icon: Icon, version }) => {
           const selected = activeTab === id;
           return (
             <button
@@ -85,6 +85,7 @@ function AppShellTabBar({ activeTab, onTabChange }) {
             >
               <Icon className="size-3.5 shrink-0" aria-hidden />
               {label}
+              {version ? <span className={cn("text-[11px] font-semibold", selected ? "text-white/70" : "text-slate-400")}>{version}</span> : null}
             </button>
           );
         })}
