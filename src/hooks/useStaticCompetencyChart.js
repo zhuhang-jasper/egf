@@ -74,7 +74,7 @@ export function useStaticCompetencyChart(canvasRef, frameRef, chartState) {
       return undefined;
     }
 
-    const chart = createCompetencyChart(canvas, { purpose: chartStateRef.current.purpose ?? "about" });
+    const chart = createCompetencyChart(canvas, { purpose: chartStateRef.current.purpose ?? "theory" });
     chartRef.current = chart;
     applyChartState(chart, chartStateRef.current);
 

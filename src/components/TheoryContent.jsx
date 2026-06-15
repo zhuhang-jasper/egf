@@ -2,7 +2,12 @@ import { CareerTracks } from "@/components/CareerTracks";
 import { CompetencyMatrix } from "@/components/CompetencyMatrix";
 import { PillarGrid } from "@/components/PillarGrid";
 
-import { CAREER_TRACKS_SECTION_INTRO, PILLARS_SECTION_INTRO, SENIORITY_LEVEL_DEFINITIONS, SENIORITY_SECTION_INTRO } from "@/lib/constants/about-data";
+import {
+  CAREER_TRACKS_SECTION_INTRO,
+  PILLARS_SECTION_INTRO,
+  SENIORITY_LEVEL_DEFINITIONS,
+  SENIORITY_SECTION_INTRO,
+} from "@/lib/constants/theory-data";
 import { DOC_SECTION, DOC_TEXT } from "@/lib/doc-typography";
 import { cn } from "@/lib/utils";
 
@@ -72,7 +77,7 @@ function SeniorityStepper() {
   );
 }
 
-export function AboutContent() {
+export function TheoryContent() {
   return (
     <div className="space-y-6 print:max-w-none">
       <section className="space-y-3">

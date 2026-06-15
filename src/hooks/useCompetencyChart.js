@@ -12,8 +12,12 @@ function convergeContentHeight(frame, chart) {
   let prev = null;
   for (let pass = 0; pass < 3; pass++) {
     const h = getRadarContentHeightPx(chart);
-    if (!h) { return null; }
-    if (h === prev) { break; }
+    if (!h) {
+      return null;
+    }
+    if (h === prev) {
+      break;
+    }
     prev = h;
     applyChartFrameLayout(frame, w, h);
     chart.resize();

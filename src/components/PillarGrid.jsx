@@ -1,5 +1,5 @@
 import { getClusterSurfaceBg } from "@/lib/constants";
-import { PILLAR_CLUSTER_GROUPS } from "@/lib/constants/about-data";
+import { PILLAR_CLUSTER_GROUPS } from "@/lib/constants/theory-data";
 import { DOC_TEXT } from "@/lib/doc-typography";
 import { cn } from "@/lib/utils";
 

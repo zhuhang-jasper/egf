@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { AboutContent } from "@/components/AboutContent";
+import { TheoryContent } from "@/components/TheoryContent";
 import { AppShellIntro, AppShellTabBar } from "@/components/AppShellHeader";
 import { ToolContent } from "@/components/ToolContent";
 
@@ -39,14 +39,8 @@ export default function HomePage() {
         <div className="mt-3" role="tabpanel" hidden={activeTab !== "tool"} aria-hidden={activeTab !== "tool"} aria-label="Tool">
           <ToolContent />
         </div>
-        <div
-          className="mt-3"
-          role="tabpanel"
-          hidden={activeTab !== "documentation"}
-          aria-hidden={activeTab !== "documentation"}
-          aria-label="Documentation"
-        >
-          <AboutContent />
+        <div className="mt-3" role="tabpanel" hidden={activeTab !== "theory"} aria-hidden={activeTab !== "theory"} aria-label="Theory">
+          <TheoryContent />
         </div>
       </main>
 

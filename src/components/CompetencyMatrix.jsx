@@ -3,7 +3,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 
 import { getClusterSurfaceBg } from "@/lib/constants";
-import { COMPETENCY_MATRIX, SENIORITY_LEVEL_DEFINITIONS } from "@/lib/constants/about-data";
+import { COMPETENCY_MATRIX, SENIORITY_LEVEL_DEFINITIONS } from "@/lib/constants/theory-data";
 import { DOC_TEXT } from "@/lib/doc-typography";
 import { scrollBelowStickyHeader } from "@/lib/scroll";
 import { cn } from "@/lib/utils";

@@ -1,7 +1,7 @@
 import { StaticCompetencyChart } from "@/components/StaticCompetencyChart";
 
 import { CLUSTERS, getClusterSurfaceBg } from "@/lib/constants";
-import { CAREER_TRACK_PROFILES, FOUNDATIONAL_PHASE, sortKeyFocusPillars } from "@/lib/constants/about-data";
+import { CAREER_TRACK_PROFILES, FOUNDATIONAL_PHASE, sortKeyFocusPillars } from "@/lib/constants/theory-data";
 import { DOC_TEXT } from "@/lib/doc-typography";
 import { cn } from "@/lib/utils";
 

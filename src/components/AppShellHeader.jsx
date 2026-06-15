@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 const TABS = [
   { id: "tool", label: "Tool", icon: Radar },
-  { id: "documentation", label: "Documentation", icon: FileText },
+  { id: "theory", label: "Theory", icon: FileText },
 ];
 
 function AppShellIntro() {

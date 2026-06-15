@@ -1,6 +1,6 @@
 import { Chart, Filler, Legend, LineElement, PointElement, RadarController, RadialLinearScale, Tooltip } from "chart.js";
 
-import { ABOUT_CHART_UI, resolveChartUi } from "@/lib/chart/about-profile";
+import { THEORY_CHART_UI, resolveChartUi } from "@/lib/chart/theory-profile";
 import { createClusterBackgroundPlugin } from "@/lib/chart/plugins";
 import { applyRadarCenterFit, syncFontsForChart } from "@/lib/chart/radar-center";
 import { FE_UI, getChartLabels, getPillarOrder, getPlainChartLabels, normalizeTrackVariant, PILLAR_COUNT } from "@/lib/constants";
@@ -50,7 +50,7 @@ function syncLevelTicksVisibility(chart, hidden) {
   if (!ticks) {
     return;
   }
-  if (chart?.options?.plugins?.competencyChart?.purpose === "about") {
+  if (chart?.options?.plugins?.competencyChart?.purpose === "theory") {
     ticks.display = false;
     return;
   }
@@ -129,14 +129,14 @@ export function refreshChart(chart, state) {
   syncFontsForChart(chart);
 }
 
-export function createCompetencyChart(canvas, { purpose = "default" } = {}) {
-  const isAbout = purpose === "about";
-  const ui = isAbout ? ABOUT_CHART_UI : FE_UI;
+export function createCompetencyChart(canvas, { purpose = "tool" } = {}) {
+  const isTheory = purpose === "theory";
+  const ui = isTheory ? THEORY_CHART_UI : FE_UI;
   const ch = ui.chart;
   const chart = new Chart(canvas, {
     type: "radar",
     data: {
-      labels: isAbout ? getPlainChartLabels("fe") : getChartLabels("fe"),
+      labels: isTheory ? getPlainChartLabels("fe") : getChartLabels("fe"),
       datasets: [buildHumanDataset(" ", new Array(PILLAR_COUNT).fill(0))],
     },
     options: {
@@ -151,7 +151,7 @@ export function createCompetencyChart(canvas, { purpose = "default" } = {}) {
           max: 5,
           afterFit: applyRadarCenterFit,
           ticks: {
-            display: !isAbout,
+            display: !isTheory,
             color: ch.tickLabelColor,
             stepSize: 1,
             padding: 0,
@@ -186,7 +186,7 @@ export function createCompetencyChart(canvas, { purpose = "default" } = {}) {
       plugins: {
         legend: { display: false },
         tooltip: { enabled: false },
-        competencyChart: { purpose, plainLabels: isAbout },
+        competencyChart: { purpose, plainLabels: isTheory },
       },
     },
     plugins: [createClusterBackgroundPlugin()],

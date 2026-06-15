@@ -26,7 +26,7 @@ export function StaticCompetencyChart({
       levels,
       title,
       trackVariant,
-      purpose: "about",
+      purpose: "theory",
       levelsPolygonHidden: hidePolygon,
       chartLevelTicksHidden: true,
       pointLabelsHidden: hidePointLabels,
