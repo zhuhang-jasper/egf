@@ -158,17 +158,7 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY, padX, padY) {
       const cs = window.getComputedStyle(trackBadge);
       const { x, y, w, h } = getRelativeRect(trackBadge, rootRect, scaleX, scaleY, padX, padY);
       const radius = (Number.parseFloat(cs.borderRadius) || 6) * scaleX;
-      drawRoundedRect(
-        ctx,
-        x,
-        y,
-        w,
-        h,
-        radius,
-        sanitizeColorForHtml2Canvas(cs.backgroundColor),
-        null,
-        0,
-      );
+      drawRoundedRect(ctx, x, y, w, h, radius, sanitizeColorForHtml2Canvas(cs.backgroundColor), null, 0);
       ctx.fillStyle = sanitizeColorForHtml2Canvas(cs.color);
       ctx.font = buildFont(cs, scaleY);
       ctx.textAlign = "center";

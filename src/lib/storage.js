@@ -23,9 +23,7 @@ export function parseChartDisplay(parsed) {
     chartLevelTicksHidden: parsed.chartLevelTicksHidden === true,
     chartLegendHidden: parsed.chartLegendHidden === true,
     chartTitleHidden: parsed.chartTitleHidden === true,
-    footerScoresHidden: Object.hasOwn(parsed, "footerScoresHidden")
-      ? parsed.footerScoresHidden === true
-      : defaults.footerScoresHidden,
+    footerScoresHidden: Object.hasOwn(parsed, "footerScoresHidden") ? parsed.footerScoresHidden === true : defaults.footerScoresHidden,
     footerScoresHiddenUserSet: Object.hasOwn(parsed, "footerScoresHidden"),
     levelKeyboardInputEnabled: parsed.levelKeyboardInputEnabled === true,
   };

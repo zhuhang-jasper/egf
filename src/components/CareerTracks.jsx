@@ -6,10 +6,7 @@ import { DOC_TEXT } from "@/lib/doc-typography";
 import { cn } from "@/lib/utils";
 
 const cardClass = "rounded-xl border border-slate-100 bg-white shadow-md shadow-slate-200/40";
-const levelBadgeClass = cn(
-  "inline-flex min-w-[1.75rem] shrink-0 items-center justify-center rounded px-1 py-1",
-  DOC_TEXT.badgeSm,
-);
+const levelBadgeClass = cn("inline-flex min-w-[1.75rem] shrink-0 items-center justify-center rounded px-1 py-1", DOC_TEXT.badgeSm);
 
 function LevelBadge({ level, backgroundColor, color }) {
   return (

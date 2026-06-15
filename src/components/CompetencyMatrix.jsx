@@ -8,10 +8,7 @@ import { DOC_TEXT } from "@/lib/doc-typography";
 import { scrollBelowStickyHeader } from "@/lib/scroll";
 import { cn } from "@/lib/utils";
 
-const levelBadgeClass = cn(
-  "flex size-5 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white",
-  DOC_TEXT.badgeMicro,
-);
+const levelBadgeClass = cn("flex size-5 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white", DOC_TEXT.badgeMicro);
 
 function LevelCellContent({ level }) {
   if (!level?.persona) {
@@ -53,18 +50,7 @@ function PillarMatrixLevels({ levels }) {
   );
 }
 
-function PillarMatrixCard({
-  order,
-  pillarId,
-  pillarName,
-  focusSummary,
-  color,
-  textColor,
-  levels,
-  expanded,
-  onToggle,
-  cardRef,
-}) {
+function PillarMatrixCard({ order, pillarId, pillarName, focusSummary, color, textColor, levels, expanded, onToggle, cardRef }) {
   const panelId = `competency-matrix-${pillarId}`;
 
   return (
@@ -90,10 +76,7 @@ function PillarMatrixCard({
           </h3>
           <p className={DOC_TEXT.body}>{focusSummary}</p>
         </div>
-        <ChevronDown
-          className={cn("mt-0.5 size-4 shrink-0 text-slate-400 transition-transform", expanded && "rotate-180")}
-          aria-hidden
-        />
+        <ChevronDown className={cn("mt-0.5 size-4 shrink-0 text-slate-400 transition-transform", expanded && "rotate-180")} aria-hidden />
       </button>
 
       {expanded ? (

@@ -36,13 +36,7 @@ export default function HomePage() {
         <AppShellIntro />
         <AppShellTabBar activeTab={activeTab} onTabChange={handleTabChange} />
 
-        <div
-          className="mt-3"
-          role="tabpanel"
-          hidden={activeTab !== "tool"}
-          aria-hidden={activeTab !== "tool"}
-          aria-label="Tool"
-        >
+        <div className="mt-3" role="tabpanel" hidden={activeTab !== "tool"} aria-hidden={activeTab !== "tool"} aria-label="Tool">
           <ToolContent />
         </div>
         <div
@@ -56,9 +50,7 @@ export default function HomePage() {
         </div>
       </main>
 
-      <p className="mt-auto mb-1 text-center text-[11px] tabular-nums text-white/60 print:mb-0 print:text-slate-500">
-        v{appVersion}
-      </p>
+      <p className="mt-auto mb-1 text-center text-[11px] tabular-nums text-white/60 print:mb-0 print:text-slate-500">v{appVersion}</p>
     </div>
   );
 }

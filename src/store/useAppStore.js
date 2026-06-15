@@ -10,13 +10,7 @@ import {
   parseToCanonicalState,
   syncLevelsArrayFromMap,
 } from "@/lib/levels";
-import {
-  getDefaultChartDisplay,
-  loadDraftFromStorage,
-  loadProfilesFromStorage,
-  saveDraftToStorage,
-  writeProfilesToStorage,
-} from "@/lib/storage";
+import { getDefaultChartDisplay, loadDraftFromStorage, loadProfilesFromStorage, saveDraftToStorage, writeProfilesToStorage } from "@/lib/storage";
 
 const initialDraft = loadDraftFromStorage() ?? { ...getDefaultChartState(), ...getDefaultChartDisplay() };
 
@@ -84,7 +78,7 @@ export const useAppStore = create((set, get) => ({
   },
 
   setLevel: (index, value) => {
-    const {trackVariant} = get();
+    const { trackVariant } = get();
     const pillarId = getPillarIdByIndex(index, trackVariant);
     if (!pillarId) {
       return;

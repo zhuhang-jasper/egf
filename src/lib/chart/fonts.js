@@ -76,10 +76,7 @@ export function getScoreCardFontSizesPx(chartWidthPx) {
   const secondaryPx = getChartSecondaryLabelSizePx(chartWidthPx);
   const u = getChartWidthUnit(chartWidthPx);
   const labelScale = 1 - u * (1 - FE_UI.chart.scoreCardLabelMultiplier);
-  const labelPx = Math.min(
-    FE_UI.chart.scoreCardLabelMaxPx,
-    Math.max(1, Math.round(secondaryPx * labelScale)),
-  );
+  const labelPx = Math.min(FE_UI.chart.scoreCardLabelMaxPx, Math.max(1, Math.round(secondaryPx * labelScale)));
   return {
     labelPx,
     valuePx: getChartTitleSizePx(chartWidthPx),

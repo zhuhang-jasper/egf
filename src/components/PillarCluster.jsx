@@ -15,8 +15,8 @@ export function PillarCluster({ group }) {
       data-cluster={group.id}
       style={{
         "--cluster-text-color": cluster.textColor,
-        backgroundColor: getClusterSurfaceBg(cluster.color),
-        borderLeftColor: cluster.textColor,
+        "backgroundColor": getClusterSurfaceBg(cluster.color),
+        "borderLeftColor": cluster.textColor,
       }}
     >
       <div className="form-section-title">{group.title}</div>

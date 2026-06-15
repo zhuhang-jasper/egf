@@ -214,10 +214,7 @@ export function syncFontsForChart(chart) {
   const plOpts = rScale.pointLabels;
   const layoutPad = chart.options.layout.padding;
   const paddingUnchanged =
-    layoutPad?.top === padding.top &&
-    layoutPad?.right === padding.right &&
-    layoutPad?.bottom === padding.bottom &&
-    layoutPad?.left === padding.left;
+    layoutPad?.top === padding.top && layoutPad?.right === padding.right && layoutPad?.bottom === padding.bottom && layoutPad?.left === padding.left;
   if (tickFont.size === tickSize && plFont.size === labelSize && plOpts.padding === labelPadding && paddingUnchanged) {
     return;
   }
