@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-import { getPillarIdByIndex, normalizeTrackVariant } from "@/lib/constants";
+import { getPillarIdByIndex, normalizeTrackVariant } from "@/constants";
 import {
   fillPillarLevels,
   getDefaultChartState,
@@ -9,8 +9,8 @@ import {
   normalizeSavedState,
   parseToCanonicalState,
   syncLevelsArrayFromMap,
-} from "@/lib/levels";
-import { getDefaultChartDisplay, loadDraftFromStorage, loadProfilesFromStorage, saveDraftToStorage, writeProfilesToStorage } from "@/lib/storage";
+} from "@/constants/levels";
+import { getDefaultChartDisplay, loadDraftFromStorage, loadProfilesFromStorage, saveDraftToStorage, writeProfilesToStorage } from "@/utils/storage";
 
 const initialDraft = loadDraftFromStorage() ?? { ...getDefaultChartState(), ...getDefaultChartDisplay() };
 

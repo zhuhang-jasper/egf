@@ -1,7 +1,7 @@
-import { getClusterSurfaceBg } from "@/lib/constants";
-import { PILLAR_CLUSTER_GROUPS } from "@/lib/constants/about-data";
-import { DOC_TEXT } from "@/lib/doc-typography";
-import { cn } from "@/lib/utils";
+import { getClusterSurfaceBg } from "@/constants";
+import { PILLAR_CLUSTER_GROUPS } from "@/constants/theory-data";
+import { DOC_TEXT } from "@/styles/doc-typography";
+import { cn } from "@/utils";
 
 function PillarCard({ pillar, clusterLabel, color, textColor }) {
   return (

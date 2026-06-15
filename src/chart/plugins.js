@@ -1,4 +1,4 @@
-import { CLUSTERS, FE_UI, getPillarGroupOrder, getPillarOrder, normalizeTrackVariant } from "@/lib/constants";
+import { CLUSTERS, FE_UI, getPillarGroupOrder, getPillarOrder, normalizeTrackVariant } from "@/constants";
 
 function getChartTrackVariant(chart) {
   return normalizeTrackVariant(chart.options?.plugins?.clusterBackground?.trackVariant);

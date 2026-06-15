@@ -1,5 +1,5 @@
-import { TRACK_VARIANT_UI, TRACK_VARIANTS } from "@/lib/constants";
-import { cn } from "@/lib/utils";
+import { TRACK_VARIANT_UI, TRACK_VARIANTS } from "@/constants";
+import { cn } from "@/utils";
 
 import { useAppStore } from "@/store/useAppStore";
 

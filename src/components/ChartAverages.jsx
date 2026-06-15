@@ -1,4 +1,4 @@
-import { getScoreCardFontSizesPx } from "@/lib/chart/fonts";
+import { getScoreCardFontSizesPx } from "@/chart/fonts";
 import {
   BREADTH_TOP_RATIO,
   CAREER_BREADTH_WEIGHT,
@@ -8,9 +8,9 @@ import {
   FEATURE_SCORES_SETTINGS,
   getClusterSurfaceBg,
   getPillarGroupOrder,
-} from "@/lib/constants";
-import { computeAverages, formatAvgScore } from "@/lib/scores";
-import { cn } from "@/lib/utils";
+} from "@/constants";
+import { computeAverages, formatAvgScore } from "@/constants/scores";
+import { cn } from "@/utils";
 
 import { useAppStore } from "@/store/useAppStore";
 

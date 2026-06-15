@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 
-import { applyChartFrameLayout } from "@/lib/chart/fonts";
-import { applyChartState, createCompetencyChart, refreshChart } from "@/lib/chart/instance";
-import { getRadarContentHeightPx } from "@/lib/chart/radar-center";
+import { applyChartFrameLayout } from "@/chart/fonts";
+import { applyChartState, createCompetencyChart, refreshChart } from "@/chart/instance";
+import { getRadarContentHeightPx } from "@/chart/radar-center";
 
 function fitFrameToChart(frameRef, chart) {
   const frame = frameRef.current;
@@ -74,7 +74,7 @@ export function useStaticCompetencyChart(canvasRef, frameRef, chartState) {
       return undefined;
     }
 
-    const chart = createCompetencyChart(canvas, { purpose: chartStateRef.current.purpose ?? "about" });
+    const chart = createCompetencyChart(canvas, { purpose: chartStateRef.current.purpose ?? "theory" });
     chartRef.current = chart;
     applyChartState(chart, chartStateRef.current);
 

@@ -1,7 +1,7 @@
-import { FE_UI, getChartLayoutLabels, getPlainChartLayoutLabels } from "@/lib/constants";
+import { FE_UI, getChartLayoutLabels, getPlainChartLayoutLabels } from "@/constants";
 
-/** Compact radar preset for documentation static charts — smaller labels, tighter padding, no L ticks. */
-export const ABOUT_CHART_UI = {
+/** Compact radar preset for theory tab static charts — smaller labels, tighter padding, no L ticks. */
+export const THEORY_CHART_UI = {
   ...FE_UI,
   chart: {
     ...FE_UI.chart,
@@ -25,11 +25,11 @@ export const ABOUT_CHART_UI = {
 };
 
 export function resolveChartUi(chart) {
-  return chart?.options?.plugins?.competencyChart?.purpose === "about" ? ABOUT_CHART_UI : FE_UI;
+  return chart?.options?.plugins?.competencyChart?.purpose === "theory" ? THEORY_CHART_UI : FE_UI;
 }
 
-export function isAboutChart(chart) {
-  return chart?.options?.plugins?.competencyChart?.purpose === "about";
+export function isTheoryChart(chart) {
+  return chart?.options?.plugins?.competencyChart?.purpose === "theory";
 }
 
 export function getChartLayoutLabelsForChart(chart, trackVariant) {

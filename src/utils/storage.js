@@ -1,5 +1,5 @@
-import { PROFILES_STORAGE_KEY, STORAGE_KEY } from "@/lib/constants";
-import { normalizeSavedState, normalizeStoredProfile, toCanonicalStoragePayload } from "@/lib/levels";
+import { PROFILES_STORAGE_KEY, STORAGE_KEY } from "@/constants";
+import { normalizeSavedState, normalizeStoredProfile, toCanonicalStoragePayload } from "@/constants/levels";
 
 export function getDefaultChartDisplay() {
   return {

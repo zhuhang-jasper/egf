@@ -1,9 +1,9 @@
 import { StaticCompetencyChart } from "@/components/StaticCompetencyChart";
 
-import { CLUSTERS, getClusterSurfaceBg } from "@/lib/constants";
-import { CAREER_TRACK_PROFILES, FOUNDATIONAL_PHASE, sortKeyFocusPillars } from "@/lib/constants/about-data";
-import { DOC_TEXT } from "@/lib/doc-typography";
-import { cn } from "@/lib/utils";
+import { CLUSTERS, getClusterSurfaceBg } from "@/constants";
+import { CAREER_TRACK_PROFILES, FOUNDATIONAL_PHASE, sortKeyFocusPillars } from "@/constants/theory-data";
+import { DOC_TEXT } from "@/styles/doc-typography";
+import { cn } from "@/utils";
 
 const cardClass = "rounded-xl border border-slate-100 bg-white shadow-md shadow-slate-200/40";
 const levelBadgeClass = cn("inline-flex min-w-[1.75rem] shrink-0 items-center justify-center rounded px-1 py-1", DOC_TEXT.badgeSm);

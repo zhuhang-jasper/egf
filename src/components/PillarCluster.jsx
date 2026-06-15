@@ -1,6 +1,6 @@
 import { LevelInput } from "@/components/LevelInput";
 
-import { CLUSTERS, getClusterSurfaceBg } from "@/lib/constants";
+import { CLUSTERS, getClusterSurfaceBg } from "@/constants";
 
 import { useAppStore } from "@/store/useAppStore";
 

@@ -4,7 +4,7 @@ import { Slot } from "@radix-ui/react-slot";
 
 import { buttonVariants } from "@/components/ui/button-variants";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils";
 
 const Button = forwardRef(({ className, variant, size, asChild = false, ...props }, ref) => {
   const Comp = asChild ? Slot : "button";

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 
 import { useTouchPrimary } from "@/hooks/useTouchPrimary";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils";
 
 import { useAppStore } from "@/store/useAppStore";
 

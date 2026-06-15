@@ -1,6 +1,6 @@
-import { getChartSecondaryLabelSizePx } from "@/lib/chart/fonts";
-import { FE_UI, normalizeTrackVariant, TRACK_VARIANT_UI } from "@/lib/constants";
-import { cn } from "@/lib/utils";
+import { getChartSecondaryLabelSizePx } from "@/chart/fonts";
+import { FE_UI, normalizeTrackVariant, TRACK_VARIANT_UI } from "@/constants";
+import { cn } from "@/utils";
 
 export function TrackBadge({ variant, className, size = "sm", hidden = false, chartWidth = 0 }) {
   const track = normalizeTrackVariant(variant);

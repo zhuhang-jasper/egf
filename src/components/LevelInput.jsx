@@ -2,8 +2,8 @@ import { useState } from "react";
 
 import { useTouchPrimary } from "@/hooks/useTouchPrimary";
 
-import { LEVEL_STEP } from "@/lib/constants";
-import { clampLevel, formatLevelForInput } from "@/lib/levels";
+import { LEVEL_STEP } from "@/constants";
+import { clampLevel, formatLevelForInput } from "@/constants/levels";
 
 import { useAppStore } from "@/store/useAppStore";
 

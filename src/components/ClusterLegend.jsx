@@ -1,6 +1,6 @@
-import { getChartSecondaryLabelSizePx, getClusterLegendSwatchPx } from "@/lib/chart/fonts";
-import { CLUSTERS, FE_UI, getPillarGroupOrder } from "@/lib/constants";
-import { cn } from "@/lib/utils";
+import { getChartSecondaryLabelSizePx, getClusterLegendSwatchPx } from "@/chart/fonts";
+import { CLUSTERS, FE_UI, getPillarGroupOrder } from "@/constants";
+import { cn } from "@/utils";
 
 import { useAppStore } from "@/store/useAppStore";
 
