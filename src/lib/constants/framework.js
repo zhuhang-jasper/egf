@@ -12,14 +12,14 @@ export const PILLARS = {
 };
 
 export const CLUSTERS = {
-  technical: { label: "Technical", color: "#cdbdd8", textColor: "#756085" },
-  product: { label: "Product", color: "#f5b39d", textColor: "#b8653a" },
-  operational: { label: "Operational", color: "#bddbb5", textColor: "#4d7356" },
+  technical: { label: "Technical", color: "#cdbdd8", textColor: "#756085", badgeBg: "#c4b5d0", badgeText: "#3f3549" },
+  product: { label: "Product", color: "#f5b39d", textColor: "#b8653a", badgeBg: "#e8b09a", badgeText: "#5c2e14" },
+  operational: { label: "Operational", color: "#bddbb5", textColor: "#4d7356", badgeBg: "#b0cdb0", badgeText: "#1f3d28" },
 };
 
-/** Cluster tint for cards, form, chips — hex alpha suffix `70` (~44%). */
+/** Cluster tint for cards, form, chips — hex alpha suffix */
 export function getClusterSurfaceBg(color) {
-  return `${color}70`;
+  return `${color}55`;
 }
 
 /**
