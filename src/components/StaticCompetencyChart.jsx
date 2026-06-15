@@ -15,6 +15,7 @@ export function StaticCompetencyChart({
   hidePolygon = false,
   hidePointLabels = false,
   fillContainer = false,
+  focusedPillars,
   "aria-label": ariaLabel,
 }) {
   const canvasRef = useRef(null);
@@ -29,8 +30,9 @@ export function StaticCompetencyChart({
       levelsPolygonHidden: hidePolygon,
       chartLevelTicksHidden: true,
       pointLabelsHidden: hidePointLabels,
+      focusedPillars,
     }),
-    [levels, title, trackVariant, hidePolygon, hidePointLabels],
+    [levels, title, trackVariant, hidePolygon, hidePointLabels, focusedPillars],
   );
 
   useStaticCompetencyChart(canvasRef, frameRef, chartState);

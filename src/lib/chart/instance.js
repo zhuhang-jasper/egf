@@ -1,6 +1,6 @@
 import { Chart, Filler, Legend, LineElement, PointElement, RadarController, RadialLinearScale, Tooltip } from "chart.js";
 
-import { ABOUT_CHART_UI } from "@/lib/chart/about-profile";
+import { ABOUT_CHART_UI, resolveChartUi } from "@/lib/chart/about-profile";
 import { createClusterBackgroundPlugin } from "@/lib/chart/plugins";
 import { applyRadarCenterFit, syncFontsForChart } from "@/lib/chart/radar-center";
 import { FE_UI, getChartLabels, getPillarOrder, getPlainChartLabels, normalizeTrackVariant, PILLAR_COUNT } from "@/lib/constants";
@@ -74,6 +74,20 @@ function syncPointLabelsVisibility(chart, hidden) {
   pointLabels.display = !hidden;
 }
 
+function syncPointLabelColors(chart, focusedPillars) {
+  const pointLabels = chart?.options?.scales?.r?.pointLabels;
+  if (!pointLabels) {
+    return;
+  }
+  if (!focusedPillars?.length) {
+    pointLabels.color = resolveChartUi(chart).chart.pointLabelColor;
+    return;
+  }
+  const ui = resolveChartUi(chart).chart;
+  const focused = new Set(focusedPillars);
+  pointLabels.color = (ctx) => (focused.has(chart.data.labels[ctx.index]) ? ui.pointLabelColor : ui.pointLabelDimColor);
+}
+
 function syncChartLabels(chart, trackVariant) {
   const plain = chart?.options?.plugins?.competencyChart?.plainLabels;
   chart.data.labels = plain ? getPlainChartLabels(trackVariant) : getChartLabels(trackVariant);
@@ -102,6 +116,7 @@ export function applyChartState(chart, state) {
   syncPolygonVisibility(chart, state.levelsPolygonHidden);
   syncLevelTicksVisibility(chart, state.chartLevelTicksHidden);
   syncPointLabelsVisibility(chart, Boolean(state.pointLabelsHidden));
+  syncPointLabelColors(chart, state.focusedPillars);
   chart.update("none");
 }
 

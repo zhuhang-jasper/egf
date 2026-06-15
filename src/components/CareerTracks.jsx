@@ -120,11 +120,11 @@ function FoundationalPhase() {
         <h3 className={DOC_TEXT.cardTitlePlain}>{FOUNDATIONAL_PHASE.title}</h3>
 
         <div className="space-y-2">
-          <p className={DOC_TEXT.body}>{FOUNDATIONAL_PHASE.intro}</p>
+          <p className={DOC_TEXT.bodyMedium}>{FOUNDATIONAL_PHASE.intro}</p>
 
           <ul className="list-disc space-y-2 pl-4">
             {FOUNDATIONAL_PHASE.domains.map(({ label, body }) => (
-              <li key={label} className={DOC_TEXT.body}>
+              <li key={label} className={DOC_TEXT.bodyMedium}>
                 <span className="font-bold">{label}:</span> {body}
               </li>
             ))}
@@ -152,12 +152,18 @@ function CareerTrackCard({ track }) {
         <div className="grid grid-cols-1 gap-3 min-[450px]:grid-cols-2 min-[450px]:items-start min-[450px]:gap-x-4">
           <div className="order-2 w-full min-[450px]:order-1">
             <div className="rounded-lg p-2" style={{ backgroundColor: style.chipBg }}>
-              <StaticCompetencyChart levels={track.levels} title={track.name} trackVariant="fe" aria-label={`${track.name} competency profile`} />
+              <StaticCompetencyChart
+                levels={track.levels}
+                title={track.name}
+                trackVariant="fe"
+                focusedPillars={track.keyFocusPillars}
+                aria-label={`${track.name} competency profile`}
+              />
             </div>
           </div>
 
           <div className="order-1 space-y-1.5 min-[450px]:order-2">
-            <p className={DOC_TEXT.body}>{track.summary}</p>
+            <p className={DOC_TEXT.bodyMedium}>{track.summary}</p>
             <KeyPillarChips pillars={sortKeyFocusPillars(track.keyFocusPillars)} chipBg={style.chipBg} textColor={style.textColor} />
           </div>
         </div>
