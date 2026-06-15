@@ -1,7 +1,7 @@
 /** Shared typography for the documentation tab. Body scale matches tool form labels (12px). */
 export const DOC_TEXT = {
   body: "text-[12px] leading-snug text-slate-500",
-  bodyMedium: "text-[12px] font-medium leading-snug text-slate-800",
+  bodyMedium: "text-[12px] font-medium leading-snug text-slate-600",
   bodySemibold: "text-[12px] font-semibold leading-snug text-slate-800",
   bodyItalic: "text-[12px] font-bold italic leading-snug text-slate-700",
 
