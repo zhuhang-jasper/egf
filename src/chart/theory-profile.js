@@ -1,4 +1,4 @@
-import { FE_UI, getChartLayoutLabels, getPlainChartLayoutLabels } from "@/lib/constants";
+import { FE_UI, getChartLayoutLabels, getPlainChartLayoutLabels } from "@/constants";
 
 /** Compact radar preset for theory tab static charts — smaller labels, tighter padding, no L ticks. */
 export const THEORY_CHART_UI = {

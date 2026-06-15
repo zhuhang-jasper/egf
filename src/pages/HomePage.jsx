@@ -6,7 +6,7 @@ import { ToolContent } from "@/components/ToolContent";
 
 import { useTabScrollMemory } from "@/hooks/useTabScrollMemory";
 
-import { FE_UI } from "@/lib/constants";
+import { FE_UI } from "@/constants";
 
 const appVersion = import.meta.env.VITE_APP_VERSION;
 

@@ -9,7 +9,7 @@ import {
   HUMAN_STRENGTH_TOP_K,
   normalizeTrackVariant,
   TECHNICAL_FLOOR_PILLARS,
-} from "@/lib/constants";
+} from "@/constants";
 
 function computePillarSubsetAvg(levels, order, pillarIds) {
   let sum = 0;

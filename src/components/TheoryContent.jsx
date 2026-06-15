@@ -7,9 +7,9 @@ import {
   PILLARS_SECTION_INTRO,
   SENIORITY_LEVEL_DEFINITIONS,
   SENIORITY_SECTION_INTRO,
-} from "@/lib/constants/theory-data";
-import { DOC_SECTION, DOC_TEXT } from "@/lib/doc-typography";
-import { cn } from "@/lib/utils";
+} from "@/constants/theory-data";
+import { DOC_SECTION, DOC_TEXT } from "@/styles/doc-typography";
+import { cn } from "@/utils";
 
 const cardClass = "rounded-xl border border-slate-100 bg-white shadow-md shadow-slate-200/40";
 

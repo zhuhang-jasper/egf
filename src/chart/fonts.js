@@ -1,4 +1,4 @@
-import { FE_UI } from "@/lib/constants";
+import { FE_UI } from "@/constants";
 
 /** 0 at {@link FE_UI.page.minWidthPx}, 1 at maxWidthPx. */
 export function getChartWidthUnit(chartWidthPx) {

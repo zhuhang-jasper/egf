@@ -1,9 +1,9 @@
 import { Chart, Filler, Legend, LineElement, PointElement, RadarController, RadialLinearScale, Tooltip } from "chart.js";
 
-import { THEORY_CHART_UI, resolveChartUi } from "@/lib/chart/theory-profile";
-import { createClusterBackgroundPlugin } from "@/lib/chart/plugins";
-import { applyRadarCenterFit, syncFontsForChart } from "@/lib/chart/radar-center";
-import { FE_UI, getChartLabels, getPillarOrder, getPlainChartLabels, normalizeTrackVariant, PILLAR_COUNT } from "@/lib/constants";
+import { THEORY_CHART_UI, resolveChartUi } from "@/chart/theory-profile";
+import { createClusterBackgroundPlugin } from "@/chart/plugins";
+import { applyRadarCenterFit, syncFontsForChart } from "@/chart/radar-center";
+import { FE_UI, getChartLabels, getPillarOrder, getPlainChartLabels, normalizeTrackVariant, PILLAR_COUNT } from "@/constants";
 
 Chart.register(RadarController, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
 

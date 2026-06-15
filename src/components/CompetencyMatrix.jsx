@@ -2,11 +2,11 @@ import { useLayoutEffect, useRef, useState } from "react";
 
 import { ChevronDown } from "lucide-react";
 
-import { getClusterSurfaceBg } from "@/lib/constants";
-import { COMPETENCY_MATRIX, SENIORITY_LEVEL_DEFINITIONS } from "@/lib/constants/theory-data";
-import { DOC_TEXT } from "@/lib/doc-typography";
-import { scrollBelowStickyHeader } from "@/lib/scroll";
-import { cn } from "@/lib/utils";
+import { getClusterSurfaceBg } from "@/constants";
+import { COMPETENCY_MATRIX, SENIORITY_LEVEL_DEFINITIONS } from "@/constants/theory-data";
+import { DOC_TEXT } from "@/styles/doc-typography";
+import { scrollBelowStickyHeader } from "@/utils/scroll";
+import { cn } from "@/utils";
 
 const levelBadgeClass = cn("flex size-5 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white", DOC_TEXT.badgeMicro);
 

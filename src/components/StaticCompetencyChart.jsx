@@ -2,7 +2,7 @@ import { useMemo, useRef } from "react";
 
 import { useStaticCompetencyChart } from "@/hooks/useStaticCompetencyChart";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils";
 
 /**
  * Standalone radar chart for documentation — compact labels, no L ticks, plain pillar names.

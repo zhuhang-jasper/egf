@@ -11,9 +11,9 @@ import { Button } from "@/components/ui/button";
 import { useCompetencyChart } from "@/hooks/useCompetencyChart";
 import { useElementWidth } from "@/hooks/useElementWidth";
 
-import { getChartTitleSizePx, getTrackBadgeMdHeightPx } from "@/lib/chart/fonts";
-import { FE_UI, FEATURE_SCORES_SETTINGS } from "@/lib/constants";
-import { copyChartAsImageToClipboard } from "@/lib/copy-chart-image";
+import { getChartTitleSizePx, getTrackBadgeMdHeightPx } from "@/chart/fonts";
+import { FE_UI, FEATURE_SCORES_SETTINGS } from "@/constants";
+import { copyChartAsImageToClipboard } from "@/utils/copy-chart-image";
 
 import { useAppStore } from "@/store/useAppStore";
 

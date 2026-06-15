@@ -20,7 +20,7 @@ export {
   TRACK_VARIANTS,
   TRACKS,
   getClusterSurfaceBg,
-} from "@/lib/constants/framework";
+} from "@/constants/framework";
 export {
   BREADTH_TOP_RATIO,
   CAREER_BREADTH_WEIGHT,
@@ -32,8 +32,8 @@ export {
   LEVEL_STEP,
   SENIORITY_LEVEL_COUNT,
   TECHNICAL_FLOOR_PILLARS,
-} from "@/lib/constants/scoring";
-export { FEATURE_SCORES_SETTINGS } from "@/lib/constants/features";
-export { SITE_COPY } from "@/lib/constants/site";
-export { PROFILES_STORAGE_KEY, STORAGE_KEY } from "@/lib/constants/storage";
-export { FE_UI } from "@/lib/constants/ui";
+} from "@/constants/scoring";
+export { FEATURE_SCORES_SETTINGS } from "@/constants/features";
+export { SITE_COPY } from "@/constants/site";
+export { PROFILES_STORAGE_KEY, STORAGE_KEY } from "@/constants/storage";
+export { FE_UI } from "@/styles/ui";

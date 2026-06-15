@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef } from "react";
 
-import { getWindowScrollY, scrollWindowTo } from "@/lib/scroll";
+import { getWindowScrollY, scrollWindowTo } from "@/utils/scroll";
 
 /** Remember per-tab window scroll in memory; resets on page refresh. */
 export function useTabScrollMemory(activeTab) {

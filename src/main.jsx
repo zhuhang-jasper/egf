@@ -1,7 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
-import { disableBrowserScrollRestoration } from "@/lib/scroll";
+import { disableBrowserScrollRestoration } from "@/utils/scroll";
 
 import App from "@/App.jsx";
 

@@ -1,5 +1,5 @@
-import { syncFontsForChart } from "@/lib/chart/radar-center";
-import { FE_UI } from "@/lib/constants";
+import { syncFontsForChart } from "@/chart/radar-center";
+import { FE_UI } from "@/constants";
 
 const UNSUPPORTED_COLOR_RE = /(?:oklch|oklab|lab\(|lch\(|color\()/i;
 

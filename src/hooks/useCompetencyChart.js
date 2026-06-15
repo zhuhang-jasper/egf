@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 
-import { applyChartFrameLayout } from "@/lib/chart/fonts";
-import { applyChartState, createCompetencyChart, refreshChart } from "@/lib/chart/instance";
-import { getRadarContentHeightPx } from "@/lib/chart/radar-center";
-import { getChartLabels } from "@/lib/constants";
+import { applyChartFrameLayout } from "@/chart/fonts";
+import { applyChartState, createCompetencyChart, refreshChart } from "@/chart/instance";
+import { getRadarContentHeightPx } from "@/chart/radar-center";
+import { getChartLabels } from "@/constants";
 
 import { useAppStore } from "@/store/useAppStore";
 

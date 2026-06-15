@@ -1,5 +1,5 @@
-import { CLUSTERS, getPillarGroups, getPillarLabel, getPillarOrder, getPlainChartPillarLabel } from "@/lib/constants";
-import { COMPETENCY_LEVEL_COPY } from "@/lib/constants/competency-matrix-data";
+import { CLUSTERS, getPillarGroups, getPillarLabel, getPillarOrder, getPlainChartPillarLabel } from "@/constants";
+import { COMPETENCY_LEVEL_COPY } from "@/constants/competency-matrix-data";
 
 function buildLevels(scores) {
   return getPillarOrder("fe").map((id) => scores[id] ?? 2.5);

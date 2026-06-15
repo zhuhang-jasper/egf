@@ -2,9 +2,9 @@ import { useLayoutEffect, useRef } from "react";
 
 import { FileText, Radar } from "lucide-react";
 
-import { SITE_COPY } from "@/lib/constants";
-import { clearStickyScrollOffset, setStickyScrollOffset } from "@/lib/scroll";
-import { cn } from "@/lib/utils";
+import { SITE_COPY } from "@/constants";
+import { clearStickyScrollOffset, setStickyScrollOffset } from "@/utils/scroll";
+import { cn } from "@/utils";
 
 const TABS = [
   { id: "tool", label: "Tool", icon: Radar },
