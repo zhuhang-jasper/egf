@@ -29,7 +29,7 @@ function PillarMatrixLevels({ levels }) {
         {SENIORITY_LEVEL_DEFINITIONS.map(({ code }) => (
           <div key={code} className="flex items-start gap-2 py-2">
             <span className={levelBadgeClass}>{code}</span>
-            <p className={cn("min-w-0 flex-1", DOC_TEXT.body)}>
+            <p className={cn("min-w-0 flex-1", DOC_TEXT.bodyMedium)}>
               <LevelCellContent level={levels[code]} />
             </p>
           </div>
@@ -40,7 +40,7 @@ function PillarMatrixLevels({ levels }) {
         {SENIORITY_LEVEL_DEFINITIONS.map(({ code }) => (
           <div key={code} className="flex min-w-0 flex-col gap-1.5 border-r border-slate-300/50 px-1 last:border-r-0">
             <span className={levelBadgeClass}>{code}</span>
-            <p className={DOC_TEXT.body}>
+            <p className={DOC_TEXT.bodyMedium}>
               <LevelCellContent level={levels[code]} />
             </p>
           </div>
