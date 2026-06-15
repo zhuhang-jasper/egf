@@ -196,14 +196,14 @@ export function ChartSection() {
         {!chartLegendHidden ? (
           <div
             data-chart-export="chart-legend-card"
-            className="mx-auto mt-3 flex w-fit max-w-full items-center justify-center rounded-lg border border-border bg-muted px-6 py-2.5 leading-none"
+            className="mx-auto mt-5 flex w-fit max-w-full items-center justify-center rounded-lg border border-border bg-muted px-6 py-2.5 leading-none"
           >
             <ClusterLegend chartWidth={chartWidth} />
           </div>
         ) : null}
 
         {FEATURE_SCORES_SETTINGS && !footerScoresHidden ? (
-          <div className="mt-3">
+          <div className="mt-5">
             <ChartAverages chartWidth={chartWidth} />
           </div>
         ) : null}

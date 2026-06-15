@@ -139,9 +139,17 @@ export function applyRadarCenterFit(scale) {
 
   scale.xCenter = cx;
   scale.yCenter = cy;
+  let radius = scale.drawingArea;
   if (Number.isFinite(maxR) && maxR > 0) {
-    scale.drawingArea = Math.min(scale.drawingArea, maxR);
+    radius = Math.min(radius, maxR);
   }
+  // When a fixed radius is locked in (so FE & BE render identically sized regardless
+  // of how Chart.js fits each track's labels), use it verbatim — it is already <= maxR.
+  const locked = chart.$radarLockedRadius;
+  if (Number.isFinite(locked) && locked > 0) {
+    radius = locked;
+  }
+  scale.drawingArea = radius;
   rebuildRadarPointLabelItems(scale);
 
   const extents = getPointLabelExtents(scale._pointLabelItems);
