@@ -17,6 +17,15 @@ function LevelBadge({ level, backgroundColor, color }) {
 }
 
 const TRACK_STYLE = {
+  "foundation": {
+    accent: "#0f172a",
+    chipBg: getClusterSurfaceBg(CLUSTERS.technical.color),
+    textColor: CLUSTERS.technical.textColor,
+    levelBadgeBg: "#c4b5d0",
+    levelBadgeText: "#3f3549",
+    // levelBadgeBg: "#0f172a",
+    // levelBadgeText: "#ffffff",
+  },
   "deep-technical": {
     accent: CLUSTERS.technical.textColor,
     chipBg: getClusterSurfaceBg(CLUSTERS.technical.color),
@@ -38,10 +47,6 @@ const TRACK_STYLE = {
     levelBadgeBg: "#b0cdb0",
     levelBadgeText: "#1f3d28",
   },
-};
-
-const FOUNDATION_STYLE = {
-  accent: "#0f172a",
 };
 
 function RoleCellContent({ title, subtitle, note }) {
@@ -109,10 +114,10 @@ function KeyPillarChips({ pillars, chipBg, textColor }) {
 }
 
 function FoundationalPhase() {
-  const { chipBg, textColor } = TRACK_STYLE["deep-technical"];
+  const style = TRACK_STYLE.foundation;
 
   return (
-    <article className={cn(cardClass, "overflow-hidden border-l-[3px] p-3")} style={{ borderLeftColor: FOUNDATION_STYLE.accent }}>
+    <article className={cn(cardClass, "overflow-hidden border-l-[3px] p-3")} style={{ borderLeftColor: style.accent }}>
       <div className="space-y-2.5">
         <h3 className={DOC_TEXT.cardTitlePlain}>{FOUNDATIONAL_PHASE.title}</h3>
 
@@ -127,10 +132,10 @@ function FoundationalPhase() {
             ))}
           </ul>
 
-          <KeyPillarChips pillars={FOUNDATIONAL_PHASE.technicalPillars} chipBg={chipBg} textColor={textColor} />
+          <KeyPillarChips pillars={FOUNDATIONAL_PHASE.technicalPillars} chipBg={style.chipBg} textColor={style.textColor} />
         </div>
 
-        <TrackRoleSequence roleLevels={FOUNDATIONAL_PHASE.roleLevels} badgeBg={FOUNDATION_STYLE.accent} badgeColor="#ffffff" centerDesktop />
+        <TrackRoleSequence roleLevels={FOUNDATIONAL_PHASE.roleLevels} badgeBg={style.levelBadgeBg} badgeColor={style.levelBadgeText} centerDesktop />
       </div>
     </article>
   );

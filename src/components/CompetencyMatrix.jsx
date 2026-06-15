@@ -76,7 +76,7 @@ function PillarMatrixCard({ order, pillarId, pillarName, focusSummary, color, te
           </h3>
           <p className={DOC_TEXT.body}>{focusSummary}</p>
         </div>
-        <ChevronDown className={cn("mt-0.5 size-4 shrink-0 text-slate-400 transition-transform", expanded && "rotate-180")} aria-hidden />
+        <ChevronDown className={cn("mt-0.5 size-4 shrink-0 text-slate-800 transition-transform", expanded && "rotate-180")} aria-hidden />
       </button>
 
       {expanded ? (
