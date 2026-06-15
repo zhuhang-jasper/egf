@@ -135,7 +135,7 @@ export function applyRadarCenterFit(scale) {
   const uWidth = getChartWidthUnit(chart.width);
   const { minPx, maxPx } = u.radarLabelReserved;
   const reserve = Math.round(minPx + uWidth * (maxPx - minPx));
-  const maxR = Math.min(cx - area.left - reserve, area.right - cx - reserve, cy - area.top - reserve, area.bottom - cy - reserve);
+  const maxR = Math.min(cx - area.left - reserve, area.right - cx - reserve);
 
   scale.xCenter = cx;
   scale.yCenter = cy;

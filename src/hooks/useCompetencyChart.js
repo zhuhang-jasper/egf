@@ -1,14 +1,10 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 
-import { applyChartFrameLayout, isChartMinimalChrome } from "@/lib/chart/fonts";
+import { applyChartFrameLayout } from "@/lib/chart/fonts";
 import { applyChartState, createCompetencyChart, refreshChart } from "@/lib/chart/instance";
 import { getRadarContentHeightPx } from "@/lib/chart/radar-center";
 
 import { useAppStore } from "@/store/useAppStore";
-
-function getLayoutOptions() {
-  return { minimalChrome: isChartMinimalChrome(useAppStore.getState()) };
-}
 
 function fitFrameToChart(frameRef, chart) {
   const frame = frameRef.current;
@@ -17,7 +13,6 @@ function fitFrameToChart(frameRef, chart) {
   }
 
   const w = frame.offsetWidth;
-  const layout = getLayoutOptions();
 
   let prevContentH = null;
   for (let pass = 0; pass < 3; pass++) {
@@ -29,7 +24,7 @@ function fitFrameToChart(frameRef, chart) {
       break;
     }
     prevContentH = contentH;
-    applyChartFrameLayout(frame, w, contentH, layout);
+    applyChartFrameLayout(frame, w, contentH);
     chart.resize();
   }
 }
@@ -53,8 +48,7 @@ export function useCompetencyChart(canvasRef, frameRef) {
       return;
     }
 
-    const layout = getLayoutOptions();
-    applyChartFrameLayout(frame, frame.offsetWidth, null, layout);
+    applyChartFrameLayout(frame, frame.offsetWidth, null);
     if (!chart) {
       return;
     }

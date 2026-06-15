@@ -3,10 +3,8 @@ export const FE_UI = {
   chartFrame: {
     /** Fallback frame height before Chart.js label bounds are measured (radar fits a wide rect, not a square). */
     heightWidthRatio: { minRatio: 0.76, maxRatio: 0.84 },
-    /** Responsive trim on chart frame top/bottom — pairs with chrome gap spacers. */
-    marginTrim: { minPx: -10, maxPx: -30 },
-    /** Padding around measured axis-label span when fitting frame height to content. */
-    contentPadPx: 6,
+    /** Safety pad around measured axis-label span — just enough to keep labels off the canvas edge; chrome spacing lives in CSS margins. */
+    contentPadPx: 2,
     minChartHeightPx: 120,
   },
   chart: {
@@ -16,7 +14,6 @@ export const FE_UI = {
     radarCenterFix: true,
     radarLabelReservedPx: 62,
     radarLabelReserved: { minPx: 38, maxPx: 54 },
-    legendMarginTop: { minPx: 14, maxPx: 36 },
     /** Track badge + cluster legend — slightly below axis pillar labels, same width scaling. */
     secondaryLabelMultiplier: 0.9,
     /** md badge min width (em) — sized for "Frontend" so title does not shift on track toggle. */

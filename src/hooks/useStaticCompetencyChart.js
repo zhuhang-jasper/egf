@@ -22,7 +22,7 @@ function fitFrameToChart(frameRef, chart) {
       break;
     }
     prevContentH = contentH;
-    applyChartFrameLayout(frame, w, contentH, { minimalChrome: true });
+    applyChartFrameLayout(frame, w, contentH);
     chart.resize();
   }
 }
@@ -42,7 +42,7 @@ export function useStaticCompetencyChart(canvasRef, frameRef, chartState) {
       return;
     }
 
-    applyChartFrameLayout(frame, frame.offsetWidth, null, { minimalChrome: true });
+    applyChartFrameLayout(frame, frame.offsetWidth, null);
     if (!chart) {
       return;
     }

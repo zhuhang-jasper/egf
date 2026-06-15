@@ -73,12 +73,8 @@ export function ChartAverages({ chartWidth = 0 }) {
   const clusterGroups = getPillarGroupOrder(trackVariant);
 
   return (
-    <div
-      data-chart-export="chart-averages"
-      className="mb-3 flex flex-col gap-2 min-[450px]:gap-4 last-of-type:mb-0"
-      aria-label="Cluster averages and score summary"
-    >
-      <div className="grid grid-cols-3 gap-2 min-[450px]:gap-4">
+    <div data-chart-export="chart-averages" className="flex flex-col gap-2 min-[450px]:gap-3" aria-label="Cluster averages and score summary">
+      <div className="grid grid-cols-3 gap-2 min-[450px]:gap-3">
         {clusterGroups.map(({ id }) => {
           const cluster = CLUSTERS[id];
           const theme = getClusterAvgCardTheme(id);
@@ -100,7 +96,7 @@ export function ChartAverages({ chartWidth = 0 }) {
           );
         })}
       </div>
-      <div className="grid grid-cols-4 gap-2 min-[450px]:gap-4">
+      <div className="grid grid-cols-4 gap-2 min-[450px]:gap-3">
         <AvgCard
           label="Breadth"
           value={formatAvgScore(breadth)}
