@@ -50,7 +50,7 @@ export default function HomePage() {
         <AppShellTabBar activeTab={activeTab} onTabChange={handleTabChange} />
 
         <div className="mt-3" role="tabpanel" hidden={activeTab !== "tool"} aria-hidden={activeTab !== "tool"} aria-label="Tool">
-          <ToolContent />
+          <ToolContent isVisible={activeTab === "tool"} />
         </div>
         <div className="mt-3" role="tabpanel" hidden={activeTab !== "theory"} aria-hidden={activeTab !== "theory"} aria-label="Theory">
           <TheoryContent

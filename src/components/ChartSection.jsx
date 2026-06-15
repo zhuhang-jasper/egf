@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { ArrowUpFromLine, Settings } from "lucide-react";
 
@@ -102,7 +102,7 @@ function ChartDisplayMenu() {
   );
 }
 
-export function ChartSection() {
+export function ChartSection({ isVisible }) {
   const exportRef = useRef(null);
   const canvasRef = useRef(null);
   const frameRef = useRef(null);
@@ -115,7 +115,7 @@ export function ChartSection() {
   const footerScoresHidden = useAppStore((s) => s.footerScoresHidden);
 
   const { chartRef, relayout } = useCompetencyChart(canvasRef, frameRef);
-  const chartWidth = useElementWidth(frameRef);
+  const chartWidth = useElementWidth(frameRef, isVisible);
 
   const trimmedTitle = String(title).trim();
   const showVisibleTitle = !chartTitleHidden && trimmedTitle.length > 0;
@@ -123,6 +123,12 @@ export function ChartSection() {
   const layoutWidth = chartWidth || FE_UI.page.minWidthPx;
   const titleSizePx = getChartTitleSizePx(layoutWidth);
   const titleRowHeightPx = getTrackBadgeMdHeightPx(layoutWidth);
+
+  useLayoutEffect(() => {
+    if (isVisible) {
+      relayout();
+    }
+  }, [isVisible, relayout]);
 
   useEffect(() => {
     relayout();

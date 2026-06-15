@@ -1,6 +1,6 @@
 import { useLayoutEffect, useState } from "react";
 
-export function useElementWidth(ref) {
+export function useElementWidth(ref, isVisible) {
   const [width, setWidth] = useState(0);
 
   useLayoutEffect(() => {
@@ -19,7 +19,7 @@ export function useElementWidth(ref) {
       ro.disconnect();
       window.removeEventListener("resize", update);
     };
-  }, [ref]);
+  }, [ref, isVisible]);
 
   return width;
 }
