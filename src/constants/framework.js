@@ -91,9 +91,17 @@ export function getPillarLabel(pillarId) {
   return PILLARS[pillarId]?.label ?? "";
 }
 
-/** Chart axis labels omit the organ name in parentheses (e.g. "🤲 Coding" not "🤲 Coding (Hands)"). */
+/**
+ * Chart axis labels omit the organ name in parentheses (e.g. "🤲 Coding" not "🤲 Coding (Hands)").
+ * They also strip emoji variation selectors (U+FE0F): the only pillar emoji that carries one is
+ * 🗣️ Communication, and mobile Safari's canvas mis-measures/-anchors that grapheme cluster, shifting
+ * just that one label. Stripping it on the canvas labels keeps every axis rendering consistently.
+ * (The form labels keep the variation selector — DOM text renders it fine.)
+ */
 function getChartPillarLabel(pillarId) {
-  return getPillarLabel(pillarId).replace(/\s*\([^)]*\)\s*$/, "");
+  return getPillarLabel(pillarId)
+    .replace(/\s*\([^)]*\)\s*$/, "")
+    .replace(/\uFE0F/g, "");
 }
 
 export function getChartLabels(trackVariant = "fe") {
