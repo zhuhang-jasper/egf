@@ -1,5 +1,5 @@
 export const FE_UI = {
-  page: { maxWidthPx: 640, minWidthPx: 350, theoryMaxWidthPx: 796 },
+  page: { maxWidthPx: 550, minWidthPx: 350, theoryMaxWidthPx: 796 },
   chartFrame: {
     /** Height/width ratio (radar fits a wide rect, not a square). Serves as both the pre-measurement estimate seed and the post-convergence floor — measured content converges below this, so the floor sets the final height. */
     heightWidthRatio: 0.55,
