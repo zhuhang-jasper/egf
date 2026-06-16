@@ -87,7 +87,12 @@ function PillarMatrixCard({ order, pillarId, pillarName, focusSummary, color, te
         <section id={panelId} aria-labelledby={`${panelId}-trigger`}>
           <PillarMatrixLevels levels={levels} />
           <div className="flex justify-center border-t border-slate-300/60 py-2">
-            <ShareLinkButton section={THEORY_SECTIONS.matrix} pillar={pillarId} label="Copy link to this pillar" ariaLabel="Copy link to this pillar" />
+            <ShareLinkButton
+              section={THEORY_SECTIONS.matrix}
+              pillar={pillarId}
+              label="Copy link to this content"
+              ariaLabel="Copy link to this content"
+            />
           </div>
         </section>
       ) : null}

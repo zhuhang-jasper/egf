@@ -84,7 +84,7 @@ export function ShareLinkButton({ section, pillar = null, label = null, ariaLabe
       className={cn("group relative inline-flex cursor-pointer items-center rounded-md transition-colors", variantClass, className)}
     >
       {copied ? <CheckIcon /> : <LinkIcon />}
-      {labeled ? <span>{copied ? "Copied" : label}</span> : <Tooltip text={copied ? "Copied" : "Copy link"} />}
+      {labeled ? <span>{copied ? "Copied!" : label}</span> : <Tooltip text={copied ? "Copied" : "Copy link"} visible={copied} />}
     </button>
   );
 }
