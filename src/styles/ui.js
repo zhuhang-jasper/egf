@@ -1,29 +1,26 @@
 export const FE_UI = {
   page: { maxWidthPx: 640, minWidthPx: 350, theoryMaxWidthPx: 796 },
   chartFrame: {
-    /** Fallback frame height before Chart.js label bounds are measured (radar fits a wide rect, not a square). */
-    heightWidthRatio: { minRatio: 0.76, maxRatio: 0.84 },
-    /** Floor applied after convergence — prevents the chart from collapsing too short (converged minimum is too cramped). */
-    minHeightWidthRatio: 0.54,
+    /** Height/width ratio (radar fits a wide rect, not a square). Serves as both the pre-measurement estimate seed and the post-convergence floor — measured content converges below this, so the floor sets the final height. */
+    heightWidthRatio: 0.55,
     /** Safety pad around measured axis-label span — just enough to keep labels off the canvas edge; chrome spacing lives in CSS margins. */
     contentPadPx: 2,
     minChartHeightPx: 120,
   },
   chart: {
     title: { labelMultiplier: 1.4, minPx: 14, maxPx: 22 },
-    layoutPadding: { top: 0, right: 30, bottom: 0, left: 30 },
-    layoutPaddingHorizontal: { minPx: 14, maxPx: 30 },
+    layoutPaddingHorizontal: { minPx: 8, maxPx: 16 },
     radarCenterFix: true,
-    radarLabelReservedPx: 62,
     radarLabelReserved: { minPx: 38, maxPx: 54 },
     /** Track badge + cluster legend — slightly below axis pillar labels, same width scaling. */
     secondaryLabelMultiplier: 0.9,
+    /** Floor for track + cluster legend labels (mobile). */
+    secondaryLabelMinPx: 10,
     /** md badge min width (em) — sized for "Frontend" so title does not shift on track toggle. */
     trackBadgeMdMinWidthEm: 6.75,
     /** Swatch edge length vs legend label font size — just taller than text cap height. */
     legendSwatchLabelMultiplier: 1.2,
-    pointLabelPadding: 7.5,
-    pointLabelPaddingRange: { minPx: 5, maxPx: 10 },
+    pointLabelPaddingRange: { minPx: 4, maxPx: 8 },
     pointLabelPx: 11,
     pointLabelScaleWithChart: true,
     pointLabelWeight: "bold",
@@ -45,7 +42,7 @@ export const FE_UI = {
   chartFonts: {
     tickMinPx: 8,
     tickWidthDivisor: 48,
-    pointLabelMinPx: 9,
+    pointLabelMinPx: 11,
     pointLabelMaxPx: 18,
     pointLabelRefWidthPx: 380,
   },

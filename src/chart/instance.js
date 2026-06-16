@@ -148,7 +148,7 @@ export function createCompetencyChart(canvas, { purpose = "tool" } = {}) {
       // updates already use mode "none", so this removes no intended motion.
       animation: false,
       backgroundColor: "transparent",
-      layout: { padding: { ...ch.layoutPadding } },
+      layout: { padding: { top: 0, bottom: 0, left: ch.layoutPaddingHorizontal.minPx, right: ch.layoutPaddingHorizontal.minPx } },
       onResize: syncFontsForChart,
       scales: {
         r: {
@@ -180,7 +180,7 @@ export function createCompetencyChart(canvas, { purpose = "tool" } = {}) {
           },
           pointLabels: {
             centerPointLabels: ch.centerPointLabels,
-            padding: ch.pointLabelPadding,
+            padding: ch.pointLabelPaddingRange.minPx,
             font: { size: ch.pointLabelPx, weight: ch.pointLabelWeight },
             color: ch.pointLabelColor,
           },
