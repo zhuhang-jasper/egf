@@ -210,7 +210,7 @@ export function ChartSection({ isVisible }) {
 
         {FEATURE_SCORES_SETTINGS && !footerScoresHidden ? (
           <div className="mt-5">
-            <ChartAverages chartWidth={chartWidth} />
+            <ChartAverages />
           </div>
         ) : null}
       </div>
