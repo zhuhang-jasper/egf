@@ -104,7 +104,7 @@ function PillarMatrixCard({ order, pillarId, pillarName, focusSummary, color, te
         aria-controls={panelId}
         onClick={onToggle}
         className={cn(
-          "flex w-full cursor-pointer items-start gap-2 px-3 pt-2.5 text-left transition-colors hover:opacity-70",
+          "flex w-full cursor-pointer items-start gap-2 px-3 pt-2.5 text-left transition-colors hover:bg-black/[0.04]",
           expanded ? "pb-1.5 border-b border-slate-300/60" : "pb-2.5",
         )}
       >
