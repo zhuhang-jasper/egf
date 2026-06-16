@@ -26,12 +26,27 @@ export default function HomePage() {
 
   const { saveActiveTabScroll } = useTabScrollMemory(activeTab);
 
+  // Cross-tab jump from a tool-form pillar's help icon into the theory matrix. The `seq` bump makes
+  // repeated clicks on the same pillar re-trigger the expand + scroll even when the tab is already open.
+  const [matrixNav, setMatrixNav] = useState(null);
+
   const handleTabChange = (nextTab) => {
     if (nextTab === activeTab) {
       return;
     }
     saveActiveTabScroll();
     setActiveTab(nextTab);
+  };
+
+  const handleOpenPillarInMatrix = (pillarId) => {
+    if (!pillarId) {
+      return;
+    }
+    if (activeTab !== "theory") {
+      saveActiveTabScroll();
+      setActiveTab("theory");
+    }
+    setMatrixNav((prev) => ({ pillarId, seq: (prev?.seq ?? 0) + 1 }));
   };
 
   const isTheory = activeTab === "theory";
@@ -50,7 +65,7 @@ export default function HomePage() {
         <AppShellTabBar activeTab={activeTab} onTabChange={handleTabChange} />
 
         <div className="mt-3" role="tabpanel" hidden={activeTab !== "tool"} aria-hidden={activeTab !== "tool"} aria-label="Tool">
-          <ToolContent isVisible={activeTab === "tool"} />
+          <ToolContent isVisible={activeTab === "tool"} onOpenPillarInMatrix={handleOpenPillarInMatrix} />
         </div>
         <div className="mt-3" role="tabpanel" hidden={activeTab !== "theory"} aria-hidden={activeTab !== "theory"} aria-label="Theory">
           <TheoryContent
@@ -59,6 +74,7 @@ export default function HomePage() {
               deepLinkRef.current = null;
               cleanTheoryDeepLinkParams();
             }}
+            matrixNav={matrixNav}
           />
         </div>
       </main>

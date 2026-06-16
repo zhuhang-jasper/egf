@@ -58,11 +58,11 @@
     position: relative;
     box-sizing: border-box;
     width: 100%;
-    padding: 16px 16px 10px;
+    padding: 12px 16px;
   }
 
   #competencyInputs .form-section-title {
-    padding-bottom: 10px;
+    margin-bottom: 8px;
     font-size: 10px;
     font-weight: 600;
     line-height: 1.2;

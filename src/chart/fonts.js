@@ -26,7 +26,8 @@ export function getChartPointLabelSizePx(chartWidthPx) {
 
 /** Track badge + cluster legend — scales with chart width, slightly below axis labels. */
 export function getChartSecondaryLabelSizePx(chartWidthPx) {
-  return Math.max(1, Math.round(getChartPointLabelSizePx(chartWidthPx) * FE_UI.chart.secondaryLabelMultiplier));
+  const min = FE_UI.chart.secondaryLabelMinPx ?? 1;
+  return Math.max(min, Math.round(getChartPointLabelSizePx(chartWidthPx) * FE_UI.chart.secondaryLabelMultiplier));
 }
 
 /** md track badge outer height — matches {@link TrackBadge} size="md" padding + leading-none text. */
@@ -67,9 +68,7 @@ export function getChartTitleSizePx(chartWidthPx) {
 
 /** Initial frame height before label bounds are measured from the live chart. */
 export function getChartFrameEstimatedHeightPx(chartWidthPx) {
-  const u = getChartWidthUnit(chartWidthPx);
-  const { minRatio, maxRatio } = FE_UI.chartFrame.heightWidthRatio;
-  const ratio = minRatio + u * (maxRatio - minRatio);
+  const ratio = FE_UI.chartFrame.heightWidthRatio;
   const minH = FE_UI.chartFrame.minChartHeightPx ?? 120;
   return Math.round(Math.max(minH, chartWidthPx * ratio));
 }

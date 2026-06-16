@@ -71,7 +71,7 @@ function fitFrameToChart(frameRef, chart) {
   chart.update("none");
 
   const rawH = Math.max(beH ?? 0, feH ?? 0);
-  const minRatioH = Math.round(w * (FE_UI.chartFrame.minHeightWidthRatio ?? 0));
+  const minRatioH = Math.round(w * (FE_UI.chartFrame.heightWidthRatio ?? 0));
   const finalH = Math.max(rawH, minRatioH);
   if (finalH > 0) {
     applyChartFrameLayout(frame, w, finalH);

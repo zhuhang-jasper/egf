@@ -6,7 +6,6 @@ export const THEORY_CHART_UI = {
   chart: {
     ...FE_UI.chart,
     pointLabelPx: 9,
-    pointLabelPadding: 2,
     pointLabelPaddingRange: { minPx: 2, maxPx: 10 },
     radarLabelReserved: { minPx: 6, maxPx: 12 },
     layoutPaddingHorizontal: { minPx: 2, maxPx: 5 },

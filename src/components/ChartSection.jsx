@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { ArrowUpFromLine, Settings } from "lucide-react";
 
-import { ChartAverages } from "@/components/ChartAverages";
+import { ChartScores } from "@/components/ChartScores";
 import { ClusterLegend } from "@/components/ClusterLegend";
 import { TrackBadge } from "@/components/TrackBadge";
 import { TrackToggle } from "@/components/TrackToggle";
@@ -171,7 +171,7 @@ export function ChartSection({ isVisible }) {
 
       <div ref={exportRef} className="flex w-full min-w-0 flex-col self-stretch">
         {showTitleRow ? (
-          <div className="relative z-[1] flex w-full min-w-0 items-center gap-3 leading-none" style={{ minHeight: titleRowHeightPx }}>
+          <div className="relative z-[1] flex w-full min-w-0 items-center gap-3 leading-none mb-2" style={{ minHeight: titleRowHeightPx }}>
             {!chartLegendHidden ? <TrackBadge variant={trackVariant} size="md" className="shrink-0" chartWidth={chartWidth} /> : null}
             {showVisibleTitle ? (
               <h2
@@ -209,8 +209,12 @@ export function ChartSection({ isVisible }) {
         ) : null}
 
         {FEATURE_SCORES_SETTINGS && !footerScoresHidden ? (
-          <div className="mt-5">
-            <ChartAverages />
+          <div
+            data-chart-export="chart-scores"
+            className="mt-3 flex flex-col gap-2 min-[470px]:gap-3"
+            aria-label="Cluster averages and score summary"
+          >
+            <ChartScores />
           </div>
         ) : null}
       </div>

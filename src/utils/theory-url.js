@@ -44,6 +44,11 @@ export const THEORY_SECTION_IDS = {
   [THEORY_SECTIONS.tracks]: "theory-section-tracks",
 };
 
+/** Stable DOM id for a matrix pillar card, so deep-links can scroll to the pillar (not just the section). */
+export function getPillarCardElementId(pillarId) {
+  return `theory-matrix-pillar-${pillarId}`;
+}
+
 const PARAM_TAB = "tab";
 const PARAM_SECTION = "section";
 const PARAM_PILLAR = "pillar";
