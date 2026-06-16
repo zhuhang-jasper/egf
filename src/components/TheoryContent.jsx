@@ -9,7 +9,7 @@ import { CAREER_TRACKS_SECTION_INTRO, PILLARS_SECTION_INTRO, SENIORITY_LEVEL_DEF
 import { DOC_SECTION, DOC_TEXT } from "@/styles/doc-typography";
 import { cn } from "@/utils";
 import { scrollBelowStickyHeader } from "@/utils/scroll";
-import { getPersistedExpandedPillar, getPillarCardElementId, THEORY_SECTION_IDS, THEORY_SECTIONS } from "@/utils/theory-url";
+import { getPersistedExpandedPillar, getPillarCardElementId, persistExpandedPillar, THEORY_SECTION_IDS, THEORY_SECTIONS } from "@/utils/theory-url";
 
 const cardClass = "rounded-xl border border-slate-100 bg-white shadow-md shadow-slate-200/40";
 
@@ -69,7 +69,7 @@ function SeniorityStepper() {
   );
 }
 
-function TheoryContent({ deepLink, onDeepLinkConsumed }) {
+function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav }) {
   const consumedRef = useRef(false);
 
   // Expanded pillar state lives here so the matrix share button can read it.
@@ -77,6 +77,20 @@ function TheoryContent({ deepLink, onDeepLinkConsumed }) {
     const fromDeepLink = deepLink?.section === THEORY_SECTIONS.matrix ? deepLink.pillar : null;
     return fromDeepLink ?? getPersistedExpandedPillar();
   });
+
+  // In-app jump from a tool-form pillar's help icon. Expanding the pillar makes CompetencyMatrix
+  // scroll to it; persist so the choice survives like a normal expand. Keyed on `seq` so clicking
+  // the same pillar again re-runs (a no-op state change wouldn't re-trigger the matrix scroll).
+  const matrixNavSeq = matrixNav?.seq;
+  useEffect(() => {
+    const pillarId = matrixNav?.pillarId;
+    if (!pillarId) {
+      return;
+    }
+    persistExpandedPillar(pillarId);
+    setExpandedPillar(pillarId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matrixNavSeq]);
 
   useEffect(() => {
     if (!deepLink || consumedRef.current) {
@@ -143,7 +157,7 @@ function TheoryContent({ deepLink, onDeepLinkConsumed }) {
           subtitle="The comprehensive behavioral matrix mapping expectations for all 9 pillars. Organized by the Technical, Product, and Operational clusters, and evaluated across the L1-L5 seniority scale."
           section={THEORY_SECTIONS.matrix}
         />
-        <CompetencyMatrix expandedPillar={expandedPillar} onExpandedPillarChange={setExpandedPillar} />
+        <CompetencyMatrix expandedPillar={expandedPillar} onExpandedPillarChange={setExpandedPillar} scrollNav={matrixNav} />
       </section>
 
       <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.tracks]} className="space-y-3">

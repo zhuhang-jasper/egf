@@ -5,7 +5,7 @@ import { useAppStore } from "@/store/useAppStore";
 
 import { getPillarGroups } from "@/constants";
 
-export function FormPanel() {
+export function FormPanel({ onOpenPillarInMatrix }) {
   const trackVariant = useAppStore((s) => s.trackVariant);
 
   return (
@@ -13,7 +13,7 @@ export function FormPanel() {
       <TitleToolbar />
       <div id="competencyInputs" className="mt-4 flex flex-col gap-3">
         {getPillarGroups(trackVariant).map((group) => (
-          <PillarCluster key={group.id} group={group} />
+          <PillarCluster key={group.id} group={group} onOpenPillarInMatrix={onOpenPillarInMatrix} />
         ))}
       </div>
     </aside>

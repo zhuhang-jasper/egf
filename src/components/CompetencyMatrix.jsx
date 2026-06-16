@@ -95,7 +95,7 @@ function PillarMatrixCard({ order, pillarId, pillarName, focusSummary, color, te
   );
 }
 
-function CompetencyMatrix({ expandedPillar, onExpandedPillarChange }) {
+function CompetencyMatrix({ expandedPillar, onExpandedPillarChange, scrollNav }) {
   const cardRefs = useRef({});
   const isFirstMountRef = useRef(true);
 
@@ -126,6 +126,41 @@ function CompetencyMatrix({ expandedPillar, onExpandedPillarChange }) {
 
     return () => cancelAnimationFrame(frame);
   }, [expandedPillar]);
+
+  // Cross-tab jump from a tool-form pillar's help icon. Keyed on `scrollNav.seq` (bumps every click)
+  // so it always scrolls the card to the top — even when the pillar was already expanded, where the
+  // `expandedPillar` effect above would be a no-op and never re-run.
+  const scrollNavSeq = scrollNav?.seq;
+  useLayoutEffect(() => {
+    const pillarId = scrollNav?.pillarId;
+    if (!pillarId) {
+      return undefined;
+    }
+
+    const card = cardRefs.current[pillarId];
+    if (!card) {
+      return undefined;
+    }
+
+    // Double rAF: the theory tabpanel was just un-hidden (display:none → block) in this same commit,
+    // so its layout box isn't ready yet. First frame lets it lay out, second lets getBoundingClientRect
+    // settle before measuring. (The `expandedPillar` effect can use a single frame because expanding
+    // a pillar happens in a later render, by which point the panel is already laid out.)
+    let inner = null;
+    const outer = requestAnimationFrame(() => {
+      inner = requestAnimationFrame(() => {
+        scrollBelowStickyHeader(card);
+      });
+    });
+
+    return () => {
+      cancelAnimationFrame(outer);
+      if (inner !== null) {
+        cancelAnimationFrame(inner);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scrollNavSeq]);
 
   return (
     <div className="space-y-3">
