@@ -1,12 +1,10 @@
 import { useAppStore } from "@/store/useAppStore";
 
-import { getScoreCardFontSizesPx } from "@/chart/fonts";
 import {
   BREADTH_TOP_RATIO,
   CAREER_BREADTH_WEIGHT,
   CAREER_PEAK_WEIGHT,
   CLUSTERS,
-  FE_UI,
   FEATURE_SCORES_SETTINGS,
   getClusterSurfaceBg,
   getPillarGroupOrder,
@@ -30,7 +28,7 @@ function getClusterAvgCardTheme(id) {
   };
 }
 
-function AvgCard({ label, value, sub, className, title, labelPx, valuePx, subPx, cardStyle, valueColor }) {
+function AvgCard({ label, value, sub, className, title, cardStyle, valueColor }) {
   return (
     <div
       data-chart-export="chart-avg-card"
@@ -41,22 +39,16 @@ function AvgCard({ label, value, sub, className, title, labelPx, valuePx, subPx,
         className,
       )}
     >
-      <span className="max-w-[11rem] font-semibold tracking-wide" style={{ fontSize: labelPx }}>
-        {label}
-      </span>
-      <span className="font-extrabold tabular-nums" style={{ fontSize: valuePx, color: valueColor }}>
+      <span className="max-w-[11rem] text-[10px] font-semibold tracking-wide sm:text-[12px]">{label}</span>
+      <span className="text-[16px] font-extrabold tabular-nums sm:text-[20px]" style={{ color: valueColor }}>
         {value}
       </span>
-      {sub ? (
-        <span className="max-w-[12rem] font-bold opacity-95" style={{ fontSize: subPx }}>
-          {sub}
-        </span>
-      ) : null}
+      {sub ? <span className="max-w-[12rem] text-[9px] font-bold opacity-95 sm:text-[12px]">{sub}</span> : null}
     </div>
   );
 }
 
-export function ChartAverages({ chartWidth = 0 }) {
+export function ChartAverages() {
   const levels = useAppStore((s) => s.levels);
   const trackVariant = useAppStore((s) => s.trackVariant);
   const scoresHidden = useAppStore((s) => s.footerScoresHidden);
@@ -68,7 +60,6 @@ export function ChartAverages({ chartWidth = 0 }) {
   const { breadth, human, effective, career, clusters } = computeAverages(levels, trackVariant);
   const pillarCount = levels.length;
   const breadthK = Math.ceil(pillarCount * BREADTH_TOP_RATIO);
-  const { labelPx, valuePx, subPx } = getScoreCardFontSizesPx(chartWidth || FE_UI.page.minWidthPx);
   const effectiveTitle = `${CAREER_PEAK_WEIGHT * 100}% strength + ${CAREER_BREADTH_WEIGHT * 100}% breadth — composite for seniority bands.`;
   const clusterGroups = getPillarGroupOrder(trackVariant);
 
@@ -87,9 +78,6 @@ export function ChartAverages({ chartWidth = 0 }) {
               label={cluster.label}
               value={formatAvgScore(clusters[id])}
               title={`Mean pillar score in the ${cluster.label} cluster.`}
-              labelPx={labelPx}
-              valuePx={valuePx}
-              subPx={subPx}
               cardStyle={theme.cardStyle}
               valueColor={theme.valueColor}
             />
@@ -101,27 +89,18 @@ export function ChartAverages({ chartWidth = 0 }) {
           label="Breadth"
           value={formatAvgScore(breadth)}
           title={`Mean of your ${breadthK} highest pillar scores (of ${pillarCount}).`}
-          labelPx={labelPx}
-          valuePx={valuePx}
-          subPx={subPx}
           className="border-slate-600 bg-slate-50 text-slate-800 [&_span:nth-child(2)]:text-slate-900"
         />
         <AvgCard
           label="Peak"
           value={formatAvgScore(human)}
           title={`Mean of your 3 highest pillar scores (of ${pillarCount}).`}
-          labelPx={labelPx}
-          valuePx={valuePx}
-          subPx={subPx}
           className="border-amber-600 bg-amber-50 text-amber-900 [&_span:nth-child(2)]:text-amber-700"
         />
         <AvgCard
           label="Effective"
           value={formatAvgScore(effective)}
           title={effectiveTitle}
-          labelPx={labelPx}
-          valuePx={valuePx}
-          subPx={subPx}
           className="border-violet-600 bg-violet-50 text-violet-900 [&_span:nth-child(2)]:text-violet-700"
         />
         <AvgCard
@@ -129,9 +108,6 @@ export function ChartAverages({ chartWidth = 0 }) {
           value={career ? career.code : "—"}
           sub={career ? career.role : ""}
           title="L2+ needs peak, breadth, and cluster mins (technical all tracks; product FE only) — see scoring constants."
-          labelPx={labelPx}
-          valuePx={valuePx}
-          subPx={subPx}
           className="border-teal-600 bg-teal-50 text-teal-900 [&_span:nth-child(2)]:text-teal-700"
         />
       </div>

@@ -171,7 +171,7 @@ export function ChartSection({ isVisible }) {
 
       <div ref={exportRef} className="flex w-full min-w-0 flex-col self-stretch">
         {showTitleRow ? (
-          <div className="relative z-[1] mb-3 flex w-full min-w-0 items-center gap-3 leading-none" style={{ minHeight: titleRowHeightPx }}>
+          <div className="relative z-[1] flex w-full min-w-0 items-center gap-3 leading-none" style={{ minHeight: titleRowHeightPx }}>
             {!chartLegendHidden ? <TrackBadge variant={trackVariant} size="md" className="shrink-0" chartWidth={chartWidth} /> : null}
             {showVisibleTitle ? (
               <h2
@@ -202,7 +202,7 @@ export function ChartSection({ isVisible }) {
         {!chartLegendHidden ? (
           <div
             data-chart-export="chart-legend-card"
-            className="mx-auto mt-5 flex w-fit max-w-full items-center justify-center rounded-lg border border-border bg-muted px-6 py-2.5 leading-none"
+            className="mx-auto mt-3 flex w-fit max-w-full items-center justify-center rounded-lg border border-border bg-muted px-6 py-2.5 leading-none"
           >
             <ClusterLegend chartWidth={chartWidth} />
           </div>
@@ -210,7 +210,7 @@ export function ChartSection({ isVisible }) {
 
         {FEATURE_SCORES_SETTINGS && !footerScoresHidden ? (
           <div className="mt-5">
-            <ChartAverages chartWidth={chartWidth} />
+            <ChartAverages />
           </div>
         ) : null}
       </div>

@@ -41,9 +41,6 @@ export const FE_UI = {
     exportImagePaddingPx: 8,
     clusterBorderColor: "rgba(0, 0, 0, 0.22)",
     clusterBorderWidth: 1,
-    /** Score card title line — full secondary size at min width; scales down to this fraction at max width. */
-    scoreCardLabelMultiplier: 0.9,
-    scoreCardLabelMaxPx: 14,
   },
   chartFonts: {
     tickMinPx: 8,
