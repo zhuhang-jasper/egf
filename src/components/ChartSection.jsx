@@ -171,7 +171,7 @@ export function ChartSection({ isVisible }) {
 
       <div ref={exportRef} className="flex w-full min-w-0 flex-col self-stretch">
         {showTitleRow ? (
-          <div className="relative z-[1] flex w-full min-w-0 items-center gap-3 leading-none" style={{ minHeight: titleRowHeightPx }}>
+          <div className="relative z-[1] flex w-full min-w-0 items-center gap-3 leading-none mb-2" style={{ minHeight: titleRowHeightPx }}>
             {!chartLegendHidden ? <TrackBadge variant={trackVariant} size="md" className="shrink-0" chartWidth={chartWidth} /> : null}
             {showVisibleTitle ? (
               <h2
