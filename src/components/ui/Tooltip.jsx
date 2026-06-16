@@ -18,7 +18,7 @@ const EDGE_PAD_PX = 8;
  * Defaults to a single short line; pass `className` (e.g. `whitespace-normal w-[...]`) for longer
  * wrapping text.
  */
-export function Tooltip({ text, className }) {
+export function Tooltip({ text, className, visible = false }) {
   const ref = useRef(null);
   const [shiftX, setShiftX] = useState(0);
 
@@ -76,6 +76,7 @@ export function Tooltip({ text, className }) {
       style={{ transform: `translateX(calc(-50% + ${shiftX}px))` }}
       className={cn(
         "pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-[11px] font-medium leading-none text-white opacity-0 transition-opacity duration-100 group-hover:opacity-100 group-focus-visible:opacity-100",
+        visible && "opacity-100",
         className,
       )}
     >
