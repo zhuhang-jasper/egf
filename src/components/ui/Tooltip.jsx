@@ -2,16 +2,18 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { cn } from "@/utils";
 
-/** Keep the tooltip at least this far from the viewport edges. */
-const VIEWPORT_PAD_PX = 8;
+/** Keep the tooltip at least this far from its bounding box's edges. */
+const EDGE_PAD_PX = 8;
 
 /**
  * Styled hover/focus tooltip. Render inside a `group relative` element; it fades in on
  * `group-hover`/`group-focus-visible`. Used instead of the native `title` attribute so it appears
  * immediately (no browser delay) and matches the app's styling.
  *
- * It is centered above its parent, then clamped horizontally so it never spills past the window
- * edge (recomputed each time it is shown, so it stays correct across resizes / tab switches).
+ * It is centered above its parent, then clamped horizontally so it never spills past the tab's page
+ * (the nearest `<main>` element — its max width plus padding), falling back to the viewport when no
+ * `<main>` ancestor exists. Recomputed each time it is shown so it stays correct across resizes /
+ * tab switches (the active tab's page width differs).
  *
  * Defaults to a single short line; pass `className` (e.g. `whitespace-normal w-[...]`) for longer
  * wrapping text.
@@ -20,7 +22,7 @@ export function Tooltip({ text, className }) {
   const ref = useRef(null);
   const [shiftX, setShiftX] = useState(0);
 
-  const clampToViewport = useCallback(() => {
+  const clampToPage = useCallback(() => {
     const tip = ref.current;
     const parent = tip?.parentElement;
     if (!tip || !parent) {
@@ -31,33 +33,38 @@ export function Tooltip({ text, className }) {
     const half = tip.offsetWidth / 2;
     const leftEdge = centerX - half;
     const rightEdge = centerX + half;
-    // clientWidth excludes the vertical scrollbar, so the right edge isn't overestimated.
-    const viewportRight = document.documentElement.clientWidth - VIEWPORT_PAD_PX;
+    // Bound to the tab's page (main's box, padding included) rather than the full viewport.
+    // getBoundingClientRect is border-box, so its left/right already include main's padding.
+    const main = tip.closest("main");
+    const mr = main?.getBoundingClientRect();
+    // clientWidth excludes the vertical scrollbar, so the viewport right isn't overestimated.
+    const boundsLeft = (mr ? mr.left : 0) + EDGE_PAD_PX;
+    const boundsRight = (mr ? mr.right : document.documentElement.clientWidth) - EDGE_PAD_PX;
     let shift = 0;
-    if (leftEdge < VIEWPORT_PAD_PX) {
-      shift = VIEWPORT_PAD_PX - leftEdge;
-    } else if (rightEdge > viewportRight) {
-      shift = viewportRight - rightEdge;
+    if (leftEdge < boundsLeft) {
+      shift = boundsLeft - leftEdge;
+    } else if (rightEdge > boundsRight) {
+      shift = boundsRight - rightEdge;
     }
     setShiftX(Math.round(shift));
   }, []);
 
-  // Recompute whenever the tooltip is (re)shown so the clamp reflects the current window size.
+  // Recompute whenever the tooltip is (re)shown so the clamp reflects the current page width.
   useEffect(() => {
     const tip = ref.current;
     const parent = tip?.parentElement;
     if (!parent) {
       return undefined;
     }
-    parent.addEventListener("mouseenter", clampToViewport);
-    parent.addEventListener("focusin", clampToViewport);
-    window.addEventListener("resize", clampToViewport);
+    parent.addEventListener("mouseenter", clampToPage);
+    parent.addEventListener("focusin", clampToPage);
+    window.addEventListener("resize", clampToPage);
     return () => {
-      parent.removeEventListener("mouseenter", clampToViewport);
-      parent.removeEventListener("focusin", clampToViewport);
-      window.removeEventListener("resize", clampToViewport);
+      parent.removeEventListener("mouseenter", clampToPage);
+      parent.removeEventListener("focusin", clampToPage);
+      window.removeEventListener("resize", clampToPage);
     };
-  }, [clampToViewport]);
+  }, [clampToPage]);
 
   if (!text) {
     return null;
