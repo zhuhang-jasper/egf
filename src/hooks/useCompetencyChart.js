@@ -5,7 +5,7 @@ import { useAppStore } from "@/store/useAppStore";
 import { applyChartFrameLayout } from "@/chart/fonts";
 import { applyChartState, createCompetencyChart, refreshChart } from "@/chart/instance";
 import { getRadarContentHeightPx } from "@/chart/radar-center";
-import { getChartLabels } from "@/constants";
+import { FE_UI, getChartLabels } from "@/constants";
 
 function convergeContentHeight(frame, chart) {
   const w = frame.offsetWidth;
@@ -70,7 +70,9 @@ function fitFrameToChart(frameRef, chart) {
   chart.data.labels = savedLabels;
   chart.update("none");
 
-  const finalH = Math.max(beH ?? 0, feH ?? 0);
+  const rawH = Math.max(beH ?? 0, feH ?? 0);
+  const minRatioH = Math.round(w * (FE_UI.chartFrame.minHeightWidthRatio ?? 0));
+  const finalH = Math.max(rawH, minRatioH);
   if (finalH > 0) {
     applyChartFrameLayout(frame, w, finalH);
     chart.resize();
