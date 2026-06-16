@@ -2,12 +2,14 @@ import { useLayoutEffect, useRef } from "react";
 
 import { ChevronDown } from "lucide-react";
 
+import { ShareLinkButton } from "@/components/ShareLinkButton";
+
 import { getClusterSurfaceBg } from "@/constants";
 import { COMPETENCY_MATRIX, SENIORITY_LEVEL_DEFINITIONS } from "@/constants/theory-data";
 import { DOC_TEXT } from "@/styles/doc-typography";
 import { cn } from "@/utils";
 import { scrollBelowStickyHeader } from "@/utils/scroll";
-import { buildTheoryShareUrl, persistExpandedPillar, THEORY_SECTIONS } from "@/utils/theory-url";
+import { getPillarCardElementId, persistExpandedPillar, THEORY_SECTIONS } from "@/utils/theory-url";
 
 const levelBadgeClass = cn("flex size-5 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white", DOC_TEXT.badgeMicro);
 
@@ -51,49 +53,13 @@ function PillarMatrixLevels({ levels }) {
   );
 }
 
-function PillarShareButton({ pillarId }) {
-  const handleShare = async () => {
-    const url = buildTheoryShareUrl(THEORY_SECTIONS.matrix, pillarId);
-    try {
-      await navigator.clipboard.writeText(url);
-    } catch {
-      window.prompt("Copy this link:", url);
-    }
-  };
-
-  return (
-    <button
-      type="button"
-      aria-label="Copy link to this pillar"
-      title="Copy link to this pillar"
-      onClick={handleShare}
-      className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2.5 py-1 text-xs text-slate-500 transition-colors hover:bg-black/[0.08] hover:text-slate-700"
-    >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="size-3.5"
-        aria-hidden="true"
-      >
-        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-      </svg>
-      Copy Link to this section
-    </button>
-  );
-}
-
 function PillarMatrixCard({ order, pillarId, pillarName, focusSummary, color, textColor, levels, expanded, onToggle, cardRef }) {
   const panelId = `competency-matrix-${pillarId}`;
 
   return (
     <article
       ref={cardRef}
+      id={getPillarCardElementId(pillarId)}
       className="overflow-hidden rounded-xl border border-white/70 border-l-[3px] shadow-md shadow-slate-200/40"
       style={{ backgroundColor: getClusterSurfaceBg(color), borderLeftColor: textColor }}
     >
@@ -121,7 +87,7 @@ function PillarMatrixCard({ order, pillarId, pillarName, focusSummary, color, te
         <section id={panelId} aria-labelledby={`${panelId}-trigger`}>
           <PillarMatrixLevels levels={levels} />
           <div className="flex justify-center border-t border-slate-300/60 py-2">
-            <PillarShareButton pillarId={pillarId} />
+            <ShareLinkButton section={THEORY_SECTIONS.matrix} pillar={pillarId} label="Copy link to this pillar" ariaLabel="Copy link to this pillar" />
           </div>
         </section>
       ) : null}

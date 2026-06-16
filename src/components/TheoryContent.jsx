@@ -3,57 +3,22 @@ import { useEffect, useRef, useState } from "react";
 import { CareerTracks } from "@/components/CareerTracks";
 import { CompetencyMatrix } from "@/components/CompetencyMatrix";
 import { PillarGrid } from "@/components/PillarGrid";
+import { ShareLinkButton } from "@/components/ShareLinkButton";
 
 import { CAREER_TRACKS_SECTION_INTRO, PILLARS_SECTION_INTRO, SENIORITY_LEVEL_DEFINITIONS, SENIORITY_SECTION_INTRO } from "@/constants/theory-data";
 import { DOC_SECTION, DOC_TEXT } from "@/styles/doc-typography";
 import { cn } from "@/utils";
 import { scrollBelowStickyHeader } from "@/utils/scroll";
-import { buildTheoryShareUrl, getPersistedExpandedPillar, THEORY_SECTION_IDS, THEORY_SECTIONS } from "@/utils/theory-url";
+import { getPersistedExpandedPillar, getPillarCardElementId, THEORY_SECTION_IDS, THEORY_SECTIONS } from "@/utils/theory-url";
 
 const cardClass = "rounded-xl border border-slate-100 bg-white shadow-md shadow-slate-200/40";
 
-function ShareButton({ section, pillar }) {
-  const handleShare = async () => {
-    const url = buildTheoryShareUrl(section, pillar ?? null);
-    try {
-      await navigator.clipboard.writeText(url);
-    } catch {
-      window.prompt("Copy this link:", url);
-    }
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={handleShare}
-      aria-label="Copy link to this section"
-      title="Copy link to this section"
-      className="inline-flex cursor-pointer items-center rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 active:text-slate-800"
-    >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="size-3.5"
-        aria-hidden="true"
-      >
-        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-      </svg>
-    </button>
-  );
-}
-
-function SectionHeading({ title, subtitle, section, pillar }) {
+function SectionHeading({ title, subtitle, section }) {
   return (
     <header className="space-y-1">
       <div className="flex items-center gap-2">
         <h2 className={DOC_SECTION.title}>{title}</h2>
-        <ShareButton section={section} pillar={pillar} />
+        <ShareLinkButton section={section} ariaLabel="Copy link to this content" />
       </div>
       {subtitle ? <p className={DOC_SECTION.intro}>{subtitle}</p> : null}
     </header>
@@ -85,7 +50,10 @@ function SeniorityStepper() {
           {SENIORITY_LEVEL_DEFINITIONS.map(({ code, phase, description, seniority }, index) => (
             <div
               key={code}
-              className={cn("row-span-4 grid min-w-0 grid-rows-subgrid gap-y-1.5 px-1", index < SENIORITY_LEVEL_DEFINITIONS.length - 1 && "border-r border-slate-200/80")}
+              className={cn(
+                "row-span-4 grid min-w-0 grid-rows-subgrid gap-y-1.5 px-1",
+                index < SENIORITY_LEVEL_DEFINITIONS.length - 1 && "border-r border-slate-200/80",
+              )}
             >
               <div className="flex justify-start">
                 <span className={cn(levelBadgeClass, "size-5", DOC_TEXT.badgeMicro)}>{code}</span>
@@ -129,12 +97,16 @@ function TheoryContent({ deepLink, onDeepLinkConsumed }) {
       return undefined;
     }
 
+    // For a matrix pillar deep-link, scroll to the (expanded) pillar card itself, not the
+    // section heading. Falls back to the section when no pillar is targeted.
+    const targetId = section === THEORY_SECTIONS.matrix && deepLink.pillar ? getPillarCardElementId(deepLink.pillar) : sectionId;
+
     // Double rAF: first frame lets the hidden tabpanel become visible,
     // second lets layout settle so getBoundingClientRect is accurate.
     let inner = null;
     const outer = requestAnimationFrame(() => {
       inner = requestAnimationFrame(() => {
-        const el = document.getElementById(sectionId);
+        const el = document.getElementById(targetId) ?? document.getElementById(sectionId);
         if (el) {
           scrollBelowStickyHeader(el, { behavior: "smooth" });
         }
