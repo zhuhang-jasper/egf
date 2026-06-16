@@ -113,13 +113,13 @@ export function ChartScores() {
   return (
     <>
       <div className="grid grid-cols-3 gap-2 min-[470px]:gap-3">
-        {clusterCards.map((card) => (
-          <ScoreCard key={card.key} {...card} />
+        {clusterCards.map(({ key, ...card }) => (
+          <ScoreCard key={key} {...card} />
         ))}
       </div>
       <div className="grid grid-cols-4 gap-2 min-[470px]:gap-3">
-        {summaryCards.map((card) => (
-          <ScoreCard key={card.key} {...card} />
+        {summaryCards.map(({ key, ...card }) => (
+          <ScoreCard key={key} {...card} />
         ))}
       </div>
     </>
