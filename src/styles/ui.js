@@ -3,6 +3,8 @@ export const FE_UI = {
   chartFrame: {
     /** Fallback frame height before Chart.js label bounds are measured (radar fits a wide rect, not a square). */
     heightWidthRatio: { minRatio: 0.76, maxRatio: 0.84 },
+    /** Floor applied after convergence — prevents the chart from collapsing too short (converged minimum is too cramped). */
+    minHeightWidthRatio: 0.54,
     /** Safety pad around measured axis-label span — just enough to keep labels off the canvas edge; chrome spacing lives in CSS margins. */
     contentPadPx: 2,
     minChartHeightPx: 120,
@@ -21,7 +23,6 @@ export const FE_UI = {
     /** Swatch edge length vs legend label font size — just taller than text cap height. */
     legendSwatchLabelMultiplier: 1.2,
     pointLabelPadding: 7.5,
-    /** Narrow charts need more radial padding so adjacent bottom labels (e.g. Ownership / Communication) do not overlap. */
     pointLabelPaddingRange: { minPx: 5, maxPx: 10 },
     pointLabelPx: 11,
     pointLabelScaleWithChart: true,

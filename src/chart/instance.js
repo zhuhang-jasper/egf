@@ -142,6 +142,11 @@ export function createCompetencyChart(canvas, { purpose = "tool" } = {}) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      // No animation: the layout/convergence pipeline relies on chart.resize() applying
+      // synchronously. An in-flight animation (e.g. the initial construction update) makes
+      // Chart.js defer resize() calls, so radius measurement reads stale dimensions. All app
+      // updates already use mode "none", so this removes no intended motion.
+      animation: false,
       backgroundColor: "transparent",
       layout: { padding: { ...ch.layoutPadding } },
       onResize: syncFontsForChart,

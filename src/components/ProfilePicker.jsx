@@ -57,7 +57,7 @@ export function ProfilePicker() {
                     <button
                       type="button"
                       role="menuitem"
-                      className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted/60"
+                      className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted/60"
                       onClick={() => loadProfile(pr.id)}
                     >
                       <span className="min-w-0">{label}</span>
@@ -65,7 +65,7 @@ export function ProfilePicker() {
                     </button>
                     <button
                       type="button"
-                      className="flex w-8 shrink-0 items-center justify-center text-destructive hover:bg-destructive/10"
+                      className="flex w-8 shrink-0 cursor-pointer items-center justify-center text-destructive hover:bg-destructive/10"
                       aria-label={`Remove profile ${label}`}
                       onClick={(e) => {
                         e.stopPropagation();

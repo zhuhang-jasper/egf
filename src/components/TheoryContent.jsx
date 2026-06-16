@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from "react";
+
 import { CareerTracks } from "@/components/CareerTracks";
 import { CompetencyMatrix } from "@/components/CompetencyMatrix";
 import { PillarGrid } from "@/components/PillarGrid";
@@ -5,23 +7,60 @@ import { PillarGrid } from "@/components/PillarGrid";
 import { CAREER_TRACKS_SECTION_INTRO, PILLARS_SECTION_INTRO, SENIORITY_LEVEL_DEFINITIONS, SENIORITY_SECTION_INTRO } from "@/constants/theory-data";
 import { DOC_SECTION, DOC_TEXT } from "@/styles/doc-typography";
 import { cn } from "@/utils";
+import { scrollBelowStickyHeader } from "@/utils/scroll";
+import { buildTheoryShareUrl, getPersistedExpandedPillar, THEORY_SECTION_IDS, THEORY_SECTIONS } from "@/utils/theory-url";
 
 const cardClass = "rounded-xl border border-slate-100 bg-white shadow-md shadow-slate-200/40";
 
-function SectionHeading({ title, subtitle }) {
+function ShareButton({ section, pillar }) {
+  const handleShare = async () => {
+    const url = buildTheoryShareUrl(section, pillar ?? null);
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      window.prompt("Copy this link:", url);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleShare}
+      aria-label="Copy link to this section"
+      title="Copy link to this section"
+      className="inline-flex cursor-pointer items-center rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 active:text-slate-800"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="size-3.5"
+        aria-hidden="true"
+      >
+        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+      </svg>
+    </button>
+  );
+}
+
+function SectionHeading({ title, subtitle, section, pillar }) {
   return (
     <header className="space-y-1">
-      <h2 className={DOC_SECTION.title}>{title}</h2>
+      <div className="flex items-center gap-2">
+        <h2 className={DOC_SECTION.title}>{title}</h2>
+        <ShareButton section={section} pillar={pillar} />
+      </div>
       {subtitle ? <p className={DOC_SECTION.intro}>{subtitle}</p> : null}
     </header>
   );
 }
 
 const levelBadgeClass = "flex shrink-0 items-center justify-center rounded-full bg-slate-900 font-bold text-white";
-
-function seniorityColumnClass(columnIndex) {
-  return cn("min-w-0 px-1", columnIndex < SENIORITY_LEVEL_DEFINITIONS.length - 1 && "border-r border-slate-200/80");
-}
 
 function SeniorityStepper() {
   return (
@@ -42,28 +81,18 @@ function SeniorityStepper() {
       </div>
 
       <div className={cn(cardClass, "hidden p-3 min-[470px]:block")}>
-        <div className="grid grid-cols-5 gap-y-1.5">
-          {SENIORITY_LEVEL_DEFINITIONS.map(({ code }, index) => (
-            <div key={`${code}-badge`} className={cn(seniorityColumnClass(index), "flex justify-start")}>
-              <span className={cn(levelBadgeClass, "size-5", DOC_TEXT.badgeMicro)}>{code}</span>
-            </div>
-          ))}
-
-          {SENIORITY_LEVEL_DEFINITIONS.map(({ code, phase }, index) => (
-            <div key={`${code}-phase`} className={seniorityColumnClass(index)}>
+        <div className="grid grid-cols-5 grid-rows-[repeat(4,auto)]">
+          {SENIORITY_LEVEL_DEFINITIONS.map(({ code, phase, description, seniority }, index) => (
+            <div
+              key={code}
+              className={cn("row-span-4 grid min-w-0 grid-rows-subgrid gap-y-1.5 px-1", index < SENIORITY_LEVEL_DEFINITIONS.length - 1 && "border-r border-slate-200/80")}
+            >
+              <div className="flex justify-start">
+                <span className={cn(levelBadgeClass, "size-5", DOC_TEXT.badgeMicro)}>{code}</span>
+              </div>
               <p className={DOC_TEXT.bodySemibold}>{phase}</p>
-            </div>
-          ))}
-
-          {SENIORITY_LEVEL_DEFINITIONS.map(({ code, seniority }, index) => (
-            <div key={`${code}-seniority`} className={seniorityColumnClass(index)}>
-              <p className={DOC_TEXT.meta}>{seniority}</p>
-            </div>
-          ))}
-
-          {SENIORITY_LEVEL_DEFINITIONS.map(({ code, description }, index) => (
-            <div key={`${code}-description`} className={seniorityColumnClass(index)}>
               <p className={DOC_TEXT.body}>{description}</p>
+              <p className={DOC_TEXT.meta}>{seniority}</p>
             </div>
           ))}
         </div>
@@ -72,31 +101,85 @@ function SeniorityStepper() {
   );
 }
 
-export function TheoryContent() {
+function TheoryContent({ deepLink, onDeepLinkConsumed }) {
+  const consumedRef = useRef(false);
+
+  // Expanded pillar state lives here so the matrix share button can read it.
+  const [expandedPillar, setExpandedPillar] = useState(() => {
+    const fromDeepLink = deepLink?.section === THEORY_SECTIONS.matrix ? deepLink.pillar : null;
+    return fromDeepLink ?? getPersistedExpandedPillar();
+  });
+
+  useEffect(() => {
+    if (!deepLink || consumedRef.current) {
+      return undefined;
+    }
+
+    const { section } = deepLink;
+    if (!section) {
+      onDeepLinkConsumed?.();
+      consumedRef.current = true;
+      return undefined;
+    }
+
+    const sectionId = THEORY_SECTION_IDS[section];
+    if (!sectionId) {
+      onDeepLinkConsumed?.();
+      consumedRef.current = true;
+      return undefined;
+    }
+
+    // Double rAF: first frame lets the hidden tabpanel become visible,
+    // second lets layout settle so getBoundingClientRect is accurate.
+    let inner = null;
+    const outer = requestAnimationFrame(() => {
+      inner = requestAnimationFrame(() => {
+        const el = document.getElementById(sectionId);
+        if (el) {
+          scrollBelowStickyHeader(el, { behavior: "smooth" });
+        }
+        onDeepLinkConsumed?.();
+        consumedRef.current = true;
+      });
+    });
+
+    return () => {
+      cancelAnimationFrame(outer);
+      if (inner !== null) {
+        cancelAnimationFrame(inner);
+      }
+    };
+    // deepLink and onDeepLinkConsumed are stable boot-time values — intentional.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className="space-y-6 print:max-w-none">
-      <section className="space-y-3">
-        <SectionHeading title="9 Big Pillars" subtitle={PILLARS_SECTION_INTRO} />
+      <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.pillars]} className="space-y-3">
+        <SectionHeading title="I. 9 Big Pillars" subtitle={PILLARS_SECTION_INTRO} section={THEORY_SECTIONS.pillars} />
         <PillarGrid />
       </section>
 
-      <section className="space-y-3">
-        <SectionHeading title="5 Seniority Levels" subtitle={SENIORITY_SECTION_INTRO} />
+      <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.seniority]} className="space-y-3">
+        <SectionHeading title="II. 5 Seniority Levels" subtitle={SENIORITY_SECTION_INTRO} section={THEORY_SECTIONS.seniority} />
         <SeniorityStepper />
       </section>
 
-      <section className="space-y-3">
+      <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.matrix]} className="space-y-3">
         <SectionHeading
-          title="The 45-Point Competency Matrix"
+          title="III. The 45-Point Competency Matrix"
           subtitle="The comprehensive behavioral matrix mapping expectations for all 9 pillars. Organized by the Technical, Product, and Operational clusters, and evaluated across the L1-L5 seniority scale."
+          section={THEORY_SECTIONS.matrix}
         />
-        <CompetencyMatrix />
+        <CompetencyMatrix expandedPillar={expandedPillar} onExpandedPillarChange={setExpandedPillar} />
       </section>
 
-      <section className="space-y-3">
-        <SectionHeading title="3 Career Tracks" subtitle={CAREER_TRACKS_SECTION_INTRO} />
+      <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.tracks]} className="space-y-3">
+        <SectionHeading title="IV. 3 Career Tracks" subtitle={CAREER_TRACKS_SECTION_INTRO} section={THEORY_SECTIONS.tracks} />
         <CareerTracks />
       </section>
     </div>
   );
 }
+
+export { TheoryContent };
