@@ -167,9 +167,9 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY, padX, padY) {
     }
   }
 
-  const averagesGrid = exportRoot.querySelector("[data-chart-export='chart-averages']");
-  if (averagesGrid) {
-    for (const card of averagesGrid.querySelectorAll("[data-chart-export='chart-avg-card']")) {
+  const scoresGrid = exportRoot.querySelector("[data-chart-export='chart-scores']");
+  if (scoresGrid) {
+    for (const card of scoresGrid.querySelectorAll("[data-chart-export='chart-score-card']")) {
       if (!(card instanceof HTMLElement)) {
         continue;
       }
@@ -190,6 +190,10 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY, padX, padY) {
       );
 
       for (const span of card.querySelectorAll("span")) {
+        // Hover tooltips are visually hidden (opacity-0) and sit outside the card — never paint them.
+        if (span.getAttribute("role") === "tooltip") {
+          continue;
+        }
         const text = span.textContent?.trim();
         if (!text) {
           continue;
