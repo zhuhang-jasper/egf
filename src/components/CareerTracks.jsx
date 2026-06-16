@@ -51,8 +51,6 @@ function RoleCellContent({ title, subtitle, note }) {
   return (
     <div className="min-w-0 flex-1">
       <p className={DOC_TEXT.bodyMedium}>{title}</p>
-      {/* {subtitle ? <p className={DOC_TEXT.bodyDimMedium}>{subtitle}</p> : null}
-      {note ? <p className={cn("mt-0.5", DOC_TEXT.metaBody)}>{note}</p> : null} */}
     </div>
   );
 }

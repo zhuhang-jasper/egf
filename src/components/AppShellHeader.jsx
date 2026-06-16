@@ -14,11 +14,11 @@ const TABS = [
 function AppShellIntro() {
   return (
     <header className="space-y-2 pt-2 text-center sm:pt-3">
-      <h1 className="text-balance text-xl font-bold tracking-tight text-slate-900">{SITE_COPY.title}</h1>
-      <p className="text-pretty text-xs leading-snug text-slate-800">
+      <h1 className="text-balance text-xl sm:text-2xl font-bold tracking-tight text-slate-900">{SITE_COPY.title}</h1>
+      <p className="text-pretty text-xs sm:text-sm leading-snug text-slate-800">
         {SITE_COPY.tagline} {SITE_COPY.detail}
       </p>
-      <p className="text-[11px] text-slate-500">{SITE_COPY.byline}</p>
+      <p className="text-[11px] sm:text-[13px] text-slate-500">{SITE_COPY.byline}</p>
     </header>
   );
 }

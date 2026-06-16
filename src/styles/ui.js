@@ -21,7 +21,6 @@ export const FE_UI = {
     /** Swatch edge length vs legend label font size — just taller than text cap height. */
     legendSwatchLabelMultiplier: 1.2,
     pointLabelPadding: 7.5,
-    /** Narrow charts need more radial padding so adjacent bottom labels (e.g. Ownership / Communication) do not overlap. */
     pointLabelPaddingRange: { minPx: 5, maxPx: 10 },
     pointLabelPx: 11,
     pointLabelScaleWithChart: true,

@@ -62,10 +62,6 @@ function SectionHeading({ title, subtitle, section, pillar }) {
 
 const levelBadgeClass = "flex shrink-0 items-center justify-center rounded-full bg-slate-900 font-bold text-white";
 
-function seniorityColumnClass(columnIndex) {
-  return cn("min-w-0 px-1", columnIndex < SENIORITY_LEVEL_DEFINITIONS.length - 1 && "border-r border-slate-200/80");
-}
-
 function SeniorityStepper() {
   return (
     <>
@@ -85,28 +81,18 @@ function SeniorityStepper() {
       </div>
 
       <div className={cn(cardClass, "hidden p-3 min-[470px]:block")}>
-        <div className="grid grid-cols-5 gap-y-1.5">
-          {SENIORITY_LEVEL_DEFINITIONS.map(({ code }, index) => (
-            <div key={`${code}-badge`} className={cn(seniorityColumnClass(index), "flex justify-start")}>
-              <span className={cn(levelBadgeClass, "size-5", DOC_TEXT.badgeMicro)}>{code}</span>
-            </div>
-          ))}
-
-          {SENIORITY_LEVEL_DEFINITIONS.map(({ code, phase }, index) => (
-            <div key={`${code}-phase`} className={seniorityColumnClass(index)}>
+        <div className="grid grid-cols-5 grid-rows-[repeat(4,auto)]">
+          {SENIORITY_LEVEL_DEFINITIONS.map(({ code, phase, description, seniority }, index) => (
+            <div
+              key={code}
+              className={cn("row-span-4 grid min-w-0 grid-rows-subgrid gap-y-1.5 px-1", index < SENIORITY_LEVEL_DEFINITIONS.length - 1 && "border-r border-slate-200/80")}
+            >
+              <div className="flex justify-start">
+                <span className={cn(levelBadgeClass, "size-5", DOC_TEXT.badgeMicro)}>{code}</span>
+              </div>
               <p className={DOC_TEXT.bodySemibold}>{phase}</p>
-            </div>
-          ))}
-
-          {SENIORITY_LEVEL_DEFINITIONS.map(({ code, seniority }, index) => (
-            <div key={`${code}-seniority`} className={seniorityColumnClass(index)}>
-              <p className={DOC_TEXT.meta}>{seniority}</p>
-            </div>
-          ))}
-
-          {SENIORITY_LEVEL_DEFINITIONS.map(({ code, description }, index) => (
-            <div key={`${code}-description`} className={seniorityColumnClass(index)}>
               <p className={DOC_TEXT.body}>{description}</p>
+              <p className={DOC_TEXT.meta}>{seniority}</p>
             </div>
           ))}
         </div>
