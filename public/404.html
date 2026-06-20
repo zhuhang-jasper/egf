@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Redirecting…</title>
+    <script>
+      // SPA deep-link fallback for GitHub Pages (e.g. /egf/poster).
+      // GitHub Pages serves this 404 for unknown paths; we encode the path into a
+      // query param and bounce to the app root, where index.html decodes it back
+      // into history before React mounts. pathSegmentsToKeep = 1 keeps the project
+      // base segment (/egf/). Set to 0 if served from a domain root.
+      // Based on https://github.com/rafgraph/spa-github-pages (MIT).
+      (function () {
+        var pathSegmentsToKeep = 1;
+        var l = window.location;
+        l.replace(
+          l.protocol +
+            "//" +
+            l.hostname +
+            (l.port ? ":" + l.port : "") +
+            l.pathname
+              .split("/")
+              .slice(0, 1 + pathSegmentsToKeep)
+              .join("/") +
+            "/?/" +
+            l.pathname.slice(1).split("/").slice(pathSegmentsToKeep).join("/").replace(/&/g, "~and~") +
+            (l.search ? "&" + l.search.slice(1).replace(/&/g, "~and~") : "") +
+            l.hash,
+        );
+      })();
+    </script>
+  </head>
+  <body></body>
+</html>
