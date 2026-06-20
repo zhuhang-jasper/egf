@@ -188,7 +188,7 @@ export const CAREER_TRACK_PROFILES = [
       { level: "L3", title: "Senior Software Engineer" },
       { level: "L4", title: "Staff Software Engineer" },
       { level: "L5", title: "Principal Software Engineer / Solution Architect" },
-      { level: "L6+", title: "Distinguished Software Engineer / Technical Fellow" },
+      { level: "L6", title: "Distinguished Software Engineer / Technical Fellow" },
     ],
     levels: buildLevels({
       coding: 4,
@@ -212,7 +212,7 @@ export const CAREER_TRACK_PROFILES = [
       { level: "L3", title: "Senior Product Engineer" },
       { level: "L4", title: "Staff Product Engineer" },
       { level: "L5", title: "Principal Product Engineer / Product Architect" },
-      { level: "L6+", title: "Distinguished Product Engineer / Chief Architect" },
+      { level: "L6", title: "Distinguished Product Engineer / Chief Architect" },
     ],
     levels: buildLevels({
       uiUx: 4,

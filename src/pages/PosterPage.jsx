@@ -81,7 +81,9 @@ const TRACKS = CAREER_TRACK_PROFILES.map((t) => ({
   name: t.name,
   ...TRACK_TONE[t.id],
   levels: t.levels,
-  keyPillars: t.keyFocusPillars.map((nm) => PILLAR_BY_NAME[nm]).filter(Boolean),
+  keyPillars: (t.id === "product-focused" ? ["Domain Logic", "Product Sense", "UI/UX", "Communication"] : t.keyFocusPillars)
+    .map((nm) => PILLAR_BY_NAME[nm])
+    .filter(Boolean),
   roleLevels: t.roleLevels,
 }));
 
@@ -134,9 +136,9 @@ async function exportPosterPng(node) {
 function SectionLabel({ children }) {
   return (
     <div className="flex shrink-0 items-center gap-4">
-      <span className="h-[3px] flex-1 rounded-full bg-slate-200" />
-      <h2 className="text-[24px] font-extrabold uppercase tracking-[0.16em] text-slate-500">{children}</h2>
-      <span className="h-[3px] flex-1 rounded-full bg-slate-200" />
+      <span className="h-[4px] flex-1 rounded-full bg-slate-200" />
+      <h2 className="text-[26px] font-extrabold uppercase tracking-[0.16em] text-slate-500">{children}</h2>
+      <span className="h-[4px] flex-1 rounded-full bg-slate-200" />
     </div>
   );
 }
@@ -151,15 +153,15 @@ const RING_RY = 250; // vertical radius to each label centre — pulled in towar
 // their neighbours and the hub, so push them further out by up to this much; |sin(2θ)| peaks
 // at the 45° diagonals and is zero at the cardinal (top/bottom/side) positions.
 const RING_CORNER_BOOST = 64;
-const CARD_W = 330; // label width — wide enough for the question to run ~2 rows past the name
+const CARD_W = 360; // label width — wide enough for the longest question to fit in exactly 2 rows
 const CHART_SIZE = 400; // box for the centred radar hub — larger so its grid reaches the labels
 
 // Per-pillar manual nudges (px) after the ring math, to relieve specific crowding.
 const RING_NUDGE = {
-  domainLogic: { x: -110, y: 64 }, // top diagonals — spread wider apart and lower
-  architecture: { x: 110, y: 64 },
-  uiUx: { x: -70, y: 0 }, // side labels — push further out
-  ai: { x: 70, y: 0 },
+  domainLogic: { x: -110, y: 75 }, // top diagonals — spread wider apart and lower
+  architecture: { x: 110, y: 75 },
+  uiUx: { x: -75, y: 15 }, // side labels — push further out
+  ai: { x: 75, y: 15 },
   communication: { x: -120, y: -42 }, // bottom-centre pair — pull apart and lift up
   ownership: { x: 120, y: -42 },
   productSense: { x: -70, y: -50 }, // bottom diagonals — lifted up and pushed out
@@ -194,7 +196,7 @@ function PillarNode({ pillar }) {
           {pillar.name}
         </span>
       </div>
-      <p className="mt-0.5 text-pretty text-[18px] font-semibold italic leading-[1.25] text-slate-500" style={{ textWrap: "balance" }}>
+      <p className="mt-0.5 text-pretty text-[20px] font-semibold italic leading-[1.25] text-slate-500" style={{ textWrap: "balance" }}>
         “{pillar.question}”
       </p>
     </div>
@@ -280,7 +282,7 @@ function PosterRadar({ levels, showClusters = false, showPolygon = true, showTic
 /** Chart hub + ring of 9 pillar cards. Replaces the old separate chart and pillar-list bands. */
 function PillarRing() {
   return (
-    <div className="relative mx-auto" style={{ width: RING_W, height: RING_H }}>
+    <div className="relative mx-auto -mt-1" style={{ width: RING_W, height: RING_H }}>
       {/* Centre radar — point labels hidden; the ring cards ARE the labels */}
       <div className="absolute" style={{ width: CHART_SIZE, height: CHART_SIZE, left: "50%", top: "50%", transform: "translate(-50%, -50%)" }}>
         {/* Centre: cluster-coloured L1–L5 radial grid — data polygon hidden; the ring labels carry the meaning */}
@@ -299,7 +301,7 @@ function PillarRing() {
  */
 function TrackCard({ track }) {
   return (
-    <div className="flex min-w-0 flex-col rounded-3xl px-5 py-4" style={{ backgroundColor: `${track.color}24`, border: `3px solid ${track.color}` }}>
+    <div className="flex min-w-0 flex-col rounded-3xl px-3 py-3" style={{ backgroundColor: `${track.color}24`, border: `3px solid ${track.color}` }}>
       <h4 className="text-center text-[25px] font-black leading-tight tracking-tight" style={{ color: track.accent }}>
         {track.name}
       </h4>
@@ -311,11 +313,11 @@ function TrackCard({ track }) {
 
       {/* Key pillars — plain names, no emoji. Fixed height (2 rows) so the role ladders below
           start at the same Y across all three cards and align row-for-row. */}
-      <div className="flex h-[74px] flex-wrap content-center justify-center gap-[6px] overflow-hidden">
+      <div className="-mx-3 flex h-[80px] flex-wrap content-center justify-center gap-[4px] overflow-hidden">
         {track.keyPillars.map((p) => (
           <span
             key={p.id}
-            className="rounded-full bg-white/85 px-2.5 py-[3px] text-[15px] font-bold text-slate-700"
+            className="rounded-full bg-white/85 px-2.5 py-[3px] text-[19px] font-bold text-slate-700"
             style={{ boxShadow: `inset 0 0 0 2px ${track.color}` }}
           >
             {p.name}
@@ -323,17 +325,18 @@ function TrackCard({ track }) {
         ))}
       </div>
 
-      {/* L-level → role ladder — rows align across cards because everything above is fixed height */}
-      <div className="mt-2 flex flex-col gap-[6px]">
+      {/* L-level → role ladder — grows to fill the card and distributes its rows evenly, so the
+          ladders bottom-align across cards even when one track has an extra rung (L7 CTO). */}
+      <div className="mt-3 flex flex-1 flex-col justify-between gap-[6px]">
         {track.roleLevels.map((r) => (
           <div key={r.level} className="flex items-center gap-2">
             <span
-              className="w-[58px] shrink-0 rounded-md px-1 py-[2px] text-center text-[16px] font-black text-white"
+              className="w-[42px] shrink-0 rounded-md px-1 py-[1px] text-center text-[18px] font-black text-white"
               style={{ backgroundColor: track.accent }}
             >
               {r.level}
             </span>
-            <span className="min-w-0 text-[16px] font-semibold leading-tight text-slate-700">{r.title}</span>
+            <span className="min-w-0 text-[20px] font-semibold leading-tight text-slate-700 -mr-2">{r.title}</span>
           </div>
         ))}
       </div>
@@ -368,7 +371,7 @@ export default function PosterPage() {
             so nothing overflows or overlaps. */}
         <article
           ref={posterRef}
-          className="relative flex flex-col gap-5 overflow-hidden bg-white px-12 py-10 shadow-2xl"
+          className="relative flex flex-col gap-5 overflow-hidden bg-white px-10 py-10 shadow-2xl"
           style={{ width: CANVAS_W, height: CANVAS_H, transform: `scale(${scale})`, transformOrigin: "top left" }}
         >
           {/* Floating export button — inside the poster (scales with it), top-right, excluded from
@@ -387,45 +390,54 @@ export default function PosterPage() {
           <header>
             <div className="flex items-stretch gap-6">
               {/* Big "9" reads as part of the title; no wasted eyebrow line beside it */}
-              <span className="text-[150px] font-black leading-[0.8] tracking-tighter text-slate-900">9</span>
-              <div className="flex min-w-0 flex-col justify-center">
-                <h1 className="text-[58px] font-black leading-[0.92] tracking-tight text-slate-900">
+              <span className="text-[132px] font-black leading-[0.8] tracking-tighter text-slate-900 -translate-y-1.5">9</span>
+              <div className="flex min-w-0 flex-1 flex-col justify-center">
+                <h1 className="text-[52px] font-black leading-[0.92] tracking-tight text-slate-900">
                   Pillars of
                   <br />
                   Engineering Mastery
                 </h1>
-                <p className="mt-1 text-[20px] font-bold uppercase tracking-[0.22em] text-slate-400">The Engineer Growth Framework</p>
+                <p className="mt-3 text-[20px] font-bold uppercase tracking-[0.22em] text-slate-400">The Engineer Growth Framework</p>
               </div>
+              {/* Byline as a signature, pinned bottom-right of the masthead */}
+              <span className="self-end text-[24px] font-bold whitespace-nowrap text-slate-800">{SITE_COPY.byline}</span>
             </div>
 
-            <div className="mt-4 flex items-end justify-between gap-6">
-              <p className="max-w-[44ch] text-[23px] leading-snug text-slate-600">{SITE_COPY.tagline}</p>
-              <span className="shrink-0 text-[22px] font-bold whitespace-nowrap text-slate-800">{SITE_COPY.byline}</span>
-            </div>
+            <p className="mt-2 px-3 text-[24px] leading-snug text-slate-600">
+              {SITE_COPY.tagline} <span className="font-semibold text-slate-500">{SITE_COPY.detail}</span>
+            </p>
           </header>
 
           {/* The 9 pillars as a radial ring around the central radar — chart + labels merged.
               Negative top margin tucks the ring up close under the section header (the stage has
               empty space above its topmost labels). */}
-          <div className="flex flex-col gap-1">
+          <div className="mt-0 flex flex-col gap-0">
             <SectionLabel>The 9 Pillars</SectionLabel>
             <PillarRing />
           </div>
 
           {/* Career tracks — foundational L1–L2 phase, then three columns that split at L3 */}
-          <div className="-mt-4 flex flex-col gap-3">
+          <div className="-mt-6 flex flex-col gap-3">
             <SectionLabel>3 Career Tracks</SectionLabel>
 
             {/* Foundational phase: everyone starts here, then forks at Senior (L3) */}
-            <div className="mt-4 flex items-center gap-4 rounded-2xl px-5 py-3 ring-1" style={{ backgroundColor: `${CLUSTER_META.technical.color}55`, ringColor: CLUSTER_META.technical.color, outlineColor: CLUSTER_META.technical.color, boxShadow: `0 0 0 1px ${CLUSTER_META.technical.color}` }}>
-              <span className="shrink-0 rounded-md px-3 py-[3px] text-[18px] font-black text-white" style={{ backgroundColor: CLUSTER_META.technical.accent }}>L1–L2</span>
-              <span className="shrink-0 text-[22px] font-black" style={{ color: CLUSTER_META.technical.accent }}>Software Engineer</span>
-              <span className="min-w-0 text-[18px] leading-tight text-slate-600">
-                Build the technical foundation — then your path splits at <span className="font-bold">Senior (L3)</span>.
+            <div
+              className="mt-0 flex items-center gap-4 rounded-2xl px-4 py-2"
+              style={{ backgroundColor: `${CLUSTER_META.technical.color}24`, border: `3px solid ${CLUSTER_META.technical.color}` }}
+            >
+              <span
+                className="shrink-0 rounded-md px-2 py-[1px] text-center text-[18px] font-black text-white"
+                style={{ backgroundColor: CLUSTER_META.technical.accent }}
+              >
+                L1–L2
               </span>
+              <span className="shrink-0 text-[24px] font-black" style={{ color: CLUSTER_META.technical.accent }}>
+                Software Engineer
+              </span>
+              <span className="ml-3 min-w-0 translate-y-[1px] text-[20px] text-slate-700">Build the technical foundation everyone shares.</span>
             </div>
 
-            <div className="grid grid-cols-3 items-stretch gap-4">
+            <div className="grid grid-cols-3 items-stretch gap-3">
               {TRACKS.map((track) => (
                 <TrackCard key={track.name} track={track} />
               ))}
