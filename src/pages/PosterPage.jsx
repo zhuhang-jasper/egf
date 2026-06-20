@@ -172,6 +172,23 @@ async function copyPosterToClipboard(node) {
   await navigator.clipboard.write([new ClipboardItem({ "image/png": blobPromise })]);
 }
 
+/** Render the poster and trigger a PNG file download. */
+async function downloadPosterPng(node) {
+  const blob = await renderPosterBlob(node);
+  if (!blob) {
+    throw new Error("Failed to render poster image");
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "9-pillar-engineer-growth-framework.png";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  // Delay revoke — revoking synchronously after click() cancels the download in some browsers.
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+}
+
 /** Big tracking-wide divider label used between the poster's content bands. */
 function SectionLabel({ children }) {
   return (
@@ -386,28 +403,38 @@ function TrackCard({ track }) {
 
 export default function PosterPage() {
   const posterRef = useRef(null);
-  const [status, setStatus] = useState("idle"); // idle | working | copied | error
+  // Which action (if any) is running, and the transient result of the last one.
+  const [busy, setBusy] = useState(null); // null | "copy" | "download"
+  const [copyState, setCopyState] = useState("idle"); // idle | done | error
+  const [downloadState, setDownloadState] = useState("idle");
   const [errMsg, setErrMsg] = useState("");
   const scale = useFitScale();
 
-  const handleExport = async () => {
-    if (!posterRef.current || status === "working") {
+  const runExport = async (action, fn, setState) => {
+    if (!posterRef.current || busy) {
       return;
     }
-    setStatus("working");
+    setBusy(action);
+    setErrMsg("");
     try {
-      await copyPosterToClipboard(posterRef.current);
-      setStatus("copied");
-      setTimeout(() => setStatus("idle"), 2000);
+      await fn(posterRef.current);
+      setState("done");
+      setTimeout(() => setState("idle"), 2000);
     } catch (err) {
-      console.error("Poster PNG copy failed:", err);
+      console.error(`Poster PNG ${action} failed:`, err);
       setErrMsg(String(err?.message || err));
-      setStatus("error");
-      setTimeout(() => setStatus("idle"), 4000);
+      setState("error");
+      setTimeout(() => setState("idle"), 4000);
+    } finally {
+      setBusy(null);
     }
   };
 
-  const buttonLabel = { idle: "⧉ Copy PNG", working: "Copying…", copied: "✓ Copied", error: "Copy failed" }[status];
+  const handleCopy = () => runExport("copy", copyPosterToClipboard, setCopyState);
+  const handleDownload = () => runExport("download", downloadPosterPng, setDownloadState);
+
+  const copyLabel = busy === "copy" ? "Copying…" : { idle: "⧉ Copy PNG", done: "✓ Copied", error: "Copy failed" }[copyState];
+  const downloadLabel = busy === "download" ? "Saving…" : { idle: "↓ Download", done: "✓ Saved", error: "Save failed" }[downloadState];
 
   return (
     <div className="flex min-h-dvh w-full flex-col items-center overflow-auto bg-black p-4">
@@ -422,18 +449,28 @@ export default function PosterPage() {
           className="relative flex flex-col gap-5 overflow-hidden bg-white px-10 py-10 shadow-2xl"
           style={{ width: CANVAS_W, height: CANVAS_H, transform: `scale(${scale})`, transformOrigin: "top left" }}
         >
-          {/* Floating export button — inside the poster (scales with it), top-right, excluded from
+          {/* Floating export controls — inside the poster (scale with it), top-right, excluded from
               the rasterized PNG via the data-export-ignore selector in renderPosterBlob. */}
           <div className="absolute top-5 right-5 z-10 flex flex-col items-end gap-1" data-export-ignore>
-            <button
-              type="button"
-              onClick={handleExport}
-              disabled={status === "working"}
-              className="cursor-pointer rounded-lg bg-slate-400/60 px-4 py-2 text-[18px] font-semibold text-white hover:bg-slate-400 disabled:cursor-wait disabled:opacity-60"
-            >
-              {buttonLabel}
-            </button>
-            {status === "error" && errMsg ? (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleCopy}
+                disabled={Boolean(busy)}
+                className="cursor-pointer rounded-lg bg-slate-400/60 px-4 py-2 text-[18px] font-semibold text-white hover:bg-slate-400 disabled:cursor-wait disabled:opacity-60"
+              >
+                {copyLabel}
+              </button>
+              <button
+                type="button"
+                onClick={handleDownload}
+                disabled={Boolean(busy)}
+                className="cursor-pointer rounded-lg bg-slate-400/60 px-4 py-2 text-[18px] font-semibold text-white hover:bg-slate-400 disabled:cursor-wait disabled:opacity-60"
+              >
+                {downloadLabel}
+              </button>
+            </div>
+            {(copyState === "error" || downloadState === "error") && errMsg ? (
               <span className="max-w-[320px] rounded-md bg-red-600 px-2 py-1 text-right text-[13px] font-medium text-white">{errMsg}</span>
             ) : null}
           </div>
