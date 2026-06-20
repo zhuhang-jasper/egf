@@ -111,45 +111,52 @@ function useFitScale() {
  * Rasterize the poster to a high-res PNG via snapdom.
  *
  * snapdom (unlike html2canvas) natively understands Tailwind v4's oklch()/oklab() colours and
- * clones + inlines styles internally, so there's no colour conversion to maintain. We only have
- * to neutralize the preview's `transform: scale()` for the capture: snapdom reads the live node's
- * box, and with the scale transform in place it would snapshot the shrunken footprint. We strip
- * the transform (and the stage wrapper's reserved scaled height) for the duration of the capture,
- * snapshot the true 1080×1620 at 2×, then restore — fast enough that the preview doesn't flicker.
+ * clones + inlines styles internally, so there's no colour conversion to maintain.
+ *
+ * To avoid the visible "jump" that mutating the live node would cause (the preview is shrunk by a
+ * `transform: scale()`, and capturing it at full size means temporarily un-scaling on screen), we
+ * deep-clone the article into a detached container parked off-screen at its true 1080×1620 size,
+ * mirror the live chart <canvas> pixels into the clone, capture the clone, then discard it. The
+ * on-screen preview is never touched, so the user sees no flicker.
  */
 async function renderPosterBlob(node) {
   const { snapdom } = await import("@zumer/snapdom");
 
-  const stage = node.parentElement; // the scaling wrapper reserving the scaled footprint
-  const prev = {
-    transform: node.style.transform,
-    origin: node.style.transformOrigin,
-    stageW: stage?.style.width,
-    stageH: stage?.style.height,
-  };
+  const holder = document.createElement("div");
+  holder.style.cssText = `position:fixed;left:-100000px;top:0;width:${CANVAS_W}px;height:${CANVAS_H}px;overflow:visible;background:#ffffff;z-index:-1;pointer-events:none;`;
 
-  node.style.transform = "none";
-  node.style.transformOrigin = "top left";
-  if (stage) {
-    stage.style.width = `${CANVAS_W}px`;
-    stage.style.height = `${CANVAS_H}px`;
-  }
+  const clone = node.cloneNode(true);
+  clone.style.transform = "none";
+  clone.style.transformOrigin = "top left";
+  clone.style.margin = "0";
+
+  holder.appendChild(clone);
+  document.body.appendChild(holder);
 
   try {
-    return await snapdom.toBlob(node, {
+    // A cloned <canvas> is blank until something draws into it, and snapdom won't re-run our
+    // Chart.js code — so copy the live chart pixels across to the clone's canvases.
+    const liveCanvases = node.querySelectorAll("canvas");
+    const cloneCanvases = clone.querySelectorAll("canvas");
+    cloneCanvases.forEach((c, i) => {
+      const src = liveCanvases[i];
+      if (!src) {
+        return;
+      }
+      c.width = src.width;
+      c.height = src.height;
+      c.getContext("2d")?.drawImage(src, 0, 0);
+    });
+
+    return await snapdom.toBlob(clone, {
       type: "png",
       scale: 2, // 2× → 2160×3240 export, crisp for LinkedIn
       backgroundColor: "#ffffff",
-      exclude: ["[data-export-ignore]"], // the floating copy button — never in the capture
+      exclude: ["[data-export-ignore]"], // the floating copy/download buttons — never in the capture
       excludeMode: "remove",
     });
   } finally {
-    node.style.transform = prev.transform;
-    node.style.transformOrigin = prev.origin;
-    if (stage) {
-      stage.style.width = prev.stageW;
-      stage.style.height = prev.stageH;
-    }
+    holder.remove();
   }
 }
 
