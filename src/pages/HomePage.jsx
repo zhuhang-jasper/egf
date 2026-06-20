@@ -16,7 +16,9 @@ const BOOT_DEEP_LINK = parseTheoryDeepLink();
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState(() => {
-    if (BOOT_DEEP_LINK) return "theory";
+    if (BOOT_DEEP_LINK) {
+      return "theory";
+    }
     return getPersistedActiveTab(["tool", "theory"]) ?? "tool";
   });
 

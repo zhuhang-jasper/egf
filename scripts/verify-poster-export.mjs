@@ -58,10 +58,15 @@ class CDP {
       if (msg.id != null && this.pending.has(msg.id)) {
         const { resolve, reject } = this.pending.get(msg.id);
         this.pending.delete(msg.id);
-        if (msg.error) reject(new Error(JSON.stringify(msg.error)));
-        else resolve(msg.result);
+        if (msg.error) {
+          reject(new Error(JSON.stringify(msg.error)));
+        } else {
+          resolve(msg.result);
+        }
       } else if (msg.method) {
-        for (const l of this.listeners) l(msg);
+        for (const l of this.listeners) {
+          l(msg);
+        }
       }
     });
   }
@@ -158,12 +163,16 @@ try {
   for (let i = 0; i < 50; i++) {
     try {
       version = await cdpHttp("/json/version");
-      if (version) break;
+      if (version) {
+        break;
+      }
     } catch {
       await sleep(200);
     }
   }
-  if (!version) throw new Error("Chrome debug endpoint never came up");
+  if (!version) {
+    throw new Error("Chrome debug endpoint never came up");
+  }
 
   const browserWs = new WebSocket(version.webSocketDebuggerUrl);
   await new Promise((r) => browserWs.addEventListener("open", r));
@@ -196,12 +205,16 @@ try {
   ];
   pass = checks.every(([c]) => c);
   console.log("\nCHECKS:");
-  for (const [ok, label] of checks) console.log(`  ${ok ? "✓" : "✗"} ${label}`);
+  for (const [ok, label] of checks) {
+    console.log(`  ${ok ? "✓" : "✗"} ${label}`);
+  }
   console.log(`\n${pass ? "PASS ✓" : "FAIL ✗"}`);
 } catch (err) {
   console.error("ERROR:", err.stack || String(err));
 } finally {
-  if (chrome) chrome.kill("SIGKILL");
+  if (chrome) {
+    chrome.kill("SIGKILL");
+  }
   try {
     rmSync(userDataDir, { recursive: true, force: true });
   } catch {}
