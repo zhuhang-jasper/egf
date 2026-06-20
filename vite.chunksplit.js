@@ -16,7 +16,7 @@ const NODE_MODULES_PKG = /\/node_modules\/(@[^/]+\/[^/]+|[^/]+)(?=\/|$)/g;
 const CHUNK_RULES = [
   [/^@radix-ui\//, "radix"],
   [/^chart\.js$/, "chart"],
-  [/^html2canvas$/, "html2canvas"],
+  [/^@zumer\/snapdom$/, "snapdom"],
   [/^lucide-react$/, "lucide"],
   [/^zustand$/, "zustand"],
   [/^(clsx|tailwind-merge|class-variance-authority)$/, "ui-utils"],

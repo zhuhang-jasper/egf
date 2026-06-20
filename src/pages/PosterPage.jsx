@@ -90,8 +90,8 @@ const TRACKS = CAREER_TRACK_PROFILES.map((t) => ({
 /**
  * Visual fit-scale for the preview only — fits the viewport WIDTH (the page scrolls
  * vertically). The poster renders at its true CANVAS_W×CANVAS_H pixels and is scaled with a
- * CSS transform. The transform does not affect html2canvas, which captures the node at its
- * intrinsic size — so the preview scales to width while the export stays a pixel-exact 1080×1620.
+ * CSS transform; the export path (renderPosterBlob) strips that transform before capture, so the
+ * preview scales to width while the export stays a pixel-exact 1080×1620.
  */
 function useFitScale() {
   const [scale, setScale] = useState(1);
@@ -107,29 +107,69 @@ function useFitScale() {
   return scale;
 }
 
-/** Rasterize the poster canvas to a high-res PNG download via html2canvas. */
-async function exportPosterPng(node) {
-  const { default: html2canvas } = await import("html2canvas");
-  const canvas = await html2canvas(node, {
-    backgroundColor: "#ffffff",
-    scale: 2, // 2× → 2160×3000 export, crisp for LinkedIn
-    useCORS: true,
-    logging: false,
-    width: CANVAS_W,
-    height: CANVAS_H,
-  });
-  const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png", 1));
-  if (!blob) {
-    return;
+/**
+ * Rasterize the poster to a high-res PNG via snapdom.
+ *
+ * snapdom (unlike html2canvas) natively understands Tailwind v4's oklch()/oklab() colours and
+ * clones + inlines styles internally, so there's no colour conversion to maintain. We only have
+ * to neutralize the preview's `transform: scale()` for the capture: snapdom reads the live node's
+ * box, and with the scale transform in place it would snapshot the shrunken footprint. We strip
+ * the transform (and the stage wrapper's reserved scaled height) for the duration of the capture,
+ * snapshot the true 1080×1620 at 2×, then restore — fast enough that the preview doesn't flicker.
+ */
+async function renderPosterBlob(node) {
+  const { snapdom } = await import("@zumer/snapdom");
+
+  const stage = node.parentElement; // the scaling wrapper reserving the scaled footprint
+  const prev = {
+    transform: node.style.transform,
+    origin: node.style.transformOrigin,
+    stageW: stage?.style.width,
+    stageH: stage?.style.height,
+  };
+
+  node.style.transform = "none";
+  node.style.transformOrigin = "top left";
+  if (stage) {
+    stage.style.width = `${CANVAS_W}px`;
+    stage.style.height = `${CANVAS_H}px`;
   }
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "9-pillar-engineer-growth-framework.png";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+
+  try {
+    return await snapdom.toBlob(node, {
+      type: "png",
+      scale: 2, // 2× → 2160×3240 export, crisp for LinkedIn
+      backgroundColor: "#ffffff",
+      exclude: ["[data-export-ignore]"], // the floating copy button — never in the capture
+      excludeMode: "remove",
+    });
+  } finally {
+    node.style.transform = prev.transform;
+    node.style.transformOrigin = prev.origin;
+    if (stage) {
+      stage.style.width = prev.stageW;
+      stage.style.height = prev.stageH;
+    }
+  }
+}
+
+/**
+ * Copy the poster PNG to the clipboard. Passes a Promise<Blob> to ClipboardItem (rather than an
+ * already-resolved blob): this is the spec'd way to copy async-generated content — the browser
+ * holds the clipboard-write permission across the awaited render, instead of the gesture window
+ * expiring while we rasterize. Safari requires this form; Chrome/Firefox accept it too.
+ */
+async function copyPosterToClipboard(node) {
+  if (typeof ClipboardItem === "undefined" || !navigator.clipboard?.write) {
+    throw new Error("Clipboard image write is not supported in this browser");
+  }
+  const blobPromise = renderPosterBlob(node).then((blob) => {
+    if (!blob) {
+      throw new Error("Failed to render poster image");
+    }
+    return blob;
+  });
+  await navigator.clipboard.write([new ClipboardItem({ "image/png": blobPromise })]);
 }
 
 /** Big tracking-wide divider label used between the poster's content bands. */
@@ -346,20 +386,28 @@ function TrackCard({ track }) {
 
 export default function PosterPage() {
   const posterRef = useRef(null);
-  const [exporting, setExporting] = useState(false);
+  const [status, setStatus] = useState("idle"); // idle | working | copied | error
+  const [errMsg, setErrMsg] = useState("");
   const scale = useFitScale();
 
   const handleExport = async () => {
-    if (!posterRef.current || exporting) {
+    if (!posterRef.current || status === "working") {
       return;
     }
-    setExporting(true);
+    setStatus("working");
     try {
-      await exportPosterPng(posterRef.current);
-    } finally {
-      setExporting(false);
+      await copyPosterToClipboard(posterRef.current);
+      setStatus("copied");
+      setTimeout(() => setStatus("idle"), 2000);
+    } catch (err) {
+      console.error("Poster PNG copy failed:", err);
+      setErrMsg(String(err?.message || err));
+      setStatus("error");
+      setTimeout(() => setStatus("idle"), 4000);
     }
   };
+
+  const buttonLabel = { idle: "⧉ Copy PNG", working: "Copying…", copied: "✓ Copied", error: "Copy failed" }[status];
 
   return (
     <div className="flex min-h-dvh w-full flex-col items-center overflow-auto bg-black p-4">
@@ -375,16 +423,20 @@ export default function PosterPage() {
           style={{ width: CANVAS_W, height: CANVAS_H, transform: `scale(${scale})`, transformOrigin: "top left" }}
         >
           {/* Floating export button — inside the poster (scales with it), top-right, excluded from
-              the rasterized PNG via data-html2canvas-ignore. */}
-          <button
-            type="button"
-            onClick={handleExport}
-            disabled={exporting}
-            data-html2canvas-ignore="true"
-            className="absolute top-5 right-5 z-10 rounded-lg bg-slate-400/60 px-4 py-2 text-[18px] font-semibold text-white hover:bg-slate-400 disabled:opacity-60"
-          >
-            {exporting ? "Exporting…" : "↓ PNG"}
-          </button>
+              the rasterized PNG via the data-export-ignore selector in renderPosterBlob. */}
+          <div className="absolute top-5 right-5 z-10 flex flex-col items-end gap-1" data-export-ignore>
+            <button
+              type="button"
+              onClick={handleExport}
+              disabled={status === "working"}
+              className="cursor-pointer rounded-lg bg-slate-400/60 px-4 py-2 text-[18px] font-semibold text-white hover:bg-slate-400 disabled:cursor-wait disabled:opacity-60"
+            >
+              {buttonLabel}
+            </button>
+            {status === "error" && errMsg ? (
+              <span className="max-w-[320px] rounded-md bg-red-600 px-2 py-1 text-right text-[13px] font-medium text-white">{errMsg}</span>
+            ) : null}
+          </div>
 
           {/* Header — poster masthead with oversized "9" mark */}
           <header>
