@@ -84,7 +84,11 @@ const TRACKS = CAREER_TRACK_PROFILES.map((t) => ({
   keyPillars: (t.id === "product-focused" ? ["Domain Logic", "Product Sense", "UI/UX", "Communication"] : t.keyFocusPillars)
     .map((nm) => PILLAR_BY_NAME[nm])
     .filter(Boolean),
-  roleLevels: t.roleLevels,
+  // Poster-only: theory keeps "Senior Fork (Any Domain)" as the People & Delivery L3 rung, but on
+  // the poster that meta-label reads as a glitch next to the other tracks' real titles — rename it.
+  roleLevels: t.roleLevels.map((r) =>
+    t.id === "people-delivery" && r.level === "L3" ? { ...r, title: "Senior Engineer (any track)" } : r,
+  ),
 }));
 
 /**
@@ -260,7 +264,7 @@ function PillarNode({ pillar }) {
           {pillar.name}
         </span>
       </div>
-      <p className="mt-0.5 text-pretty text-[20px] font-semibold italic leading-[1.25] text-slate-500" style={{ textWrap: "balance" }}>
+      <p className="mt-0.5 text-pretty text-[20px] font-semibold italic leading-[1.25] text-slate-600" style={{ textWrap: "balance" }}>
         “{pillar.question}”
       </p>
     </div>
@@ -365,7 +369,7 @@ function PillarRing() {
  */
 function TrackCard({ track }) {
   return (
-    <div className="flex min-w-0 flex-col rounded-3xl px-3 py-3" style={{ backgroundColor: `${track.color}24`, border: `3px solid ${track.color}` }}>
+    <div className="flex min-w-0 flex-col rounded-3xl px-3 py-3" style={{ backgroundColor: `${track.color}47`, border: `3px solid ${track.color}` }}>
       <h4 className="text-center text-[25px] font-black leading-tight tracking-tight" style={{ color: track.accent }}>
         {track.name}
       </h4>
@@ -381,8 +385,8 @@ function TrackCard({ track }) {
         {track.keyPillars.map((p) => (
           <span
             key={p.id}
-            className="rounded-full bg-white/85 px-2.5 py-[3px] text-[19px] font-bold text-slate-700"
-            style={{ boxShadow: `inset 0 0 0 2px ${track.color}` }}
+            className="rounded-full bg-white px-2.5 py-[3px] text-[19px] font-bold"
+            style={{ color: track.accent, boxShadow: `inset 0 0 0 2.5px ${track.color}` }}
           >
             {p.name}
           </span>
@@ -493,14 +497,14 @@ export default function PosterPage() {
                   <br />
                   Engineering Mastery
                 </h1>
-                <p className="mt-3 text-[20px] font-bold uppercase tracking-[0.22em] text-slate-400">The Engineer Growth Framework</p>
+                <p className="mt-3 text-[20px] font-bold uppercase tracking-[0.22em] text-slate-500">The Engineer Growth Framework</p>
               </div>
               {/* Byline as a signature, pinned bottom-right of the masthead */}
-              <span className="self-end text-[24px] font-bold whitespace-nowrap text-slate-800">{SITE_COPY.byline}</span>
+              <span className="self-end text-[24px] font-bold whitespace-nowrap text-slate-900">{SITE_COPY.byline}</span>
             </div>
 
-            <p className="mt-2 px-3 text-[24px] leading-snug text-slate-600">
-              {SITE_COPY.tagline} <span className="font-semibold text-slate-500">{SITE_COPY.detail}</span>
+            <p className="mt-2 px-3 text-[24px] leading-snug text-slate-700">
+              {SITE_COPY.tagline} <span className="text-slate-700">{SITE_COPY.detail}</span>
             </p>
           </header>
 
@@ -519,7 +523,7 @@ export default function PosterPage() {
             {/* Foundational phase: everyone starts here, then forks at Senior (L3) */}
             <div
               className="mt-0 flex items-center gap-4 rounded-2xl px-4 py-2"
-              style={{ backgroundColor: `${CLUSTER_META.technical.color}24`, border: `3px solid ${CLUSTER_META.technical.color}` }}
+              style={{ backgroundColor: `${CLUSTER_META.technical.color}47`, border: `3px solid ${CLUSTER_META.technical.color}` }}
             >
               <span
                 className="shrink-0 rounded-md px-2 py-[1px] text-center text-[18px] font-black text-white"
