@@ -19,6 +19,24 @@
     <link rel="shortcut icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <!-- PWA manifest disabled until needed. Re-enable: <link rel="manifest" href="/manifest.json" /> -->
+
+    <!-- SPA deep-link decoder: restores the real path from the ?/ redirect set by
+         public/404.html, before the app bundle reads window.location. See 404.html. -->
+    <script>
+      (function () {
+        var l = window.location;
+        if (l.search[1] === "/") {
+          var decoded = l.search
+            .slice(1)
+            .split("&")
+            .map(function (s) {
+              return s.replace(/~and~/g, "&");
+            })
+            .join("?");
+          window.history.replaceState(null, null, l.pathname.slice(0, -1) + decoded + l.hash);
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
