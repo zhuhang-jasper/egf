@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 
 import { ChevronDown } from "lucide-react";
 
@@ -114,38 +114,34 @@ function PillarMatrixCard({ order, pillarId, pillarName, focusSummary, color, te
 
 function CompetencyMatrix({ expandedPillar, onExpandedPillarChange, scrollNav }) {
   const cardRefs = useRef({});
-  const isFirstMountRef = useRef(true);
+  const scrollTimerRef = useRef(null);
+
+  // Scroll the just-opened card's top under the sticky bar, after the expand/collapse animation
+  // settles (a previously-open card above it collapses over MATRIX_ANIM_MS, shifting layout). Driven
+  // from the click — NOT a `useLayoutEffect` on `expandedPillar` — so it never fires on mount/refresh
+  // (which would yank the restored scroll) or twice under StrictMode.
+  const scrollToCardSoon = (pillarId) => {
+    clearTimeout(scrollTimerRef.current);
+    scrollTimerRef.current = setTimeout(() => {
+      const card = cardRefs.current[pillarId];
+      if (card) {
+        scrollBelowStickyHeader(card);
+      }
+    }, MATRIX_ANIM_MS);
+  };
+
+  useEffect(() => () => clearTimeout(scrollTimerRef.current), []);
 
   const handleToggle = (pillarId) => {
     const next = pillarId === expandedPillar ? null : pillarId;
     persistExpandedPillar(next);
     onExpandedPillarChange(next);
+    if (next) {
+      scrollToCardSoon(next);
+    } else {
+      clearTimeout(scrollTimerRef.current);
+    }
   };
-
-  useLayoutEffect(() => {
-    if (isFirstMountRef.current) {
-      isFirstMountRef.current = false;
-      return undefined;
-    }
-
-    if (!expandedPillar) {
-      return undefined;
-    }
-
-    const card = cardRefs.current[expandedPillar];
-    if (!card) {
-      return undefined;
-    }
-
-    // Wait for the expand/collapse animation to settle: a previously-open card above this one
-    // collapses over MATRIX_ANIM_MS, shifting this card's top up. Measuring before then would scroll
-    // to a stale position. (The card's top is what we align, so we only need the layout to be final.)
-    const timer = setTimeout(() => {
-      scrollBelowStickyHeader(card);
-    }, MATRIX_ANIM_MS);
-
-    return () => clearTimeout(timer);
-  }, [expandedPillar]);
 
   // Cross-tab jump from a tool-form pillar's help icon. Keyed on `scrollNav.seq` (bumps every click)
   // so it always scrolls the card to the top — even when the pillar was already expanded. (Expansion
