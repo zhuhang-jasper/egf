@@ -535,8 +535,8 @@ export default function PosterPage() {
               {/* Big "9" reads as part of the title; no wasted eyebrow line beside it */}
               <span className="text-[132px] font-black leading-[0.8] tracking-tighter text-slate-900 -translate-y-1.5">9</span>
               <div className="flex min-w-0 flex-1 flex-col justify-center">
-                <div className="flex items-end justify-between">
-                  <h1 className="text-[52px] font-black leading-[0.92] tracking-tight text-slate-900">
+                <div className="flex items-end justify-between gap-6">
+                  <h1 className="shrink-0 whitespace-nowrap text-[52px] font-black leading-[0.92] tracking-tight text-slate-900">
                     Pillars of
                     <br />
                     Engineering Mastery
