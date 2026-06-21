@@ -237,7 +237,7 @@ export const CAREER_TRACK_PROFILES = [
       { level: "L4", title: "Team Lead" },
       { level: "L5", title: "Engineering Manager" },
       { level: "L6", title: "Head of Engineering / VP" },
-      { level: "L7", title: "Chief Technology Officer (CTO)" },
+      { level: "L7", title: "Chief Technology Officer" },
     ],
     levels: buildLevels({
       process: 4,

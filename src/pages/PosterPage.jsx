@@ -101,9 +101,6 @@ const TRACKS = CAREER_TRACK_PROFILES.map((t) => ({
     if (r.level === "L3") {
       return { ...r, title: "Senior Engineer (any track)" };
     }
-    if (r.level === "L7") {
-      return { ...r, title: "Chief Technology Officer" };
-    }
     return r;
   }),
 }));
