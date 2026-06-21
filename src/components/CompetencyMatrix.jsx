@@ -13,6 +13,10 @@ import { getPillarCardElementId, persistExpandedPillar, THEORY_SECTIONS } from "
 
 const levelBadgeClass = cn("flex size-5 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white", DOC_TEXT.badgeMicro);
 
+// Expand/collapse animation length — must match the `duration-300` on the panel below, so the
+// scroll-into-view waits until layout has settled before measuring.
+const MATRIX_ANIM_MS = 300;
+
 function LevelCellContent({ level }) {
   if (!level?.persona) {
     return level?.text ?? "";
@@ -83,8 +87,16 @@ function PillarMatrixCard({ order, pillarId, pillarName, focusSummary, color, te
         <ChevronDown className={cn("mt-0.5 size-4 shrink-0 text-slate-800 transition-transform", expanded && "rotate-180")} aria-hidden />
       </button>
 
-      {expanded ? (
-        <section id={panelId} aria-labelledby={`${panelId}-trigger`}>
+      {/* CSS grid-rows 0fr→1fr animates the panel height open/closed without measuring pixels. */}
+      <section
+        id={panelId}
+        aria-labelledby={`${panelId}-trigger`}
+        className={cn(
+          "grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none",
+          expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+        )}
+      >
+        <div className="overflow-hidden">
           <PillarMatrixLevels levels={levels} />
           <div className="flex justify-center border-t border-slate-300/60 py-2">
             <ShareLinkButton
@@ -94,8 +106,8 @@ function PillarMatrixCard({ order, pillarId, pillarName, focusSummary, color, te
               ariaLabel="Copy link to this content"
             />
           </div>
-        </section>
-      ) : null}
+        </div>
+      </section>
     </article>
   );
 }
@@ -125,16 +137,19 @@ function CompetencyMatrix({ expandedPillar, onExpandedPillarChange, scrollNav })
       return undefined;
     }
 
-    const frame = requestAnimationFrame(() => {
+    // Wait for the expand/collapse animation to settle: a previously-open card above this one
+    // collapses over MATRIX_ANIM_MS, shifting this card's top up. Measuring before then would scroll
+    // to a stale position. (The card's top is what we align, so we only need the layout to be final.)
+    const timer = setTimeout(() => {
       scrollBelowStickyHeader(card);
-    });
+    }, MATRIX_ANIM_MS);
 
-    return () => cancelAnimationFrame(frame);
+    return () => clearTimeout(timer);
   }, [expandedPillar]);
 
   // Cross-tab jump from a tool-form pillar's help icon. Keyed on `scrollNav.seq` (bumps every click)
-  // so it always scrolls the card to the top — even when the pillar was already expanded, where the
-  // `expandedPillar` effect above would be a no-op and never re-run.
+  // so it always scrolls the card to the top — even when the pillar was already expanded. (Expansion
+  // for this path is driven by TheoryContent's matrixNav handler, not openPillar.)
   const scrollNavSeq = scrollNav?.seq;
   useLayoutEffect(() => {
     const pillarId = scrollNav?.pillarId;
@@ -149,12 +164,13 @@ function CompetencyMatrix({ expandedPillar, onExpandedPillarChange, scrollNav })
 
     // Double rAF: the theory tabpanel was just un-hidden (display:none → block) in this same commit,
     // so its layout box isn't ready yet. First frame lets it lay out, second lets getBoundingClientRect
-    // settle before measuring. (The `expandedPillar` effect can use a single frame because expanding
-    // a pillar happens in a later render, by which point the panel is already laid out.)
+    // settle. Then wait MATRIX_ANIM_MS so any expand/collapse triggered by this jump finishes shifting
+    // layout before we measure the card's top.
+    let timer = null;
     let inner = null;
     const outer = requestAnimationFrame(() => {
       inner = requestAnimationFrame(() => {
-        scrollBelowStickyHeader(card);
+        timer = setTimeout(() => scrollBelowStickyHeader(card), MATRIX_ANIM_MS);
       });
     });
 
@@ -162,6 +178,9 @@ function CompetencyMatrix({ expandedPillar, onExpandedPillarChange, scrollNav })
       cancelAnimationFrame(outer);
       if (inner !== null) {
         cancelAnimationFrame(inner);
+      }
+      if (timer !== null) {
+        clearTimeout(timer);
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
