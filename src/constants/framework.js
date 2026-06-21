@@ -33,13 +33,13 @@ export const TRACK_VARIANT_UI = {
     shortLabel: "FE",
     label: "Frontend",
     pillClass: "bg-track-fe text-track-fe-foreground",
-    toggleActiveClass: "bg-track-fe",
+    toggleActiveClass: "bg-background shadow-sm border border-border",
   },
   be: {
     shortLabel: "BE",
     label: "Backend",
     pillClass: "bg-track-be text-track-be-foreground",
-    toggleActiveClass: "bg-track-be",
+    toggleActiveClass: "bg-background shadow-sm border border-border",
   },
 };
 
