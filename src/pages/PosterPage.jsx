@@ -37,9 +37,22 @@ const CLUSTER_META = {
 
 // Lookups keyed by pillar id, derived from the theory data, so the ring cards reuse the
 // canonical signature questions and cluster colours.
+// Poster-only question tweaks; theory keeps the originals.
+const POSTER_QUESTION_OVERRIDES = {
+  ai: "Am I directing AI to safely multiply engineering output?", // drop "our"
+  domainLogic: "Am I translating requirements into bulletproof code?", // drop "complex"
+};
+
 const PILLAR_INFO = Object.fromEntries(
   PILLAR_CLUSTER_GROUPS.flatMap((group) =>
-    group.pillars.map((p) => [p.id, { question: p.signatureQuestion, color: CLUSTER_META[group.id].color, accent: CLUSTER_META[group.id].accent }]),
+    group.pillars.map((p) => [
+      p.id,
+      {
+        question: POSTER_QUESTION_OVERRIDES[p.id] ?? p.signatureQuestion,
+        color: CLUSTER_META[group.id].color,
+        accent: CLUSTER_META[group.id].accent,
+      },
+    ]),
   ),
 );
 
@@ -84,11 +97,21 @@ const TRACKS = CAREER_TRACK_PROFILES.map((t) => ({
   keyPillars: (t.id === "product-focused" ? ["Domain Logic", "Product Sense", "UI/UX", "Communication"] : t.keyFocusPillars)
     .map((nm) => PILLAR_BY_NAME[nm])
     .filter(Boolean),
-  // Poster-only: theory keeps "Senior Fork (Any Domain)" as the People & Delivery L3 rung, but on
-  // the poster that meta-label reads as a glitch next to the other tracks' real titles — rename it.
-  roleLevels: t.roleLevels.map((r) =>
-    t.id === "people-delivery" && r.level === "L3" ? { ...r, title: "Senior Engineer (any track)" } : r,
-  ),
+  // Poster-only title tweaks for the People & Delivery track; theory keeps the originals.
+  // - L3 "Senior Fork (Any Domain)" reads as a glitch next to the other tracks' real titles.
+  // - L7 drops the "(CTO)" bracket — too tight for the poster rung.
+  roleLevels: t.roleLevels.map((r) => {
+    if (t.id !== "people-delivery") {
+      return r;
+    }
+    if (r.level === "L3") {
+      return { ...r, title: "Senior Engineer (any track)" };
+    }
+    if (r.level === "L7") {
+      return { ...r, title: "Chief Technology Officer" };
+    }
+    return r;
+  }),
 }));
 
 /**
@@ -369,8 +392,8 @@ function PillarRing() {
  */
 function TrackCard({ track }) {
   return (
-    <div className="flex min-w-0 flex-col rounded-3xl px-3 py-3" style={{ backgroundColor: `${track.color}47`, border: `3px solid ${track.color}` }}>
-      <h4 className="text-center text-[25px] font-black leading-tight tracking-tight" style={{ color: track.accent }}>
+    <div className="flex min-w-0 flex-col rounded-3xl px-3 py-5" style={{ backgroundColor: `${track.color}47`, border: `3px solid ${track.color}` }}>
+      <h4 className="text-center text-[25px] font-black leading-tight tracking-tight mb-1" style={{ color: track.accent }}>
         {track.name}
       </h4>
 
@@ -399,12 +422,20 @@ function TrackCard({ track }) {
         {track.roleLevels.map((r) => (
           <div key={r.level} className="flex items-center gap-2">
             <span
-              className="w-[42px] shrink-0 rounded-md px-1 py-[1px] text-center text-[18px] font-black text-white"
+              className="shrink-0 rounded-md px-2 py-[1px] text-center text-[18px] font-black text-white"
               style={{ backgroundColor: track.accent }}
             >
               {r.level}
             </span>
-            <span className="min-w-0 text-[20px] font-semibold leading-tight text-slate-700 -mr-2">{r.title}</span>
+            <span className="min-w-0 text-[20px] font-semibold leading-tight text-slate-700 -mr-2">
+              {r.level === "L5"
+                ? r.title.split(" / ").map((part, i) => (
+                    <span key={part} className="block">
+                      {i > 0 ? `/ ${part}` : part}
+                    </span>
+                  ))
+                : r.title}
+            </span>
           </div>
         ))}
       </div>
@@ -492,18 +523,20 @@ export default function PosterPage() {
               {/* Big "9" reads as part of the title; no wasted eyebrow line beside it */}
               <span className="text-[132px] font-black leading-[0.8] tracking-tighter text-slate-900 -translate-y-1.5">9</span>
               <div className="flex min-w-0 flex-1 flex-col justify-center">
-                <h1 className="text-[52px] font-black leading-[0.92] tracking-tight text-slate-900">
-                  Pillars of
-                  <br />
-                  Engineering Mastery
-                </h1>
+                <div className="flex items-end justify-between gap-6">
+                  <h1 className="text-[52px] font-black leading-[0.92] tracking-tight text-slate-900">
+                    Pillars of
+                    <br />
+                    Engineering Mastery
+                  </h1>
+                  {/* Byline as a signature, sitting on the "Engineering Mastery" baseline */}
+                  <span className="self-end translate-y-1.5 text-[24px] font-bold whitespace-nowrap text-slate-900">{SITE_COPY.byline}</span>
+                </div>
                 <p className="mt-3 text-[20px] font-bold uppercase tracking-[0.22em] text-slate-500">The Engineer Growth Framework</p>
               </div>
-              {/* Byline as a signature, pinned bottom-right of the masthead */}
-              <span className="self-end text-[24px] font-bold whitespace-nowrap text-slate-900">{SITE_COPY.byline}</span>
             </div>
 
-            <p className="mt-2 px-3 text-[24px] leading-snug text-slate-700">
+            <p className="mt-3 px-3 text-[24px] leading-snug text-slate-700">
               {SITE_COPY.tagline} <span className="text-slate-700">{SITE_COPY.detail}</span>
             </p>
           </header>
@@ -517,7 +550,7 @@ export default function PosterPage() {
           </div>
 
           {/* Career tracks — foundational L1–L2 phase, then three columns that split at L3 */}
-          <div className="-mt-6 flex flex-col gap-3">
+          <div className="-mt-7 flex flex-col gap-3">
             <SectionLabel>3 Career Tracks</SectionLabel>
 
             {/* Foundational phase: everyone starts here, then forks at Senior (L3) */}
