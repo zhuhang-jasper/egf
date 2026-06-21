@@ -54,7 +54,7 @@ function AppShellTabBar({ activeTab, onTabChange }) {
     <div
       ref={barRef}
       id="app-shell-tab-bar"
-      className="sticky top-0 z-10 -mx-2 mt-2 bg-white px-2 py-2 shadow-sm sm:-mx-3 sm:px-3 print:static print:shadow-none"
+      className="sticky top-0 z-40 -mx-2 mt-2 bg-white px-2 py-2 shadow-sm sm:-mx-3 sm:px-3 print:static print:shadow-none"
     >
       <div
         className="relative mx-auto grid max-w-xs grid-cols-2 rounded-lg border border-slate-200 bg-slate-100/80 p-0.5"
