@@ -96,15 +96,7 @@ export function TitleToolbar() {
           <StatusIcon className="h-4 w-4 shrink-0" aria-hidden />
           <span className="truncate text-xs italic text-muted-foreground">{statusMeta.label}</span>
         </span>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="shrink-0 gap-1.5"
-          onClick={() => saveProfile()}
-          aria-label="Save"
-          title="Save"
-        >
+        <Button type="button" variant="outline" size="sm" className="shrink-0 gap-1.5" onClick={() => saveProfile()} aria-label="Save" title="Save">
           <Save className="h-4 w-4 shrink-0" />
           Save
         </Button>

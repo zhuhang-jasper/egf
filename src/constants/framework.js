@@ -144,9 +144,7 @@ export function getChartLayoutLabels(trackVariant = "fe") {
   const order = getPillarOrder(trackVariant);
   const reserved = getChartLayoutReservedLabel(trackVariant);
   const lastId = order.at(-1);
-  return order.map((id, i) =>
-    id === lastId ? reserved : orientChartPillarLabel(getChartPillarLabel(id), i, order.length),
-  );
+  return order.map((id, i) => (id === lastId ? reserved : orientChartPillarLabel(getChartPillarLabel(id), i, order.length)));
 }
 
 /** About/export charts — text-only pillar names (no emoji). */

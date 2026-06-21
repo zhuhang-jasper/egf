@@ -359,7 +359,7 @@ export async function shareChartAsImage({ exportRoot, canvas, chart, url }) {
     return { ok: false, method: null };
   }
 
-  const fileName = SITE_COPY.share.fileName;
+  const { fileName } = SITE_COPY.share;
   const shareTitle = SITE_COPY.share.title;
   const shareText = buildShareMessage(url);
 
