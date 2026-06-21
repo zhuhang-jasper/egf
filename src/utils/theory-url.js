@@ -75,13 +75,37 @@ export function parseTheoryDeepLink() {
 }
 
 /**
- * Remove theory deep-link params from the URL bar without a navigation event.
- * Called after the app has consumed the params on first mount.
+ * Read the active tab from the URL. Returns one of `validTabs` or null.
+ */
+export function getTabFromUrl(validTabs) {
+  try {
+    const tab = new URLSearchParams(window.location.search).get(PARAM_TAB);
+    return tab && validTabs.includes(tab) ? tab : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Reflect the active tab in the URL bar without a navigation event, so the URL
+ * is shareable at all times. Drops the deep-link-only `section`/`pillar` params.
+ */
+export function syncTabInUrl(tab) {
+  try {
+    const url = new URL(window.location.href);
+    url.searchParams.set(PARAM_TAB, tab);
+    window.history.replaceState(null, "", url.toString());
+  } catch {}
+}
+
+/**
+ * Remove the consumed deep-link params (`section`/`pillar`) from the URL bar
+ * without a navigation event, while keeping `tab` so the URL stays shareable.
+ * Called after the app has consumed the deep-link on first mount.
  */
 export function cleanTheoryDeepLinkParams() {
   try {
     const url = new URL(window.location.href);
-    url.searchParams.delete(PARAM_TAB);
     url.searchParams.delete(PARAM_SECTION);
     url.searchParams.delete(PARAM_PILLAR);
     window.history.replaceState(null, "", url.toString());

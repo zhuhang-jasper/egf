@@ -124,8 +124,9 @@ function useFitScale() {
   const [scale, setScale] = useState(1);
   useLayoutEffect(() => {
     const compute = () => {
-      const padX = 48;
-      setScale(Math.min(1, Math.max(0.1, (window.innerWidth - padX) / CANVAS_W)));
+      const padX = 32; // matches the outer p-4 (16px × 2 sides)
+      // clientWidth excludes the scrollbar, so the scaled poster never overflows into it.
+      setScale(Math.min(1, Math.max(0.1, (document.documentElement.clientWidth - padX) / CANVAS_W)));
     };
     compute();
     window.addEventListener("resize", compute);
@@ -251,8 +252,8 @@ const CHART_SIZE = 400; // box for the centred radar hub — larger so its grid 
 const RING_NUDGE = {
   domainLogic: { x: -110, y: 75 }, // top diagonals — spread wider apart and lower
   architecture: { x: 110, y: 75 },
-  uiUx: { x: -75, y: 15 }, // side labels — push further out
-  ai: { x: 75, y: 15 },
+  uiUx: { x: -80, y: 15 }, // side labels — push further out
+  ai: { x: 80, y: 15 },
   communication: { x: -120, y: -42 }, // bottom-centre pair — pull apart and lift up
   ownership: { x: 120, y: -42 },
   productSense: { x: -70, y: -50 }, // bottom diagonals — lifted up and pushed out
@@ -278,18 +279,29 @@ function PillarNode({ pillar }) {
   const nudge = RING_NUDGE[pillar.id] ?? { x: 0, y: 0 };
   const cx = RING_W / 2 + (RING_RX + boost) * Math.cos(rad) + nudge.x;
   const cy = RING_H / 2 + (RING_RY + boost) * Math.sin(rad) + nudge.y;
-  const alignClass = ringAlignClass(Math.cos(rad));
+  const cos = Math.cos(rad);
+  const alignClass = ringAlignClass(cos);
+  const emojiAfter = cos < -0.25; // left-side labels: emoji trails the name, staying close to the radar hub
+  const flipCoding = false; // set true to put question above and name below for the coding (top) pillar
+  const flip = flipCoding && pillar.id === "coding";
+  const nameRow = (
+    <div className="flex items-center gap-2">
+      {!emojiAfter && <span className="text-[30px] leading-none">{pillar.emoji}</span>}
+      <span className="text-[26px] font-black leading-tight tracking-tight" style={{ color: pillar.accent }}>
+        {pillar.name}
+      </span>
+      {emojiAfter && <span className="text-[30px] leading-none">{pillar.emoji}</span>}
+    </div>
+  );
+  const questionRow = (
+    <p className="mt-0.5 text-pretty text-[20px] font-semibold italic leading-[1.25] text-slate-600" style={{ textWrap: "balance" }}>
+      ”{pillar.question}”
+    </p>
+  );
   return (
     <div className={`absolute flex flex-col ${alignClass}`} style={{ width: CARD_W, left: cx, top: cy, transform: "translate(-50%, -50%)" }}>
-      <div className="flex items-center gap-2">
-        <span className="text-[30px] leading-none">{pillar.emoji}</span>
-        <span className="text-[26px] font-black leading-tight tracking-tight" style={{ color: pillar.accent }}>
-          {pillar.name}
-        </span>
-      </div>
-      <p className="mt-0.5 text-pretty text-[20px] font-semibold italic leading-[1.25] text-slate-600" style={{ textWrap: "balance" }}>
-        “{pillar.question}”
-      </p>
+      {flip ? questionRow : nameRow}
+      {flip ? nameRow : questionRow}
     </div>
   );
 }
@@ -392,13 +404,13 @@ function PillarRing() {
  */
 function TrackCard({ track }) {
   return (
-    <div className="flex min-w-0 flex-col rounded-3xl px-3 py-5" style={{ backgroundColor: `${track.color}47`, border: `3px solid ${track.color}` }}>
-      <h4 className="text-center text-[25px] font-black leading-tight tracking-tight mb-1" style={{ color: track.accent }}>
+    <div className="flex min-w-0 flex-col rounded-3xl px-3 py-3" style={{ backgroundColor: `${track.color}47`, border: `3px solid ${track.color}` }}>
+      <h4 className="text-center text-[25px] font-black leading-tight tracking-tight" style={{ color: track.accent }}>
         {track.name}
       </h4>
 
       {/* Characteristic chart shape — with cluster background colour */}
-      <div className="relative mx-auto my-1 h-[180px] w-[180px]">
+      <div className="relative mx-auto mt-2 h-[170px] w-[170px]">
         <PosterRadar levels={track.levels} showClusters lineWidth={2.5} pointRadius={0} />
       </div>
 
@@ -418,7 +430,7 @@ function TrackCard({ track }) {
 
       {/* L-level → role ladder — grows to fill the card and distributes its rows evenly, so the
           ladders bottom-align across cards even when one track has an extra rung (L7 CTO). */}
-      <div className="mt-3 flex flex-1 flex-col justify-between gap-[6px]">
+      <div className="mt-3 flex flex-1 flex-col justify-between gap-3">
         {track.roleLevels.map((r) => (
           <div key={r.level} className="flex items-center gap-2">
             <span
@@ -479,7 +491,7 @@ export default function PosterPage() {
   const downloadLabel = busy === "download" ? "Saving…" : { idle: "↓ Download", done: "✓ Saved", error: "Save failed" }[downloadState];
 
   return (
-    <div className="flex min-h-dvh w-full flex-col items-center overflow-auto bg-black p-4">
+    <div className="flex w-full flex-col items-center overflow-x-hidden overflow-y-auto bg-black p-4">
       {/* Scaling stage: reserves the scaled footprint so the canvas stays centred and
           scrolls cleanly; the article inside keeps its true pixel size for export. */}
       <div className="shrink-0" style={{ width: CANVAS_W * scale, height: CANVAS_H * scale }}>
@@ -488,7 +500,7 @@ export default function PosterPage() {
             so nothing overflows or overlaps. */}
         <article
           ref={posterRef}
-          className="relative flex flex-col gap-5 overflow-hidden bg-white px-10 py-10 shadow-2xl"
+          className="relative flex flex-col overflow-hidden bg-white px-10 py-10 shadow-2xl"
           style={{ width: CANVAS_W, height: CANVAS_H, transform: `scale(${scale})`, transformOrigin: "top left" }}
         >
           {/* Floating export controls — inside the poster (scale with it), top-right, excluded from
@@ -524,7 +536,7 @@ export default function PosterPage() {
               <span className="text-[132px] font-black leading-[0.8] tracking-tighter text-slate-900 -translate-y-1.5">9</span>
               <div className="flex min-w-0 flex-1 flex-col justify-center">
                 <div className="flex items-end justify-between gap-6">
-                  <h1 className="text-[52px] font-black leading-[0.92] tracking-tight text-slate-900">
+                  <h1 className="shrink-0 whitespace-nowrap text-[52px] font-black leading-[0.92] tracking-tight text-slate-900">
                     Pillars of
                     <br />
                     Engineering Mastery
@@ -544,18 +556,18 @@ export default function PosterPage() {
           {/* The 9 pillars as a radial ring around the central radar — chart + labels merged.
               Negative top margin tucks the ring up close under the section header (the stage has
               empty space above its topmost labels). */}
-          <div className="mt-0 flex flex-col gap-0">
+          <div className="mt-6 flex flex-col gap-0">
             <SectionLabel>The 9 Pillars</SectionLabel>
             <PillarRing />
           </div>
 
           {/* Career tracks — foundational L1–L2 phase, then three columns that split at L3 */}
-          <div className="-mt-7 flex flex-col gap-3">
+          <div className="-mt-2 flex flex-col gap-3">
             <SectionLabel>3 Career Tracks</SectionLabel>
 
             {/* Foundational phase: everyone starts here, then forks at Senior (L3) */}
             <div
-              className="mt-0 flex items-center gap-4 rounded-2xl px-4 py-2"
+              className="mt-1 flex items-center gap-4 rounded-2xl px-4 py-2"
               style={{ backgroundColor: `${CLUSTER_META.technical.color}47`, border: `3px solid ${CLUSTER_META.technical.color}` }}
             >
               <span

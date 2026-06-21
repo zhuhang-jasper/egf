@@ -90,7 +90,17 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY, padX, padY) {
       const cs = window.getComputedStyle(title);
       const { x, y, w, h } = getRelativeRect(title, rootRect, scaleX, scaleY, padX, padY);
       ctx.fillStyle = sanitizeColorForHtml2Canvas(cs.color);
-      ctx.font = buildFont(cs, scaleY);
+      const baseSize = Number.parseFloat(cs.fontSize) || 14;
+      const weight = cs.fontWeight || "400";
+      const family = cs.fontFamily || "system-ui, sans-serif";
+      // Scale font down if text overflows the element's measured width.
+      let fontSize = baseSize * scaleY;
+      ctx.font = `${weight} ${fontSize}px ${family}`;
+      const measured = ctx.measureText(text).width;
+      if (measured > w && measured > 0) {
+        fontSize = Math.max(8, fontSize * (w / measured));
+        ctx.font = `${weight} ${fontSize}px ${family}`;
+      }
       ctx.textAlign = cs.textAlign === "center" ? "center" : "left";
       ctx.textBaseline = "middle";
       ctx.fillText(text, ctx.textAlign === "center" ? x + w / 2 : x, y + h / 2);
@@ -210,9 +220,14 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY, padX, padY) {
   }
 }
 
-export async function copyChartAsImageToClipboard({ exportRoot, canvas, chart, titleText }) {
+/**
+ * Rasterize the chart export DOM (title, legend, badge, scores) plus the live radar canvas into a
+ * single high-res PNG and return it as a Blob. Shared by the clipboard-copy and share paths.
+ * Returns null if the refs aren't ready or the canvas hasn't drawn yet.
+ */
+export async function renderChartImageBlob({ exportRoot, canvas, chart }) {
   if (!exportRoot || !canvas || !chart) {
-    return { ok: false, method: null };
+    return null;
   }
 
   const padPx = getExportImagePaddingPx();
@@ -237,7 +252,7 @@ export async function copyChartAsImageToClipboard({ exportRoot, canvas, chart, t
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
     if (canvas.width < 2 || canvas.height < 2) {
-      return { ok: false, method: null };
+      return null;
     }
 
     const out = document.createElement("canvas");
@@ -260,28 +275,9 @@ export async function copyChartAsImageToClipboard({ exportRoot, canvas, chart, t
     octx.imageSmoothingQuality = "high";
     octx.drawImage(canvas, 0, 0, canvas.width, canvas.height, slotX, slotY, slotW, slotH);
 
-    const blob = await new Promise((resolve, reject) => {
+    return await new Promise((resolve, reject) => {
       out.toBlob((b) => (b ? resolve(b) : reject(new Error("toBlob failed"))), "image/png", 1);
     });
-
-    try {
-      if (navigator.clipboard && typeof ClipboardItem !== "undefined" && typeof navigator.clipboard.write === "function") {
-        await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-        return { ok: true, method: "clipboard" };
-      }
-    } catch (e) {
-      console.warn(e);
-    }
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${(titleText || "chart").replace(/[^\w-]+/g, "-").slice(0, 48)}-growth.png`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    return { ok: true, method: "download" };
   } finally {
     if (hadDpr) {
       chart.options.devicePixelRatio = prevDpr;
@@ -292,4 +288,101 @@ export async function copyChartAsImageToClipboard({ exportRoot, canvas, chart, t
     chart.update("none");
     requestAnimationFrame(() => syncFontsForChart(chart));
   }
+}
+
+function makePngFileName(titleText) {
+  return `${(titleText || "chart").replace(/[^\w-]+/g, "-").slice(0, 48)}-growth.png`;
+}
+
+export async function copyChartAsImageToClipboard({ exportRoot, canvas, chart, titleText }) {
+  if (!exportRoot || !canvas || !chart) {
+    return { ok: false, method: null };
+  }
+
+  const blob = await renderChartImageBlob({ exportRoot, canvas, chart });
+  if (!blob) {
+    return { ok: false, method: null };
+  }
+
+  try {
+    if (navigator.clipboard && typeof ClipboardItem !== "undefined" && typeof navigator.clipboard.write === "function") {
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      return { ok: true, method: "clipboard" };
+    }
+  } catch (e) {
+    console.warn(e);
+  }
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = makePngFileName(titleText);
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  return { ok: true, method: "download" };
+}
+
+/**
+ * Share the chart PNG (plus the app URL + a title) via the Web Share API, opening the native OS
+ * share sheet so the user can pick a target app (WhatsApp, LinkedIn, Messages, AirDrop…).
+ *
+ * Browser support is uneven: mobile Safari/Chrome and desktop Safari/Edge support file sharing;
+ * desktop Chrome (macOS) and Firefox generally do not. When file-sharing is unsupported we fall
+ * back to copying the image to the clipboard so the button never dead-ends.
+ *
+ * @returns {{ ok: boolean, method: "share" | "share-fallback-clipboard" | "share-fallback-download" | null }}
+ */
+export async function shareChartAsImage({ exportRoot, canvas, chart, titleText, url }) {
+  if (!exportRoot || !canvas || !chart) {
+    return { ok: false, method: null };
+  }
+
+  const blob = await renderChartImageBlob({ exportRoot, canvas, chart });
+  if (!blob) {
+    return { ok: false, method: null };
+  }
+
+  const fileName = makePngFileName(titleText);
+  const shareUrl = url || (typeof window !== "undefined" ? window.location.href : undefined);
+  const shareTitle = (titleText || "").trim() || "Engineer Growth Framework";
+
+  try {
+    if (typeof File === "function" && typeof navigator.share === "function") {
+      const file = new File([blob], fileName, { type: "image/png" });
+      const data = { files: [file], title: shareTitle, text: shareTitle, url: shareUrl };
+      // canShare gates on the files payload specifically; if it passes, share() can take files.
+      if (typeof navigator.canShare !== "function" || navigator.canShare({ files: [file] })) {
+        await navigator.share(data);
+        return { ok: true, method: "share" };
+      }
+    }
+  } catch (e) {
+    // AbortError = user dismissed the share sheet; treat as a no-op, not a failure.
+    if (e?.name === "AbortError") {
+      return { ok: true, method: "share" };
+    }
+    console.warn(e);
+  }
+
+  // Fallback: no Web Share (or it failed) — copy the image so the user can paste it manually.
+  try {
+    if (navigator.clipboard && typeof ClipboardItem !== "undefined" && typeof navigator.clipboard.write === "function") {
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      return { ok: true, method: "share-fallback-clipboard" };
+    }
+  } catch (e) {
+    console.warn(e);
+  }
+
+  const objectUrl = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = objectUrl;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(objectUrl);
+  return { ok: true, method: "share-fallback-download" };
 }

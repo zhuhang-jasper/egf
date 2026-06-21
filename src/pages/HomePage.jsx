@@ -7,9 +7,10 @@ import { ToolContent } from "@/components/ToolContent";
 import { getPersistedActiveTab, useTabScrollMemory } from "@/hooks/useTabScrollMemory";
 
 import { FE_UI } from "@/constants";
-import { cleanTheoryDeepLinkParams, parseTheoryDeepLink } from "@/utils/theory-url";
+import { cleanTheoryDeepLinkParams, getTabFromUrl, parseTheoryDeepLink, syncTabInUrl } from "@/utils/theory-url";
 
 const appVersion = import.meta.env.VITE_APP_VERSION;
+const VALID_TABS = ["tool", "theory"];
 
 // Parse once at module evaluation time so the URL is read before React renders.
 const BOOT_DEEP_LINK = parseTheoryDeepLink();
@@ -19,7 +20,11 @@ export default function HomePage() {
     if (BOOT_DEEP_LINK) {
       return "theory";
     }
-    return getPersistedActiveTab(["tool", "theory"]) ?? "tool";
+    // URL is the source of truth so the page is shareable; fall back to the
+    // persisted tab, then default. Always reflected back into the URL below.
+    const tab = getTabFromUrl(VALID_TABS) ?? getPersistedActiveTab(VALID_TABS) ?? "tool";
+    syncTabInUrl(tab);
+    return tab;
   });
 
   // Consumed-once ref: passed to TheoryContent on first render, then nulled so
@@ -38,6 +43,7 @@ export default function HomePage() {
     }
     saveActiveTabScroll();
     setActiveTab(nextTab);
+    syncTabInUrl(nextTab);
   };
 
   const handleOpenPillarInMatrix = (pillarId) => {
@@ -47,6 +53,7 @@ export default function HomePage() {
     if (activeTab !== "theory") {
       saveActiveTabScroll();
       setActiveTab("theory");
+      syncTabInUrl("theory");
     }
     setMatrixNav((prev) => ({ pillarId, seq: (prev?.seq ?? 0) + 1 }));
   };
