@@ -36,7 +36,9 @@ export default function HomePage() {
   // tab keeps it pinned. Null when the bar wasn't stuck (normal scroll restore on the new tab).
   const keepStuckAnchorRef = useRef(null);
 
-  const { saveActiveTabScroll } = useTabScrollMemory(activeTab, keepStuckAnchorRef);
+  // When booting from a deep-link, that flow owns the initial scroll (it glides to the target
+  // section/pillar) — so the scroll-position restore must skip its first run and not fight it.
+  const { saveActiveTabScroll } = useTabScrollMemory(activeTab, keepStuckAnchorRef, Boolean(BOOT_DEEP_LINK));
 
   // Cross-tab jump from a tool-form pillar's help icon into the theory matrix. The `seq` bump makes
   // repeated clicks on the same pillar re-trigger the expand + scroll even when the tab is already open.

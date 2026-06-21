@@ -64,9 +64,14 @@ export function parseTheoryDeepLink() {
       return null;
     }
     const section = params.get(PARAM_SECTION);
+    // Only a real section deep-link counts. A plain `?tab=theory` (always present in the URL) is not
+    // a deep-link — treating it as one made every Theory refresh run the boot deep-link path.
+    if (!Object.values(THEORY_SECTIONS).includes(section)) {
+      return null;
+    }
     const pillar = params.get(PARAM_PILLAR);
     return {
-      section: Object.values(THEORY_SECTIONS).includes(section) ? section : null,
+      section,
       pillar: pillar || null,
     };
   } catch {
