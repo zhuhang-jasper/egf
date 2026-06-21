@@ -15,11 +15,11 @@ import { useAppStore } from "@/store/useAppStore";
 
 import { getChartTitleSizePx, getTrackBadgeMdHeightPx } from "@/chart/fonts";
 import { FE_UI, FEATURE_SCORES_SETTINGS } from "@/constants";
-import { copyChartAsImageToClipboard } from "@/utils/copy-chart-image";
+import { copyChartAsImageToClipboard, shareChartAsImage } from "@/utils/copy-chart-image";
 
 function DisplayCheckbox({ label, checked, onChange }) {
   return (
-    <label className="flex cursor-pointer items-center gap-2.5 rounded-md px-3 py-1.5 text-sm hover:bg-muted/60">
+    <label className="flex cursor-pointer items-center gap-2.5 rounded-md px-3 py-1.5 text-xs hover:bg-muted/60">
       <input
         type="checkbox"
         checked={checked}
@@ -102,11 +102,100 @@ function ChartDisplayMenu() {
   );
 }
 
+function ExportMenuItem({ label, onClick }) {
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      onClick={onClick}
+      className="flex w-full rounded-md px-3 py-2 text-left text-xs hover:bg-muted/60"
+    >
+      {label}
+    </button>
+  );
+}
+
+/**
+ * Whether the Web Share API can share files here. True on mobile Safari/Chrome (and a few
+ * desktop browsers like Safari/Edge); false on desktop Chrome-macOS / Firefox. We probe with a
+ * tiny dummy file because canShare gates on the files payload specifically. Computed once.
+ */
+const CAN_SHARE_FILES = (() => {
+  try {
+    if (typeof navigator === "undefined" || typeof navigator.canShare !== "function" || typeof File !== "function") {
+      return false;
+    }
+    const probe = new File([""], "probe.png", { type: "image/png" });
+    return navigator.canShare({ files: [probe] });
+  } catch {
+    return false;
+  }
+})();
+
+/** Dropdown bundling the image-export actions: copy to clipboard, and (where supported) share via the OS share sheet. */
+function ExportMenu({ label, onCopy, onShare }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef(null);
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        setOpen(false);
+      }
+    };
+    const onMouse = (e) => {
+      if (rootRef.current && !rootRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    if (!open) {
+      return undefined;
+    }
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", onMouse);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", onMouse);
+    };
+  }, [open]);
+
+  const run = (fn) => () => {
+    setOpen(false);
+    fn();
+  };
+
+  return (
+    <div ref={rootRef} className="relative shrink-0">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        aria-expanded={open}
+        aria-haspopup="menu"
+        onClick={() => setOpen((v) => !v)}
+      >
+        <ArrowUpFromLine className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        {label ?? "Copy image"}
+      </Button>
+      {open ? (
+        <div
+          role="menu"
+          aria-label="Export image"
+          className="absolute right-0 top-[calc(100%+4px)] z-50 w-full rounded-lg border border-border bg-card p-1 shadow-md"
+        >
+          <ExportMenuItem label="To clipboard" onClick={run(onCopy)} />
+          {CAN_SHARE_FILES ? <ExportMenuItem label="Share…" onClick={run(onShare)} /> : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function ChartSection({ isVisible }) {
   const exportRef = useRef(null);
   const canvasRef = useRef(null);
   const frameRef = useRef(null);
-  const [copyLabel, setCopyLabel] = useState("Copy image");
+  const [exportLabel, setExportLabel] = useState(null); // transient status shown on the trigger
 
   const title = useAppStore((s) => s.title);
   const trackVariant = useAppStore((s) => s.trackVariant);
@@ -134,6 +223,11 @@ export function ChartSection({ isVisible }) {
     relayout();
   }, [chartTitleHidden, chartLegendHidden, relayout]);
 
+  const flashLabel = (text) => {
+    setExportLabel(text);
+    setTimeout(() => setExportLabel(null), 2000);
+  };
+
   const handleCopy = async () => {
     try {
       const result = await copyChartAsImageToClipboard({
@@ -143,17 +237,39 @@ export function ChartSection({ isVisible }) {
         titleText: trimmedTitle || " ",
       });
       if (result?.method === "clipboard") {
-        setCopyLabel("Copied!");
+        flashLabel("Copied!");
       } else if (result?.method === "download") {
-        setCopyLabel("Saved file");
+        flashLabel("Saved file");
       } else {
-        setCopyLabel("Failed");
+        flashLabel("Failed");
       }
     } catch (e) {
       console.error(e);
-      setCopyLabel("Failed");
+      flashLabel("Failed");
     }
-    setTimeout(() => setCopyLabel("Copy image"), 2000);
+  };
+
+  const handleShare = async () => {
+    try {
+      const result = await shareChartAsImage({
+        exportRoot: exportRef.current,
+        canvas: canvasRef.current,
+        chart: chartRef.current,
+        titleText: trimmedTitle || " ",
+      });
+      if (result?.method === "share") {
+        flashLabel("Shared!");
+      } else if (result?.method === "share-fallback-clipboard") {
+        flashLabel("Copied — paste it");
+      } else if (result?.method === "share-fallback-download") {
+        flashLabel("Saved file");
+      } else {
+        flashLabel("Failed");
+      }
+    } catch (e) {
+      console.error(e);
+      flashLabel("Failed");
+    }
   };
 
   return (
@@ -161,10 +277,7 @@ export function ChartSection({ isVisible }) {
       <div className="relative z-[2] flex w-full min-w-0 items-center justify-between gap-2 border-b pb-3 border-border mb-3">
         <TrackToggle />
         <div className="flex shrink-0 items-center gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={handleCopy}>
-            <ArrowUpFromLine className="h-3.5 w-3.5 shrink-0" aria-hidden />
-            {copyLabel}
-          </Button>
+          <ExportMenu label={exportLabel} onCopy={handleCopy} onShare={handleShare} />
           <ChartDisplayMenu />
         </div>
       </div>
