@@ -6,6 +6,9 @@ import { getPillarOrder } from "@/constants";
  * Per-track, per-pillar pixel nudges for the chart axis labels, applied after the radar's automatic
  * placement. Keyed by track variant, then pillar id: `{ x, y }` shifts the label right/down.
  * Empty by default — populate to relieve crowding on specific axes.
+ *
+ * Tuned for the interactive tool chart. The theory career-track charts are sized differently, so
+ * they have their own {@link THEORY_PILLAR_LABEL_NUDGE}.
  */
 const PILLAR_LABEL_NUDGE = {
   fe: {
@@ -28,8 +31,23 @@ const PILLAR_LABEL_NUDGE = {
   },
 };
 
-function getPillarLabelNudge(trackVariant, pillarId) {
-  return PILLAR_LABEL_NUDGE[trackVariant]?.[pillarId] ?? { x: 0, y: 0 };
+/**
+ * Nudges for the theory career-track charts. Cloned from {@link PILLAR_LABEL_NUDGE} as a starting
+ * point — adjust independently since the theory charts render at a different size.
+ */
+const THEORY_PILLAR_LABEL_NUDGE = {
+  fe: {
+    domainLogic: { x: -5, y: 10 },
+    architecture: { x: 5, y: 10 },
+    uiUx: { x: -2, y: 10 },
+    ai: { x: 2, y: 10 },
+    productSense: { x: -2, y: -7 },
+    process: { x: 2, y: -7 },
+  },
+};
+
+function getPillarLabelNudge(nudgeMap, trackVariant, pillarId) {
+  return nudgeMap[trackVariant]?.[pillarId] ?? { x: 0, y: 0 };
 }
 
 function radarTickBackdropHalf(scale) {
@@ -99,9 +117,8 @@ function rebuildRadarPointLabelItems(scale) {
   const trackVariant = scale.chart?.options?.plugins?.clusterBackground?.trackVariant ?? "fe";
   const layoutLabels = getChartLayoutLabelsForChart(scale.chart, trackVariant);
   const pillarOrder = getPillarOrder(trackVariant);
-  // Nudges are hand-tuned for the interactive tool chart only; theory career-track charts use their
-  // own (smaller) sizing, so leave their labels at the radar's automatic placement.
-  const nudgeEnabled = !isTheoryChart(scale.chart);
+  // Tool and theory charts render at different sizes, so each has its own hand-tuned nudge map.
+  const nudgeMap = isTheoryChart(scale.chart) ? THEORY_PILLAR_LABEL_NUDGE : PILLAR_LABEL_NUDGE;
   const plOpts = scale.options.pointLabels;
   const valueCount = count;
   const addAngle = plOpts.centerPointLabels ? Math.PI / valueCount : 0;
@@ -124,7 +141,7 @@ function rebuildRadarPointLabelItems(scale) {
       angleDeg += 360;
     }
     const align = radarTextAlignForDeg(angleDeg);
-    const nudge = nudgeEnabled ? getPillarLabelNudge(trackVariant, pillarOrder[i]) : { x: 0, y: 0 };
+    const nudge = getPillarLabelNudge(nudgeMap, trackVariant, pillarOrder[i]);
     const x = pos.x + nudge.x;
     const y = radarYForDeg(pos.y, size.h, angleDeg) + nudge.y;
     const left = radarLeftForAlign(x, size.w, align);
