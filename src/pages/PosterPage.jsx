@@ -279,18 +279,29 @@ function PillarNode({ pillar }) {
   const nudge = RING_NUDGE[pillar.id] ?? { x: 0, y: 0 };
   const cx = RING_W / 2 + (RING_RX + boost) * Math.cos(rad) + nudge.x;
   const cy = RING_H / 2 + (RING_RY + boost) * Math.sin(rad) + nudge.y;
-  const alignClass = ringAlignClass(Math.cos(rad));
+  const cos = Math.cos(rad);
+  const alignClass = ringAlignClass(cos);
+  const emojiAfter = cos < -0.25; // left-side labels: emoji trails the name, staying close to the radar hub
+  const flipCoding = false; // set true to put question above and name below for the coding (top) pillar
+  const flip = flipCoding && pillar.id === "coding";
+  const nameRow = (
+    <div className="flex items-center gap-2">
+      {!emojiAfter && <span className="text-[30px] leading-none">{pillar.emoji}</span>}
+      <span className="text-[26px] font-black leading-tight tracking-tight" style={{ color: pillar.accent }}>
+        {pillar.name}
+      </span>
+      {emojiAfter && <span className="text-[30px] leading-none">{pillar.emoji}</span>}
+    </div>
+  );
+  const questionRow = (
+    <p className="mt-0.5 text-pretty text-[20px] font-semibold italic leading-[1.25] text-slate-600" style={{ textWrap: "balance" }}>
+      ”{pillar.question}”
+    </p>
+  );
   return (
     <div className={`absolute flex flex-col ${alignClass}`} style={{ width: CARD_W, left: cx, top: cy, transform: "translate(-50%, -50%)" }}>
-      <div className="flex items-center gap-2">
-        <span className="text-[30px] leading-none">{pillar.emoji}</span>
-        <span className="text-[26px] font-black leading-tight tracking-tight" style={{ color: pillar.accent }}>
-          {pillar.name}
-        </span>
-      </div>
-      <p className="mt-0.5 text-pretty text-[20px] font-semibold italic leading-[1.25] text-slate-600" style={{ textWrap: "balance" }}>
-        “{pillar.question}”
-      </p>
+      {flip ? questionRow : nameRow}
+      {flip ? nameRow : questionRow}
     </div>
   );
 }
