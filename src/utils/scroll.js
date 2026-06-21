@@ -35,6 +35,32 @@ export function clearStickyScrollOffset() {
   document.documentElement.style.removeProperty(STICKY_OFFSET_CSS_VAR);
 }
 
+const TAB_BAR_ID = "app-shell-tab-bar";
+
+/**
+ * Whether the sticky tab bar is currently pinned to the top, read from its live rect (its top is
+ * clamped to ~0 once stuck). Reliable only when layout is settled (e.g. at a tab switch) — not on a
+ * fresh page where the rect may not be final yet.
+ */
+export function isTabBarStuck() {
+  const bar = document.getElementById(TAB_BAR_ID);
+  return bar ? bar.getBoundingClientRect().top <= 1 : false;
+}
+
+/**
+ * The window scrollY at which the tab bar becomes pinned — i.e. the document Y of the bar's anchor,
+ * which equals the bottom of the (never-sticky) intro header above it. Derived from the intro
+ * header's live rect, which always reflects true layout position (unlike the pinned sticky bar,
+ * whose rect top clamps to 0 and would collapse to the current scroll). Returns 0 if not found.
+ */
+export function getTabBarPinnedScrollY() {
+  const intro = document.getElementById("app-shell-intro");
+  if (!intro) {
+    return 0;
+  }
+  return Math.max(0, Math.round(intro.getBoundingClientRect().bottom + window.scrollY));
+}
+
 /** Scroll so `element` sits just below the sticky app tab bar. */
 export function scrollBelowStickyHeader(element, { behavior = "smooth" } = {}) {
   if (!element) {

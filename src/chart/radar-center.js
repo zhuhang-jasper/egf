@@ -1,5 +1,54 @@
 import { getChartWidthUnit } from "@/chart/fonts";
-import { getChartLayoutLabelsForChart, resolveChartUi } from "@/chart/theory-profile";
+import { getChartLayoutLabelsForChart, isTheoryChart, resolveChartUi } from "@/chart/theory-profile";
+import { getPillarOrder } from "@/constants";
+
+/**
+ * Per-track, per-pillar pixel nudges for the chart axis labels, applied after the radar's automatic
+ * placement. Keyed by track variant, then pillar id: `{ x, y }` shifts the label right/down.
+ * Empty by default — populate to relieve crowding on specific axes.
+ *
+ * Tuned for the interactive tool chart. The theory career-track charts are sized differently, so
+ * they have their own {@link THEORY_PILLAR_LABEL_NUDGE}.
+ */
+const PILLAR_LABEL_NUDGE = {
+  fe: {
+    coding: { x: -5, y: 0 },
+    domainLogic: { x: -8, y: 15 },
+    architecture: { x: 9, y: 15 },
+    uiUx: { x: -1, y: 15 },
+    ai: { x: 3, y: 15 },
+    productSense: { x: -1, y: -7 },
+    process: { x: 2, y: -7 },
+  },
+  be: {
+    coding: { x: -5, y: 0 },
+    domainLogic: { x: -5, y: 10 },
+    architecture: { x: 6, y: 10 },
+    ai: { x: 2, y: 0 },
+    communication: { x: -5, y: -10 },
+    process: { x: 6, y: -10 },
+    ownership: { x: -5, y: 0 },
+  },
+};
+
+/**
+ * Nudges for the theory career-track charts. Cloned from {@link PILLAR_LABEL_NUDGE} as a starting
+ * point — adjust independently since the theory charts render at a different size.
+ */
+const THEORY_PILLAR_LABEL_NUDGE = {
+  fe: {
+    domainLogic: { x: -5, y: 10 },
+    architecture: { x: 5, y: 10 },
+    uiUx: { x: -2, y: 10 },
+    ai: { x: 2, y: 10 },
+    productSense: { x: -2, y: -7 },
+    process: { x: 2, y: -7 },
+  },
+};
+
+function getPillarLabelNudge(nudgeMap, trackVariant, pillarId) {
+  return nudgeMap[trackVariant]?.[pillarId] ?? { x: 0, y: 0 };
+}
 
 function radarTickBackdropHalf(scale) {
   const tickOpts = scale.options.ticks;
@@ -19,7 +68,10 @@ function radarNormAngleRad(a) {
 }
 
 function radarTextAlignForDeg(angle) {
-  if (angle === 0 || angle === 180) {
+  // Center the top/bottom axes (0° / 180°). A small tolerance guards against floating-point drift
+  // that can leave an exactly-vertical axis (e.g. Ownership at the 8-pillar bottom) at 179°/181°.
+  const ALIGN_TOL = 1;
+  if (angle <= ALIGN_TOL || angle >= 360 - ALIGN_TOL || Math.abs(angle - 180) <= ALIGN_TOL) {
     return "center";
   }
   if (angle < 180) {
@@ -64,6 +116,9 @@ function rebuildRadarPointLabelItems(scale) {
 
   const trackVariant = scale.chart?.options?.plugins?.clusterBackground?.trackVariant ?? "fe";
   const layoutLabels = getChartLayoutLabelsForChart(scale.chart, trackVariant);
+  const pillarOrder = getPillarOrder(trackVariant);
+  // Tool and theory charts render at different sizes, so each has its own hand-tuned nudge map.
+  const nudgeMap = isTheoryChart(scale.chart) ? THEORY_PILLAR_LABEL_NUDGE : PILLAR_LABEL_NUDGE;
   const plOpts = scale.options.pointLabels;
   const valueCount = count;
   const addAngle = plOpts.centerPointLabels ? Math.PI / valueCount : 0;
@@ -86,11 +141,13 @@ function rebuildRadarPointLabelItems(scale) {
       angleDeg += 360;
     }
     const align = radarTextAlignForDeg(angleDeg);
-    const y = radarYForDeg(pos.y, size.h, angleDeg);
-    const left = radarLeftForAlign(pos.x, size.w, align);
+    const nudge = getPillarLabelNudge(nudgeMap, trackVariant, pillarOrder[i]);
+    const x = pos.x + nudge.x;
+    const y = radarYForDeg(pos.y, size.h, angleDeg) + nudge.y;
+    const left = radarLeftForAlign(x, size.w, align);
     items.push({
       visible: true,
-      x: pos.x,
+      x,
       y,
       textAlign: align,
       left,

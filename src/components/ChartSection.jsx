@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
-import { ArrowUpFromLine, Settings } from "lucide-react";
+import { Settings, Share } from "lucide-react";
 
 import { ChartScores } from "@/components/ChartScores";
 import { ClusterLegend } from "@/components/ClusterLegend";
@@ -14,7 +14,7 @@ import { useElementWidth } from "@/hooks/useElementWidth";
 import { useAppStore } from "@/store/useAppStore";
 
 import { getChartTitleSizePx, getTrackBadgeMdHeightPx } from "@/chart/fonts";
-import { FE_UI, FEATURE_SCORES_SETTINGS } from "@/constants";
+import { FE_UI, FEATURE_SCORES_SETTINGS, SITE_COPY } from "@/constants";
 import { copyChartAsImageToClipboard, shareChartAsImage } from "@/utils/copy-chart-image";
 
 function DisplayCheckbox({ label, checked, onChange }) {
@@ -108,7 +108,7 @@ function ExportMenuItem({ label, onClick }) {
       type="button"
       role="menuitem"
       onClick={onClick}
-      className="flex w-full rounded-md px-3 py-2 text-left text-xs hover:bg-muted/60"
+      className="flex w-full whitespace-nowrap rounded-md px-3 py-2 text-left text-xs hover:bg-muted/60"
     >
       {label}
     </button>
@@ -166,25 +166,18 @@ function ExportMenu({ label, onCopy, onShare }) {
 
   return (
     <div ref={rootRef} className="relative shrink-0">
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        aria-expanded={open}
-        aria-haspopup="menu"
-        onClick={() => setOpen((v) => !v)}
-      >
-        <ArrowUpFromLine className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        {label ?? "Copy image"}
+      <Button type="button" variant="outline" size="sm" aria-expanded={open} aria-haspopup="menu" onClick={() => setOpen((v) => !v)}>
+        <Share className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        {label ?? "Share Chart"}
       </Button>
       {open ? (
         <div
           role="menu"
           aria-label="Export image"
-          className="absolute right-0 top-[calc(100%+4px)] z-50 w-full rounded-lg border border-border bg-card p-1 shadow-md"
+          className="absolute right-0 top-[calc(100%+4px)] z-50 w-max rounded-lg border border-border bg-card p-1 shadow-md"
         >
-          <ExportMenuItem label="To clipboard" onClick={run(onCopy)} />
-          {CAN_SHARE_FILES ? <ExportMenuItem label="Share…" onClick={run(onShare)} /> : null}
+          <ExportMenuItem label="Copy image (clipboard)" onClick={run(onCopy)} />
+          {CAN_SHARE_FILES ? <ExportMenuItem label="Share external..." onClick={run(onShare)} /> : null}
         </div>
       ) : null}
     </div>
@@ -207,7 +200,11 @@ export function ChartSection({ isVisible }) {
   const chartWidth = useElementWidth(frameRef, isVisible);
 
   const trimmedTitle = String(title).trim();
-  const showVisibleTitle = !chartTitleHidden && trimmedTitle.length > 0;
+  // When the title is enabled but blank, show a muted placeholder on the chart (it also bakes into
+  // the export) while the form input stays empty. The placeholder text lives in SITE_COPY.
+  const titleIsBlank = trimmedTitle.length === 0;
+  const displayTitle = titleIsBlank ? SITE_COPY.chartTitlePlaceholder : trimmedTitle;
+  const showVisibleTitle = !chartTitleHidden;
   const showTitleRow = showVisibleTitle || !chartLegendHidden;
   const layoutWidth = chartWidth || FE_UI.page.minWidthPx;
   const titleSizePx = getChartTitleSizePx(layoutWidth);
@@ -234,7 +231,6 @@ export function ChartSection({ isVisible }) {
         exportRoot: exportRef.current,
         canvas: canvasRef.current,
         chart: chartRef.current,
-        titleText: trimmedTitle || " ",
       });
       if (result?.method === "clipboard") {
         flashLabel("Copied!");
@@ -255,10 +251,9 @@ export function ChartSection({ isVisible }) {
         exportRoot: exportRef.current,
         canvas: canvasRef.current,
         chart: chartRef.current,
-        titleText: trimmedTitle || " ",
       });
       if (result?.method === "share") {
-        flashLabel("Shared!");
+        // Native share sheet opened — completion is out of our hands, so don't claim "Shared!".
       } else if (result?.method === "share-fallback-clipboard") {
         flashLabel("Copied — paste it");
       } else if (result?.method === "share-fallback-download") {
@@ -289,10 +284,10 @@ export function ChartSection({ isVisible }) {
             {showVisibleTitle ? (
               <h2
                 id="competency-chart-heading"
-                className="m-0 min-w-0 flex-1 text-left font-bold text-black only:ml-2"
+                className={`m-0 min-w-0 flex-1 text-left only:ml-2 ${titleIsBlank ? "text-black/30 font-semibold" : "text-black font-bold"}`}
                 style={{ fontSize: titleSizePx, lineHeight: `${titleRowHeightPx}px` }}
               >
-                {title}
+                {displayTitle}
               </h2>
             ) : (
               <h2 id="competency-chart-heading" className="sr-only">

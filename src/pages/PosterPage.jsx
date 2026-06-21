@@ -37,18 +37,12 @@ const CLUSTER_META = {
 
 // Lookups keyed by pillar id, derived from the theory data, so the ring cards reuse the
 // canonical signature questions and cluster colours.
-// Poster-only question tweaks; theory keeps the originals.
-const POSTER_QUESTION_OVERRIDES = {
-  ai: "Am I directing AI to safely multiply engineering output?", // drop "our"
-  domainLogic: "Am I translating requirements into bulletproof code?", // drop "complex"
-};
-
 const PILLAR_INFO = Object.fromEntries(
   PILLAR_CLUSTER_GROUPS.flatMap((group) =>
     group.pillars.map((p) => [
       p.id,
       {
-        question: POSTER_QUESTION_OVERRIDES[p.id] ?? p.signatureQuestion,
+        question: p.signatureQuestion,
         color: CLUSTER_META[group.id].color,
         accent: CLUSTER_META[group.id].accent,
       },
@@ -106,9 +100,6 @@ const TRACKS = CAREER_TRACK_PROFILES.map((t) => ({
     }
     if (r.level === "L3") {
       return { ...r, title: "Senior Engineer (any track)" };
-    }
-    if (r.level === "L7") {
-      return { ...r, title: "Chief Technology Officer" };
     }
     return r;
   }),
@@ -216,7 +207,7 @@ async function downloadPosterPng(node) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "9-pillar-engineer-growth-framework.png";
+  a.download = "9-pillar-engineer-growth-framework-poster.png";
   document.body.appendChild(a);
   a.click();
   a.remove();
