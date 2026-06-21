@@ -7,6 +7,7 @@ import { ToolContent } from "@/components/ToolContent";
 import { getPersistedActiveTab, useTabScrollMemory } from "@/hooks/useTabScrollMemory";
 
 import { FE_UI } from "@/constants";
+import { getTabBarPinnedScrollY, isTabBarStuck } from "@/utils/scroll";
 import { cleanTheoryDeepLinkParams, getTabFromUrl, parseTheoryDeepLink, syncTabInUrl } from "@/utils/theory-url";
 
 const appVersion = import.meta.env.VITE_APP_VERSION;
@@ -31,7 +32,11 @@ export default function HomePage() {
   // subsequent tab switches don't re-trigger the scroll/expand.
   const deepLinkRef = useRef(BOOT_DEEP_LINK);
 
-  const { saveActiveTabScroll } = useTabScrollMemory(activeTab);
+  // Consumed-once: the bar's pinned anchor captured at switch time when it was stuck, so the new
+  // tab keeps it pinned. Null when the bar wasn't stuck (normal scroll restore on the new tab).
+  const keepStuckAnchorRef = useRef(null);
+
+  const { saveActiveTabScroll } = useTabScrollMemory(activeTab, keepStuckAnchorRef);
 
   // Cross-tab jump from a tool-form pillar's help icon into the theory matrix. The `seq` bump makes
   // repeated clicks on the same pillar re-trigger the expand + scroll even when the tab is already open.
@@ -41,6 +46,8 @@ export default function HomePage() {
     if (nextTab === activeTab) {
       return;
     }
+    // If the bar is pinned now, capture its anchor so the new tab restores at least that far down.
+    keepStuckAnchorRef.current = isTabBarStuck() ? getTabBarPinnedScrollY() : null;
     saveActiveTabScroll();
     setActiveTab(nextTab);
     syncTabInUrl(nextTab);

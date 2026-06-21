@@ -35,15 +35,28 @@ function persistScroll(tab, y) {
   } catch {}
 }
 
-/** Remember per-tab window scroll in sessionStorage; persists across page refresh. */
-export function useTabScrollMemory(activeTab) {
+/**
+ * Remember per-tab window scroll in sessionStorage; persists across page refresh.
+ *
+ * `keepStuckAnchorRef` is a consumed-once ref carrying the tab bar's pinned-scroll anchor, captured
+ * at switch time *only when the bar was stuck* (else null). When set, the new tab is raised to at
+ * least that anchor so the bar stays pinned across every switch — landing at the stick point hides
+ * only the header, never body content, so this is always safe. The anchor is captured by the caller
+ * on the settled layout — never measured here at restore time — so the page-refresh path is unaffected.
+ */
+export function useTabScrollMemory(activeTab, keepStuckAnchorRef) {
   const saveActiveTabScroll = () => {
     persistScroll(activeTab, getWindowScrollY());
   };
 
   useLayoutEffect(() => {
     persistActiveTab(activeTab);
-    const y = getPersistedScroll(activeTab);
+    let y = getPersistedScroll(activeTab);
+    const anchor = keepStuckAnchorRef?.current;
+    if (anchor != null) {
+      y = Math.max(y, anchor); // keep the bar pinned across the switch
+      keepStuckAnchorRef.current = null; // consumed once
+    }
     const frame = requestAnimationFrame(() => {
       scrollWindowTo(y);
     });
