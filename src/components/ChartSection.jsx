@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
-import { ArrowUpFromLine, Settings } from "lucide-react";
+import { Settings, Share } from "lucide-react";
 
 import { ChartScores } from "@/components/ChartScores";
 import { ClusterLegend } from "@/components/ClusterLegend";
@@ -104,7 +104,12 @@ function ChartDisplayMenu() {
 
 function ExportMenuItem({ label, onClick }) {
   return (
-    <button type="button" role="menuitem" onClick={onClick} className="flex w-full rounded-md px-3 py-2 text-left text-xs hover:bg-muted/60">
+    <button
+      type="button"
+      role="menuitem"
+      onClick={onClick}
+      className="flex w-full whitespace-nowrap rounded-md px-3 py-2 text-left text-xs hover:bg-muted/60"
+    >
       {label}
     </button>
   );
@@ -162,17 +167,17 @@ function ExportMenu({ label, onCopy, onShare }) {
   return (
     <div ref={rootRef} className="relative shrink-0">
       <Button type="button" variant="outline" size="sm" aria-expanded={open} aria-haspopup="menu" onClick={() => setOpen((v) => !v)}>
-        <ArrowUpFromLine className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        {label ?? "Copy image"}
+        <Share className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        {label ?? "Share Chart"}
       </Button>
       {open ? (
         <div
           role="menu"
           aria-label="Export image"
-          className="absolute right-0 top-[calc(100%+4px)] z-50 w-full rounded-lg border border-border bg-card p-1 shadow-md"
+          className="absolute right-0 top-[calc(100%+4px)] z-50 w-max rounded-lg border border-border bg-card p-1 shadow-md"
         >
-          <ExportMenuItem label="To clipboard" onClick={run(onCopy)} />
-          {CAN_SHARE_FILES ? <ExportMenuItem label="Share…" onClick={run(onShare)} /> : null}
+          <ExportMenuItem label="Copy image (clipboard)" onClick={run(onCopy)} />
+          {CAN_SHARE_FILES ? <ExportMenuItem label="Share external..." onClick={run(onShare)} /> : null}
         </div>
       ) : null}
     </div>
@@ -248,7 +253,7 @@ export function ChartSection({ isVisible }) {
         chart: chartRef.current,
       });
       if (result?.method === "share") {
-        flashLabel("Shared!");
+        // Native share sheet opened — completion is out of our hands, so don't claim "Shared!".
       } else if (result?.method === "share-fallback-clipboard") {
         flashLabel("Copied — paste it");
       } else if (result?.method === "share-fallback-download") {

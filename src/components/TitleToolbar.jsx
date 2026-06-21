@@ -88,13 +88,14 @@ export function TitleToolbar() {
         <Button
           type="button"
           variant="outline"
-          size="icon"
-          className="shrink-0"
+          size="sm"
+          className="shrink-0 gap-1.5"
           onClick={() => saveProfile()}
           aria-label={saveLabel}
           title={saveLabel}
         >
-          <Save className="h-4 w-4" />
+          <Save className="h-4 w-4 shrink-0" />
+          {saveLabel}
         </Button>
       </div>
       <div className="flex w-full items-center gap-2 min-[530px]:ml-auto min-[530px]:w-auto">

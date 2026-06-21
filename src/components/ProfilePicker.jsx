@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-import { ChevronDown, Trash2 } from "lucide-react";
+import { ChevronDown, Trash2, Users } from "lucide-react";
 
 import { TrackBadge } from "@/components/TrackBadge";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,7 @@ export function ProfilePicker() {
   return (
     <div ref={rootRef} className="relative shrink-0">
       <Button type="button" variant="outline" size="sm" aria-expanded={open} aria-haspopup="menu" onClick={() => setOpen(!open)} className="gap-1">
+        <Users className="h-3.5 w-3.5 shrink-0" aria-hidden />
         Profiles
         <ChevronDown className="h-3.5 w-3.5 opacity-60" />
       </Button>
