@@ -44,8 +44,8 @@ export function TitleToolbar() {
   const showClear = title.length > 0;
 
   return (
-    <div className="flex w-full flex-col gap-2 min-[470px]:flex-row min-[470px]:items-center min-[470px]:gap-2">
-      <div className="flex w-full min-w-0 items-center gap-2 min-[470px]:contents">
+    <div className="flex w-full flex-col gap-2 min-[530px]:flex-row min-[530px]:items-center min-[530px]:gap-2">
+      <div className="flex w-full min-w-0 items-center gap-2 min-[530px]:contents">
         <Button
           type="button"
           variant="outline"
@@ -60,7 +60,7 @@ export function TitleToolbar() {
         >
           <Plus className="h-4 w-4" />
         </Button>
-        <div className="relative min-w-0 flex-1 min-[470px]:flex-[0_1_50%] min-[470px]:basis-[50%]">
+        <div className="relative min-w-0 flex-1 min-[530px]:flex-[0_1_50%] min-[530px]:basis-[50%]">
           <Input
             id="chart-title-input"
             value={title}
@@ -97,8 +97,8 @@ export function TitleToolbar() {
           <Save className="h-4 w-4" />
         </Button>
       </div>
-      <div className="flex w-full items-center gap-2 min-[470px]:ml-auto min-[470px]:w-auto">
-        <div className="flex items-center gap-2 min-[470px]:hidden">
+      <div className="flex w-full items-center gap-2 min-[530px]:ml-auto min-[530px]:w-auto">
+        <div className="flex items-center gap-2 min-[530px]:hidden">
           <Button
             type="button"
             variant="outline"
@@ -127,7 +127,7 @@ export function TitleToolbar() {
             </Button>
           ) : null}
         </div>
-        <div className="ml-auto min-[470px]:ml-0">
+        <div className="ml-auto min-[530px]:ml-0">
           <ProfilePicker />
         </div>
         {touchPrimary ? (
@@ -135,7 +135,7 @@ export function TitleToolbar() {
             type="button"
             variant={levelKeyboardInputEnabled ? "default" : "outline"}
             size="sm"
-            className="hidden gap-1.5 min-[470px]:inline-flex"
+            className="hidden gap-1.5 min-[530px]:inline-flex"
             onClick={toggleLevelKeyboardInputEnabled}
             aria-label={levelKeyboardInputEnabled ? "Keyboard on — tap to turn off" : "Keyboard off — tap to turn on"}
             aria-pressed={levelKeyboardInputEnabled}
@@ -149,7 +149,7 @@ export function TitleToolbar() {
           type="button"
           variant="outline"
           size="sm"
-          className="hidden gap-1.5 min-[470px]:ml-auto min-[470px]:inline-flex"
+          className="hidden gap-1.5 min-[530px]:ml-auto min-[530px]:inline-flex"
           onClick={resetLevels}
           aria-label="Reset pillars to default values"
           title="Reset pillars to default values"
