@@ -8,9 +8,9 @@ import { cn } from "@/utils";
 const cardClass = "rounded-xl border border-slate-100 bg-white shadow-md shadow-slate-200/40";
 const levelBadgeClass = cn("inline-flex min-w-[1.75rem] shrink-0 items-center justify-center rounded px-1 py-1", DOC_TEXT.badgeSm);
 
-function LevelBadge({ level, backgroundColor, color }) {
+function LevelBadge({ level, backgroundColor, color, fullWidth = false }) {
   return (
-    <span className={levelBadgeClass} style={{ backgroundColor, color }}>
+    <span className={cn(levelBadgeClass, fullWidth && "w-full")} style={{ backgroundColor, color }}>
       {level}
     </span>
   );
@@ -58,9 +58,9 @@ function RoleCellContent({ title, subtitle, note }) {
 function TrackRoleSequence({ roleLevels, badgeBg, badgeColor, desktopGridColumns, centerDesktop }) {
   const gridColumns = desktopGridColumns ?? roleLevels.length;
 
-  const desktopTile = ({ level, title, subtitle, note }) => (
+  const desktopTile = ({ level, title, subtitle, note }, fullWidthBadge = false) => (
     <li key={`${level}-${title}`} className="flex min-w-0 flex-col rounded-md border border-slate-200/90 bg-white px-1.5 py-1.5 shadow-sm">
-      <LevelBadge level={level} backgroundColor={badgeBg} color={badgeColor} />
+      <LevelBadge level={level} backgroundColor={badgeBg} color={badgeColor} fullWidth={fullWidthBadge} />
       <div className="mt-1.5 min-w-0 flex-1">
         <RoleCellContent title={title} subtitle={subtitle} note={note} />
       </div>
@@ -82,7 +82,7 @@ function TrackRoleSequence({ roleLevels, badgeBg, badgeColor, desktopGridColumns
       </ol>
 
       {centerDesktop ? (
-        <ol className="hidden w-full list-none text-center [&>li]:items-center min-[470px]:block">{roleLevels.map((role) => desktopTile(role))}</ol>
+        <ol className="hidden w-full list-none text-center min-[470px]:block">{roleLevels.map((role) => desktopTile(role, true))}</ol>
       ) : (
         <ol
           className="hidden w-full list-none items-stretch gap-1 min-[470px]:grid"
