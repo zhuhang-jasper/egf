@@ -14,7 +14,7 @@ const PILLAR_ABOUT_COPY = {
   domainLogic: {
     focusSummary:
       "Workflow Integrity, Domain Edge-Cases, Definition of Done Maturity, Loophole Mitigation, Logic Guardrails, Risk & Complexity Foresight",
-    signatureQuestion: "Am I translating complex requirements into bulletproof code?",
+    signatureQuestion: "Am I bulletproofing the logic against every hidden edge case?",
   },
   architecture: {
     focusSummary: "Framework Proficiency, Design Patterns, State & Storage Management, API Design, Modular Abstractions, Build Tooling & Scalability",
@@ -22,7 +22,7 @@ const PILLAR_ABOUT_COPY = {
   },
   ai: {
     focusSummary: "Effective Prompting, Logic Verification, Context Management, Agentic Tools Integration, Secure AI Hygiene, Output Multiplication",
-    signatureQuestion: "Am I directing AI to safely multiply our engineering output?",
+    signatureQuestion: "Am I directing AI to safely multiply engineering output?",
   },
   uiUx: {
     focusSummary: "Visual Fidelity, Detail Accuracy, Component Reuse, Design System Alignment, User Empathy, UX Improvisation",

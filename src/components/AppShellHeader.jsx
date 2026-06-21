@@ -8,7 +8,7 @@ import { clearStickyScrollOffset, setStickyScrollOffset } from "@/utils/scroll";
 
 const TABS = [
   { id: "tool", label: "Tool", icon: Radar },
-  { id: "theory", label: "Theory", icon: FileText, version: "v2.8" },
+  { id: "theory", label: "Theory", icon: FileText, version: "v2.9" },
 ];
 
 function AppShellIntro() {

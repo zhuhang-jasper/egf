@@ -37,18 +37,12 @@ const CLUSTER_META = {
 
 // Lookups keyed by pillar id, derived from the theory data, so the ring cards reuse the
 // canonical signature questions and cluster colours.
-// Poster-only question tweaks; theory keeps the originals.
-const POSTER_QUESTION_OVERRIDES = {
-  ai: "Am I directing AI to safely multiply engineering output?", // drop "our"
-  domainLogic: "Am I translating requirements into bulletproof code?", // drop "complex"
-};
-
 const PILLAR_INFO = Object.fromEntries(
   PILLAR_CLUSTER_GROUPS.flatMap((group) =>
     group.pillars.map((p) => [
       p.id,
       {
-        question: POSTER_QUESTION_OVERRIDES[p.id] ?? p.signatureQuestion,
+        question: p.signatureQuestion,
         color: CLUSTER_META[group.id].color,
         accent: CLUSTER_META[group.id].accent,
       },
