@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
-import { Keyboard, Plus, RotateCcw, Save, X } from "lucide-react";
+import { CircleCheck, CircleDashed, CircleDot, Keyboard, Plus, RotateCcw, Save, X } from "lucide-react";
 
 import { ProfilePicker } from "@/components/ProfilePicker";
 import { Button } from "@/components/ui/button";
@@ -8,9 +8,17 @@ import { Input } from "@/components/ui/input";
 
 import { useTouchPrimary } from "@/hooks/useTouchPrimary";
 
-import { useAppStore } from "@/store/useAppStore";
+import { selectProfileSaveStatus, useAppStore } from "@/store/useAppStore";
 
 import { cn } from "@/utils";
+
+// Icon + tooltip per profile save status. `modified` means a same-named profile exists with
+// different values, so saving will overwrite it.
+const SAVE_STATUS_META = {
+  saved: { icon: CircleCheck, color: "text-green-600", label: "Saved", title: "Saved — matches a saved profile" },
+  modified: { icon: CircleDot, color: "text-amber-500", label: "Modified", title: "Modified — saving will overwrite the matching profile" },
+  new: { icon: CircleDashed, color: "text-muted-foreground", label: "Not saved", title: "Not saved — saving will create a new profile" },
+};
 
 export function TitleToolbar() {
   const title = useAppStore((s) => s.title);
@@ -23,29 +31,27 @@ export function TitleToolbar() {
   const levelKeyboardInputEnabled = useAppStore((s) => s.levelKeyboardInputEnabled);
   const toggleLevelKeyboardInputEnabled = useAppStore((s) => s.toggleLevelKeyboardInputEnabled);
   const touchPrimary = useTouchPrimary();
-  const [saveLabel, setSaveLabel] = useState("Save");
+  const saveStatus = useAppStore(selectProfileSaveStatus); // "saved" | "modified" | "new"
+  const statusMeta = SAVE_STATUS_META[saveStatus];
+  const StatusIcon = statusMeta.icon;
 
+  // Auto-clear transient save feedback (e.g. the empty-title error border) after a short delay.
   useEffect(() => {
     if (!saveFeedback) {
-      return;
+      return undefined;
     }
-    if (saveFeedback === "saved") {
-      setSaveLabel("Saved");
-    } else if (saveFeedback === "add-title") {
-      setSaveLabel("Add title");
-    }
-    const t = setTimeout(() => {
-      setSaveLabel("Save");
-      clearSaveFeedback();
-    }, 1400);
+    const t = setTimeout(clearSaveFeedback, 1400);
     return () => clearTimeout(t);
   }, [saveFeedback, clearSaveFeedback]);
 
+  // A save attempt with no title flags the input with a red error border (auto-cleared above).
+  const titleError = saveFeedback === "add-title";
   const showClear = title.length > 0;
 
   return (
-    <div className="flex w-full flex-col gap-2 min-[530px]:flex-row min-[530px]:items-center min-[530px]:gap-2">
-      <div className="flex w-full min-w-0 items-center gap-2 min-[530px]:contents">
+    <div className="flex w-full flex-col gap-2">
+      {/* Row 1 — create, title, save */}
+      <div className="flex w-full min-w-0 items-center gap-2">
         <Button
           type="button"
           variant="outline"
@@ -60,13 +66,14 @@ export function TitleToolbar() {
         >
           <Plus className="h-4 w-4" />
         </Button>
-        <div className="relative min-w-0 flex-1 min-[530px]:flex-[0_1_50%] min-[530px]:basis-[50%]">
+        <div className="relative min-w-0 flex-1">
           <Input
             id="chart-title-input"
             value={title}
             placeholder="Enter a name"
+            aria-invalid={titleError}
             onChange={(e) => setTitle(e.target.value)}
-            className="pr-9 shadow-none"
+            className={cn("pr-9 shadow-none", titleError && "border-red-500 focus-visible:ring-red-500/40")}
           />
           <button
             type="button"
@@ -85,58 +92,43 @@ export function TitleToolbar() {
             <X className="h-4 w-4" />
           </button>
         </div>
+        <span className={cn("flex w-[5.5rem] shrink-0 items-center gap-1.5", statusMeta.color)}>
+          <StatusIcon className="h-4 w-4 shrink-0" aria-hidden />
+          <span className="truncate text-xs italic text-muted-foreground">{statusMeta.label}</span>
+        </span>
         <Button
           type="button"
           variant="outline"
           size="sm"
           className="shrink-0 gap-1.5"
           onClick={() => saveProfile()}
-          aria-label={saveLabel}
-          title={saveLabel}
+          aria-label="Save"
+          title="Save"
         >
           <Save className="h-4 w-4 shrink-0" />
-          {saveLabel}
+          Save
         </Button>
       </div>
-      <div className="flex w-full items-center gap-2 min-[530px]:ml-auto min-[530px]:w-auto">
-        <div className="flex items-center gap-2 min-[530px]:hidden">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="gap-1.5"
-            onClick={resetLevels}
-            aria-label="Reset pillars to default values"
-            title="Reset pillars to default values"
-          >
-            <RotateCcw className="h-4 w-4" />
-            Reset
-          </Button>
-          {touchPrimary ? (
-            <Button
-              type="button"
-              variant={levelKeyboardInputEnabled ? "default" : "outline"}
-              size="sm"
-              className="gap-1.5"
-              onClick={toggleLevelKeyboardInputEnabled}
-              aria-label={levelKeyboardInputEnabled ? "Keyboard on — tap to turn off" : "Keyboard off — tap to turn on"}
-              aria-pressed={levelKeyboardInputEnabled}
-              title={levelKeyboardInputEnabled ? "KB on" : "KB off"}
-            >
-              <Keyboard className="h-4 w-4" />
-              {levelKeyboardInputEnabled ? "KB on" : "KB off"}
-            </Button>
-          ) : null}
-        </div>
-        <div className="ml-auto min-[530px]:ml-0">
-          <ProfilePicker />
-        </div>
+      {/* Row 2 — reset, keyboard toggle, profiles */}
+      <div className="flex w-full items-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          onClick={resetLevels}
+          aria-label="Reset pillars to default values"
+          title="Reset pillars to default values"
+        >
+          <RotateCcw className="h-4 w-4" />
+          Reset values
+        </Button>
         {touchPrimary ? (
           <Button
             type="button"
             variant={levelKeyboardInputEnabled ? "default" : "outline"}
             size="sm"
-            className="hidden gap-1.5 min-[530px]:inline-flex"
+            className="gap-1.5"
             onClick={toggleLevelKeyboardInputEnabled}
             aria-label={levelKeyboardInputEnabled ? "Keyboard on — tap to turn off" : "Keyboard off — tap to turn on"}
             aria-pressed={levelKeyboardInputEnabled}
@@ -146,18 +138,9 @@ export function TitleToolbar() {
             {levelKeyboardInputEnabled ? "KB on" : "KB off"}
           </Button>
         ) : null}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="hidden gap-1.5 min-[530px]:ml-auto min-[530px]:inline-flex"
-          onClick={resetLevels}
-          aria-label="Reset pillars to default values"
-          title="Reset pillars to default values"
-        >
-          <RotateCcw className="h-4 w-4" />
-          Reset
-        </Button>
+        <div className="ml-auto">
+          <ProfilePicker />
+        </div>
       </div>
     </div>
   );

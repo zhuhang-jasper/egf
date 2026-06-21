@@ -249,10 +249,6 @@ export const useAppStore = create((set, get) => ({
   },
 
   createNew: () => {
-    if (String(get().title).trim()) {
-      get().saveProfile();
-    }
-
     const defaults = getDefaultChartState();
     set(
       withSyncedLevels({
@@ -266,3 +262,48 @@ export const useAppStore = create((set, get) => ({
     get().persistDraft();
   },
 }));
+
+/** True when the stored profile's track + canonical pillar levels equal the current draft's. */
+function profileLevelsMatch(saved, s) {
+  if (normalizeTrackVariant(saved.trackVariant) !== normalizeTrackVariant(s.trackVariant)) {
+    return false;
+  }
+  const current = mergeViewIntoCanonical({
+    levels: s.levels,
+    pillarLevels: s.pillarLevels,
+    trackVariant: s.trackVariant,
+  }).pillarLevels;
+  const savedLevels = saved.pillarLevels ?? {};
+  const keys = new Set([...Object.keys(current), ...Object.keys(savedLevels)]);
+  for (const k of keys) {
+    if (current[k] !== savedLevels[k]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * The save status of the current draft, mirroring how {@link saveProfile} resolves its target
+ * (active profile first, else a same-title profile, else a new row):
+ *
+ * - `"saved"`    — the target profile exists and its title, track and levels match the draft exactly;
+ *                  saving would be a no-op.
+ * - `"modified"` — a target profile exists (by active id or matching title) but its values differ;
+ *                  saving will OVERWRITE it.
+ * - `"new"`      — no target profile exists (or the title is blank); saving will create a new one.
+ */
+export function selectProfileSaveStatus(s) {
+  const trimmed = String(s.title).trim();
+  // A blank title can't be saved (saveProfile rejects it), so there is no target to compare against.
+  const activeId = s.activeSavedProfileId;
+  const target =
+    (activeId != null ? s.profiles.find((p) => p.id === activeId) : null) ??
+    (trimmed ? s.profiles.find((p) => String(p.title).trim() === trimmed) : null);
+
+  if (!target) {
+    return "new";
+  }
+  const titleMatches = String(target.title).trim() === trimmed;
+  return titleMatches && profileLevelsMatch(target, s) ? "saved" : "modified";
+}
