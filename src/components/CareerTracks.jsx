@@ -82,9 +82,7 @@ function TrackRoleSequence({ roleLevels, badgeBg, badgeColor, desktopGridColumns
       </ol>
 
       {centerDesktop ? (
-        <div className="hidden min-[470px]:flex min-[470px]:justify-center">
-          <ol className="w-2/5 min-w-0 list-none">{roleLevels.map((role) => desktopTile(role))}</ol>
-        </div>
+        <ol className="hidden w-full list-none text-center [&>li]:items-center min-[470px]:block">{roleLevels.map((role) => desktopTile(role))}</ol>
       ) : (
         <ol
           className="hidden w-full list-none items-stretch gap-1 min-[470px]:grid"
