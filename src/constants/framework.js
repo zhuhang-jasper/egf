@@ -104,8 +104,32 @@ function getChartPillarLabel(pillarId) {
     .replace(/\uFE0F/g, "");
 }
 
+/**
+ * True for axes sitting on the left half of the radar (excluding the top/bottom cardinals).
+ * Axis 0 is at 12 o'clock and steps clockwise, so cos(angle) < ~0 marks the left side; the
+ * -0.25 threshold keeps the top (coding) and bottom axes treated as centered.
+ */
+function isLeftSideAxis(index, count) {
+  const rad = ((360 / count) * index - 90) * (Math.PI / 180);
+  return Math.cos(rad) < -0.25;
+}
+
+/**
+ * Move a label's leading emoji to the trailing position for left-side axes, so on the left
+ * half — where Chart.js right-aligns the text toward the radar — the emoji sits closest to the
+ * centre (mirroring the right side). Cardinal/right axes keep the emoji leading.
+ */
+function orientChartPillarLabel(label, index, count) {
+  if (!isLeftSideAxis(index, count)) {
+    return label;
+  }
+  const m = label.match(/^(\S+)\s+(.*)$/u);
+  return m ? `${m[2]} ${m[1]}` : label;
+}
+
 export function getChartLabels(trackVariant = "fe") {
-  return getPillarOrder(trackVariant).map((id) => getChartPillarLabel(id));
+  const order = getPillarOrder(trackVariant);
+  return order.map((id, i) => orientChartPillarLabel(getChartPillarLabel(id), i, order.length));
 }
 
 /** Longest label on the active track — reserved on the last axis so radar padding stays stable. */
@@ -120,7 +144,9 @@ export function getChartLayoutLabels(trackVariant = "fe") {
   const order = getPillarOrder(trackVariant);
   const reserved = getChartLayoutReservedLabel(trackVariant);
   const lastId = order.at(-1);
-  return order.map((id) => (id === lastId ? reserved : getChartPillarLabel(id)));
+  return order.map((id, i) =>
+    id === lastId ? reserved : orientChartPillarLabel(getChartPillarLabel(id), i, order.length),
+  );
 }
 
 /** About/export charts — text-only pillar names (no emoji). */
