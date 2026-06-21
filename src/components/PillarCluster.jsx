@@ -22,22 +22,17 @@ export function PillarCluster({ group, onOpenPillarInMatrix }) {
         "borderLeftColor": cluster.textColor,
       }}
     >
-      <div className="form-section-title text-[10px] sm:text-[12px]">{group.title}</div>
+      <div className="form-section-title text-[10px] sm:text-[12px] font-bold">{group.title}</div>
       {group.pillars.map((pillar) => (
-        <label key={pillar.index} className="field-row">
-          <span className="inline-flex min-w-0 items-center gap-3">
+        <div key={pillar.index} className="field-row">
+          <span className="inline-flex min-w-0 items-center gap-1.5">
             <span className="min-w-0">{pillar.label}</span>
             {onOpenPillarInMatrix ? (
               <button
                 type="button"
-                // Inside a <label>: stop the click from also activating the wrapped LevelInput.
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onOpenPillarInMatrix(pillar.id);
-                }}
+                onClick={() => onOpenPillarInMatrix(pillar.id)}
                 aria-label={`View ${pillar.label} in the competency matrix`}
-                className="group relative inline-flex shrink-0 cursor-pointer items-center rounded-full text-slate-600 transition-colors hover:text-slate-800 active:text-slate-800"
+                className="group relative inline-flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full text-slate-600 transition-colors hover:text-slate-800 active:text-slate-800"
               >
                 <HelpCircle className="size-3.5" aria-hidden />
                 <Tooltip text="View in matrix" />
@@ -51,7 +46,7 @@ export function PillarCluster({ group, onOpenPillarInMatrix }) {
             ariaLabelUp="Increase level"
             ariaLabelDown="Decrease level"
           />
-        </label>
+        </div>
       ))}
     </div>
   );
