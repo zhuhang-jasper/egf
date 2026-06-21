@@ -210,7 +210,7 @@ async function downloadPosterPng(node) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "9-pillar-engineer-growth-framework.png";
+  a.download = "9-pillar-engineer-growth-framework-poster.png";
   document.body.appendChild(a);
   a.click();
   a.remove();
