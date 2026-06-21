@@ -108,7 +108,7 @@ function ExportMenuItem({ label, onClick }) {
       type="button"
       role="menuitem"
       onClick={onClick}
-      className="flex w-full whitespace-nowrap rounded-md px-3 py-2 text-left text-xs hover:bg-muted/60"
+      className="flex w-full cursor-pointer whitespace-nowrap rounded-md px-3 py-2 text-left text-xs hover:bg-muted/60"
     >
       {label}
     </button>
