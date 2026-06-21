@@ -39,13 +39,7 @@
   body,
   #root {
     @apply min-h-dvh;
-    /* Name concrete system fonts before the `system-ui` keyword. snapdom's poster export
-       serialises the DOM into an SVG <foreignObject>, where the bare `system-ui` keyword can
-       resolve to a wider fallback than the live page — pushing the intro line into an extra
-       wrapped row at a slightly larger apparent size. Pinning the real fonts first makes the
-       captured PNG match what's on screen. */
-    font-family:
-      -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: system-ui, sans-serif;
   }
 
   body {
