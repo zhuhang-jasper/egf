@@ -16,9 +16,8 @@ function AppShellIntro() {
     <header className="space-y-2 pt-2 text-center sm:pt-3">
       <h1 className="text-balance text-xl sm:text-2xl font-bold tracking-tight text-slate-900">{SITE_COPY.title}</h1>
       <p className="text-pretty text-xs sm:text-sm leading-snug text-slate-800">
-        {SITE_COPY.tagline} {SITE_COPY.detail}
+        {SITE_COPY.tagline} {SITE_COPY.detail} <span className="whitespace-nowrap text-slate-500">{SITE_COPY.byline}</span>
       </p>
-      <p className="text-[11px] sm:text-[13px] text-slate-500">{SITE_COPY.byline}</p>
     </header>
   );
 }
@@ -54,7 +53,7 @@ function AppShellTabBar({ activeTab, onTabChange }) {
     <div
       ref={barRef}
       id="app-shell-tab-bar"
-      className="sticky top-0 z-40 -mx-2 mt-2 bg-white px-2 py-2 shadow-sm sm:-mx-3 sm:px-3 print:static print:shadow-none"
+      className="sticky top-0 z-40 -mx-2 mt-0 bg-white px-2 py-2 shadow-sm sm:-mx-3 sm:px-3 print:static print:shadow-none"
     >
       <div
         className="relative mx-auto grid max-w-xs grid-cols-2 rounded-lg border border-slate-200 bg-slate-100/80 p-0.5"
