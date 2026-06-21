@@ -124,8 +124,9 @@ function useFitScale() {
   const [scale, setScale] = useState(1);
   useLayoutEffect(() => {
     const compute = () => {
-      const padX = 48;
-      setScale(Math.min(1, Math.max(0.1, (window.innerWidth - padX) / CANVAS_W)));
+      const padX = 32; // matches the outer p-4 (16px × 2 sides)
+      // clientWidth excludes the scrollbar, so the scaled poster never overflows into it.
+      setScale(Math.min(1, Math.max(0.1, (document.documentElement.clientWidth - padX) / CANVAS_W)));
     };
     compute();
     window.addEventListener("resize", compute);
@@ -479,7 +480,7 @@ export default function PosterPage() {
   const downloadLabel = busy === "download" ? "Saving…" : { idle: "↓ Download", done: "✓ Saved", error: "Save failed" }[downloadState];
 
   return (
-    <div className="flex min-h-dvh w-full flex-col items-center overflow-auto bg-black p-4">
+    <div className="flex w-full flex-col items-center overflow-x-hidden overflow-y-auto bg-black p-4">
       {/* Scaling stage: reserves the scaled footprint so the canvas stays centred and
           scrolls cleanly; the article inside keeps its true pixel size for export. */}
       <div className="shrink-0" style={{ width: CANVAS_W * scale, height: CANVAS_H * scale }}>
