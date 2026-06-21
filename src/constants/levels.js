@@ -134,7 +134,7 @@ export function getDefaultChartState() {
   const trackVariant = "fe";
   const view = syncLevelsArrayFromMap({ pillarLevels, trackVariant });
   return {
-    title: "Engineer Growth Framework",
+    title: "",
     pillarLevels,
     levels: view.levels,
     trackVariant,

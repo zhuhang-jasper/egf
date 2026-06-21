@@ -1,5 +1,5 @@
 import { syncFontsForChart } from "@/chart/radar-center";
-import { FE_UI } from "@/constants";
+import { FE_UI, SITE_COPY } from "@/constants";
 
 const UNSUPPORTED_COLOR_RE = /(?:oklch|oklab|lab\(|lch\(|color\()/i;
 
@@ -290,11 +290,7 @@ export async function renderChartImageBlob({ exportRoot, canvas, chart }) {
   }
 }
 
-function makePngFileName(titleText) {
-  return `${(titleText || "chart").replace(/[^\w-]+/g, "-").slice(0, 48)}-growth.png`;
-}
-
-export async function copyChartAsImageToClipboard({ exportRoot, canvas, chart, titleText }) {
+export async function copyChartAsImageToClipboard({ exportRoot, canvas, chart }) {
   if (!exportRoot || !canvas || !chart) {
     return { ok: false, method: null };
   }
@@ -316,7 +312,7 @@ export async function copyChartAsImageToClipboard({ exportRoot, canvas, chart, t
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = makePngFileName(titleText);
+  a.download = SITE_COPY.share.fileName;
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -325,16 +321,35 @@ export async function copyChartAsImageToClipboard({ exportRoot, canvas, chart, t
 }
 
 /**
- * Share the chart PNG (plus the app URL + a title) via the Web Share API, opening the native OS
- * share sheet so the user can pick a target app (WhatsApp, LinkedIn, Messages, AirDrop…).
+ * The canonical tool link the share message points to: app origin + base path + `?tab=tool`, so the
+ * recipient always lands on the Tool tab regardless of the sharer's current tab/query params.
+ */
+function getToolShareLink() {
+  if (typeof window === "undefined") {
+    return "";
+  }
+  const base = import.meta.env.BASE_URL || "/";
+  return `${window.location.origin}${base}${SITE_COPY.share.toolLinkQuery}`;
+}
+
+/** The share-sheet message body. Accepts an explicit link override; otherwise uses the tool link. */
+function buildShareMessage(linkOverride) {
+  const link = linkOverride || getToolShareLink();
+  return SITE_COPY.share.messageTemplate.replace("{link}", link);
+}
+
+/**
+ * Share the chart PNG (plus a message containing the tool link) via the Web Share API, opening the
+ * native OS share sheet so the user can pick a target app (WhatsApp, LinkedIn, Messages, AirDrop…).
  *
  * Browser support is uneven: mobile Safari/Chrome and desktop Safari/Edge support file sharing;
  * desktop Chrome (macOS) and Firefox generally do not. When file-sharing is unsupported we fall
  * back to copying the image to the clipboard so the button never dead-ends.
  *
+ * @param {string} [url] Optional link override embedded in the message; defaults to the tool link.
  * @returns {{ ok: boolean, method: "share" | "share-fallback-clipboard" | "share-fallback-download" | null }}
  */
-export async function shareChartAsImage({ exportRoot, canvas, chart, titleText, url }) {
+export async function shareChartAsImage({ exportRoot, canvas, chart, url }) {
   if (!exportRoot || !canvas || !chart) {
     return { ok: false, method: null };
   }
@@ -344,14 +359,17 @@ export async function shareChartAsImage({ exportRoot, canvas, chart, titleText, 
     return { ok: false, method: null };
   }
 
-  const fileName = makePngFileName(titleText);
-  const shareUrl = url || (typeof window !== "undefined" ? window.location.href : undefined);
-  const shareTitle = (titleText || "").trim() || "Engineer Growth Framework";
+  const fileName = SITE_COPY.share.fileName;
+  const shareTitle = SITE_COPY.share.title;
+  const shareText = buildShareMessage(url);
 
   try {
     if (typeof File === "function" && typeof navigator.share === "function") {
       const file = new File([blob], fileName, { type: "image/png" });
-      const data = { files: [file], title: shareTitle, text: shareTitle, url: shareUrl };
+      // No separate `url` field: the link is already in the message text, so passing it
+      // again would duplicate the link in apps like WhatsApp/Telegram. We share an image,
+      // not a rich link preview, so the url field buys us nothing here.
+      const data = { files: [file], title: shareTitle, text: shareText };
       // canShare gates on the files payload specifically; if it passes, share() can take files.
       if (typeof navigator.canShare !== "function" || navigator.canShare({ files: [file] })) {
         await navigator.share(data);

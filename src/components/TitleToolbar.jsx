@@ -64,7 +64,7 @@ export function TitleToolbar() {
           <Input
             id="chart-title-input"
             value={title}
-            placeholder="Chart title"
+            placeholder="Enter a name"
             onChange={(e) => setTitle(e.target.value)}
             className="pr-9 shadow-none"
           />
