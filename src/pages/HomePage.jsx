@@ -7,7 +7,7 @@ import { ToolContent } from "@/components/ToolContent";
 import { getPersistedActiveTab, useTabScrollMemory } from "@/hooks/useTabScrollMemory";
 
 import { FE_UI } from "@/constants";
-import { getTabBarPinnedScrollY, isTabBarStuck } from "@/utils/scroll";
+import { getTabBarPinnedScrollY, getWindowScrollY, isTabBarStuck, scrollWindowTo } from "@/utils/scroll";
 import { cleanTheoryDeepLinkParams, getTabFromUrl, parseTheoryDeepLink, syncTabInUrl } from "@/utils/theory-url";
 
 const appVersion = import.meta.env.VITE_APP_VERSION;
@@ -53,6 +53,12 @@ export default function HomePage() {
 
   const handleTabChange = (nextTab) => {
     if (nextTab === activeTab) {
+      // Clicking the already-active tab scrolls back up — but only as far as the point where the tab
+      // bar pins, so the sticky header stays put rather than jumping to an absolute 0.
+      const pinnedY = getTabBarPinnedScrollY();
+      if (getWindowScrollY() > pinnedY) {
+        scrollWindowTo(pinnedY, { behavior: "smooth" });
+      }
       return;
     }
     // If the bar is pinned now, capture its anchor so the new tab restores at least that far down.
@@ -86,7 +92,7 @@ export default function HomePage() {
   return (
     <div className="flex min-h-dvh flex-col items-center gap-2 bg-black p-1.5 sm:p-3 print:bg-white print:p-0">
       <main
-        className="flex w-full flex-col rounded-[14px] bg-white p-2 shadow-sm sm:p-3 print:max-w-none print:rounded-none print:p-0 print:shadow-none"
+        className="flex w-full flex-col rounded-[14px] bg-white shadow-sm p-3 print:max-w-none print:rounded-none print:p-0 print:shadow-none"
         style={pageWidthStyle}
       >
         <AppShellIntro />

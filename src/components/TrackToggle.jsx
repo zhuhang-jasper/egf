@@ -13,7 +13,7 @@ export function TrackToggle() {
   return (
     <fieldset className="m-0 inline-flex shrink-0 border-0 p-0">
       <legend className="sr-only">Product pillar track: front-end or back-end</legend>
-      <div className="relative inline-flex h-8 w-45 rounded-md border border-border bg-muted-foreground/20 p-0.5">
+      <div className="relative inline-flex h-8 rounded-md border border-border bg-muted-foreground/20">
         <span
           aria-hidden
           className={cn(
@@ -37,7 +37,7 @@ export function TrackToggle() {
             key={id}
             type="button"
             className={cn(
-              "relative z-10 flex-1 basis-0 cursor-pointer rounded-[5px] px-2.5 text-xs whitespace-nowrap transition-colors",
+              "relative z-10 flex-1 basis-0 cursor-pointer rounded-[5px] px-4 text-xs whitespace-nowrap transition-colors",
               trackVariant === id ? "font-semibold text-foreground" : "font-medium text-muted-foreground hover:text-foreground/80",
             )}
             aria-pressed={trackVariant === id}
