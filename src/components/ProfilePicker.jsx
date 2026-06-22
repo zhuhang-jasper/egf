@@ -36,7 +36,15 @@ export function ProfilePicker() {
 
   return (
     <div ref={rootRef} className="relative shrink-0">
-      <Button type="button" variant="outline" size="sm" aria-expanded={open} aria-haspopup="menu" onClick={() => setOpen(!open)} className="gap-1">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        aria-expanded={open}
+        aria-haspopup="menu"
+        onClick={() => setOpen(!open)}
+        className="gap-1 pr-1"
+      >
         <Users className="h-3.5 w-3.5 shrink-0" aria-hidden />
         Profiles
         <ChevronDown className="h-3.5 w-3.5 opacity-60" />

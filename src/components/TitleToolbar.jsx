@@ -56,6 +56,7 @@ export function TitleToolbar() {
           type="button"
           variant="outline"
           size="icon"
+          shape="pill"
           className="shrink-0"
           onClick={() => {
             createNew();
@@ -99,8 +100,9 @@ export function TitleToolbar() {
         <Button
           type="button"
           variant="outline"
-          size="sm"
-          className="-ml-1 shrink-0 gap-1.5"
+          size="icon"
+          shape="pill"
+          className="-ml-1 shrink-0"
           onClick={() => saveProfile()}
           aria-label="Save"
           title="Save"
@@ -114,6 +116,7 @@ export function TitleToolbar() {
           type="button"
           variant="outline"
           size="sm"
+          shape="pill"
           className="gap-1.5"
           onClick={resetLevels}
           aria-label="Reset pillars to default values"
@@ -127,6 +130,7 @@ export function TitleToolbar() {
             type="button"
             variant={levelKeyboardInputEnabled ? "default" : "outline"}
             size="sm"
+            shape="pill"
             className="gap-1.5"
             onClick={toggleLevelKeyboardInputEnabled}
             aria-label={levelKeyboardInputEnabled ? "Keyboard on — tap to turn off" : "Keyboard off — tap to turn on"}

@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
-import { Settings, Share } from "lucide-react";
+import { ChevronDown, Settings, Share } from "lucide-react";
 
 import { ChartScores } from "@/components/ChartScores";
 import { ClusterLegend } from "@/components/ClusterLegend";
@@ -73,7 +73,7 @@ function ChartDisplayMenu() {
     <div ref={rootRef} className="relative shrink-0">
       <Button
         type="button"
-        variant="outline"
+        variant="ghost"
         size="icon"
         aria-expanded={open}
         aria-haspopup="menu"
@@ -87,7 +87,7 @@ function ChartDisplayMenu() {
         <div
           role="menu"
           aria-label="Chart display settings"
-          className="absolute right-0 top-[calc(100%+4px)] z-50 min-w-[10.5rem] rounded-lg border border-border bg-card py-1 shadow-md"
+          className="absolute right-0 top-[calc(100%+4px)] z-50 w-max rounded-lg border border-border bg-card py-1 shadow-md"
         >
           <DisplayCheckbox label="Title" checked={!chartTitleHidden} onChange={(v) => setChartTitleHidden(!v)} />
           <DisplayCheckbox label="Chart" checked={!levelsPolygonHidden} onChange={(v) => setLevelsPolygonHidden(!v)} />
@@ -166,9 +166,19 @@ function ExportMenu({ label, onCopy, onShare }) {
 
   return (
     <div ref={rootRef} className="relative shrink-0">
-      <Button type="button" variant="outline" size="sm" aria-expanded={open} aria-haspopup="menu" onClick={() => setOpen((v) => !v)}>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        aria-expanded={open}
+        aria-haspopup="menu"
+        shape="pill"
+        onClick={() => setOpen((v) => !v)}
+        className="gap-1 pr-1"
+      >
         <Share className="h-3.5 w-3.5 shrink-0" aria-hidden />
         {label ?? "Share Chart"}
+        <ChevronDown className="h-3.5 w-3.5 opacity-60" />
       </Button>
       {open ? (
         <div
@@ -284,7 +294,7 @@ export function ChartSection({ isVisible }) {
             {showVisibleTitle ? (
               <h2
                 id="competency-chart-heading"
-                className={`m-0 min-w-0 flex-1 text-left only:ml-2 ${titleIsBlank ? "text-black/30 font-semibold" : "text-black font-bold"}`}
+                className={`m-0 min-w-0 flex-1 text-left only:ml-2 ${titleIsBlank ? "text-black/30 font-regular" : "text-black font-bold"}`}
                 style={{ fontSize: titleSizePx, lineHeight: `${titleRowHeightPx}px` }}
               >
                 {displayTitle}

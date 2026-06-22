@@ -15,10 +15,18 @@ export const buttonVariants = cva(
         sm: "h-8 rounded-md px-2.5 text-xs",
         icon: "h-8 w-8",
       },
+      // Design rule: action buttons are fully rounded (pill / circle), dropdown triggers stay
+      // squared (`square`, the default — keeps the `rounded-md` from base/size). `cn`'s twMerge
+      // lets `rounded-full` here override the earlier `rounded-md`.
+      shape: {
+        square: "",
+        pill: "rounded-full",
+      },
     },
     defaultVariants: {
       variant: "outline",
       size: "sm",
+      shape: "square",
     },
   },
 );

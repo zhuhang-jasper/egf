@@ -15,9 +15,9 @@ const TABS = [
 
 function AppShellIntro() {
   return (
-    <header id="app-shell-intro" className="space-y-2 pt-2 text-center sm:pt-3">
-      <h1 className="text-balance text-xl sm:text-2xl font-bold tracking-tight text-slate-900">{SITE_COPY.title}</h1>
-      <p className="text-pretty text-xs sm:text-sm leading-snug text-slate-800">
+    <header id="app-shell-intro" className="space-y-2 pt-0 text-center sm:pt-2">
+      <h1 className="text-balance text-xl sm:text-2xl font-bold leading-tight tracking-tight text-slate-900 mb-1">{SITE_COPY.title}</h1>
+      <p className="text-pretty text-xs sm:text-sm leading-tight text-slate-700 sm:mb-1">
         {SITE_COPY.tagline} {SITE_COPY.detail} <span className="whitespace-nowrap text-slate-500">{SITE_COPY.byline}</span>
       </p>
     </header>
