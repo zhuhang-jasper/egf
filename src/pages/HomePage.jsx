@@ -36,9 +36,16 @@ export default function HomePage() {
   // tab keeps it pinned. Null when the bar wasn't stuck (normal scroll restore on the new tab).
   const keepStuckAnchorRef = useRef(null);
 
-  // When booting from a deep-link, that flow owns the initial scroll (it glides to the target
-  // section/pillar) — so the scroll-position restore must skip its first run and not fight it.
-  const { saveActiveTabScroll } = useTabScrollMemory(activeTab, keepStuckAnchorRef, Boolean(BOOT_DEEP_LINK));
+  // Flipped by an in-tab scroll the instant it runs (cross-tab matrix jump, or a deep-link's scroll
+  // to its target), so the restore loop yields to it: restore still runs first — landing at the
+  // remembered scroll with the bar kept stuck — then the jump/glide takes over. Reset by the hook at
+  // the start of each tab switch.
+  const cancelRestoreRef = useRef(false);
+
+  // Restore runs even on a deep-link boot now: it lands at the remembered scroll (bar stuck) and the
+  // deep-link's own scroll-to-target then takes over via cancelRestoreRef — so a shared link restores
+  // the previous position before gliding to the target, instead of starting from the top.
+  const { saveActiveTabScroll } = useTabScrollMemory(activeTab, keepStuckAnchorRef, cancelRestoreRef);
 
   // Cross-tab jump from a tool-form pillar's help icon into the theory matrix. The `seq` bump makes
   // repeated clicks on the same pillar re-trigger the expand + scroll even when the tab is already open.
@@ -60,11 +67,14 @@ export default function HomePage() {
       return;
     }
     if (activeTab !== "theory") {
+      // Keep the bar pinned across the switch if it's currently stuck, then let the theory tab restore
+      // its remembered scroll. The matrix jump (below) takes over once it scrolls to the pillar card.
+      keepStuckAnchorRef.current = isTabBarStuck() ? getTabBarPinnedScrollY() : null;
       saveActiveTabScroll();
       setActiveTab("theory");
       syncTabInUrl("theory");
     }
-    setMatrixNav((prev) => ({ pillarId, seq: (prev?.seq ?? 0) + 1 }));
+    setMatrixNav((prev) => ({ pillarId, seq: (prev?.seq ?? 0) + 1, cancelRestoreRef }));
   };
 
   const isTheory = activeTab === "theory";
@@ -93,6 +103,7 @@ export default function HomePage() {
               cleanTheoryDeepLinkParams();
             }}
             matrixNav={matrixNav}
+            cancelRestoreRef={cancelRestoreRef}
           />
         </div>
       </main>

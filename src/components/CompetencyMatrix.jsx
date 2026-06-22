@@ -146,10 +146,16 @@ function CompetencyMatrix({ expandedPillar, onExpandedPillarChange, scrollNav })
   // Cross-tab jump from a tool-form pillar's help icon. Keyed on `scrollNav.seq` (bumps every click)
   // so it always scrolls the card to the top — even when the pillar was already expanded. (Expansion
   // for this path is driven by TheoryContent's matrixNav handler, not openPillar.)
+  //
+  // Gate on `expandedPillar === pillarId`: TheoryContent expands the target via a state update in a
+  // post-paint `useEffect`, which commits a render *after* this sibling effect would first fire on
+  // the seq bump. If we scrolled on that first commit (card still collapsed, height 0), the measured
+  // top would be wrong and the scroll would be lost — the bug seen when no pillar was expanded yet.
+  // Waiting until the expansion has committed makes the measurement reliable in both cases.
   const scrollNavSeq = scrollNav?.seq;
   useLayoutEffect(() => {
     const pillarId = scrollNav?.pillarId;
-    if (!pillarId) {
+    if (!pillarId || expandedPillar !== pillarId) {
       return undefined;
     }
 
@@ -160,13 +166,23 @@ function CompetencyMatrix({ expandedPillar, onExpandedPillarChange, scrollNav })
 
     // Double rAF: the theory tabpanel was just un-hidden (display:none → block) in this same commit,
     // so its layout box isn't ready yet. First frame lets it lay out, second lets getBoundingClientRect
-    // settle. Then wait MATRIX_ANIM_MS so any expand/collapse triggered by this jump finishes shifting
-    // layout before we measure the card's top.
+    // settle. Then wait MATRIX_ANIM_MS so the expand animation finishes shifting layout before we
+    // measure the card's top.
+    //
+    // Scroll smoothly: by now the theory tab has restored its remembered scroll (bar kept stuck), so
+    // the glide starts from a sensible spot rather than the previous tab's position. Flip
+    // cancelRestoreRef *first* so the restore loop stops re-asserting — otherwise its per-frame
+    // scrollWindowTo would fight the smooth scroll and snap it back, the interruption seen before.
     let timer = null;
     let inner = null;
     const outer = requestAnimationFrame(() => {
       inner = requestAnimationFrame(() => {
-        timer = setTimeout(() => scrollBelowStickyHeader(card), MATRIX_ANIM_MS);
+        timer = setTimeout(() => {
+          if (scrollNav?.cancelRestoreRef) {
+            scrollNav.cancelRestoreRef.current = true;
+          }
+          scrollBelowStickyHeader(card, { behavior: "smooth" });
+        }, MATRIX_ANIM_MS);
       });
     });
 
@@ -180,7 +196,7 @@ function CompetencyMatrix({ expandedPillar, onExpandedPillarChange, scrollNav })
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scrollNavSeq]);
+  }, [scrollNavSeq, expandedPillar]);
 
   return (
     <div className="space-y-3">

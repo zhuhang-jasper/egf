@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect } from "react";
 
 import { getWindowScrollY, scrollWindowTo } from "@/utils/scroll";
 
@@ -44,15 +44,14 @@ function persistScroll(tab, y) {
  * only the header, never body content, so this is always safe. The anchor is captured by the caller
  * on the settled layout — never measured here at restore time — so the page-refresh path is unaffected.
  *
- * `suppressInitialRestore` skips the very first restore (used when booting from a deep-link, which
- * owns the initial scroll to a target section/pillar). Subsequent tab switches still restore.
+ * `cancelRestoreRef` lets a later in-tab scroll take over from the restore loop. The restore always
+ * runs (so the tab lands at its remembered position with the bar kept stuck), but a scroll that owns
+ * its own target — a cross-tab matrix jump, or a deep-link gliding to its section/pillar — flips this
+ * ref the instant it scrolls. The burst checks it each frame and stops, so that scroll's final
+ * position isn't re-asserted away. It's a programmatic equivalent of the wheel/touch/keydown gestures
+ * that already stop restore. Reset to false at the start of each switch.
  */
-export function useTabScrollMemory(activeTab, keepStuckAnchorRef, suppressInitialRestore = false) {
-  // The tab whose initial restore should be skipped (deep-link boot owns that first scroll). Gated on
-  // the tab *value*, not a one-shot ref — so StrictMode's double-invoked effect skips on BOTH passes,
-  // and a real tab switch (different value) clears the suppression and restores normally.
-  const suppressedTabRef = useRef(suppressInitialRestore ? activeTab : null);
-
+export function useTabScrollMemory(activeTab, keepStuckAnchorRef, cancelRestoreRef = null) {
   const saveActiveTabScroll = () => {
     persistScroll(activeTab, getWindowScrollY());
   };
@@ -60,11 +59,10 @@ export function useTabScrollMemory(activeTab, keepStuckAnchorRef, suppressInitia
   useLayoutEffect(() => {
     persistActiveTab(activeTab);
 
-    // Booting from a deep-link: that flow owns the initial scroll, so skip this restore (but still
-    // register the unload save below). Subsequent tab switches restore normally.
-    const skipRestore = suppressedTabRef.current === activeTab;
-    if (suppressedTabRef.current !== null && suppressedTabRef.current !== activeTab) {
-      suppressedTabRef.current = null; // user navigated away from the deep-linked tab — done suppressing
+    // Fresh switch: clear any leftover cancel flag so this tab's restore can run; a later in-tab
+    // scroll (matrix jump or deep-link glide) will flip it again to take over.
+    if (cancelRestoreRef) {
+      cancelRestoreRef.current = false;
     }
 
     let y = getPersistedScroll(activeTab);
@@ -94,6 +92,10 @@ export function useTabScrollMemory(activeTab, keepStuckAnchorRef, suppressInitia
       if (stopped) {
         return;
       }
+      if (cancelRestoreRef?.current) {
+        stop(); // an in-tab scroll (matrix jump) has taken over — stop re-asserting
+        return;
+      }
       scrollWindowTo(y); // re-assert when the page height changes (chart settles)
     };
 
@@ -104,6 +106,10 @@ export function useTabScrollMemory(activeTab, keepStuckAnchorRef, suppressInitia
     // or a real user gesture takes over.
     const burst = () => {
       if (stopped) {
+        return;
+      }
+      if (cancelRestoreRef?.current) {
+        stop(); // an in-tab scroll (matrix jump) has taken over — stop re-asserting
         return;
       }
       scrollWindowTo(y);
@@ -129,27 +135,24 @@ export function useTabScrollMemory(activeTab, keepStuckAnchorRef, suppressInitia
       window.removeEventListener("keydown", onUserScroll);
     }
 
-    let stopTimer = null;
-    if (!skipRestore) {
-      window.addEventListener("wheel", onUserScroll, { passive: true });
-      window.addEventListener("touchmove", onUserScroll, { passive: true });
-      window.addEventListener("keydown", onUserScroll);
-      ro.observe(document.body);
-      rafId = requestAnimationFrame(burst);
-      // Hard stop after the max window even if nothing else fires.
-      stopTimer = setTimeout(stop, MAX_SETTLE_MS);
-    }
+    window.addEventListener("wheel", onUserScroll, { passive: true });
+    window.addEventListener("touchmove", onUserScroll, { passive: true });
+    window.addEventListener("keydown", onUserScroll);
+    ro.observe(document.body);
+    rafId = requestAnimationFrame(burst);
+    // Hard stop after the max window even if nothing else fires.
+    const stopTimer = setTimeout(stop, MAX_SETTLE_MS);
 
     const onBeforeUnload = () => persistScroll(activeTab, getWindowScrollY());
     window.addEventListener("beforeunload", onBeforeUnload);
 
     return () => {
       stop();
-      if (stopTimer !== null) {
-        clearTimeout(stopTimer);
-      }
+      clearTimeout(stopTimer);
       window.removeEventListener("beforeunload", onBeforeUnload);
     };
+    // Refs (keepStuckAnchorRef, cancelRestoreRef) are stable — restore is driven by activeTab.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
   return { saveActiveTabScroll };

@@ -13,6 +13,14 @@ import { getPersistedExpandedPillar, getPillarCardElementId, persistExpandedPill
 
 const cardClass = "rounded-xl border border-slate-100 bg-white shadow-md shadow-slate-200/40";
 
+// On a deep-link boot, how long to let the scroll-restore loop settle at the remembered position
+// before we switch the expanded pillar. Long enough to clear restore's initial frames; short enough
+// that the transition still feels prompt.
+const DEEPLINK_RESTORE_SETTLE_MS = 350;
+// Expand/collapse animation length — matches the `duration-300` on the matrix panel. After switching
+// to the deep-link pillar we wait this out so the card has stopped moving before we measure & glide.
+const DEEPLINK_EXPAND_ANIM_MS = 300;
+
 function SectionHeading({ title, subtitle, section }) {
   return (
     <header className="space-y-1">
@@ -69,14 +77,16 @@ function SeniorityStepper() {
   );
 }
 
-function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav }) {
+function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreRef }) {
   const consumedRef = useRef(false);
 
-  // Expanded pillar state lives here so the matrix share button can read it.
-  const [expandedPillar, setExpandedPillar] = useState(() => {
-    const fromDeepLink = deepLink?.section === THEORY_SECTIONS.matrix ? deepLink.pillar : null;
-    return fromDeepLink ?? getPersistedExpandedPillar();
-  });
+  // Expanded pillar state lives here so the matrix share button can read it. On a deep-link boot we
+  // intentionally start from the *persisted* pillar, NOT the deep-link's — so the page first restores
+  // its previous scroll against the layout it was saved with (old pillar A still open). The deep-link
+  // effect below then switches to pillar B (collapse A, expand B) once restore has settled, and only
+  // then glides to B. Expanding B immediately here would shift layout under the restore and land it
+  // at the wrong spot.
+  const [expandedPillar, setExpandedPillar] = useState(getPersistedExpandedPillar);
 
   // In-app jump from a tool-form pillar's help icon. Expanding the pillar makes CompetencyMatrix
   // scroll to it; persist so the choice survives like a normal expand. Keyed on `seq` so clicking
@@ -113,19 +123,38 @@ function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav }) {
 
     // For a matrix pillar deep-link, scroll to the (expanded) pillar card itself, not the
     // section heading. Falls back to the section when no pillar is targeted.
-    const targetId = section === THEORY_SECTIONS.matrix && deepLink.pillar ? getPillarCardElementId(deepLink.pillar) : sectionId;
+    const targetPillar = section === THEORY_SECTIONS.matrix ? deepLink.pillar : null;
+    const targetId = targetPillar ? getPillarCardElementId(targetPillar) : sectionId;
 
-    // Double rAF: first frame lets the hidden tabpanel become visible,
-    // second lets layout settle so getBoundingClientRect is accurate.
+    // Staged so a shared link feels like a real navigation, not a teleport:
+    //   1. double rAF — let the hidden tabpanel lay out so the restore loop can land at the remembered
+    //      scroll (against the OLD expanded pillar, the layout that scroll was saved with).
+    //   2. after DEEPLINK_RESTORE_SETTLE_MS — restore has settled; NOW switch to the deep-link pillar
+    //      (collapse the old one, expand the target). cancelRestoreRef is flipped here because this
+    //      expand changes layout and we no longer want restore re-asserting the old position.
+    //   3. after the expand animation — the card has stopped moving, so measure it and smooth-glide.
+    let settleTimer = null;
+    let glideTimer = null;
     let inner = null;
     const outer = requestAnimationFrame(() => {
       inner = requestAnimationFrame(() => {
-        const el = document.getElementById(targetId) ?? document.getElementById(sectionId);
-        if (el) {
-          scrollBelowStickyHeader(el, { behavior: "smooth" });
-        }
-        onDeepLinkConsumed?.();
-        consumedRef.current = true;
+        settleTimer = setTimeout(() => {
+          if (cancelRestoreRef) {
+            cancelRestoreRef.current = true; // restore done — stop it before the expand shifts layout
+          }
+          if (targetPillar) {
+            persistExpandedPillar(targetPillar);
+            setExpandedPillar(targetPillar);
+          }
+          glideTimer = setTimeout(() => {
+            const el = document.getElementById(targetId) ?? document.getElementById(sectionId);
+            if (el) {
+              scrollBelowStickyHeader(el, { behavior: "smooth" });
+            }
+            onDeepLinkConsumed?.();
+            consumedRef.current = true;
+          }, DEEPLINK_EXPAND_ANIM_MS);
+        }, DEEPLINK_RESTORE_SETTLE_MS);
       });
     });
 
@@ -133,6 +162,12 @@ function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav }) {
       cancelAnimationFrame(outer);
       if (inner !== null) {
         cancelAnimationFrame(inner);
+      }
+      if (settleTimer !== null) {
+        clearTimeout(settleTimer);
+      }
+      if (glideTimer !== null) {
+        clearTimeout(glideTimer);
       }
     };
     // deepLink and onDeepLinkConsumed are stable boot-time values — intentional.
