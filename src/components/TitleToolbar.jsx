@@ -102,12 +102,14 @@ export function TitleToolbar() {
           variant="outline"
           size="icon"
           shape="pill"
-          className="-ml-1 shrink-0"
+          // Icon-only circle on mobile; expands to a "Save" pill (auto width, label + gap) at >=470px.
+          className="-ml-1 shrink-0 min-[470px]:w-auto min-[470px]:gap-1.5 min-[470px]:px-3"
           onClick={() => saveProfile()}
           aria-label="Save"
           title="Save"
         >
           <Save className="h-4 w-4 shrink-0" />
+          <span className="hidden min-[470px]:inline">Save</span>
         </Button>
       </div>
       {/* Row 2 — reset, keyboard toggle, profiles */}

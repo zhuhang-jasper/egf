@@ -73,7 +73,7 @@ function ChartDisplayMenu() {
     <div ref={rootRef} className="relative shrink-0">
       <Button
         type="button"
-        variant="ghost"
+        variant="outline"
         size="icon"
         aria-expanded={open}
         aria-haspopup="menu"
@@ -177,7 +177,7 @@ function ExportMenu({ label, onCopy, onShare }) {
         className="gap-1 pr-1"
       >
         <Share className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        {label ?? "Share Chart"}
+        {label ?? "Share"}
         <ChevronDown className="h-3.5 w-3.5 opacity-60" />
       </Button>
       {open ? (
@@ -287,7 +287,7 @@ export function ChartSection({ isVisible }) {
         </div>
       </div>
 
-      <div ref={exportRef} className="flex w-full min-w-0 flex-col self-stretch">
+      <div ref={exportRef} className="relative flex w-full min-w-0 flex-col self-stretch">
         {showTitleRow ? (
           <div className="relative z-[1] flex w-full min-w-0 items-center gap-3 leading-none mb-2" style={{ minHeight: titleRowHeightPx }}>
             {!chartLegendHidden ? <TrackBadge variant={trackVariant} size="md" className="shrink-0" chartWidth={chartWidth} /> : null}
