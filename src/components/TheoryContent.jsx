@@ -8,7 +8,7 @@ import { ShareLinkButton } from "@/components/ShareLinkButton";
 import { CAREER_TRACKS_SECTION_INTRO, PILLARS_SECTION_INTRO, SENIORITY_LEVEL_DEFINITIONS, SENIORITY_SECTION_INTRO } from "@/constants/theory-data";
 import { DOC_SECTION, DOC_TEXT } from "@/styles/doc-typography";
 import { cn } from "@/utils";
-import { scrollBelowStickyHeader } from "@/utils/scroll";
+import { scrollBelowStickyHeaderUntilSettled } from "@/utils/scroll";
 import { getPersistedExpandedPillar, getPillarCardElementId, persistExpandedPillar, THEORY_SECTION_IDS, THEORY_SECTIONS } from "@/utils/theory-url";
 
 const cardClass = "rounded-xl border border-slate-100 bg-white shadow-md shadow-slate-200/40";
@@ -132,10 +132,13 @@ function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreR
     //   2. after DEEPLINK_RESTORE_SETTLE_MS — restore has settled; NOW switch to the deep-link pillar
     //      (collapse the old one, expand the target). cancelRestoreRef is flipped here because this
     //      expand changes layout and we no longer want restore re-asserting the old position.
-    //   3. after the expand animation — the card has stopped moving, so measure it and smooth-glide.
+    //   3. after the expand animation — re-aim until the card stops moving (the old pillar may be
+    //      collapsing above the target, sliding it up), then smooth-glide. A single scroll would land
+    //      a below-the-old-pillar target gapless under the bar.
     let settleTimer = null;
     let glideTimer = null;
     let inner = null;
+    let cancelSettled = null;
     const outer = requestAnimationFrame(() => {
       inner = requestAnimationFrame(() => {
         settleTimer = setTimeout(() => {
@@ -149,7 +152,7 @@ function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreR
           glideTimer = setTimeout(() => {
             const el = document.getElementById(targetId) ?? document.getElementById(sectionId);
             if (el) {
-              scrollBelowStickyHeader(el, { behavior: "smooth" });
+              cancelSettled = scrollBelowStickyHeaderUntilSettled(el);
             }
             onDeepLinkConsumed?.();
             consumedRef.current = true;
@@ -169,6 +172,7 @@ function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreR
       if (glideTimer !== null) {
         clearTimeout(glideTimer);
       }
+      cancelSettled?.();
     };
     // deepLink and onDeepLinkConsumed are stable boot-time values — intentional.
     // eslint-disable-next-line react-hooks/exhaustive-deps

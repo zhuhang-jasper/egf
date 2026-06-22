@@ -8,7 +8,7 @@ import { getClusterSurfaceBg } from "@/constants";
 import { COMPETENCY_MATRIX, SENIORITY_LEVEL_DEFINITIONS } from "@/constants/theory-data";
 import { DOC_TEXT } from "@/styles/doc-typography";
 import { cn } from "@/utils";
-import { scrollBelowStickyHeader } from "@/utils/scroll";
+import { scrollBelowStickyHeaderUntilSettled } from "@/utils/scroll";
 import { getPillarCardElementId, persistExpandedPillar, THEORY_SECTIONS } from "@/utils/theory-url";
 
 const levelBadgeClass = cn("flex size-5 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white", DOC_TEXT.badgeMicro);
@@ -115,22 +115,31 @@ function PillarMatrixCard({ order, pillarId, pillarName, focusSummary, color, te
 function CompetencyMatrix({ expandedPillar, onExpandedPillarChange, scrollNav }) {
   const cardRefs = useRef({});
   const scrollTimerRef = useRef(null);
+  const cancelScrollRef = useRef(null);
+
+  const cancelPendingScroll = () => {
+    clearTimeout(scrollTimerRef.current);
+    cancelScrollRef.current?.();
+    cancelScrollRef.current = null;
+  };
 
   // Scroll the just-opened card's top under the sticky bar, after the expand/collapse animation
-  // settles (a previously-open card above it collapses over MATRIX_ANIM_MS, shifting layout). Driven
-  // from the click — NOT a `useLayoutEffect` on `expandedPillar` — so it never fires on mount/refresh
-  // (which would yank the restored scroll) or twice under StrictMode.
+  // settles. A previously-open card *above* the new one collapses over MATRIX_ANIM_MS, so the new
+  // card keeps sliding up while we scroll — a single measurement lands it under the bar with no gap.
+  // scrollBelowStickyHeaderUntilSettled re-aims until the layout stops moving. Driven from the click
+  // — NOT a `useLayoutEffect` on `expandedPillar` — so it never fires on mount/refresh (which would
+  // yank the restored scroll) or twice under StrictMode.
   const scrollToCardSoon = (pillarId) => {
-    clearTimeout(scrollTimerRef.current);
+    cancelPendingScroll();
     scrollTimerRef.current = setTimeout(() => {
       const card = cardRefs.current[pillarId];
       if (card) {
-        scrollBelowStickyHeader(card);
+        cancelScrollRef.current = scrollBelowStickyHeaderUntilSettled(card);
       }
     }, MATRIX_ANIM_MS);
   };
 
-  useEffect(() => () => clearTimeout(scrollTimerRef.current), []);
+  useEffect(() => () => cancelPendingScroll(), []);
 
   const handleToggle = (pillarId) => {
     const next = pillarId === expandedPillar ? null : pillarId;
@@ -139,7 +148,7 @@ function CompetencyMatrix({ expandedPillar, onExpandedPillarChange, scrollNav })
     if (next) {
       scrollToCardSoon(next);
     } else {
-      clearTimeout(scrollTimerRef.current);
+      cancelPendingScroll();
     }
   };
 
@@ -175,13 +184,16 @@ function CompetencyMatrix({ expandedPillar, onExpandedPillarChange, scrollNav })
     // scrollWindowTo would fight the smooth scroll and snap it back, the interruption seen before.
     let timer = null;
     let inner = null;
+    let cancelSettled = null;
     const outer = requestAnimationFrame(() => {
       inner = requestAnimationFrame(() => {
         timer = setTimeout(() => {
           if (scrollNav?.cancelRestoreRef) {
             scrollNav.cancelRestoreRef.current = true;
           }
-          scrollBelowStickyHeader(card, { behavior: "smooth" });
+          // Re-aim until settled: if a different pillar was open and is collapsing above this one,
+          // the target slides up during the collapse, so a single scroll would land it gapless.
+          cancelSettled = scrollBelowStickyHeaderUntilSettled(card);
         }, MATRIX_ANIM_MS);
       });
     });
@@ -194,6 +206,7 @@ function CompetencyMatrix({ expandedPillar, onExpandedPillarChange, scrollNav })
       if (timer !== null) {
         clearTimeout(timer);
       }
+      cancelSettled?.();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scrollNavSeq, expandedPillar]);

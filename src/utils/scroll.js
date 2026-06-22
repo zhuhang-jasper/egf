@@ -70,3 +70,43 @@ export function scrollBelowStickyHeader(element, { behavior = "smooth" } = {}) {
   const top = element.getBoundingClientRect().top + window.scrollY - getStickyScrollOffsetPx();
   scrollWindowTo(top, { behavior });
 }
+
+/**
+ * Smooth-scroll `element` just below the sticky bar, then keep re-aiming until layout settles.
+ *
+ * When a matrix pillar expands while another above it collapses (toggle or deep-link to a different
+ * pillar), the target keeps sliding up during the collapse animation — a single scroll lands it under
+ * the bar with no gap. We re-issue the scroll on each frame whose computed destination differs from
+ * the last, stopping once it holds steady for `stableFrames` or the `maxFrames` cap is hit (so a card
+ * that genuinely can't reach the inset, e.g. near the page bottom, still terminates).
+ *
+ * Returns a cleanup function that cancels the pending animation frame.
+ */
+export function scrollBelowStickyHeaderUntilSettled(element, { stableFrames = 5, maxFrames = 120 } = {}) {
+  if (!element) {
+    return () => {};
+  }
+
+  let raf = 0;
+  let frames = 0;
+  let stable = 0;
+  let lastTarget = Number.NaN;
+  const tick = () => {
+    frames += 1;
+    const target = Math.round(element.getBoundingClientRect().top + window.scrollY - getStickyScrollOffsetPx());
+    if (target === lastTarget) {
+      stable += 1;
+    } else {
+      // Destination moved (a pillar above is still collapsing/expanding) — re-aim at the new position.
+      stable = 0;
+      lastTarget = target;
+      scrollWindowTo(target, { behavior: "smooth" });
+    }
+    if (stable >= stableFrames || frames >= maxFrames) {
+      return;
+    }
+    raf = requestAnimationFrame(tick);
+  };
+  raf = requestAnimationFrame(tick);
+  return () => cancelAnimationFrame(raf);
+}
