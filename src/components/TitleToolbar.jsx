@@ -5,7 +5,6 @@ import { CircleCheck, CircleDashed, CircleDot, Keyboard, Plus, RotateCcw, Save, 
 import { ProfilePicker } from "@/components/ProfilePicker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tooltip } from "@/components/ui/Tooltip";
 
 import { useTouchPrimary } from "@/hooks/useTouchPrimary";
 
@@ -99,17 +98,16 @@ export function TitleToolbar() {
           </button>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          {/* Mobile (<470px): icon-only, label shown via hover tooltip. >=470px: inline label, sized
-              to the widest status via an invisible sizer so the title input never shifts. */}
+          {/* Inline label at all widths, sized to the widest status via an invisible sizer so the
+              title input never shifts as the status changes. */}
           <span className={cn("group relative flex shrink-0 items-center gap-1", statusMeta.color)}>
             <StatusIcon className="h-4 w-4 shrink-0" aria-hidden />
-            <span className="relative hidden text-xs italic text-muted-foreground min-[470px]:inline-grid">
+            <span className="relative inline-grid text-xs italic text-muted-foreground">
               <span aria-hidden className="invisible col-start-1 row-start-1 whitespace-nowrap">
                 {WIDEST_STATUS_LABEL}
               </span>
               <span className="col-start-1 row-start-1 truncate">{statusMeta.label}</span>
             </span>
-            <Tooltip text={statusMeta.label} placement="bottom" className="min-[470px]:hidden" />
           </span>
           <Button
             type="button"
