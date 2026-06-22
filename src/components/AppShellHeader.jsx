@@ -1,10 +1,12 @@
-import { useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { FileText, Radar } from "lucide-react";
 
+import { Tooltip } from "@/components/ui/Tooltip";
+
 import { SITE_COPY } from "@/constants";
 import { cn } from "@/utils";
-import { clearStickyScrollOffset, setStickyScrollOffset } from "@/utils/scroll";
+import { clearStickyScrollOffset, getTabBarPinnedScrollY, getWindowScrollY, setStickyScrollOffset } from "@/utils/scroll";
 
 const TABS = [
   { id: "tool", label: "Tool", icon: Radar },
@@ -24,6 +26,9 @@ function AppShellIntro() {
 
 function AppShellTabBar({ activeTab, onTabChange }) {
   const barRef = useRef(null);
+  // Whether scrolling up is possible — i.e. we're scrolled past the point where the bar pins.
+  // Gates the active tab's "click to scroll to top" tooltip so it only shows when it'd do something.
+  const [canScrollUp, setCanScrollUp] = useState(false);
   const selectedIndex = Math.max(
     0,
     TABS.findIndex((tab) => tab.id === activeTab),
@@ -48,6 +53,18 @@ function AppShellTabBar({ activeTab, onTabChange }) {
       clearStickyScrollOffset();
     };
   }, []);
+
+  // Track whether there's room to scroll up so the tooltip can hide when there isn't.
+  useEffect(() => {
+    const sync = () => setCanScrollUp(getWindowScrollY() > getTabBarPinnedScrollY());
+    sync();
+    window.addEventListener("scroll", sync, { passive: true });
+    window.addEventListener("resize", sync);
+    return () => {
+      window.removeEventListener("scroll", sync);
+      window.removeEventListener("resize", sync);
+    };
+  }, [activeTab]);
 
   return (
     <div
@@ -78,13 +95,14 @@ function AppShellTabBar({ activeTab, onTabChange }) {
               aria-selected={selected}
               onClick={() => onTabChange(id)}
               className={cn(
-                "relative z-10 flex cursor-pointer items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold",
+                "group relative z-10 flex cursor-pointer items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold",
                 selected ? "text-white" : "text-slate-600 hover:text-slate-800",
               )}
             >
               <Icon className="size-3.5 shrink-0" aria-hidden />
               {label}
               {version ? <span className={cn("text-[11px] font-semibold", selected ? "text-white/70" : "text-slate-400")}>{version}</span> : null}
+              {selected && canScrollUp ? <Tooltip text="Click to scroll to top" placement="bottom" /> : null}
             </button>
           );
         })}
