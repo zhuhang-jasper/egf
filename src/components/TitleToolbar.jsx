@@ -5,6 +5,7 @@ import { CircleCheck, CircleDashed, CircleDot, Keyboard, Plus, RotateCcw, Save, 
 import { ProfilePicker } from "@/components/ProfilePicker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 import { useTouchPrimary } from "@/hooks/useTouchPrimary";
 
@@ -17,8 +18,12 @@ import { cn } from "@/utils";
 const SAVE_STATUS_META = {
   saved: { icon: CircleCheck, color: "text-green-600", label: "Saved", title: "Saved — matches a saved profile" },
   modified: { icon: CircleDot, color: "text-amber-500", label: "Modified", title: "Modified — saving will overwrite the matching profile" },
-  new: { icon: CircleDashed, color: "text-muted-foreground", label: "Not saved", title: "Not saved — saving will create a new profile" },
+  new: { icon: CircleDashed, color: "text-muted-foreground", label: "Unsaved", title: "Unsaved — saving will create a new profile" },
 };
+
+// Longest status label — used as an invisible sizer so the >=470px status slot reserves a stable
+// width and the title input never shifts as the status changes. Derived so it stays correct if edited.
+const WIDEST_STATUS_LABEL = Object.values(SAVE_STATUS_META).reduce((a, b) => (b.label.length > a.length ? b.label : a), "");
 
 export function TitleToolbar() {
   const title = useAppStore((s) => s.title);
@@ -93,24 +98,35 @@ export function TitleToolbar() {
             <X className="h-4 w-4" />
           </button>
         </div>
-        <span className={cn("flex w-[5.5rem] shrink-0 items-center gap-1.5", statusMeta.color)}>
-          <StatusIcon className="h-4 w-4 shrink-0" aria-hidden />
-          <span className="truncate text-xs italic text-muted-foreground">{statusMeta.label}</span>
-        </span>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          shape="pill"
-          // Icon-only circle on mobile; expands to a "Save" pill (auto width, label + gap) at >=470px.
-          className="-ml-1 shrink-0 min-[470px]:w-auto min-[470px]:gap-1.5 min-[470px]:px-3"
-          onClick={() => saveProfile()}
-          aria-label="Save"
-          title="Save"
-        >
-          <Save className="h-4 w-4 shrink-0" />
-          <span className="hidden min-[470px]:inline">Save</span>
-        </Button>
+        <div className="flex shrink-0 items-center gap-2">
+          {/* Mobile (<470px): icon-only, label shown via hover tooltip. >=470px: inline label, sized
+              to the widest status via an invisible sizer so the title input never shifts. */}
+          <span className={cn("group relative flex shrink-0 items-center gap-1", statusMeta.color)}>
+            <StatusIcon className="h-4 w-4 shrink-0" aria-hidden />
+            <span className="relative hidden text-xs italic text-muted-foreground min-[470px]:inline-grid">
+              <span aria-hidden className="invisible col-start-1 row-start-1 whitespace-nowrap">
+                {WIDEST_STATUS_LABEL}
+              </span>
+              <span className="col-start-1 row-start-1 truncate">{statusMeta.label}</span>
+            </span>
+            <Tooltip text={statusMeta.label} placement="bottom" className="min-[470px]:hidden" />
+          </span>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            shape="pill"
+            // Icon-only circle on mobile; expands to a "Save" pill (auto width, label + gap) at >=470px.
+            // text-xs to match the other sm toolbar buttons (size="icon" doesn't set a font size).
+            className="text-xs shrink-0 min-[470px]:w-auto min-[470px]:gap-1.5 min-[470px]:px-3"
+            onClick={() => saveProfile()}
+            aria-label="Save"
+            title="Save"
+          >
+            <Save className="h-4 w-4 shrink-0" />
+            <span className="hidden min-[470px]:inline">Save</span>
+          </Button>
+        </div>
       </div>
       {/* Row 2 — reset, keyboard toggle, profiles */}
       <div className="flex w-full items-center gap-2">
