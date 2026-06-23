@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 
 import { useAppStore } from "@/store/useAppStore";
 
+import { track } from "@/utils/analytics";
+
 export function ProfilePicker() {
   const profiles = useAppStore((s) => s.profiles);
   const open = useAppStore((s) => s.profilePickerOpen);
@@ -67,7 +69,10 @@ export function ProfilePicker() {
                       type="button"
                       role="menuitem"
                       className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted/60"
-                      onClick={() => loadProfile(pr.id)}
+                      onClick={() => {
+                        loadProfile(pr.id);
+                        track("profile_loaded", { track_variant: pr.trackVariant });
+                      }}
                     >
                       <span className="min-w-0">{label}</span>
                       <TrackBadge variant={pr.trackVariant} />
@@ -79,6 +84,7 @@ export function ProfilePicker() {
                       onClick={(e) => {
                         e.stopPropagation();
                         removeProfile(pr.id);
+                        track("profile_deleted", { track_variant: pr.trackVariant });
                       }}
                     >
                       <Trash2 className="h-4 w-4" />

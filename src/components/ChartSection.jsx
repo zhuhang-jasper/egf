@@ -15,6 +15,7 @@ import { useAppStore } from "@/store/useAppStore";
 
 import { getChartTitleSizePx, getTrackBadgeMdHeightPx } from "@/chart/fonts";
 import { FE_UI, FEATURE_SCORES_SETTINGS, SITE_COPY } from "@/constants";
+import { track } from "@/utils/analytics";
 import { copyChartAsImageToClipboard, shareChartAsImage } from "@/utils/copy-chart-image";
 
 function DisplayCheckbox({ label, checked, onChange }) {
@@ -243,8 +244,10 @@ export function ChartSection({ isVisible }) {
         chart: chartRef.current,
       });
       if (result?.method === "clipboard") {
+        track("chart_copied", { method: "clipboard" });
         flashLabel("Copied!");
       } else if (result?.method === "download") {
+        track("chart_copied", { method: "download" });
         flashLabel("Saved file");
       } else {
         flashLabel("Failed");
@@ -264,9 +267,12 @@ export function ChartSection({ isVisible }) {
       });
       if (result?.method === "share") {
         // Native share sheet opened — completion is out of our hands, so don't claim "Shared!".
+        track("chart_shared", { method: "share" });
       } else if (result?.method === "share-fallback-clipboard") {
+        track("chart_shared", { method: "fallback-clipboard" });
         flashLabel("Copied — paste it");
       } else if (result?.method === "share-fallback-download") {
+        track("chart_shared", { method: "fallback-download" });
         flashLabel("Saved file");
       } else {
         flashLabel("Failed");

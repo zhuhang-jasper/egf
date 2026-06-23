@@ -6,6 +6,7 @@ import { Tooltip } from "@/components/ui/Tooltip";
 import { useAppStore } from "@/store/useAppStore";
 
 import { CLUSTERS, getClusterSurfaceBg } from "@/constants";
+import { track } from "@/utils/analytics";
 
 export function PillarCluster({ group, onOpenPillarInMatrix }) {
   const levels = useAppStore((s) => s.levels);
@@ -30,7 +31,10 @@ export function PillarCluster({ group, onOpenPillarInMatrix }) {
             {onOpenPillarInMatrix ? (
               <button
                 type="button"
-                onClick={() => onOpenPillarInMatrix(pillar.id)}
+                onClick={() => {
+                  track("pillar_help_opened", { pillar: pillar.id });
+                  onOpenPillarInMatrix(pillar.id);
+                }}
                 aria-label={`View ${pillar.label} in the competency matrix`}
                 className="group relative inline-flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full text-slate-600 transition-colors hover:text-slate-800 active:text-slate-800"
               >

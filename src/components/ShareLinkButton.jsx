@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Tooltip } from "@/components/ui/Tooltip";
 
 import { cn } from "@/utils";
+import { track } from "@/utils/analytics";
 import { buildTheoryShareUrl } from "@/utils/theory-url";
 
 const COPIED_RESET_MS = 1500;
@@ -66,6 +67,15 @@ export function ShareLinkButton({ section, pillar = null, label = null, ariaLabe
     } catch {
       window.prompt("Copy this link:", url);
     }
+    // link_path is pathname+search only (no origin) — GA4 caps param values at 100 chars.
+    let linkPath = url;
+    try {
+      const parsed = new URL(url);
+      linkPath = `${parsed.pathname}${parsed.search}`;
+    } catch {
+      // Non-absolute URL (shouldn't happen) — fall back to the raw string.
+    }
+    track("link_copied", { section, pillar: pillar ?? "(section)", link_path: linkPath });
     setCopied(true);
     clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => setCopied(false), COPIED_RESET_MS);

@@ -7,6 +7,7 @@ import { ToolContent } from "@/components/ToolContent";
 import { getPersistedActiveTab, useTabScrollMemory } from "@/hooks/useTabScrollMemory";
 
 import { FE_UI } from "@/constants";
+import { track } from "@/utils/analytics";
 import { getTabBarPinnedScrollY, getWindowScrollY, isTabBarStuck, scrollWindowTo } from "@/utils/scroll";
 import { cleanTheoryDeepLinkParams, getTabFromUrl, parseTheoryDeepLink, syncTabInUrl } from "@/utils/theory-url";
 
@@ -64,6 +65,7 @@ export default function HomePage() {
     // If the bar is pinned now, capture its anchor so the new tab restores at least that far down.
     keepStuckAnchorRef.current = isTabBarStuck() ? getTabBarPinnedScrollY() : null;
     saveActiveTabScroll();
+    track("tab_view", { tab: nextTab });
     setActiveTab(nextTab);
     syncTabInUrl(nextTab);
   };
