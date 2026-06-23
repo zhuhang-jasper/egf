@@ -67,11 +67,7 @@ function AppShellTabBar({ activeTab, onTabChange }) {
   }, [activeTab]);
 
   return (
-    <div
-      ref={barRef}
-      id="app-shell-tab-bar"
-      className="sticky top-0 z-40 -mx-3 mt-0 bg-white px-3 py-2 shadow-sm print:static print:shadow-none"
-    >
+    <div ref={barRef} id="app-shell-tab-bar" className="sticky top-0 z-40 -mx-3 mt-0 bg-white px-3 py-2 shadow-sm print:static print:shadow-none">
       <div
         className="relative mx-auto grid max-w-xs grid-cols-2 rounded-lg border border-slate-200 bg-slate-100/80 p-0.5"
         role="tablist"
