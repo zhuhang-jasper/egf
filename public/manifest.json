@@ -6,23 +6,29 @@
     {
       "src": "favicon-96x96.png",
       "type": "image/png",
-      "sizes": "96x96 64x64 48x48 32x32 24x24 16x16"
+      "sizes": "96x96"
+    },
+    {
+      "src": "apple-touch-icon.png",
+      "type": "image/png",
+      "sizes": "180x180"
     },
     {
       "src": "logo192.png",
       "type": "image/png",
-      "sizes": "192x192 128x128"
+      "sizes": "192x192"
     },
     {
       "src": "logo512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
   "start_url": "/egf/",
-  "scope": "/",
+  "scope": "/egf/",
   "display": "standalone",
   "orientation": "portrait-primary",
   "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "background_color": "#000000"
 }
