@@ -31,6 +31,7 @@ jobs:
       env:
         GITHUB_PAGES: "true"
         NODE_OPTIONS: --max-old-space-size=5632
+        VITE_GA_ID: ${{ vars.VITE_GA_ID }}
 
     - name: Upload Pages artifact
       uses: actions/upload-pages-artifact@v3

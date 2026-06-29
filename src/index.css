@@ -44,6 +44,10 @@
 
   body {
     @apply bg-black text-foreground font-medium antialiased;
+    /* PWA: kill double-tap-to-zoom and pinch-zoom gestures. The viewport meta
+       handles most browsers; this covers iOS Safari which ignores user-scalable=no. */
+    touch-action: pan-x pan-y;
+    -webkit-text-size-adjust: 100%;
   }
 
   #competencyInputs {

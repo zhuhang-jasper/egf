@@ -11,6 +11,7 @@ import { useTouchPrimary } from "@/hooks/useTouchPrimary";
 import { selectProfileSaveStatus, useAppStore } from "@/store/useAppStore";
 
 import { cn } from "@/utils";
+import { track } from "@/utils/analytics";
 
 // Icon + tooltip per profile save status. `modified` means a same-named profile exists with
 // different values, so saving will overwrite it.
@@ -117,7 +118,11 @@ export function TitleToolbar() {
             // Icon-only circle on mobile; expands to a "Save" pill (auto width, label + gap) at >=470px.
             // text-xs to match the other sm toolbar buttons (size="icon" doesn't set a font size).
             className="text-xs shrink-0 min-[470px]:w-auto min-[470px]:gap-1.5 min-[470px]:px-3"
-            onClick={() => saveProfile()}
+            onClick={() => {
+              if (saveProfile() !== false) {
+                track("profile_saved", { track_variant: useAppStore.getState().trackVariant });
+              }
+            }}
             aria-label="Save"
             title="Save"
           >

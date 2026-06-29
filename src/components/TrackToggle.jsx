@@ -4,11 +4,19 @@ import { useAppStore } from "@/store/useAppStore";
 
 import { TRACK_VARIANT_UI, TRACK_VARIANTS } from "@/constants";
 import { cn } from "@/utils";
+import { track } from "@/utils/analytics";
 
 export function TrackToggle() {
   const trackVariant = useAppStore((s) => s.trackVariant);
   const setTrackVariant = useAppStore((s) => s.setTrackVariant);
   const isBe = trackVariant === "be";
+
+  const selectTrack = (next) => {
+    if (next !== trackVariant) {
+      track("track_switched", { track_variant: next });
+    }
+    setTrackVariant(next);
+  };
 
   return (
     <fieldset className="m-0 inline-flex shrink-0 border-0 p-0">
@@ -25,7 +33,7 @@ export function TrackToggle() {
         <button
           type="button"
           aria-label={`Switch to ${TRACK_VARIANT_UI[isBe ? "fe" : "be"].label}`}
-          onClick={() => setTrackVariant(isBe ? "fe" : "be")}
+          onClick={() => selectTrack(isBe ? "fe" : "be")}
           className="group absolute left-1/2 top-1/2 z-20 flex size-7 -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center"
         >
           <span className="flex size-4 items-center justify-center rounded-full border border-border bg-muted text-muted-foreground transition-colors group-hover:bg-background group-hover:text-foreground">
@@ -41,7 +49,7 @@ export function TrackToggle() {
               trackVariant === id ? "font-semibold text-foreground" : "font-medium text-muted-foreground hover:text-foreground/80",
             )}
             aria-pressed={trackVariant === id}
-            onClick={() => setTrackVariant(id)}
+            onClick={() => selectTrack(id)}
           >
             {TRACK_VARIANT_UI[id].label}
           </button>

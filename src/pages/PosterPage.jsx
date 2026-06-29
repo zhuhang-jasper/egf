@@ -5,6 +5,7 @@ import { Chart, Filler, LineElement, PointElement, RadarController, RadialLinear
 import { createClusterBackgroundPlugin } from "@/chart/plugins";
 import { CLUSTERS, FE_UI, getPillarLabel, getPillarOrder, SITE_COPY } from "@/constants";
 import { CAREER_TRACK_PROFILES, PILLAR_CLUSTER_GROUPS } from "@/constants/theory-data";
+import { track } from "@/utils/analytics";
 
 // Fixed design canvas — a 2:3 poster portrait (1080×1620). Wider than a phone-screen
 // 9:16 so it reads well in the LinkedIn feed, but long enough for large, poster-scale
@@ -463,6 +464,7 @@ export default function PosterPage() {
     setErrMsg("");
     try {
       await fn(posterRef.current);
+      track("poster_exported", { action });
       setState("done");
       setTimeout(() => setState("idle"), 2000);
     } catch (err) {

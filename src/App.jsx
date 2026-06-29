@@ -1,5 +1,6 @@
 import HomePage from "@/pages/HomePage";
 import PosterPage from "@/pages/PosterPage";
+import SocialPage from "@/pages/SocialPage";
 import { getRoute } from "@/utils/route";
 
 // Routing is read once at module-eval time. The poster is a static, shareable
@@ -10,6 +11,9 @@ const route = getRoute();
 export default function App() {
   if (route === "poster") {
     return <PosterPage />;
+  }
+  if (route === "social") {
+    return <SocialPage />;
   }
   return <HomePage />;
 }
