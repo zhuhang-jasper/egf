@@ -100,7 +100,7 @@ const TRACKS = CAREER_TRACK_PROFILES.map((t) => ({
       return r;
     }
     if (r.level === "L3") {
-      return { ...r, title: "Senior Engineer (any track)" };
+      return { ...r, title: "Senior Engineer (Track 1/2)" };
     }
     return r;
   }),
@@ -524,20 +524,20 @@ export default function PosterPage() {
 
           {/* Header — poster masthead with oversized "9" mark */}
           <header>
-            <div className="flex items-stretch gap-6">
+            <div className="flex items-stretch gap-4">
               {/* Big "9" reads as part of the title; no wasted eyebrow line beside it */}
-              <span className="text-[132px] font-black leading-[0.8] tracking-tighter text-slate-900 -translate-y-1.5">9</span>
+              <span className="text-[132px] font-black leading-[0.8] tracking-tighter text-slate-900 -translate-y-1">9</span>
               <div className="flex min-w-0 flex-1 flex-col justify-center">
                 <div className="flex items-end justify-between gap-6">
-                  <h1 className="shrink-0 whitespace-nowrap text-[52px] font-black leading-[0.92] tracking-tight text-slate-900">
-                    Pillars of
+                  <h1 className="shrink-0 whitespace-nowrap text-[52px] font-black leading-[1] tracking-tight text-slate-900">
+                    Pillar Engineer
                     <br />
-                    Engineering Mastery
+                    Growth Framework
                   </h1>
                   {/* Byline as a signature, sitting on the "Engineering Mastery" baseline */}
-                  <span className="self-end translate-y-1.5 text-[24px] font-bold whitespace-nowrap text-slate-900">{SITE_COPY.byline}</span>
+                  <span className="self-end text-[24px] font-bold whitespace-nowrap text-slate-900">{SITE_COPY.byline}</span>
                 </div>
-                <p className="mt-3 text-[20px] font-bold uppercase tracking-[0.22em] text-slate-500">The Engineer Growth Framework</p>
+                {/* <p className="mt-3 text-[20px] font-bold uppercase tracking-[0.22em] text-slate-500">The Engineer Growth Framework</p> */}
               </div>
             </div>
 
