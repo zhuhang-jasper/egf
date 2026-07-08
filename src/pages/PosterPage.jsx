@@ -171,6 +171,7 @@ async function renderPosterBlob(node) {
     return await snapdom.toBlob(clone, {
       type: "png",
       scale: 2, // 2× → 2160×3240 export, crisp for LinkedIn
+      dpr: 1, // snapdom multiplies by devicePixelRatio by default — pin it so exports are screen-independent
       backgroundColor: "#ffffff",
       exclude: ["[data-export-ignore]"], // the floating copy/download buttons — never in the capture
       excludeMode: "remove",

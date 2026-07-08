@@ -201,6 +201,7 @@ async function renderSocialBlob(node) {
     return await snapdom.toBlob(clone, {
       type: "png",
       scale: 2, // 2× → 2400×1260 export, crisp for link cards
+      dpr: 1, // snapdom multiplies by devicePixelRatio by default — pin it so exports are screen-independent
       backgroundColor: "#ffffff",
       exclude: ["[data-export-ignore]"], // the floating copy/download buttons — never in the capture
       excludeMode: "remove",
@@ -329,7 +330,7 @@ export default function SocialPage() {
             ) : null}
           </div>
 
-          <div className="flex h-full items-center gap-8">
+          <div className="flex h-full items-center gap-0">
             {/* Left: header lifted from the poster masthead, scaled up to fill the card height. */}
             <header className="flex h-full w-[560px] shrink-0 flex-col justify-center gap-6">
               <div className="flex items-stretch gap-5">
@@ -354,7 +355,7 @@ export default function SocialPage() {
             {/* Right: the featured profile's radar — labelled spokes, no legend.
                 Fixed at ~70% of the 630px card height, vertically centred. */}
             <div className="flex flex-1 items-center justify-center">
-              <div className="relative h-[520px] w-full" style={{ transform: "scale(1.0)" }}>
+              <div className="relative h-[520px] w-full -ml-0" style={{ transform: "scale(1.0)" }}>
                 <SocialRadar levels={levels} labels={labels} />
               </div>
             </div>
