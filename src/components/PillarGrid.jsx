@@ -8,7 +8,7 @@ import { cn } from "@/utils";
 function PillarCard({ pillar, clusterLabel, color, textColor }) {
   return (
     <article
-      className="rounded-xl border border-white/70 p-3 shadow-sm shadow-slate-200/40 min-[470px]:row-span-4 min-[470px]:grid min-[470px]:grid-rows-subgrid"
+      className="rounded-xl border border-white/70 p-3 shadow-sm shadow-slate-200/40 min-[470px]:row-span-4 min-[470px]:grid min-[470px]:grid-rows-subgrid gap-2.5"
       style={{ backgroundColor: getClusterSurfaceBg(color) }}
     >
       {/* single-col: title left + cluster label right; col: title only */}
@@ -16,14 +16,14 @@ function PillarCard({ pillar, clusterLabel, color, textColor }) {
         <span className={cn("shrink-0 text-right min-[470px]:hidden", DOC_TEXT.clusterLabel)} style={{ color: textColor }}>
           {clusterLabel}
         </span>
-        <p className={cn("min-w-0 flex-1", DOC_TEXT.cardTitle)}>{pillar.pillar}</p>
+        <p className={cn("min-w-0 flex-1", DOC_TEXT.cardTitle, "font-bold")}>{pillar.pillar}</p>
       </div>
-      <p className={cn("mt-1.5 min-[470px]:mt-0", DOC_TEXT.body)}>
+      <p className={cn("mt-2 min-[470px]:mt-0", DOC_TEXT.body)}>
         <EmphasizedText text={pillar.focusSummary} boldClassName="font-semibold text-slate-700" />
       </p>
-      <div className={cn("mt-1.5 min-[470px]:mt-0", DOC_TEXT.bodyItalic)}>
+      <div className={cn("mt-2 min-[470px]:mt-0", DOC_TEXT.bodyItalic)}>
         <p>&ldquo;{pillar.signatureQuestion}&rdquo;</p>
-        {pillar.note ? <p className="mt-1.5 opacity-70">{pillar.note}</p> : null}
+        {pillar.note ? <p className="mt-2 min-[470px]:mt-2.5 opacity-70">{pillar.note}</p> : null}
       </div>
       {/* col only: cluster label at bottom */}
       <span className={cn("hidden min-[470px]:block text-right", DOC_TEXT.clusterLabel)} style={{ color: textColor }}>

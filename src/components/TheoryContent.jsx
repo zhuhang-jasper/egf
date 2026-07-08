@@ -11,7 +11,7 @@ import { cn } from "@/utils";
 import { scrollBelowStickyHeaderUntilSettled } from "@/utils/scroll";
 import { getPersistedExpandedPillar, getPillarCardElementId, persistExpandedPillar, THEORY_SECTION_IDS, THEORY_SECTIONS } from "@/utils/theory-url";
 
-const cardClass = "rounded-xl border border-slate-100 bg-white shadow-md shadow-slate-200/40";
+const cardClass = "rounded-xl border border-slate-300 bg-white shadow-md shadow-slate-200/40";
 
 // On a deep-link boot, how long to let the scroll-restore loop settle at the remembered position
 // before we switch the expanded pillar. Long enough to clear restore's initial frames; short enough
@@ -35,12 +35,16 @@ function SectionHeading({ title, subtitle, section }) {
 
 const levelBadgeClass = "flex shrink-0 items-center justify-center rounded-full bg-slate-900 font-bold text-white";
 
-/** Renders a "Quality / Identity" phase title with a forced line break after the slash. */
-function SeniorityPhaseTitle({ phase, className }) {
+/**
+ * Renders a "Quality / Identity" phase title. When `breakAfterSlash` is set, a line break is
+ * forced after the slash — used in the cramped 5-column grid. In the mobile stacked view the
+ * levels sit in vertical cards with ample horizontal room, so the break is left off there.
+ */
+function SeniorityPhaseTitle({ phase, className, breakAfterSlash = false }) {
   const [quality, identity] = phase.split(" / ");
   return (
     <p className={className}>
-      {identity ? (
+      {identity && breakAfterSlash ? (
         <>
           {quality} /<br />
           {identity}
@@ -55,13 +59,13 @@ function SeniorityPhaseTitle({ phase, className }) {
 function SeniorityStepper() {
   return (
     <>
-      <div className="space-y-2 min-[470px]:hidden">
+      <div className="space-y-2 min-[650px]:hidden">
         {SENIORITY_LEVEL_DEFINITIONS.map(({ code, phase, description, seniority }) => (
           <div key={code} className={cn(cardClass, "flex items-center gap-2.5 p-3")}>
             <span className={cn(levelBadgeClass, "size-7", DOC_TEXT.badgeMd)}>{code}</span>
-            <div className="min-w-0 space-y-1">
+            <div className="min-w-0 space-y-2">
               <div className="flex items-baseline justify-between gap-2">
-                <SeniorityPhaseTitle phase={phase} className={cn("min-w-0", DOC_TEXT.bodySemibold)} />
+                <SeniorityPhaseTitle phase={phase} className={cn("min-w-0", DOC_TEXT.bodySemibold, "font-bold text-[14px] sm:text-[16px]")} />
                 <p className={cn("shrink-0", DOC_TEXT.meta)}>{seniority}</p>
               </div>
               <p className={DOC_TEXT.body}>{description}</p>
@@ -70,20 +74,14 @@ function SeniorityStepper() {
         ))}
       </div>
 
-      <div className={cn(cardClass, "hidden p-3 min-[470px]:block")}>
-        <div className="grid grid-cols-5 grid-rows-[repeat(4,auto)]">
-          {SENIORITY_LEVEL_DEFINITIONS.map(({ code, phase, description, seniority }, index) => (
-            <div
-              key={code}
-              className={cn(
-                "row-span-4 grid min-w-0 grid-rows-subgrid gap-y-1.5 px-1",
-                index < SENIORITY_LEVEL_DEFINITIONS.length - 1 && "border-r border-slate-200/80",
-              )}
-            >
+      <div className="hidden min-[650px]:block">
+        <div className="grid grid-cols-5 grid-rows-[repeat(4,auto)] gap-2">
+          {SENIORITY_LEVEL_DEFINITIONS.map(({ code, phase, description, seniority }) => (
+            <div key={code} className={cn(cardClass, "row-span-4 grid min-w-0 grid-rows-subgrid gap-y-2.5 p-3")}>
               <div className="flex justify-start">
-                <span className={cn(levelBadgeClass, "size-5", DOC_TEXT.badgeMicro)}>{code}</span>
+                <span className={cn(levelBadgeClass, "size-7 shrink-0", DOC_TEXT.badgeMd)}>{code}</span>
               </div>
-              <SeniorityPhaseTitle phase={phase} className={DOC_TEXT.bodySemibold} />
+              <SeniorityPhaseTitle phase={phase} className={cn("min-w-0", DOC_TEXT.bodySemibold, "font-bold text-[14px] sm:text-[16px]")} />
               <p className={DOC_TEXT.body}>{description}</p>
               <p className={DOC_TEXT.meta}>{seniority}</p>
             </div>

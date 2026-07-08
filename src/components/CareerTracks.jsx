@@ -113,7 +113,7 @@ function FoundationalPhase() {
   return (
     <article className={cn(cardClass, "overflow-hidden border-l-[3px] p-3")} style={{ borderLeftColor: style.accent }}>
       <div className="space-y-2.5">
-        <h3 className={DOC_TEXT.cardTitlePlain}>{FOUNDATIONAL_PHASE.title}</h3>
+        <h3 className={cn(DOC_TEXT.cardTitlePlain, "font-bold")}>{FOUNDATIONAL_PHASE.title}</h3>
 
         <div className="space-y-2">
           <p className={DOC_TEXT.bodyMedium}>{FOUNDATIONAL_PHASE.intro}</p>
@@ -133,7 +133,7 @@ function CareerTrackCard({ track, number }) {
   return (
     <article className={cn(cardClass, "overflow-hidden border-l-[3px]")} style={{ borderLeftColor: style.accent }}>
       <div className="space-y-2.5 p-3">
-        <h3 className={cn(DOC_TEXT.cardTitlePlain)} style={{ color: style.accent }}>
+        <h3 className={cn(DOC_TEXT.cardTitlePlain, "font-bold")} style={{ color: style.accent }}>
           Track {number}: {track.name}
         </h3>
 
@@ -169,7 +169,7 @@ export function CareerTracks() {
       <FoundationalPhase />
 
       <div className="space-y-1 pt-1">
-        <h3 className={DOC_TEXT.cardTitlePlain}>{SENIOR_FORK.title}</h3>
+        <h3 className={cn(DOC_TEXT.cardTitlePlain, "font-bold")}>{SENIOR_FORK.title}</h3>
         <p className={DOC_TEXT.bodyMedium}>{SENIOR_FORK.intro}</p>
       </div>
 

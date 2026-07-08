@@ -16,7 +16,7 @@ export const DOC_TEXT = {
 
   chip: "text-[11px] sm:text-[12px] font-medium leading-none",
 
-  badgeMicro: "text-[10px] font-bold leading-none",
+  badgeMicro: "text-[10px] sm:text-[12px] font-bold leading-none",
   badgeSm: "text-[11px] sm:text-[12px] font-bold leading-none tabular-nums",
   badgeMd: "text-[12px] sm:text-[14px] font-bold",
 };

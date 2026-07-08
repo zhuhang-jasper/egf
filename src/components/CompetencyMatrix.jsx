@@ -12,14 +12,14 @@ import { cn } from "@/utils";
 import { scrollBelowStickyHeaderUntilSettled } from "@/utils/scroll";
 import { getPillarCardElementId, persistExpandedPillar, THEORY_SECTIONS } from "@/utils/theory-url";
 
-const levelBadgeClass = cn("flex size-5 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white", DOC_TEXT.badgeMicro);
+const levelBadgeClass = cn("flex size-5 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white sm:size-6", DOC_TEXT.badgeMicro);
 
 /** "( (L1) Learner )" — white pill with the dark level circle on the left and the level title beside it. */
 function LevelPill({ code, term }) {
   return (
     <span className="inline-flex max-w-full items-center gap-1.5 self-start rounded-full border border-slate-300/60 bg-white py-0.5 pl-0.5 pr-2.5">
       <span className={levelBadgeClass}>{code}</span>
-      <span className="truncate text-[11px] font-semibold leading-snug text-slate-500">{term}</span>
+      <span className="truncate text-[11px] font-semibold leading-snug text-slate-500 sm:text-[13px]">{term}</span>
     </span>
   );
 }
@@ -46,9 +46,9 @@ function PillarMatrixLevels({ levels }) {
     <>
       <div className="divide-y divide-slate-300/50 px-3 py-1 min-[650px]:hidden">
         {SENIORITY_LEVEL_DEFINITIONS.map(({ code, term }) => (
-          <div key={code} className="flex flex-col py-2">
+          <div key={code} className="flex flex-col py-2 gap-2">
             <LevelPill code={code} term={term} />
-            <p className={cn("mt-1.5", DOC_TEXT.bodyMedium)}>
+            <p className={DOC_TEXT.bodyMedium}>
               <LevelCellContent level={levels[code]} />
             </p>
           </div>
@@ -57,7 +57,7 @@ function PillarMatrixLevels({ levels }) {
 
       <div className="hidden grid-cols-5 gap-2 px-3 py-2 min-[650px]:grid">
         {SENIORITY_LEVEL_DEFINITIONS.map(({ code, term }) => (
-          <div key={code} className="flex min-w-0 flex-col gap-1.5 border-r border-slate-300/50 px-1 last:border-r-0">
+          <div key={code} className="flex min-w-0 flex-col gap-2.5 border-r border-slate-300/50 px-1 last:border-r-0">
             <LevelPill code={code} term={term} />
             <p className={DOC_TEXT.bodyMedium}>
               <LevelCellContent level={levels[code]} />
@@ -90,8 +90,8 @@ function PillarMatrixCard({ order, pillarId, pillarName, focusSummary, color, te
           expanded ? "pb-1.5 border-b border-slate-300/60" : "pb-2.5",
         )}
       >
-        <div className="min-w-0 flex-1 space-y-1">
-          <h3 className={cn("min-w-0", DOC_TEXT.cardTitlePlain)}>
+        <div className="min-w-0 flex-1 space-y-2 min-[650px]:space-y-2.5">
+          <h3 className={cn("min-w-0", DOC_TEXT.cardTitlePlain, "font-bold")}>
             {order}. {pillarName}
           </h3>
           <p className={cn("min-w-0", DOC_TEXT.body)}>
