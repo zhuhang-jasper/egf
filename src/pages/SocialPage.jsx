@@ -331,14 +331,16 @@ export default function SocialPage() {
 
           <div className="flex h-full items-center gap-8">
             {/* Left: header lifted from the poster masthead, scaled up to fill the card height. */}
-            <header className="flex h-full w-[500px] shrink-0 flex-col justify-center gap-6">
+            <header className="flex h-full w-[560px] shrink-0 flex-col justify-center gap-6">
               <div className="flex items-stretch gap-5">
-                <span className="text-[262px] font-black leading-[0.8] tracking-tighter text-slate-900 -translate-y-2">9</span>
+                <span className="text-[250px] font-black leading-[0.8] tracking-tighter text-slate-900 -translate-y-2">9</span>
                 <div className="flex min-w-0 flex-1 flex-col justify-center">
-                  <h1 className="text-[72px] font-black leading-[0.92] tracking-tight text-slate-900">
-                    Pillars of
+                  <h1 className="whitespace-nowrap text-[64px] font-black leading-[1.05] tracking-tight text-slate-900">
+                    Pillar Engineer
                     <br />
-                    Engineering Mastery
+                    Growth
+                    <br />
+                    Framework
                   </h1>
                 </div>
               </div>
@@ -352,7 +354,7 @@ export default function SocialPage() {
             {/* Right: the featured profile's radar — labelled spokes, no legend.
                 Fixed at ~70% of the 630px card height, vertically centred. */}
             <div className="flex flex-1 items-center justify-center">
-              <div className="relative h-[520px] w-full -mr-6" style={{ transform: "scale(1.0)" }}>
+              <div className="relative h-[520px] w-full" style={{ transform: "scale(1.0)" }}>
                 <SocialRadar levels={levels} labels={labels} />
               </div>
             </div>
