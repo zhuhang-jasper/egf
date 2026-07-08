@@ -1,7 +1,7 @@
 import { StaticCompetencyChart } from "@/components/StaticCompetencyChart";
 
 import { CLUSTERS, getClusterSurfaceBg } from "@/constants";
-import { CAREER_TRACK_PROFILES, FOUNDATIONAL_PHASE, sortKeyFocusPillars } from "@/constants/theory-data";
+import { CAREER_TRACK_PROFILES, FOUNDATIONAL_PHASE, SENIOR_FORK, sortKeyFocusPillars } from "@/constants/theory-data";
 import { DOC_TEXT } from "@/styles/doc-typography";
 import { cn } from "@/utils";
 
@@ -118,14 +118,6 @@ function FoundationalPhase() {
         <div className="space-y-2">
           <p className={DOC_TEXT.bodyMedium}>{FOUNDATIONAL_PHASE.intro}</p>
 
-          <ul className="list-disc space-y-2 pl-4">
-            {FOUNDATIONAL_PHASE.domains.map(({ label, body }) => (
-              <li key={label} className={DOC_TEXT.bodyMedium}>
-                <span className="font-bold">{label}:</span> {body}
-              </li>
-            ))}
-          </ul>
-
           <KeyPillarChips pillars={FOUNDATIONAL_PHASE.technicalPillars} chipBg={style.chipBg} textColor={style.textColor} />
         </div>
 
@@ -135,14 +127,14 @@ function FoundationalPhase() {
   );
 }
 
-function CareerTrackCard({ track }) {
+function CareerTrackCard({ track, number }) {
   const style = TRACK_STYLE[track.id] ?? TRACK_STYLE["deep-technical"];
 
   return (
     <article className={cn(cardClass, "overflow-hidden border-l-[3px]")} style={{ borderLeftColor: style.accent }}>
       <div className="space-y-2.5 p-3">
         <h3 className={cn(DOC_TEXT.cardTitlePlain)} style={{ color: style.accent }}>
-          {track.name}
+          Track {number}: {track.name}
         </h3>
 
         <div className="grid grid-cols-1 gap-3 min-[470px]:grid-cols-2 min-[470px]:items-start min-[470px]:gap-x-4">
@@ -175,9 +167,17 @@ export function CareerTracks() {
   return (
     <div className="space-y-3">
       <FoundationalPhase />
-      {CAREER_TRACK_PROFILES.map((track) => (
-        <CareerTrackCard key={track.id} track={track} />
+
+      <div className="space-y-1 pt-1">
+        <h3 className={DOC_TEXT.cardTitlePlain}>{SENIOR_FORK.title}</h3>
+        <p className={DOC_TEXT.bodyMedium}>{SENIOR_FORK.intro}</p>
+      </div>
+
+      {CAREER_TRACK_PROFILES.map((track, index) => (
+        <CareerTrackCard key={track.id} track={track} number={index + 1} />
       ))}
+
+      <p className={cn("pt-1 pb-2", DOC_TEXT.bodyItalic)}>{SENIOR_FORK.outro}</p>
     </div>
   );
 }

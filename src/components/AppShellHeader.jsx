@@ -10,7 +10,7 @@ import { clearStickyScrollOffset, getTabBarPinnedScrollY, getWindowScrollY, setS
 
 const TABS = [
   { id: "tool", label: "Tool", icon: Radar },
-  { id: "theory", label: "Theory", icon: FileText, version: "v2.9" },
+  { id: "theory", label: "Theory", icon: FileText, version: "v3.1" },
 ];
 
 function AppShellIntro() {

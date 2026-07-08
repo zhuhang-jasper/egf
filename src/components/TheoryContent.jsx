@@ -35,6 +35,23 @@ function SectionHeading({ title, subtitle, section }) {
 
 const levelBadgeClass = "flex shrink-0 items-center justify-center rounded-full bg-slate-900 font-bold text-white";
 
+/** Renders a "Quality / Identity" phase title with a forced line break after the slash. */
+function SeniorityPhaseTitle({ phase, className }) {
+  const [quality, identity] = phase.split(" / ");
+  return (
+    <p className={className}>
+      {identity ? (
+        <>
+          {quality} /<br />
+          {identity}
+        </>
+      ) : (
+        phase
+      )}
+    </p>
+  );
+}
+
 function SeniorityStepper() {
   return (
     <>
@@ -44,7 +61,7 @@ function SeniorityStepper() {
             <span className={cn(levelBadgeClass, "size-7", DOC_TEXT.badgeMd)}>{code}</span>
             <div className="min-w-0 space-y-1">
               <div className="flex items-baseline justify-between gap-2">
-                <p className={cn("min-w-0", DOC_TEXT.bodySemibold)}>{phase}</p>
+                <SeniorityPhaseTitle phase={phase} className={cn("min-w-0", DOC_TEXT.bodySemibold)} />
                 <p className={cn("shrink-0", DOC_TEXT.meta)}>{seniority}</p>
               </div>
               <p className={DOC_TEXT.body}>{description}</p>
@@ -66,7 +83,7 @@ function SeniorityStepper() {
               <div className="flex justify-start">
                 <span className={cn(levelBadgeClass, "size-5", DOC_TEXT.badgeMicro)}>{code}</span>
               </div>
-              <p className={DOC_TEXT.bodySemibold}>{phase}</p>
+              <SeniorityPhaseTitle phase={phase} className={DOC_TEXT.bodySemibold} />
               <p className={DOC_TEXT.body}>{description}</p>
               <p className={DOC_TEXT.meta}>{seniority}</p>
             </div>
@@ -193,14 +210,14 @@ function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreR
       <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.matrix]} className="space-y-3">
         <SectionHeading
           title="III. The 45-Point Competency Matrix"
-          subtitle="The comprehensive behavioral matrix mapping expectations for all 9 pillars. Organized by the Technical, Product, and Operational clusters, and evaluated across the L1-L5 seniority scale."
+          subtitle="The full behavioral matrix: 9 pillars × 5 levels. Each cell describes the observable behaviors expected at that level, organized by the three clusters."
           section={THEORY_SECTIONS.matrix}
         />
         <CompetencyMatrix expandedPillar={expandedPillar} onExpandedPillarChange={setExpandedPillar} scrollNav={matrixNav} />
       </section>
 
       <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.tracks]} className="space-y-3">
-        <SectionHeading title="IV. 3 Career Tracks" subtitle={CAREER_TRACKS_SECTION_INTRO} section={THEORY_SECTIONS.tracks} />
+        <SectionHeading title="IV. From Foundation to 3 Career Tracks" subtitle={CAREER_TRACKS_SECTION_INTRO} section={THEORY_SECTIONS.tracks} />
         <CareerTracks />
       </section>
     </div>

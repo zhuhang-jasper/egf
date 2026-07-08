@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef } from "react";
 
 import { ChevronDown } from "lucide-react";
 
+import { EmphasizedText } from "@/components/EmphasizedText";
 import { ShareLinkButton } from "@/components/ShareLinkButton";
 
 import { getClusterSurfaceBg } from "@/constants";
@@ -13,18 +14,29 @@ import { getPillarCardElementId, persistExpandedPillar, THEORY_SECTIONS } from "
 
 const levelBadgeClass = cn("flex size-5 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white", DOC_TEXT.badgeMicro);
 
+/** "( (L1) Learner )" — white pill with the dark level circle on the left and the level title beside it. */
+function LevelPill({ code, term }) {
+  return (
+    <span className="inline-flex max-w-full items-center gap-1.5 self-start rounded-full border border-slate-300/60 bg-white py-0.5 pl-0.5 pr-2.5">
+      <span className={levelBadgeClass}>{code}</span>
+      <span className="truncate text-[11px] font-semibold leading-snug text-slate-500">{term}</span>
+    </span>
+  );
+}
+
 // Expand/collapse animation length — must match the `duration-300` on the panel below, so the
 // scroll-into-view waits until layout has settled before measuring.
 const MATRIX_ANIM_MS = 300;
 
 function LevelCellContent({ level }) {
   if (!level?.persona) {
-    return level?.text ?? "";
+    return <EmphasizedText text={level?.text} boldClassName="font-semibold text-slate-800" />;
   }
 
   return (
     <>
-      <span className="font-semibold text-slate-800">{level.persona}</span> {level.text}
+      <span className="mb-1.5 block font-bold underline text-slate-900">{level.persona}</span>{" "}
+      <EmphasizedText text={level.text} boldClassName="font-semibold text-slate-800" />
     </>
   );
 }
@@ -33,10 +45,10 @@ function PillarMatrixLevels({ levels }) {
   return (
     <>
       <div className="divide-y divide-slate-300/50 px-3 py-1 min-[650px]:hidden">
-        {SENIORITY_LEVEL_DEFINITIONS.map(({ code }) => (
-          <div key={code} className="flex items-start gap-2 py-2">
-            <span className={levelBadgeClass}>{code}</span>
-            <p className={cn("min-w-0 flex-1", DOC_TEXT.bodyMedium)}>
+        {SENIORITY_LEVEL_DEFINITIONS.map(({ code, term }) => (
+          <div key={code} className="flex flex-col py-2">
+            <LevelPill code={code} term={term} />
+            <p className={cn("mt-1.5", DOC_TEXT.bodyMedium)}>
               <LevelCellContent level={levels[code]} />
             </p>
           </div>
@@ -44,9 +56,9 @@ function PillarMatrixLevels({ levels }) {
       </div>
 
       <div className="hidden grid-cols-5 gap-2 px-3 py-2 min-[650px]:grid">
-        {SENIORITY_LEVEL_DEFINITIONS.map(({ code }) => (
+        {SENIORITY_LEVEL_DEFINITIONS.map(({ code, term }) => (
           <div key={code} className="flex min-w-0 flex-col gap-1.5 border-r border-slate-300/50 px-1 last:border-r-0">
-            <span className={levelBadgeClass}>{code}</span>
+            <LevelPill code={code} term={term} />
             <p className={DOC_TEXT.bodyMedium}>
               <LevelCellContent level={levels[code]} />
             </p>
@@ -82,7 +94,9 @@ function PillarMatrixCard({ order, pillarId, pillarName, focusSummary, color, te
           <h3 className={cn("min-w-0", DOC_TEXT.cardTitlePlain)}>
             {order}. {pillarName}
           </h3>
-          <p className={cn("min-w-0", DOC_TEXT.body)}>{focusSummary}</p>
+          <p className={cn("min-w-0", DOC_TEXT.body)}>
+            <EmphasizedText text={focusSummary} boldClassName="font-semibold text-slate-700" />
+          </p>
         </div>
         <ChevronDown className={cn("mt-0.5 size-4 shrink-0 text-slate-800 transition-transform", expanded && "rotate-180")} aria-hidden />
       </button>

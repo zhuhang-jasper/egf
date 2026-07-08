@@ -1,3 +1,5 @@
+import { EmphasizedText } from "@/components/EmphasizedText";
+
 import { getClusterSurfaceBg } from "@/constants";
 import { PILLAR_CLUSTER_GROUPS } from "@/constants/theory-data";
 import { DOC_TEXT } from "@/styles/doc-typography";
@@ -16,8 +18,13 @@ function PillarCard({ pillar, clusterLabel, color, textColor }) {
         </span>
         <p className={cn("min-w-0 flex-1", DOC_TEXT.cardTitle)}>{pillar.pillar}</p>
       </div>
-      <p className={cn("mt-1.5 min-[470px]:mt-0", DOC_TEXT.body)}>{pillar.focusSummary}</p>
-      <p className={cn("mt-1.5 min-[470px]:mt-0", DOC_TEXT.bodyItalic)}>&ldquo;{pillar.signatureQuestion}&rdquo;</p>
+      <p className={cn("mt-1.5 min-[470px]:mt-0", DOC_TEXT.body)}>
+        <EmphasizedText text={pillar.focusSummary} boldClassName="font-semibold text-slate-700" />
+      </p>
+      <div className={cn("mt-1.5 min-[470px]:mt-0", DOC_TEXT.bodyItalic)}>
+        <p>&ldquo;{pillar.signatureQuestion}&rdquo;</p>
+        {pillar.note ? <p className="mt-1.5 opacity-70">{pillar.note}</p> : null}
+      </div>
       {/* col only: cluster label at bottom */}
       <span className={cn("hidden min-[470px]:block text-right", DOC_TEXT.clusterLabel)} style={{ color: textColor }}>
         {clusterLabel}

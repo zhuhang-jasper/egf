@@ -26,9 +26,9 @@ export const CAREER_LEVEL_REQUIREMENTS = {
 };
 
 export const CAREER_LEVEL_BY_AVG_BAND = [
-  { code: "L1", phase: "Adherence / Learning", role: "Junior" },
-  { code: "L2", phase: "Practitioner / Autonomy", role: "Mid" },
-  { code: "L3", phase: "Proficient / Complexity", role: "Senior" },
-  { code: "L4", phase: "Influential", role: "Lead/Staff" },
-  { code: "L5", phase: "Impact / Strategic", role: "Principal" },
+  { code: "L1", phase: "Adherence / Learner", role: "Junior" },
+  { code: "L2", phase: "Autonomy / Practitioner", role: "Mid" },
+  { code: "L3", phase: "Complexity / Expert", role: "Senior" },
+  { code: "L4", phase: "Influence / Mentor", role: "Lead/Staff" },
+  { code: "L5", phase: "Impact / Strategist", role: "Principal" },
 ];
