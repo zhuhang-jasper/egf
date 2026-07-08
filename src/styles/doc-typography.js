@@ -25,3 +25,11 @@ export const DOC_SECTION = {
   title: "text-[16px] sm:text-[18px] font-semibold tracking-tight text-slate-900",
   intro: "text-[12px] sm:text-[14px] leading-snug text-slate-800",
 };
+
+/**
+ * Soft amber highlighter for the newer/expanded framework material (wrapped in **…** in the copy),
+ * toggled by the Theory tab's "What's New" switch. A marker-pen fill at normal weight reads as
+ * "what's new" rather than as an emphasized keyword, and the amber sits clearly on every cluster
+ * surface tint. `box-decoration-clone` keeps the fill continuous when a phrase wraps across lines.
+ */
+export const WHATS_NEW_HIGHLIGHT_CLASS = "rounded-[3px] bg-amber-200/60 box-decoration-clone px-0.5 font-normal text-slate-800";

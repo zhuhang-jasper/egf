@@ -2,8 +2,11 @@ import { useEffect, useRef, useState } from "react";
 
 import { CareerTracks } from "@/components/CareerTracks";
 import { CompetencyMatrix } from "@/components/CompetencyMatrix";
+import { LatestChangesToggle } from "@/components/LatestChangesToggle";
 import { PillarGrid } from "@/components/PillarGrid";
 import { ShareLinkButton } from "@/components/ShareLinkButton";
+
+import { useShowLatestChanges } from "@/hooks/useShowLatestChanges";
 
 import { CAREER_TRACKS_SECTION_INTRO, PILLARS_SECTION_INTRO, SENIORITY_LEVEL_DEFINITIONS, SENIORITY_SECTION_INTRO } from "@/constants/theory-data";
 import { DOC_SECTION, DOC_TEXT } from "@/styles/doc-typography";
@@ -103,6 +106,10 @@ function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreR
   // at the wrong spot.
   const [expandedPillar, setExpandedPillar] = useState(getPersistedExpandedPillar);
 
+  // Page-wide toggle for the v3.1 highlighter (see LatestChangesToggle). Threaded to every section
+  // that renders `**…**` markers so the whole Theory page shows/hides the amber fill together.
+  const [showLatestChanges, toggleLatestChanges] = useShowLatestChanges();
+
   // In-app jump from a tool-form pillar's help icon. Expanding the pillar makes CompetencyMatrix
   // scroll to it; persist so the choice survives like a normal expand. Keyed on `seq` so clicking
   // the same pillar again re-runs (a no-op state change wouldn't re-trigger the matrix scroll).
@@ -195,10 +202,16 @@ function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreR
 
   return (
     <div className="space-y-6 print:max-w-none">
-      <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.pillars]} className="space-y-3">
-        <SectionHeading title="I. 9 Big Pillars" subtitle={PILLARS_SECTION_INTRO} section={THEORY_SECTIONS.pillars} />
-        <PillarGrid />
-      </section>
+      <div className="space-y-2">
+        <div className="flex justify-end print:hidden">
+          <LatestChangesToggle show={showLatestChanges} onToggle={toggleLatestChanges} />
+        </div>
+
+        <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.pillars]} className="space-y-3">
+          <SectionHeading title="I. 9 Big Pillars" subtitle={PILLARS_SECTION_INTRO} section={THEORY_SECTIONS.pillars} />
+          <PillarGrid showLatestChanges={showLatestChanges} />
+        </section>
+      </div>
 
       <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.seniority]} className="space-y-3">
         <SectionHeading title="II. 5 Seniority Levels" subtitle={SENIORITY_SECTION_INTRO} section={THEORY_SECTIONS.seniority} />
@@ -211,7 +224,12 @@ function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreR
           subtitle="The full behavioral matrix: 9 pillars × 5 levels. Each cell describes the observable behaviors expected at that level, organized by the three clusters."
           section={THEORY_SECTIONS.matrix}
         />
-        <CompetencyMatrix expandedPillar={expandedPillar} onExpandedPillarChange={setExpandedPillar} scrollNav={matrixNav} />
+        <CompetencyMatrix
+          expandedPillar={expandedPillar}
+          onExpandedPillarChange={setExpandedPillar}
+          scrollNav={matrixNav}
+          showLatestChanges={showLatestChanges}
+        />
       </section>
 
       <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.tracks]} className="space-y-3">

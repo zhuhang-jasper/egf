@@ -7,7 +7,7 @@ import { ShareLinkButton } from "@/components/ShareLinkButton";
 
 import { getClusterSurfaceBg } from "@/constants";
 import { COMPETENCY_MATRIX, SENIORITY_LEVEL_DEFINITIONS } from "@/constants/theory-data";
-import { DOC_TEXT } from "@/styles/doc-typography";
+import { DOC_TEXT, WHATS_NEW_HIGHLIGHT_CLASS } from "@/styles/doc-typography";
 import { cn } from "@/utils";
 import { scrollBelowStickyHeaderUntilSettled } from "@/utils/scroll";
 import { getPillarCardElementId, persistExpandedPillar, THEORY_SECTIONS } from "@/utils/theory-url";
@@ -28,20 +28,20 @@ function LevelPill({ code, term }) {
 // scroll-into-view waits until layout has settled before measuring.
 const MATRIX_ANIM_MS = 300;
 
-function LevelCellContent({ level }) {
+function LevelCellContent({ level, showLatestChanges }) {
   if (!level?.persona) {
-    return <EmphasizedText text={level?.text} boldClassName="font-semibold text-slate-800" />;
+    return <EmphasizedText text={level?.text} boldClassName={WHATS_NEW_HIGHLIGHT_CLASS} plain={!showLatestChanges} />;
   }
 
   return (
     <>
       <span className="mb-1.5 block font-bold underline text-slate-900">{level.persona}</span>{" "}
-      <EmphasizedText text={level.text} boldClassName="font-semibold text-slate-800" />
+      <EmphasizedText text={level.text} boldClassName={WHATS_NEW_HIGHLIGHT_CLASS} plain={!showLatestChanges} />
     </>
   );
 }
 
-function PillarMatrixLevels({ levels }) {
+function PillarMatrixLevels({ levels, showLatestChanges }) {
   return (
     <>
       <div className="divide-y divide-slate-300/50 px-3 py-1 min-[650px]:hidden">
@@ -49,7 +49,7 @@ function PillarMatrixLevels({ levels }) {
           <div key={code} className="flex flex-col py-2 gap-2">
             <LevelPill code={code} term={term} />
             <p className={DOC_TEXT.bodyMedium}>
-              <LevelCellContent level={levels[code]} />
+              <LevelCellContent level={levels[code]} showLatestChanges={showLatestChanges} />
             </p>
           </div>
         ))}
@@ -60,7 +60,7 @@ function PillarMatrixLevels({ levels }) {
           <div key={code} className="flex min-w-0 flex-col gap-2.5 border-r border-slate-300/50 px-1 last:border-r-0">
             <LevelPill code={code} term={term} />
             <p className={DOC_TEXT.bodyMedium}>
-              <LevelCellContent level={levels[code]} />
+              <LevelCellContent level={levels[code]} showLatestChanges={showLatestChanges} />
             </p>
           </div>
         ))}
@@ -69,7 +69,7 @@ function PillarMatrixLevels({ levels }) {
   );
 }
 
-function PillarMatrixCard({ order, pillarId, pillarName, focusSummary, color, textColor, levels, expanded, onToggle, cardRef }) {
+function PillarMatrixCard({ order, pillarId, pillarName, focusSummary, color, textColor, levels, expanded, onToggle, cardRef, showLatestChanges }) {
   const panelId = `competency-matrix-${pillarId}`;
 
   return (
@@ -95,7 +95,7 @@ function PillarMatrixCard({ order, pillarId, pillarName, focusSummary, color, te
             {order}. {pillarName}
           </h3>
           <p className={cn("min-w-0", DOC_TEXT.body)}>
-            <EmphasizedText text={focusSummary} boldClassName="font-semibold text-slate-700" />
+            <EmphasizedText text={focusSummary} boldClassName={WHATS_NEW_HIGHLIGHT_CLASS} plain={!showLatestChanges} />
           </p>
         </div>
         <ChevronDown className={cn("mt-0.5 size-4 shrink-0 text-slate-800 transition-transform", expanded && "rotate-180")} aria-hidden />
@@ -111,7 +111,7 @@ function PillarMatrixCard({ order, pillarId, pillarName, focusSummary, color, te
         )}
       >
         <div className="overflow-hidden">
-          <PillarMatrixLevels levels={levels} />
+          <PillarMatrixLevels levels={levels} showLatestChanges={showLatestChanges} />
           <div className="flex justify-center border-t border-slate-300/60 py-2">
             <ShareLinkButton
               section={THEORY_SECTIONS.matrix}
@@ -126,7 +126,7 @@ function PillarMatrixCard({ order, pillarId, pillarName, focusSummary, color, te
   );
 }
 
-function CompetencyMatrix({ expandedPillar, onExpandedPillarChange, scrollNav }) {
+function CompetencyMatrix({ expandedPillar, onExpandedPillarChange, scrollNav, showLatestChanges = true }) {
   const cardRefs = useRef({});
   const scrollTimerRef = useRef(null);
   const cancelScrollRef = useRef(null);
@@ -233,6 +233,7 @@ function CompetencyMatrix({ expandedPillar, onExpandedPillarChange, scrollNav })
           {...pillar}
           expanded={expandedPillar === pillar.pillarId}
           onToggle={() => handleToggle(pillar.pillarId)}
+          showLatestChanges={showLatestChanges}
           cardRef={(node) => {
             if (node) {
               cardRefs.current[pillar.pillarId] = node;

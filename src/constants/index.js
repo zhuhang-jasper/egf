@@ -35,5 +35,5 @@ export {
 } from "@/constants/scoring";
 export { FEATURE_SCORES_SETTINGS } from "@/constants/features";
 export { SITE_COPY } from "@/constants/site";
-export { PROFILES_STORAGE_KEY, STORAGE_KEY } from "@/constants/storage";
+export { PROFILES_STORAGE_KEY, STORAGE_KEY, THEORY_SHOW_CHANGES_KEY } from "@/constants/storage";
 export { FE_UI } from "@/styles/ui";
