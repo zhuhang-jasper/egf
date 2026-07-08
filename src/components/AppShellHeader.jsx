@@ -4,13 +4,15 @@ import { FileText, Radar } from "lucide-react";
 
 import { Tooltip } from "@/components/ui/Tooltip";
 
-import { SITE_COPY } from "@/constants";
+import { FRAMEWORK_VERSION, SITE_COPY } from "@/constants";
 import { cn } from "@/utils";
 import { clearStickyScrollOffset, getTabBarPinnedScrollY, getWindowScrollY, setStickyScrollOffset } from "@/utils/scroll";
 
 const TABS = [
   { id: "tool", label: "Tool", icon: Radar },
-  { id: "theory", label: "Theory", icon: FileText, version: "v3.1" },
+  // `version` derives from the single FRAMEWORK_VERSION source so the label and the "unseen" dot
+  // (see useUnseenFramework) always agree — bumping that one constant updates both.
+  { id: "theory", label: "Theory", icon: FileText, version: `v${FRAMEWORK_VERSION}` },
 ];
 
 function AppShellIntro() {
@@ -24,7 +26,7 @@ function AppShellIntro() {
   );
 }
 
-function AppShellTabBar({ activeTab, onTabChange }) {
+function AppShellTabBar({ activeTab, onTabChange, theoryHasUnseenUpdates = false }) {
   const barRef = useRef(null);
   // Whether scrolling up is possible — i.e. we're scrolled past the point where the bar pins.
   // Gates the active tab's "click to scroll to top" tooltip so it only shows when it'd do something.
@@ -83,6 +85,9 @@ function AppShellTabBar({ activeTab, onTabChange }) {
         />
         {TABS.map(({ id, label, icon: Icon, version }) => {
           const selected = activeTab === id;
+          // Shown on the Theory tab whether or not it's active — opening the tab no longer clears the
+          // dot (only turning "What's New" off does), so a user viewing Theory should still see it.
+          const showUnseenDot = id === "theory" && theoryHasUnseenUpdates;
           return (
             <button
               key={id}
@@ -97,7 +102,19 @@ function AppShellTabBar({ activeTab, onTabChange }) {
             >
               <Icon className="size-3.5 shrink-0" aria-hidden />
               {label}
-              {version ? <span className={cn("text-[11px] font-semibold", selected ? "text-white/70" : "text-slate-400")}>{version}</span> : null}
+              {version ? (
+                <span className={cn("relative text-[11px] font-semibold", selected ? "text-white/70" : "text-slate-400")}>
+                  {version}
+                  {/* Unseen-updates dot: a returning user hasn't dismissed this framework version yet.
+                      Ring matches the pill behind it — dark when the tab is selected, white when not. */}
+                  {showUnseenDot ? (
+                    <span
+                      className={cn("absolute -right-1.5 -top-0.5 size-1.5 rounded-full bg-red-500 ring-2", selected ? "ring-slate-900" : "ring-white")}
+                      aria-label="New framework updates"
+                    />
+                  ) : null}
+                </span>
+              ) : null}
               {selected && canScrollUp ? <Tooltip text="Click to scroll to top" placement="bottom" /> : null}
             </button>
           );

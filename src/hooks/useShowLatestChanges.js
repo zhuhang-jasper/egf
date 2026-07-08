@@ -1,47 +1,74 @@
 import { useCallback, useState } from "react";
 
-import { PROFILES_STORAGE_KEY, STORAGE_KEY, THEORY_SHOW_CHANGES_KEY } from "@/constants";
+import { FRAMEWORK_VERSION, THEORY_SHOW_CHANGES_KEY } from "@/constants";
+import { isReturningUser } from "@/utils/storage";
+
+// Preference is stored WITH the framework version it was made for: `{ show, version }`. A choice is
+// only honored while its version matches the current FRAMEWORK_VERSION — a version bump makes an old
+// choice stale, so the default is re-derived (see below). This is what keeps the toggle in step with
+// the Theory-tab "unseen updates" dot: when the dot reappears on a new version, the highlighter is
+// forced back ON so opening Theory actually shows what changed, even for someone who'd turned it off.
+function readStored() {
+  try {
+    const raw = localStorage.getItem(THEORY_SHOW_CHANGES_KEY);
+    if (!raw) {
+      return null;
+    }
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed.show === "boolean" && typeof parsed.version === "string") {
+      return parsed;
+    }
+  } catch {
+    // Missing / malformed / localStorage unavailable — treat as no stored choice.
+  }
+  return null;
+}
+
+function writeStored(show) {
+  try {
+    localStorage.setItem(THEORY_SHOW_CHANGES_KEY, JSON.stringify({ show, version: FRAMEWORK_VERSION }));
+  } catch {
+    // localStorage unavailable (private mode / quota) — keep the session-only value.
+  }
+}
 
 /**
  * Theory tab preference: whether the "What's New" highlighter is shown.
  *
- * Smart default when the user hasn't set the toggle yet: a *returning* user (any tool-tab data in
- * localStorage — a saved draft or saved profiles) benefits from seeing what changed since their last
- * visit, so default ON. A *new* user has no baseline to diff against, so the highlights are just
- * noise — default OFF. The inferred default is written back on first load, so it hardens into a
- * concrete stored choice: the heuristic runs exactly once per browser, and later visits (and any
- * mid-session tool-tab activity) can't flip it. Flipping the toggle overwrites it as usual.
+ * Two things drive the default when there's no *current-version* choice on record:
+ *   1. Returning vs. new — a returning user (any tool-tab data in localStorage) benefits from seeing
+ *      what changed, so default ON; a new user has no baseline, so default OFF (highlights = noise).
+ *   2. Version freshness — a stored choice is only honored while its `version` matches the current
+ *      {@link FRAMEWORK_VERSION}. On a version bump the old choice goes stale and the default is
+ *      re-derived, so a returning user who'd turned the highlighter OFF is forced back ON once for
+ *      the new material (matching the "unseen updates" dot). Their next OFF sticks until the *next*
+ *      bump.
+ *
+ * The resolved default is written back immediately (stamped with the current version) so the
+ * heuristic runs at most once per version per browser — no mid-session flips when the tool tab
+ * writes data, and no re-deriving on every load.
  *
  * Persisted under its own key ({@link THEORY_SHOW_CHANGES_KEY}) — a standalone display toggle, kept
- * out of the tool-tab draft store. Reads/writes are guarded so a disabled or full localStorage
- * degrades to session-only state instead of throwing.
+ * out of the tool-tab draft store. Reads/writes are guarded against a disabled/throwing localStorage.
  */
 export function useShowLatestChanges() {
   const [show, setShow] = useState(() => {
-    try {
-      const stored = localStorage.getItem(THEORY_SHOW_CHANGES_KEY);
-      if (stored !== null) {
-        // Explicit (or already-hardened) choice wins.
-        return stored === "true";
-      }
-      // First load with no choice yet — infer from whether this looks like a returning user, then
-      // persist it so the heuristic never re-runs (no mid-session flip when the tool tab writes data).
-      const isReturning = localStorage.getItem(STORAGE_KEY) !== null || localStorage.getItem(PROFILES_STORAGE_KEY) !== null;
-      localStorage.setItem(THEORY_SHOW_CHANGES_KEY, isReturning ? "true" : "false");
-      return isReturning;
-    } catch {
-      return false;
+    const stored = readStored();
+    if (stored && stored.version === FRAMEWORK_VERSION) {
+      // A choice made for the current version wins (explicit toggle, or an earlier hardened default).
+      return stored.show;
     }
+    // No choice yet, or one made for an older version (now stale) — re-derive and harden. Returning
+    // users default ON (and are re-enabled on a version bump); new users default OFF.
+    const next = isReturningUser();
+    writeStored(next);
+    return next;
   });
 
   const toggle = useCallback(() => {
     setShow((prev) => {
       const next = !prev;
-      try {
-        localStorage.setItem(THEORY_SHOW_CHANGES_KEY, next ? "true" : "false");
-      } catch {
-        // localStorage unavailable (private mode / quota) — keep the session-only value.
-      }
+      writeStored(next);
       return next;
     });
   }, []);

@@ -95,7 +95,7 @@ function SeniorityStepper() {
   );
 }
 
-function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreRef }) {
+function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreRef, onDismissWhatsNew }) {
   const consumedRef = useRef(false);
 
   // Expanded pillar state lives here so the matrix share button can read it. On a deep-link boot we
@@ -106,9 +106,19 @@ function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreR
   // at the wrong spot.
   const [expandedPillar, setExpandedPillar] = useState(getPersistedExpandedPillar);
 
-  // Page-wide toggle for the v3.1 highlighter (see LatestChangesToggle). Threaded to every section
-  // that renders `**…**` markers so the whole Theory page shows/hides the amber fill together.
+  // Page-wide toggle for the "What's New" highlighter (see LatestChangesToggle). Threaded to every
+  // section that renders `**…**` markers so the whole Theory page shows/hides the amber fill together.
   const [showLatestChanges, toggleLatestChanges] = useShowLatestChanges();
+
+  // Turning the highlighter OFF is the user's "I've seen it, hide it" signal — that (not merely
+  // opening the tab) is what dismisses the Theory tab's "unseen updates" dot. Turning it back ON does
+  // not bring the dot back; the version stays marked seen.
+  const handleToggleLatestChanges = () => {
+    if (showLatestChanges) {
+      onDismissWhatsNew?.();
+    }
+    toggleLatestChanges();
+  };
 
   // In-app jump from a tool-form pillar's help icon. Expanding the pillar makes CompetencyMatrix
   // scroll to it; persist so the choice survives like a normal expand. Keyed on `seq` so clicking
@@ -204,7 +214,7 @@ function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreR
     <div className="space-y-6 print:max-w-none">
       <div className="space-y-2">
         <div className="flex justify-end print:hidden">
-          <LatestChangesToggle show={showLatestChanges} onToggle={toggleLatestChanges} />
+          <LatestChangesToggle show={showLatestChanges} onToggle={handleToggleLatestChanges} />
         </div>
 
         <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.pillars]} className="space-y-3">

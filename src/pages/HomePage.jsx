@@ -5,6 +5,7 @@ import { TheoryContent } from "@/components/TheoryContent";
 import { ToolContent } from "@/components/ToolContent";
 
 import { getPersistedActiveTab, useTabScrollMemory } from "@/hooks/useTabScrollMemory";
+import { useUnseenFramework } from "@/hooks/useUnseenFramework";
 
 import { FE_UI } from "@/constants";
 import { track } from "@/utils/analytics";
@@ -52,6 +53,11 @@ export default function HomePage() {
   // repeated clicks on the same pillar re-trigger the expand + scroll even when the tab is already open.
   const [matrixNav, setMatrixNav] = useState(null);
 
+  // "Unseen framework updates" dot on the Theory tab. It is NOT cleared merely by opening Theory —
+  // only once the user turns the "What's New" highlighter OFF (their "I've seen it, hide it" signal,
+  // wired via onDismissWhatsNew below). Toggling it back ON afterwards does not bring the dot back.
+  const [theoryHasUnseenUpdates, markTheorySeen] = useUnseenFramework();
+
   const handleTabChange = (nextTab) => {
     if (nextTab === activeTab) {
       // Clicking the already-active tab scrolls back up — but only as far as the point where the tab
@@ -98,7 +104,7 @@ export default function HomePage() {
         style={pageWidthStyle}
       >
         <AppShellIntro />
-        <AppShellTabBar activeTab={activeTab} onTabChange={handleTabChange} />
+        <AppShellTabBar activeTab={activeTab} onTabChange={handleTabChange} theoryHasUnseenUpdates={theoryHasUnseenUpdates} />
 
         <div className="mt-3" role="tabpanel" hidden={activeTab !== "tool"} aria-hidden={activeTab !== "tool"} aria-label="Tool">
           <ToolContent isVisible={activeTab === "tool"} onOpenPillarInMatrix={handleOpenPillarInMatrix} />
@@ -112,6 +118,7 @@ export default function HomePage() {
             }}
             matrixNav={matrixNav}
             cancelRestoreRef={cancelRestoreRef}
+            onDismissWhatsNew={markTheorySeen}
           />
         </div>
       </main>
