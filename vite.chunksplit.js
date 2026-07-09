@@ -7,7 +7,7 @@
  */
 
 /** Last `.../node_modules/<pkg>/...` segment (`pkg` is `name` or `@scope/name`). */
-const NODE_MODULES_PKG = /\/node_modules\/(@[^/]+\/[^/]+|[^/]+)(?=\/|$)/g;
+const NODE_MODULES_PKG = /\/node_modules\/(?<pkg>@[^/]+\/[^/]+|[^/]+)(?=\/|$)/g;
 
 /**
  * First matching `[regex, chunk]` wins (order matters). Each pattern uses exact package names from this
@@ -19,16 +19,16 @@ const CHUNK_RULES = [
   [/^@zumer\/snapdom$/, "snapdom"],
   [/^lucide-react$/, "lucide"],
   [/^zustand$/, "zustand"],
-  [/^(clsx|tailwind-merge|class-variance-authority)$/, "ui-utils"],
-  [/^(react|react-dom|scheduler|use-sync-external-store)$/, "react-vendor"],
+  [/^(?:clsx|tailwind-merge|class-variance-authority)$/, "ui-utils"],
+  [/^(?:react|react-dom|scheduler|use-sync-external-store)$/, "react-vendor"],
 ];
 
 const npmPackageName = (id) => {
   const normalized = id.replace(/\\/g, "/");
   NODE_MODULES_PKG.lastIndex = 0;
   let last;
-  for (const [, segment] of normalized.matchAll(NODE_MODULES_PKG)) {
-    last = segment;
+  for (const match of normalized.matchAll(NODE_MODULES_PKG)) {
+    last = match.groups.pkg;
   }
   return last;
 };

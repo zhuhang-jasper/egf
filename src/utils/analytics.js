@@ -49,7 +49,7 @@ function getDeviceType() {
     return "unknown";
   }
   const ua = navigator.userAgent;
-  if (/iPad|Tablet|PlayBook|Silk|(Android(?!.*Mobile))/i.test(ua)) {
+  if (/iPad|Tablet|PlayBook|Silk|(?:Android(?!.*Mobile))/i.test(ua)) {
     return "tablet";
   }
   if (/Mobi|Android|iPhone|iPod|IEMobile|BlackBerry|Opera Mini/i.test(ua)) {

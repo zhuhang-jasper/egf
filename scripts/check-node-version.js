@@ -68,9 +68,9 @@ const satisfiesEngine = (version, range) => {
     return r.split("||").some((part) => satisfiesEngine(version, part));
   }
 
-  const opMatch = r.match(/^(>=|<=|>|<|=|\^|~)?\s*(.+)$/);
-  const op = opMatch?.[1] ?? "";
-  const rest = (opMatch?.[2] ?? r).trim();
+  const opMatch = r.match(/^(?<op>>=|<=|>|<|=|\^|~)?\s*(?<rest>.+)$/);
+  const op = opMatch?.groups?.op ?? "";
+  const rest = (opMatch?.groups?.rest ?? r).trim();
 
   if (rest === "*") {
     return true;

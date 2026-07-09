@@ -22,8 +22,8 @@ const FEATURED_PROFILE_TITLE = "Jasper Loo";
 
 /** Keep only the leading emoji from a "🤲 Coding (Hands)" label → "🤲" for an icon-only spoke. */
 function shortPillarLabel(label) {
-  const m = label.match(/^(\S+)/u);
-  return m ? m[1] : label;
+  const m = label.match(/^(?<lead>\S+)/u);
+  return m ? m.groups.lead : label;
 }
 
 // Fallback shape if the named profile isn't in localStorage yet (e.g. fresh browser) — a

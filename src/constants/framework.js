@@ -125,8 +125,8 @@ function orientChartPillarLabel(label, index, count) {
   if (!isLeftSideAxis(index, count)) {
     return label;
   }
-  const m = label.match(/^(\S+)\s+(.*)$/u);
-  return m ? `${m[2]} ${m[1]}` : label;
+  const m = label.match(/^(?<lead>\S+)\s+(?<rest>.*)$/u);
+  return m ? `${m.groups.rest} ${m.groups.lead}` : label;
 }
 
 export function getChartLabels(trackVariant = "fe") {

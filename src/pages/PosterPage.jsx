@@ -56,9 +56,9 @@ const PILLAR_INFO = Object.fromEntries(
 
 /** Split a "🤲 Coding (Hands)" label into its leading emoji and the short name without the organ. */
 function splitPillarLabel(label) {
-  const m = label.match(/^(\S+)\s+(.*)$/u);
-  const emoji = m ? m[1] : "";
-  const rest = (m ? m[2] : label).replace(/\s*\([^)]*\)\s*$/, "").trim();
+  const m = label.match(/^(?<emoji>\S+)\s+(?<rest>.*)$/u);
+  const emoji = m ? m.groups.emoji : "";
+  const rest = (m ? m.groups.rest : label).replace(/\s*\([^)]*\)\s*$/, "").trim();
   return { emoji, name: rest };
 }
 
