@@ -48,6 +48,10 @@
        handles most browsers; this covers iOS Safari which ignores user-scalable=no. */
     touch-action: pan-x pan-y;
     -webkit-text-size-adjust: 100%;
+    /* Off-viewport decorative elements (e.g. an un-clamped Tooltip centered on a
+       right-edge score card, before its hover-time clamp runs) must never give the
+       page a horizontal scrollbar. The clamp still corrects position on show. */
+    overflow-x: hidden;
   }
 
   #competencyInputs {

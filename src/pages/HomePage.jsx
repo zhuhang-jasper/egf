@@ -98,7 +98,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="flex min-h-dvh flex-col items-center gap-2 bg-black p-1.5 sm:p-3 print:bg-white print:p-0">
+    <div className="flex min-h-dvh flex-col items-center gap-2 overflow-x-hidden bg-black p-1.5 sm:p-3 print:bg-white print:p-0">
       <main
         className="flex w-full flex-col rounded-[14px] bg-white shadow-sm p-3 print:max-w-none print:rounded-none print:p-0 print:shadow-none"
         style={pageWidthStyle}
