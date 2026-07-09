@@ -1,3 +1,12 @@
+// The Latin Inter woff2 faces (opsz build), imported as URLs so we can inline them as data URIs and
+// hand them to snapdom explicitly (see below). The share pages only render Latin text + emoji, so
+// these two subsets cover everything: `latin` holds ASCII incl. digits (the poster "9"), `latin-ext`
+// the accented range. Normal + italic, both variable across the full 100–900 weight axis.
+import interLatinExtItalicUrl from "@fontsource-variable/inter/files/inter-latin-ext-opsz-italic.woff2?url";
+import interLatinExtNormalUrl from "@fontsource-variable/inter/files/inter-latin-ext-opsz-normal.woff2?url";
+import interLatinItalicUrl from "@fontsource-variable/inter/files/inter-latin-opsz-italic.woff2?url";
+import interLatinNormalUrl from "@fontsource-variable/inter/files/inter-latin-opsz-normal.woff2?url";
+
 /**
  * Shared PNG-export pipeline for the fixed-canvas share pages (PosterPage, SocialPage).
  *
@@ -14,9 +23,45 @@
 // loaded at capture time, so we explicitly request these before capturing (see renderShareBlob).
 const FONT_SPECS = ['700 26px "Inter Variable"', '800 26px "Inter Variable"', 'italic 700 20px "Inter Variable"'];
 
-// Non-Latin subsets the share pages never render — excluded from the embed so exported PNGs
-// don't carry Cyrillic/Greek/Vietnamese woff2 payloads.
-const NON_LATIN_SUBSETS = ["cyrillic", "cyrillic-ext", "greek", "greek-ext", "vietnamese"];
+// snapdom's auto `embedFonts` discovery + document.fonts.load timing is unreliable on Android
+// Chrome for VARIABLE fonts: fonts.ready can resolve before a given weight's face is committed, so
+// snapdom skips it and the bold/heavy text (e.g. the poster "9", the headings) falls back to the
+// OS font (Roboto). Handing snapdom the exact woff2 via `localFonts` as data URIs sidesteps
+// discovery entirely, forcing Inter into the capture on every device. Built once, lazily.
+const LOCAL_FONT_SOURCES = [
+  { url: interLatinNormalUrl, style: "normal" },
+  { url: interLatinExtNormalUrl, style: "normal" },
+  { url: interLatinItalicUrl, style: "italic" },
+  { url: interLatinExtItalicUrl, style: "italic" },
+];
+let localInterFontsPromise = null;
+
+async function urlToDataUri(url) {
+  const res = await fetch(url);
+  const buf = await res.arrayBuffer();
+  let binary = "";
+  const bytes = new Uint8Array(buf);
+  for (let i = 0; i < bytes.length; i += 1) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return `data:font/woff2;base64,${btoa(binary)}`;
+}
+
+// Resolve the woff2 files to data URIs once, in the shape snapdom's `localFonts` option expects.
+// `weight: "100 900"` declares the full variable axis so every weight the pages use resolves.
+function getLocalInterFonts() {
+  if (!localInterFontsPromise) {
+    localInterFontsPromise = Promise.all(
+      LOCAL_FONT_SOURCES.map(async ({ url, style }) => ({
+        family: "Inter Variable",
+        src: await urlToDataUri(url),
+        weight: "100 900",
+        style,
+      })),
+    ).catch(() => []); // best-effort: fall back to snapdom's auto-discovery if fetch/encode fails
+  }
+  return localInterFontsPromise;
+}
 
 /**
  * Ensure the bundled Inter webfont is actually rasterizable before an image export runs. Both
@@ -56,7 +101,8 @@ export async function ensureInterFontsLoaded() {
 export async function renderShareBlob(node, width, height) {
   const { snapdom } = await import("@zumer/snapdom");
 
-  await ensureInterFontsLoaded();
+  // Load Inter for the live clone AND resolve the explicit woff2 data URIs we hand snapdom.
+  const [, localFonts] = await Promise.all([ensureInterFontsLoaded(), getLocalInterFonts()]);
 
   const holder = document.createElement("div");
   holder.style.cssText = `position:fixed;left:-100000px;top:0;width:${width}px;height:${height}px;overflow:visible;background:#ffffff;z-index:-1;pointer-events:none;`;
@@ -89,11 +135,11 @@ export async function renderShareBlob(node, width, height) {
       scale: 2, // 2× export, crisp for LinkedIn / link cards
       dpr: 1, // snapdom multiplies by devicePixelRatio by default — pin it so exports are screen-independent
       backgroundColor: "#ffffff",
-      // Inline the bundled Inter @font-face into the capture. Off by default, so without this
-      // snapdom rasterizes the OS fallback (SF/Roboto) and the export drifts per device — the
-      // exact bug this font work fixes. Skip the non-Latin subsets the share pages never use.
+      // Force the Inter faces into the capture. embedFonts alone (auto-discovery) is unreliable on
+      // Android for variable fonts, so we ALSO hand snapdom the exact woff2 as data URIs via
+      // localFonts — this is what makes the bold text (the "9", headings) render Inter, not Roboto.
       embedFonts: true,
-      excludeFonts: { subsets: NON_LATIN_SUBSETS },
+      localFonts,
       exclude: ["[data-export-ignore]"], // the floating copy/download buttons — never in the capture
       excludeMode: "remove",
     });
