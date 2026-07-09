@@ -2,13 +2,27 @@ import { ADMIN_UNLOCK_KEY } from "@/constants/storage";
 
 /**
  * Admin (dev) unlock. Visiting `?admin=1` once turns it on and persists it to localStorage, so it
- * survives navigation to the Poster/Social pages and reloads; `?admin=0` clears it. Gates dev-only
- * UI: the Scores display toggle/cards, and the Poster/Social tabs.
+ * survives navigation to the Poster/Social pages and reloads; `?admin=0` clears it. Once the param
+ * has been consumed it is stripped from the URL (the state now lives in localStorage), leaving a
+ * clean address bar. Gates dev-only UI: the Scores display toggle/cards, and the Poster/Social tabs.
  *
  * Resolved once at module-eval time — the URL is already correct before React mounts (see route.js),
  * and dev-unlock state doesn't need to react mid-session. localStorage access is guarded so a
  * disabled/throwing store falls back to "URL only, this load".
  */
+function stripAdminParam() {
+  try {
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has("admin")) {
+      return;
+    }
+    url.searchParams.delete("admin");
+    window.history.replaceState(window.history.state, "", url);
+  } catch {
+    // history/URL unavailable — leave the URL as-is.
+  }
+}
+
 function resolveIsAdmin() {
   if (typeof window === "undefined") {
     return false;
@@ -26,6 +40,8 @@ function resolveIsAdmin() {
     return localStorage.getItem(ADMIN_UNLOCK_KEY) === "1";
   } catch {
     return param === "1";
+  } finally {
+    stripAdminParam();
   }
 }
 
