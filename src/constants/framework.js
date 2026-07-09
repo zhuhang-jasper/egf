@@ -52,11 +52,13 @@ export const TRACKS = {
       { id: "operational", pillars: ["process", "communication", "ownership"] },
     ],
   },
+  // BE mirrors FE's full 9-pillar layout (uiUx included) — the tracks differ only in badge/labeling,
+  // not pillar composition. Kept as a separate entry so they can diverge again later.
   be: {
-    pillarOrder: ["coding", "architecture", "ai", "process", "ownership", "communication", "productSense", "domainLogic"],
+    pillarOrder: ["coding", "architecture", "ai", "process", "ownership", "communication", "productSense", "uiUx", "domainLogic"],
     pillarGroups: [
       { id: "technical", pillars: ["coding", "domainLogic", "architecture", "ai"] },
-      { id: "product", pillars: ["productSense"] },
+      { id: "product", pillars: ["uiUx", "productSense"] },
       { id: "operational", pillars: ["process", "communication", "ownership"] },
     ],
   },

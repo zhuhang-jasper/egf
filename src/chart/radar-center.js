@@ -20,16 +20,13 @@ const PILLAR_LABEL_NUDGE = {
     productSense: { x: -1, y: -7 },
     process: { x: 2, y: -7 },
   },
-  be: {
-    coding: { x: -5, y: 0 },
-    domainLogic: { x: -5, y: 10 },
-    architecture: { x: 6, y: 10 },
-    ai: { x: 2, y: 0 },
-    communication: { x: -5, y: -10 },
-    process: { x: 6, y: -10 },
-    ownership: { x: -5, y: 0 },
-  },
+  // BE now renders the same 9-pillar layout as FE (see TRACKS), so it just points at FE's nudges.
+  // To revert BE to its own 8-axis layout, restore this object:
+  //   { coding: { x: -5, y: 0 }, domainLogic: { x: -5, y: 10 }, architecture: { x: 6, y: 10 },
+  //     ai: { x: 2, y: 0 }, communication: { x: -5, y: -10 }, process: { x: 6, y: -10 },
+  //     ownership: { x: -5, y: 0 } }
 };
+PILLAR_LABEL_NUDGE.be = PILLAR_LABEL_NUDGE.fe;
 
 /**
  * Nudges for the theory career-track charts. Cloned from {@link PILLAR_LABEL_NUDGE} as a starting
