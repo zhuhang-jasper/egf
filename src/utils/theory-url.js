@@ -124,7 +124,7 @@ export function cleanTheoryDeepLinkParams() {
  */
 export function buildTheoryShareUrl(section, pillar) {
   const url = new URL(window.location.href);
-  // Preserve any existing params (e.g. ?score=1) except our own.
+  // Preserve any existing params (e.g. ?admin=1) except our own.
   url.searchParams.delete(PARAM_TAB);
   url.searchParams.delete(PARAM_SECTION);
   url.searchParams.delete(PARAM_PILLAR);

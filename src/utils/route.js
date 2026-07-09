@@ -17,3 +17,14 @@ export function getRoute() {
   const segment = path.replace(/^\/+|\/+$/g, "").split("/")[0];
   return segment || "home";
 }
+
+/**
+ * Build a base-prefixed URL for a route id ("" / "home" → the tool root, "poster", "social").
+ * Used by the admin tabs and the poster/social back button so they navigate correctly under both
+ * the local "/" base and GitHub Pages' "/egf/". Admin unlock persists in localStorage, so no flag
+ * needs threading through the URL.
+ */
+export function hrefForRoute(route) {
+  const segment = route && route !== "home" ? route : "";
+  return `${BASE}${segment}`;
+}

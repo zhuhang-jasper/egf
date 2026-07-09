@@ -2,6 +2,8 @@ import { useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { Chart, Filler, LineElement, PointElement, RadarController, RadialLinearScale } from "chart.js";
 
+import { BackToToolButton } from "@/components/BackToToolButton";
+
 import { createClusterBackgroundPlugin } from "@/chart/plugins";
 import { FE_UI, getPillarLabel, getPillarOrder, SITE_COPY } from "@/constants";
 import { pillarLevelsToArray } from "@/constants/levels";
@@ -299,6 +301,7 @@ export default function SocialPage() {
 
   return (
     <div className="flex w-full flex-col items-center overflow-x-hidden overflow-y-auto bg-black p-4">
+      <BackToToolButton />
       <div className="shrink-0" style={{ width: CANVAS_W * scale, height: CANVAS_H * scale }}>
         <article
           ref={cardRef}

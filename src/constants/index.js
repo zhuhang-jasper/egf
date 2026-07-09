@@ -33,7 +33,7 @@ export {
   SENIORITY_LEVEL_COUNT,
   TECHNICAL_FLOOR_PILLARS,
 } from "@/constants/scoring";
-export { FEATURE_SCORES_SETTINGS } from "@/constants/features";
+export { FEATURE_SCORES_SETTINGS, IS_ADMIN } from "@/constants/features";
 export { SITE_COPY } from "@/constants/site";
-export { FRAMEWORK_VERSION, PROFILES_STORAGE_KEY, STORAGE_KEY, THEORY_SEEN_VERSION_KEY, THEORY_SHOW_CHANGES_KEY } from "@/constants/storage";
+export { ADMIN_UNLOCK_KEY, FRAMEWORK_VERSION, PROFILES_STORAGE_KEY, STORAGE_KEY, THEORY_SEEN_VERSION_KEY, THEORY_SHOW_CHANGES_KEY } from "@/constants/storage";
 export { FE_UI } from "@/styles/ui";

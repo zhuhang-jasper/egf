@@ -11,3 +11,6 @@ export const FRAMEWORK_VERSION = "3.1";
 // The framework version the user last saw (set when they open the Theory tab). When this differs
 // from FRAMEWORK_VERSION for a returning user, the Theory tab shows an "unseen updates" dot.
 export const THEORY_SEEN_VERSION_KEY = "fe-growth-framework:theory-seen-version:v1";
+// Admin (dev) unlock, set by visiting `?admin=1` and cleared by `?admin=0` (see features.js).
+// Persisted so dev options survive navigation to the Poster/Social pages and reloads.
+export const ADMIN_UNLOCK_KEY = "fe-growth-framework:admin:v1";
