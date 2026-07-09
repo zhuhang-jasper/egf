@@ -8,6 +8,7 @@ import { createClusterBackgroundPlugin } from "@/chart/plugins";
 import { FE_UI, getPillarLabel, getPillarOrder, SITE_COPY } from "@/constants";
 import { pillarLevelsToArray } from "@/constants/levels";
 import { track } from "@/utils/analytics";
+import { copyShareToClipboard, downloadSharePng } from "@/utils/export-image";
 import { loadProfilesFromStorage } from "@/utils/storage";
 
 // Fixed design canvas — a 1200×630 landscape card (the canonical Open Graph / LinkedIn
@@ -151,7 +152,7 @@ function SocialRadar({ levels, labels }) {
 /**
  * Visual fit-scale for the preview only — fits the viewport WIDTH (the page scrolls
  * vertically). The card renders at its true CANVAS_W×CANVAS_H pixels and is scaled with a
- * CSS transform; the export path (renderSocialBlob) strips that transform before capture, so
+ * CSS transform; the export path (renderShareBlob) strips that transform before capture, so
  * the preview scales to width while the export stays a pixel-exact 1200×630.
  */
 function useFitScale() {
@@ -168,80 +169,11 @@ function useFitScale() {
   return scale;
 }
 
-/**
- * Rasterize the card to a high-res PNG via snapdom. Deep-clones the article into a detached
- * off-screen container at its true 1200×630 size, mirrors the live chart <canvas> pixels into
- * the clone, captures the clone, then discards it — so the on-screen preview never flickers.
- */
-async function renderSocialBlob(node) {
-  const { snapdom } = await import("@zumer/snapdom");
-
-  const holder = document.createElement("div");
-  holder.style.cssText = `position:fixed;left:-100000px;top:0;width:${CANVAS_W}px;height:${CANVAS_H}px;overflow:visible;background:#ffffff;z-index:-1;pointer-events:none;`;
-
-  const clone = node.cloneNode(true);
-  clone.style.transform = "none";
-  clone.style.transformOrigin = "top left";
-  clone.style.margin = "0";
-
-  holder.appendChild(clone);
-  document.body.appendChild(holder);
-
-  try {
-    const liveCanvases = node.querySelectorAll("canvas");
-    const cloneCanvases = clone.querySelectorAll("canvas");
-    cloneCanvases.forEach((c, i) => {
-      const src = liveCanvases[i];
-      if (!src) {
-        return;
-      }
-      c.width = src.width;
-      c.height = src.height;
-      c.getContext("2d")?.drawImage(src, 0, 0);
-    });
-
-    return await snapdom.toBlob(clone, {
-      type: "png",
-      scale: 2, // 2× → 2400×1260 export, crisp for link cards
-      dpr: 1, // snapdom multiplies by devicePixelRatio by default — pin it so exports are screen-independent
-      backgroundColor: "#ffffff",
-      exclude: ["[data-export-ignore]"], // the floating copy/download buttons — never in the capture
-      excludeMode: "remove",
-    });
-  } finally {
-    holder.remove();
-  }
-}
-
-/** Copy the card PNG to the clipboard (passes a Promise<Blob> so Safari keeps the gesture). */
-async function copySocialToClipboard(node) {
-  if (typeof ClipboardItem === "undefined" || !navigator.clipboard?.write) {
-    throw new Error("Clipboard image write is not supported in this browser");
-  }
-  const blobPromise = renderSocialBlob(node).then((blob) => {
-    if (!blob) {
-      throw new Error("Failed to render social image");
-    }
-    return blob;
-  });
-  await navigator.clipboard.write([new ClipboardItem({ "image/png": blobPromise })]);
-}
-
-/** Render the card and trigger a PNG file download. */
-async function downloadSocialPng(node) {
-  const blob = await renderSocialBlob(node);
-  if (!blob) {
-    throw new Error("Failed to render social image");
-  }
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "9-pillar-engineer-growth-framework-social.png";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 10_000);
-}
+// The card's PNG export runs through the shared share-image pipeline (font embedding, the
+// off-screen clone, canvas mirroring, snapdom capture) — see src/utils/export-image.js.
+const SOCIAL_FILENAME = "9-pillar-engineer-growth-framework-social.png";
+const copySocialToClipboard = (node) => copyShareToClipboard(node, CANVAS_W, CANVAS_H, "social image");
+const downloadSocialPng = (node) => downloadSharePng(node, CANVAS_W, CANVAS_H, SOCIAL_FILENAME, "social image");
 
 /** Load the featured saved profile (by title) once, falling back to a sample shape. */
 function useFeaturedLevels() {

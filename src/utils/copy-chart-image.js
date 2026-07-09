@@ -1,5 +1,6 @@
 import { syncFontsForChart } from "@/chart/radar-center";
 import { FE_UI, SITE_COPY } from "@/constants";
+import { ensureInterFontsLoaded } from "@/utils/export-image";
 
 const UNSUPPORTED_COLOR_RE = /(?:oklch|oklab|lab\(|lch\(|color\()/i;
 
@@ -229,6 +230,11 @@ export async function renderChartImageBlob({ exportRoot, canvas, chart }) {
   if (!exportRoot || !canvas || !chart) {
     return null;
   }
+
+  // Both layers of this export use Inter — the DOM overlay (title/legend/scores, drawn via
+  // ctx.fillText below) and the Chart.js canvas labels. Canvas text silently falls back to a
+  // default font for any glyph not yet loaded, so make sure Inter is ready before we rasterize.
+  await ensureInterFontsLoaded();
 
   const padPx = getExportImagePaddingPx();
   const contentW = Math.max(1, Math.round(exportRoot.offsetWidth));

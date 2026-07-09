@@ -87,13 +87,15 @@
   },
   "overrides": [
     {
-      "files": ["scripts/**/*.js", "**/*.config.js", "vite.config.js", "vite.chunksplit.js", "vite-plugins/**/*.js"],
+      "files": ["scripts/**/*.{js,mjs}", "**/*.config.js", "vite.config.js", "vite.chunksplit.js", "vite-plugins/**/*.js"],
       "env": { "node": true },
       "rules": {
         "eslint/init-declarations": "off",
         "import/no-nodejs-modules": "off",
         "eslint/max-params": "off",
-        "eslint/no-continue": "off"
+        "eslint/no-continue": "off",
+        "eslint/new-cap": "off",
+        "eslint/no-unused-vars": "off"
       }
     },
     {

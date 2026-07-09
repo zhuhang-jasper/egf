@@ -69,7 +69,20 @@ function PillarMatrixLevels({ levels, showLatestChanges }) {
   );
 }
 
-function PillarMatrixCard({ order, pillarId, pillarName, focusSummary, note, color, textColor, levels, expanded, onToggle, cardRef, showLatestChanges }) {
+function PillarMatrixCard({
+  order,
+  pillarId,
+  pillarName,
+  focusSummary,
+  note,
+  color,
+  textColor,
+  levels,
+  expanded,
+  onToggle,
+  cardRef,
+  showLatestChanges,
+}) {
   const panelId = `competency-matrix-${pillarId}`;
 
   return (

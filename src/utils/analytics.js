@@ -81,7 +81,7 @@ export function initAnalytics() {
   script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_ID}`;
   document.head.appendChild(script);
 
-  window.dataLayer = window.dataLayer || [];
+  window.dataLayer ||= [];
   // gtag must push the literal `arguments` object — do not refactor to (...args).
   function gtag() {
     // eslint-disable-next-line prefer-rest-params -- gtag relies on the live `arguments` object

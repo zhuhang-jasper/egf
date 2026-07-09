@@ -14,7 +14,7 @@ export function getRoute() {
   if (path.startsWith(BASE)) {
     path = path.slice(BASE.length);
   }
-  const segment = path.replace(/^\/+|\/+$/g, "").split("/")[0];
+  const [segment] = path.replace(/^\/+|\/+$/g, "").split("/");
   return segment || "home";
 }
 

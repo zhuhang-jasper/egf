@@ -47,7 +47,7 @@ const TRACK_STYLE = {
   },
 };
 
-function RoleCellContent({ title, subtitle, note }) {
+function RoleCellContent({ title }) {
   return (
     <div className="min-w-0 flex-1">
       <p className={DOC_TEXT.bodyMedium}>{title}</p>
@@ -58,11 +58,11 @@ function RoleCellContent({ title, subtitle, note }) {
 function TrackRoleSequence({ roleLevels, badgeBg, badgeColor, desktopGridColumns, centerDesktop }) {
   const gridColumns = desktopGridColumns ?? roleLevels.length;
 
-  const desktopTile = ({ level, title, subtitle, note }, fullWidthBadge = false) => (
+  const desktopTile = ({ level, title }, fullWidthBadge = false) => (
     <li key={`${level}-${title}`} className="flex min-w-0 flex-col rounded-md border border-slate-200/90 bg-white px-1.5 py-1.5 shadow-sm">
       <LevelBadge level={level} backgroundColor={badgeBg} color={badgeColor} fullWidth={fullWidthBadge} />
       <div className="mt-1.5 min-w-0 flex-1">
-        <RoleCellContent title={title} subtitle={subtitle} note={note} />
+        <RoleCellContent title={title} />
       </div>
     </li>
   );
@@ -70,13 +70,13 @@ function TrackRoleSequence({ roleLevels, badgeBg, badgeColor, desktopGridColumns
   return (
     <>
       <ol className="flex flex-col gap-1 min-[470px]:hidden">
-        {roleLevels.map(({ level, title, subtitle, note }) => (
+        {roleLevels.map(({ level, title }) => (
           <li
             key={`${level}-${title}-mobile`}
             className="flex items-center gap-2 rounded-md border border-slate-200/90 bg-white px-2 py-1.5 shadow-sm"
           >
             <LevelBadge level={level} backgroundColor={badgeBg} color={badgeColor} />
-            <RoleCellContent title={title} subtitle={subtitle} note={note} />
+            <RoleCellContent title={title} />
           </li>
         ))}
       </ol>

@@ -8,6 +8,7 @@ import { createClusterBackgroundPlugin } from "@/chart/plugins";
 import { CLUSTERS, FE_UI, getPillarLabel, getPillarOrder, SITE_COPY } from "@/constants";
 import { CAREER_TRACK_PROFILES, PILLAR_CLUSTER_GROUPS } from "@/constants/theory-data";
 import { track } from "@/utils/analytics";
+import { copyShareToClipboard, downloadSharePng } from "@/utils/export-image";
 
 // Fixed design canvas — a 2:3 poster portrait (1080×1620). Wider than a phone-screen
 // 9:16 so it reads well in the LinkedIn feed, but long enough for large, poster-scale
@@ -111,7 +112,7 @@ const TRACKS = CAREER_TRACK_PROFILES.map((t) => ({
 /**
  * Visual fit-scale for the preview only — fits the viewport WIDTH (the page scrolls
  * vertically). The poster renders at its true CANVAS_W×CANVAS_H pixels and is scaled with a
- * CSS transform; the export path (renderPosterBlob) strips that transform before capture, so the
+ * CSS transform; the export path (renderShareBlob) strips that transform before capture, so the
  * preview scales to width while the export stays a pixel-exact 1080×1620.
  */
 function useFitScale() {
@@ -141,83 +142,11 @@ function useFitScale() {
  * mirror the live chart <canvas> pixels into the clone, capture the clone, then discard it. The
  * on-screen preview is never touched, so the user sees no flicker.
  */
-async function renderPosterBlob(node) {
-  const { snapdom } = await import("@zumer/snapdom");
-
-  const holder = document.createElement("div");
-  holder.style.cssText = `position:fixed;left:-100000px;top:0;width:${CANVAS_W}px;height:${CANVAS_H}px;overflow:visible;background:#ffffff;z-index:-1;pointer-events:none;`;
-
-  const clone = node.cloneNode(true);
-  clone.style.transform = "none";
-  clone.style.transformOrigin = "top left";
-  clone.style.margin = "0";
-
-  holder.appendChild(clone);
-  document.body.appendChild(holder);
-
-  try {
-    // A cloned <canvas> is blank until something draws into it, and snapdom won't re-run our
-    // Chart.js code — so copy the live chart pixels across to the clone's canvases.
-    const liveCanvases = node.querySelectorAll("canvas");
-    const cloneCanvases = clone.querySelectorAll("canvas");
-    cloneCanvases.forEach((c, i) => {
-      const src = liveCanvases[i];
-      if (!src) {
-        return;
-      }
-      c.width = src.width;
-      c.height = src.height;
-      c.getContext("2d")?.drawImage(src, 0, 0);
-    });
-
-    return await snapdom.toBlob(clone, {
-      type: "png",
-      scale: 2, // 2× → 2160×3240 export, crisp for LinkedIn
-      dpr: 1, // snapdom multiplies by devicePixelRatio by default — pin it so exports are screen-independent
-      backgroundColor: "#ffffff",
-      exclude: ["[data-export-ignore]"], // the floating copy/download buttons — never in the capture
-      excludeMode: "remove",
-    });
-  } finally {
-    holder.remove();
-  }
-}
-
-/**
- * Copy the poster PNG to the clipboard. Passes a Promise<Blob> to ClipboardItem (rather than an
- * already-resolved blob): this is the spec'd way to copy async-generated content — the browser
- * holds the clipboard-write permission across the awaited render, instead of the gesture window
- * expiring while we rasterize. Safari requires this form; Chrome/Firefox accept it too.
- */
-async function copyPosterToClipboard(node) {
-  if (typeof ClipboardItem === "undefined" || !navigator.clipboard?.write) {
-    throw new Error("Clipboard image write is not supported in this browser");
-  }
-  const blobPromise = renderPosterBlob(node).then((blob) => {
-    if (!blob) {
-      throw new Error("Failed to render poster image");
-    }
-    return blob;
-  });
-  await navigator.clipboard.write([new ClipboardItem({ "image/png": blobPromise })]);
-}
-
-/** Render the poster and trigger a PNG file download. */
-async function downloadPosterPng(node) {
-  const blob = await renderPosterBlob(node);
-  if (!blob) {
-    throw new Error("Failed to render poster image");
-  }
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "9-pillar-engineer-growth-framework-poster.png";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  // Delay revoke — revoking synchronously after click() cancels the download in some browsers.
-  setTimeout(() => URL.revokeObjectURL(url), 10_000);
-}
+// The poster's PNG export runs through the shared share-image pipeline (font embedding, the
+// off-screen clone, canvas mirroring, snapdom capture) — see src/utils/export-image.js.
+const POSTER_FILENAME = "9-pillar-engineer-growth-framework-poster.png";
+const copyPosterToClipboard = (node) => copyShareToClipboard(node, CANVAS_W, CANVAS_H, "poster");
+const downloadPosterPng = (node) => downloadSharePng(node, CANVAS_W, CANVAS_H, POSTER_FILENAME, "poster");
 
 /** Big tracking-wide divider label used between the poster's content bands. */
 function SectionLabel({ children }) {
@@ -397,26 +326,29 @@ function PillarRing() {
  * One track column: its characteristic radar SHAPE, the key pillars as emoji chips, and the
  * L-level → role ladder. No prose — the visual shape carries the meaning.
  */
-function TrackCard({ track }) {
+function TrackCard({ careerTrack }) {
   return (
-    <div className="flex min-w-0 flex-col rounded-3xl px-3 py-3" style={{ backgroundColor: `${track.color}47`, border: `3px solid ${track.color}` }}>
-      <h4 className="text-center text-[25px] font-extrabold leading-tight tracking-tight" style={{ color: track.accent }}>
-        {track.name}
+    <div
+      className="flex min-w-0 flex-col rounded-3xl px-3 py-3"
+      style={{ backgroundColor: `${careerTrack.color}47`, border: `3px solid ${careerTrack.color}` }}
+    >
+      <h4 className="text-center text-[25px] font-extrabold leading-tight tracking-tight" style={{ color: careerTrack.accent }}>
+        {careerTrack.name}
       </h4>
 
       {/* Characteristic chart shape — with cluster background colour */}
       <div className="relative mx-auto mt-2 h-[170px] w-[170px]">
-        <PosterRadar levels={track.levels} showClusters lineWidth={2.5} pointRadius={0} />
+        <PosterRadar levels={careerTrack.levels} showClusters lineWidth={2.5} pointRadius={0} />
       </div>
 
       {/* Key pillars — plain names, no emoji. Fixed height (2 rows) so the role ladders below
           start at the same Y across all three cards and align row-for-row. */}
       <div className="-mx-3 flex h-[80px] flex-wrap content-center justify-center gap-[4px] overflow-hidden">
-        {track.keyPillars.map((p) => (
+        {careerTrack.keyPillars.map((p) => (
           <span
             key={p.id}
             className="rounded-full bg-white px-2.5 py-[3px] text-[19px] font-bold"
-            style={{ color: track.accent, boxShadow: `inset 0 0 0 2.5px ${track.color}` }}
+            style={{ color: careerTrack.accent, boxShadow: `inset 0 0 0 2.5px ${careerTrack.color}` }}
           >
             {p.name}
           </span>
@@ -426,11 +358,11 @@ function TrackCard({ track }) {
       {/* L-level → role ladder — grows to fill the card and distributes its rows evenly, so the
           ladders bottom-align across cards even when one track has an extra rung (L7 CTO). */}
       <div className="mt-3 flex flex-1 flex-col justify-between gap-3">
-        {track.roleLevels.map((r) => (
+        {careerTrack.roleLevels.map((r) => (
           <div key={r.level} className="flex items-center gap-2">
             <span
               className="shrink-0 rounded-md px-2 py-[1px] text-center text-[18px] font-extrabold text-white"
-              style={{ backgroundColor: track.accent }}
+              style={{ backgroundColor: careerTrack.accent }}
             >
               {r.level}
             </span>
@@ -501,7 +433,7 @@ export default function PosterPage() {
           style={{ width: CANVAS_W, height: CANVAS_H, transform: `scale(${scale})`, transformOrigin: "top left" }}
         >
           {/* Floating export controls — inside the poster (scale with it), top-right, excluded from
-              the rasterized PNG via the data-export-ignore selector in renderPosterBlob. */}
+              the rasterized PNG via the data-export-ignore selector in renderShareBlob. */}
           <div className="absolute top-5 right-5 z-10 flex flex-col items-end gap-1" data-export-ignore>
             <div className="flex gap-2">
               <button
@@ -580,8 +512,8 @@ export default function PosterPage() {
             </div>
 
             <div className="grid grid-cols-3 items-stretch gap-3">
-              {TRACKS.map((track) => (
-                <TrackCard key={track.name} track={track} />
+              {TRACKS.map((careerTrack) => (
+                <TrackCard key={careerTrack.name} careerTrack={careerTrack} />
               ))}
             </div>
           </div>
