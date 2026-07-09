@@ -19,7 +19,7 @@
     "format:check": "oxfmt -c .oxfmtrc.json --check .",
     "format:fix": "oxfmt -c .oxfmtrc.json --write .",
     "preview": "vite preview",
-    "updateDependencies": "npm update --save",
+    "updateDependencies": "npx npm-check-updates --target minor -u",
     "checkForUpdates": "npx npm-check-updates",
     "checkForUpdates:minor": "npx npm-check-updates --target minor",
     "bumpver:patch": "npm version patch --no-git-tag-version",
@@ -28,27 +28,27 @@
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",
-    "@radix-ui/react-slot": "^1.2.4",
-    "@zumer/snapdom": "^2.12.9",
+    "@radix-ui/react-slot": "^1.3.0",
+    "@zumer/snapdom": "^2.15.0",
     "chart.js": "^4.5.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "lucide-react": "^1.16.0",
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6",
+    "lucide-react": "^1.23.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
     "tailwind-merge": "^3.6.0",
-    "zustand": "^5.0.13"
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@date-fns/tz": "^1.5.0",
-    "@tailwindcss/vite": "^4.3.0",
-    "@vitejs/plugin-react": "^6.0.2",
-    "date-fns": "^4.3.0",
+    "@tailwindcss/vite": "^4.3.2",
+    "@vitejs/plugin-react": "^6.0.3",
+    "date-fns": "^4.4.0",
     "eslint-plugin-simple-import-sort": "^13.0.0",
-    "oxfmt": "^0.45.0",
-    "oxlint": "^1.60.0",
-    "tailwindcss": "^4.3.0",
+    "oxfmt": "^0.58.0",
+    "oxlint": "^1.73.0",
+    "tailwindcss": "^4.3.2",
     "typescript": "^6.0.3",
-    "vite": "^8.0.14"
+    "vite": "^8.1.4"
   }
 }
