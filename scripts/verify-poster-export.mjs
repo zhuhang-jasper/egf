@@ -90,6 +90,14 @@ const RENDER_AND_ASSERT = `(async () => {
     const node = document.querySelector('article');
     if (!node) return JSON.stringify({ ok: false, error: 'no <article> found' });
 
+    // The bundled webfont must be loaded (and actually applied) so exports render the same
+    // Inter glyphs on every device instead of falling back to the OS's system-ui font.
+    await document.fonts.ready;
+    const interLoaded = document.fonts.check('700 26px "Inter Variable"');
+    const h1 = node.querySelector('h1');
+    const h1Font = h1 ? getComputedStyle(h1).fontFamily : '';
+    const usesInter = /Inter Variable/i.test(h1Font);
+
     const before = node.getBoundingClientRect();
 
     const holder = document.createElement('div');
@@ -137,6 +145,9 @@ const RENDER_AND_ASSERT = `(async () => {
       bytes: blob.size,
       nonWhiteTracksRow: nonWhite,
       liveRectUnchanged: Math.abs(before.width - after.width) < 0.5 && Math.abs(before.height - after.height) < 0.5,
+      interLoaded,
+      usesInter,
+      h1Font,
     });
   } catch (e) {
     return JSON.stringify({ ok: false, error: String((e && e.message) || e) });
@@ -202,6 +213,8 @@ try {
     [out.bytes > 50_000, "PNG is non-trivial (>50KB)"],
     [out.nonWhiteTracksRow > 100, "tracks band has content (not a clipped header)"],
     [out.liveRectUnchanged, "live preview did not re-scale (no flicker)"],
+    [out.interLoaded, "Inter Variable webfont is loaded (device-consistent glyphs)"],
+    [out.usesInter, `poster text resolves to Inter (h1 font: ${out.h1Font})`],
   ];
   pass = checks.every(([c]) => c);
   console.log("\nCHECKS:");

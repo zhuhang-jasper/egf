@@ -39,7 +39,17 @@
   body,
   #root {
     @apply min-h-dvh;
-    font-family: system-ui, sans-serif;
+    /* "Inter Variable" is bundled locally (see main.jsx) so exports render identically
+       across devices; system-ui is only the pre-load / no-webfont fallback. */
+    font-family: "Inter Variable", system-ui, sans-serif;
+    /* Drive Inter's optical-size (opsz) axis from the font-size so large display text
+       (the poster "9", titles, headings) tightens automatically the way SF Pro Display
+       does, while body text stays open like SF Text. Needs the opsz build (see main.jsx). */
+    font-optical-sizing: auto;
+    /* Inter renders slightly wider than the OS system-ui fonts it replaces, which pushed
+       some single-line text to wrap. A small negative tracking (Inter's own recommended
+       default) compacts it back and reads closer to the previous SF spacing. */
+    letter-spacing: -0.011em;
   }
 
   body {

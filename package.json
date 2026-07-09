@@ -27,6 +27,7 @@
     "bumpver:major": "npm version major --no-git-tag-version"
   },
   "dependencies": {
+    "@fontsource-variable/inter": "^5.2.8",
     "@radix-ui/react-slot": "^1.2.4",
     "@zumer/snapdom": "^2.12.9",
     "chart.js": "^4.5.1",

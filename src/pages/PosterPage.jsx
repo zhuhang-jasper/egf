@@ -224,7 +224,7 @@ function SectionLabel({ children }) {
   return (
     <div className="flex shrink-0 items-center gap-4">
       <span className="h-[4px] flex-1 rounded-full bg-slate-200" />
-      <h2 className="text-[26px] font-extrabold uppercase tracking-[0.16em] text-slate-500">{children}</h2>
+      <h2 className="text-[26px] font-bold uppercase tracking-[0.16em] text-slate-500">{children}</h2>
       <span className="h-[4px] flex-1 rounded-full bg-slate-200" />
     </div>
   );
@@ -282,7 +282,7 @@ function PillarNode({ pillar }) {
   const nameRow = (
     <div className="flex items-center gap-2">
       {!emojiAfter && <span className="text-[30px] leading-none">{pillar.emoji}</span>}
-      <span className="text-[26px] font-black leading-tight tracking-tight" style={{ color: pillar.accent }}>
+      <span className="text-[26px] font-extrabold leading-tight tracking-tight" style={{ color: pillar.accent }}>
         {pillar.name}
       </span>
       {emojiAfter && <span className="text-[30px] leading-none">{pillar.emoji}</span>}
@@ -400,7 +400,7 @@ function PillarRing() {
 function TrackCard({ track }) {
   return (
     <div className="flex min-w-0 flex-col rounded-3xl px-3 py-3" style={{ backgroundColor: `${track.color}47`, border: `3px solid ${track.color}` }}>
-      <h4 className="text-center text-[25px] font-black leading-tight tracking-tight" style={{ color: track.accent }}>
+      <h4 className="text-center text-[25px] font-extrabold leading-tight tracking-tight" style={{ color: track.accent }}>
         {track.name}
       </h4>
 
@@ -429,7 +429,7 @@ function TrackCard({ track }) {
         {track.roleLevels.map((r) => (
           <div key={r.level} className="flex items-center gap-2">
             <span
-              className="shrink-0 rounded-md px-2 py-[1px] text-center text-[18px] font-black text-white"
+              className="shrink-0 rounded-md px-2 py-[1px] text-center text-[18px] font-extrabold text-white"
               style={{ backgroundColor: track.accent }}
             >
               {r.level}
@@ -530,10 +530,10 @@ export default function PosterPage() {
           <header>
             <div className="flex items-stretch gap-4">
               {/* Big "9" reads as part of the title; no wasted eyebrow line beside it */}
-              <span className="text-[132px] font-black leading-[0.8] tracking-tighter text-slate-900 -translate-y-1">9</span>
+              <span className="text-[132px] font-extrabold leading-[0.8] tracking-tighter text-slate-900 -translate-y-1">9</span>
               <div className="flex min-w-0 flex-1 flex-col justify-center">
                 <div className="flex items-end justify-between gap-6">
-                  <h1 className="shrink-0 whitespace-nowrap text-[52px] font-black leading-[1] tracking-tight text-slate-900">
+                  <h1 className="shrink-0 whitespace-nowrap text-[52px] font-extrabold leading-[1] tracking-tight text-slate-900">
                     Pillar Engineer
                     <br />
                     Growth Framework
@@ -568,12 +568,12 @@ export default function PosterPage() {
               style={{ backgroundColor: `${CLUSTER_META.technical.color}47`, border: `3px solid ${CLUSTER_META.technical.color}` }}
             >
               <span
-                className="shrink-0 rounded-md px-2 py-[1px] text-center text-[18px] font-black text-white"
+                className="shrink-0 rounded-md px-2 py-[1px] text-center text-[18px] font-extrabold text-white"
                 style={{ backgroundColor: CLUSTER_META.technical.accent }}
               >
                 L1–L2
               </span>
-              <span className="shrink-0 text-[24px] font-black" style={{ color: CLUSTER_META.technical.accent }}>
+              <span className="shrink-0 text-[24px] font-extrabold" style={{ color: CLUSTER_META.technical.accent }}>
                 Software Engineer
               </span>
               <span className="ml-3 min-w-0 translate-y-[1px] text-[20px] text-slate-700">Build the technical foundation everyone shares.</span>
