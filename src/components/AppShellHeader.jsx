@@ -85,7 +85,7 @@ function AppShellTabBar({ activeTab, onTabChange, theoryHasUnseenUpdates = false
           centered at every width (only the tablist is present). */}
       <div className={cn("relative flex items-center min-[470px]:justify-center", IS_ADMIN ? "justify-between" : "justify-center")}>
         <div
-          className="relative grid w-56 grid-cols-2 rounded-lg border border-slate-200 bg-slate-100/80 p-0.5"
+          className="relative grid w-68 grid-cols-2 rounded-lg border border-slate-200 bg-slate-100/80 p-0.5"
           role="tablist"
           aria-label="App sections"
         >
@@ -117,15 +117,17 @@ function AppShellTabBar({ activeTab, onTabChange, theoryHasUnseenUpdates = false
                 <Icon className="size-3.5 shrink-0" aria-hidden />
                 {label}
                 {version ? (
-                  <span className={cn("text-[11px] font-semibold", selected ? "text-white/70" : "text-slate-400")}>
+                  // Version tag sits inline (baseline) with "Theory"; only the unseen-updates dot
+                  // floats up as a superscript badge on the version text.
+                  <span
+                    className={cn("inline-flex items-start text-[11px] font-semibold leading-none", selected ? "text-white/70" : "text-slate-400")}
+                  >
                     {version}
                     {/* Unseen-updates dot: a returning user hasn't dismissed this framework version
-                        yet. Inline + top-aligned, with left padding as the gap from the version. */}
+                        yet. `-translate-y` lifts just the dot to superscript height. */}
                     {showUnseenDot ? (
-                      <span className="inline-flex pl-1 align-top" aria-label="New framework updates">
-                        {/* iOS notification badge red (systemRed, #FF3B30). */}
-                        <span className="size-1.5 rounded-full bg-[#FF3B30]" />
-                      </span>
+                      // iOS notification badge red (systemRed, #FF3B30).
+                      <span className="ml-0.5 size-1.5 -translate-y-0.5 rounded-full bg-[#FF3B30]" aria-label="New framework updates" />
                     ) : null}
                   </span>
                 ) : null}
