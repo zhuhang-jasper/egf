@@ -103,15 +103,15 @@ function AppShellTabBar({ activeTab, onTabChange, theoryHasUnseenUpdates = false
               <Icon className="size-3.5 shrink-0" aria-hidden />
               {label}
               {version ? (
-                <span className={cn("relative text-[11px] font-semibold", selected ? "text-white/70" : "text-slate-400")}>
+                <span className={cn("text-[11px] font-semibold", selected ? "text-white/70" : "text-slate-400")}>
                   {version}
                   {/* Unseen-updates dot: a returning user hasn't dismissed this framework version yet.
-                      Ring matches the pill behind it — dark when the tab is selected, white when not. */}
+                      Inline + top-aligned, with left padding as the gap from the version text. */}
                   {showUnseenDot ? (
-                    <span
-                      className={cn("absolute -right-1.5 -top-0.5 size-1.5 rounded-full bg-red-500 ring-2", selected ? "ring-slate-900" : "ring-white")}
-                      aria-label="New framework updates"
-                    />
+                    <span className="inline-flex pl-1 align-top" aria-label="New framework updates">
+                      {/* iOS notification badge red (systemRed, #FF3B30). */}
+                      <span className="size-1.5 rounded-full bg-[#FF3B30]" />
+                    </span>
                   ) : null}
                 </span>
               ) : null}
