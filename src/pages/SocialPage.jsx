@@ -269,9 +269,9 @@ export default function SocialPage() {
             {/* Left: header lifted from the poster masthead, scaled up to fill the card height. */}
             <header className="flex h-full w-[560px] shrink-0 flex-col justify-center gap-6">
               <div className="flex items-stretch gap-6">
-                <span className="text-[250px] font-black leading-[0.8] tracking-tighter text-slate-900">9</span>
+                <span className="text-[250px] font-extrabold leading-[0.8] tracking-tighter text-slate-900">9</span>
                 <div className="flex min-w-0 flex-1 flex-col justify-center">
-                  <h1 className="whitespace-nowrap text-[64px] font-black leading-[1.05] tracking-tight text-slate-900">
+                  <h1 className="whitespace-nowrap text-[64px] font-extrabold leading-[1.05] tracking-tight text-slate-900">
                     Pillar Engineer
                     <br />
                     Growth
