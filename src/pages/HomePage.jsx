@@ -97,8 +97,13 @@ export default function HomePage() {
     minWidth: FE_UI.page.minWidthPx,
   };
 
+  // overflow-x-clip (not -hidden): `hidden` on one axis forces `overflow-y` to compute to `auto`,
+  // which turned this min-h-dvh container into an (unbounded) scroll container — the body scrolled
+  // instead of the window and the sticky tab bar never pinned. `clip` suppresses the horizontal
+  // overflow without establishing a scroll container, so the window scrolls and `sticky top-0` on
+  // the tab bar works again.
   return (
-    <div className="flex min-h-dvh flex-col items-center gap-2 overflow-x-hidden bg-black p-1.5 sm:p-3 print:bg-white print:p-0">
+    <div className="flex min-h-dvh flex-col items-center gap-2 overflow-x-clip bg-black p-1.5 sm:p-3 print:bg-white print:p-0">
       <main
         className="flex w-full flex-col rounded-[14px] bg-white shadow-sm p-3 print:max-w-none print:rounded-none print:p-0 print:shadow-none"
         style={pageWidthStyle}
