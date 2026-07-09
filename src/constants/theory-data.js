@@ -143,6 +143,7 @@ function buildCompetencyMatrix() {
         pillarId: pillar.id,
         pillarName: pillar.pillar,
         focusSummary: pillar.focusSummary,
+        note: pillar.note,
         color: group.color,
         textColor: group.textColor,
         clusterLabel: group.label,
