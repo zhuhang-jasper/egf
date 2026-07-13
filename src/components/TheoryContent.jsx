@@ -20,7 +20,7 @@ const cardClass = "rounded-xl border border-slate-300 bg-white shadow-md shadow-
 // Hero radar pillar-label sizing: scale linearly with the chart, from 12px at its small-mobile width
 // up to 14px at its desktop max width (the wrapper's max-w-[520px]). Module-level constant so its
 // identity is stable across renders (StaticCompetencyChart memoizes on this object).
-const HERO_POINT_LABEL_PX_RANGE = { minPx: 12, maxPx: 14, minWidthPx: 300, maxWidthPx: 520 };
+const HERO_POINT_LABEL_PX_RANGE = { minPx: 12, maxPx: 15, minWidthPx: 300, maxWidthPx: 520 };
 
 // On a deep-link boot, how long to let the scroll-restore loop settle at the remembered position
 // before we switch the expanded pillar. Long enough to clear restore's initial frames; short enough
@@ -229,6 +229,7 @@ function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreR
             trackVariant="fe"
             plainLabels={false}
             pointLabelPxRange={HERO_POINT_LABEL_PX_RANGE}
+            clusterLabelColors
             hidePolygon
             showLevelTicks
             fullWidth

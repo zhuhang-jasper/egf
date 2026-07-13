@@ -3,6 +3,8 @@ export {
   CLUSTERS,
   getChartLabels,
   getChartLayoutLabels,
+  getClusterIdForPillar,
+  getPillarClusterLabelColors,
   getPlainChartLabels,
   getPlainChartLayoutLabels,
   getPlainChartPillarLabel,

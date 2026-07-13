@@ -205,3 +205,20 @@ export function getPillarGroups(trackVariant = "fe") {
 export function getPillarIdByIndex(index, trackVariant = "fe") {
   return getPillarOrder(trackVariant)[index] ?? null;
 }
+
+/** Cluster id a pillar belongs to on the given track (null if the track omits it). */
+export function getClusterIdForPillar(pillarId, trackVariant = "fe") {
+  return getPillarGroupOrder(trackVariant).find((group) => group.pillars.includes(pillarId))?.id ?? null;
+}
+
+/**
+ * Per-axis cluster text colors, positionally aligned with the chart's label array (index i →
+ * pillar `getPillarOrder(track)[i]`). Same palette the poster uses for pillar names
+ * (`CLUSTERS[cluster].textColor`). Axes with no cluster fall back to `null`.
+ */
+export function getPillarClusterLabelColors(trackVariant = "fe") {
+  return getPillarOrder(trackVariant).map((id) => {
+    const clusterId = getClusterIdForPillar(id, trackVariant);
+    return clusterId ? CLUSTERS[clusterId].textColor : null;
+  });
+}

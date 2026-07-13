@@ -3,7 +3,7 @@ import { Chart, Filler, Legend, LineElement, PointElement, RadarController, Radi
 import { createClusterBackgroundPlugin } from "@/chart/plugins";
 import { applyRadarCenterFit, syncFontsForChart } from "@/chart/radar-center";
 import { resolveChartUi, THEORY_CHART_UI } from "@/chart/theory-profile";
-import { FE_UI, getChartLabels, getPillarOrder, getPlainChartLabels, normalizeTrackVariant, PILLAR_COUNT } from "@/constants";
+import { FE_UI, getChartLabels, getPillarClusterLabelColors, getPillarOrder, getPlainChartLabels, normalizeTrackVariant, PILLAR_COUNT } from "@/constants";
 
 Chart.register(RadarController, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
 
@@ -79,16 +79,33 @@ function syncPointLabelsVisibility(chart, hidden) {
   pointLabels.display = !hidden;
 }
 
-function syncPointLabelColors(chart, focusedPillars) {
+function syncPointLabelColors(chart, focusedPillars, clusterLabelColors) {
   const pointLabels = chart?.options?.scales?.r?.pointLabels;
   if (!pointLabels) {
     return;
   }
-  if (!focusedPillars?.length) {
-    pointLabels.color = resolveChartUi(chart).chart.pointLabelColor;
+  const ui = resolveChartUi(chart).chart;
+
+  // Per-cluster label colors (matching the poster's pillar-name palette). Positionally aligned with
+  // the label array, so we key off ctx.index. Focus-dimming still applies on top when set.
+  if (clusterLabelColors) {
+    const trackVariant = chart?.options?.plugins?.clusterBackground?.trackVariant;
+    const colors = getPillarClusterLabelColors(trackVariant);
+    const focused = focusedPillars?.length ? new Set(focusedPillars) : null;
+    pointLabels.color = (ctx) => {
+      const clusterColor = colors[ctx.index] ?? ui.pointLabelColor;
+      if (focused && !focused.has(chart.data.labels[ctx.index])) {
+        return ui.pointLabelDimColor;
+      }
+      return clusterColor;
+    };
     return;
   }
-  const ui = resolveChartUi(chart).chart;
+
+  if (!focusedPillars?.length) {
+    pointLabels.color = ui.pointLabelColor;
+    return;
+  }
   const focused = new Set(focusedPillars);
   pointLabels.color = (ctx) => (focused.has(chart.data.labels[ctx.index]) ? ui.pointLabelColor : ui.pointLabelDimColor);
 }
@@ -176,7 +193,7 @@ export function applyChartState(chart, state) {
   syncPolygonVisibility(chart, state.levelsPolygonHidden);
   syncLevelTicksVisibility(chart, state.chartLevelTicksHidden);
   syncPointLabelsVisibility(chart, Boolean(state.pointLabelsHidden));
-  syncPointLabelColors(chart, state.focusedPillars);
+  syncPointLabelColors(chart, state.focusedPillars, state.clusterLabelColors);
   chart.update("none");
 }
 

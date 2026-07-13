@@ -26,6 +26,9 @@ export function StaticCompetencyChart({
   // Overrides the default 16rem mobile cap and the fullWidth uncapping.
   maxWidthPx,
   focusedPillars,
+  // Color each pillar axis label by its cluster (the poster's pillar-name palette,
+  // CLUSTERS[cluster].textColor) instead of the flat preset color.
+  clusterLabelColors = false,
   maxHeightPx,
   // Which chart preset to render. "theory" (default) = compact labels, plain pillar names, no L
   // ticks. "tool" = emoji pillar labels and the tool chart's hand-tuned label nudges.
@@ -62,6 +65,7 @@ export function StaticCompetencyChart({
       chartLevelTicksHidden: !showLevelTicks,
       pointLabelsHidden: hidePointLabels,
       focusedPillars,
+      clusterLabelColors,
       maxHeightPx,
     }),
     [
@@ -77,6 +81,7 @@ export function StaticCompetencyChart({
       hidePointLabels,
       showLevelTicks,
       focusedPillars,
+      clusterLabelColors,
       maxHeightPx,
     ],
   );
