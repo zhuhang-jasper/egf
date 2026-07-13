@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-import { ChevronDown, Trash2, Users } from "lucide-react";
+import { ChevronDown, Download, Trash2, Upload, Users } from "lucide-react";
 
 import { TrackBadge } from "@/components/TrackBadge";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/store/useAppStore";
 
 import { track } from "@/utils/analytics";
+import { readFileAsText } from "@/utils/profile-transfer";
 
 export function ProfilePicker() {
   const profiles = useAppStore((s) => s.profiles);
@@ -15,7 +16,32 @@ export function ProfilePicker() {
   const setOpen = useAppStore((s) => s.setProfilePickerOpen);
   const loadProfile = useAppStore((s) => s.loadProfile);
   const removeProfile = useAppStore((s) => s.removeProfile);
+  const exportProfiles = useAppStore((s) => s.exportProfiles);
+  const importProfiles = useAppStore((s) => s.importProfiles);
   const rootRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  const handleExport = () => {
+    const count = exportProfiles();
+    if (count > 0) {
+      track("profiles_exported", { count });
+    }
+  };
+
+  const handleImportFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) {
+      return;
+    }
+    try {
+      const text = await readFileAsText(file);
+      const added = importProfiles(text);
+      track("profiles_imported", { count: added });
+    } catch {
+      /* unreadable file — ignore */
+    }
+  };
 
   useEffect(() => {
     const onKey = (e) => {
@@ -60,7 +86,7 @@ export function ProfilePicker() {
           {profiles.length === 0 ? (
             <p className="px-3 py-2 text-xs text-muted-foreground">No saved profiles yet.</p>
           ) : (
-            <ul className="m-0 list-none p-0">
+            <ul className="m-0 list-none p-0 border-b border-border">
               {profiles.map((pr) => {
                 const label = String(pr.title).trim() || "(Untitled)";
                 return (
@@ -94,6 +120,34 @@ export function ProfilePicker() {
               })}
             </ul>
           )}
+          <div className="flex items-stretch">
+            <button
+              type="button"
+              role="menuitem"
+              disabled={profiles.length === 0}
+              className="flex flex-1 cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm text-muted-foreground hover:bg-muted/60 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
+              onClick={handleExport}
+            >
+              <Download className="h-4 w-4 shrink-0" aria-hidden />
+              Export
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              className="flex flex-1 cursor-pointer items-center gap-2 border-l border-border px-3 py-2 text-left text-sm text-muted-foreground hover:bg-muted/60"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload className="h-4 w-4 shrink-0" aria-hidden />
+              Import
+            </button>
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/json,.json"
+            className="hidden"
+            onChange={handleImportFile}
+          />
         </div>
       )}
     </div>

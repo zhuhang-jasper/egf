@@ -11,6 +11,7 @@ import {
   syncLevelsArrayFromMap,
 } from "@/constants/levels";
 import { getDefaultChartDisplay, loadDraftFromStorage, loadProfilesFromStorage, saveDraftToStorage, writeProfilesToStorage } from "@/utils/storage";
+import { downloadProfilesJson, parseImportedProfiles } from "@/utils/profile-transfer";
 
 const initialDraft = loadDraftFromStorage() ?? { ...getDefaultChartState(), ...getDefaultChartDisplay() };
 
@@ -156,6 +157,41 @@ export const useAppStore = create((set, get) => ({
       profiles: next,
       activeSavedProfileId: get().activeSavedProfileId === id ? null : get().activeSavedProfileId,
     });
+  },
+
+  exportProfiles: () => {
+    const profiles = loadProfilesFromStorage();
+    if (profiles.length === 0) {
+      return 0;
+    }
+    downloadProfilesJson(profiles);
+    return profiles.length;
+  },
+
+  /**
+   * Merge profiles parsed from an exported JSON file into the saved list.
+   * Rows with an id that already exists get a fresh id (import never overwrites existing profiles).
+   * Returns the number of profiles added, or 0 if the file had none.
+   */
+  importProfiles: (text) => {
+    const incoming = parseImportedProfiles(text);
+    if (incoming.length === 0) {
+      return 0;
+    }
+    const existing = loadProfilesFromStorage();
+    const usedIds = new Set(existing.map((p) => p.id));
+    const added = incoming.map((p) => {
+      let { id } = p;
+      if (usedIds.has(id)) {
+        id = newSavedProfileId();
+      }
+      usedIds.add(id);
+      return { ...p, id };
+    });
+    const next = [...existing, ...added];
+    writeProfilesToStorage(next);
+    set({ profiles: loadProfilesFromStorage() });
+    return added.length;
   },
 
   loadProfile: (id) => {
