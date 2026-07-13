@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
-import { ChevronDown, Settings, Share } from "lucide-react";
+import { ChevronDown, Copy, Settings, Share } from "lucide-react";
 
 import { ChartScores } from "@/components/ChartScores";
 import { ClusterLegend } from "@/components/ClusterLegend";
@@ -133,10 +133,31 @@ const CAN_SHARE_FILES = (() => {
   }
 })();
 
-/** Dropdown bundling the image-export actions: copy to clipboard, and (where supported) share via the OS share sheet. */
+/**
+ * Image-export control. Where the Web Share API can share files, this is a Share dropdown offering
+ * both copy-to-clipboard and the OS share sheet. Where it can't (e.g. desktop Chrome/Firefox), the
+ * dropdown would only ever hold a single "Copy image" item — so we collapse it into a direct Copy
+ * button (no caret) that copies in one click instead of two.
+ */
 function ExportMenu({ onCopy, onShare }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
+
+  if (!CAN_SHARE_FILES) {
+    return (
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        shape="pill"
+        onClick={onCopy}
+        className="shrink-0 gap-1"
+      >
+        <Copy className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        Copy image
+      </Button>
+    );
+  }
 
   useEffect(() => {
     const onKey = (e) => {
@@ -188,7 +209,7 @@ function ExportMenu({ onCopy, onShare }) {
           className="absolute right-0 top-[calc(100%+4px)] z-50 w-max rounded-lg border border-border bg-card p-1 shadow-md"
         >
           <ExportMenuItem label="Copy image (clipboard)" onClick={run(onCopy)} />
-          {CAN_SHARE_FILES ? <ExportMenuItem label="Share external..." onClick={run(onShare)} /> : null}
+          <ExportMenuItem label="Share external..." onClick={run(onShare)} />
         </div>
       ) : null}
     </div>
