@@ -99,7 +99,7 @@ function PillarMatrixCard({
         aria-controls={panelId}
         onClick={onToggle}
         className={cn(
-          "flex w-full cursor-pointer items-start gap-2 px-3 pt-2.5 text-left transition-colors hover:bg-black/[0.04]",
+          "flex w-full cursor-pointer items-center gap-2 px-3 pt-2.5 text-left transition-colors hover:bg-black/[0.04]",
           expanded ? "pb-1.5 border-b border-slate-300/60" : "pb-2.5",
         )}
       >
@@ -112,7 +112,7 @@ function PillarMatrixCard({
           </p>
           {note ? <p className={cn("min-w-0", DOC_TEXT.bodyItalic, "opacity-90")}>{note}</p> : null}
         </div>
-        <ChevronDown className={cn("mt-0.5 size-4 shrink-0 text-slate-800 transition-transform", expanded && "rotate-180")} aria-hidden />
+        <ChevronDown className={cn("size-4 shrink-0 text-slate-800 transition-transform", expanded && "rotate-180")} aria-hidden />
       </button>
 
       {/* CSS grid-rows 0fr→1fr animates the panel height open/closed without measuring pixels. */}
