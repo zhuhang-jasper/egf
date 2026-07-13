@@ -10,6 +10,7 @@ export {
   getPillarGroups,
   getPillarIdByIndex,
   getPillarLabel,
+  getPillarLabelWithoutOrgan,
   getPillarOrder,
   getTrackConfig,
   normalizeTrackVariant,

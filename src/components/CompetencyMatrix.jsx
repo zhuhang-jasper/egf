@@ -110,7 +110,7 @@ function PillarMatrixCard({
           <p className={cn("min-w-0", DOC_TEXT.body)}>
             <EmphasizedText text={focusSummary} boldClassName={WHATS_NEW_HIGHLIGHT_CLASS} plain={!showLatestChanges} />
           </p>
-          {note ? <p className={cn("min-w-0", DOC_TEXT.bodyItalic, "opacity-70")}>{note}</p> : null}
+          {note ? <p className={cn("min-w-0", DOC_TEXT.bodyItalic, "opacity-90")}>{note}</p> : null}
         </div>
         <ChevronDown className={cn("mt-0.5 size-4 shrink-0 text-slate-800 transition-transform", expanded && "rotate-180")} aria-hidden />
       </button>

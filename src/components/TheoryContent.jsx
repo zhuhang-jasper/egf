@@ -238,7 +238,7 @@ function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreR
 
         <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.pillars]} className="space-y-3">
           <SectionHeading title="I. 9 Big Pillars" subtitle={PILLARS_SECTION_INTRO} section={THEORY_SECTIONS.pillars} />
-          <PillarGrid showLatestChanges={showLatestChanges} />
+          <PillarGrid />
         </section>
       </div>
 

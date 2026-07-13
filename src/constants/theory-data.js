@@ -1,4 +1,4 @@
-import { CLUSTERS, getPillarGroups, getPillarLabel, getPillarOrder, getPlainChartPillarLabel } from "@/constants";
+import { CLUSTERS, getPillarGroups, getPillarLabel, getPillarLabelWithoutOrgan, getPillarOrder, getPlainChartPillarLabel } from "@/constants";
 import { COMPETENCY_LEVEL_COPY } from "@/constants/competency-matrix-data";
 
 function buildLevels(scores) {
@@ -141,7 +141,9 @@ function buildCompetencyMatrix() {
       return {
         order,
         pillarId: pillar.id,
-        pillarName: pillar.pillar,
+        // Matrix cards drop the body-part parenthetical (kept in the Section I pillar grid) to avoid
+        // repeating it — e.g. "👃 Domain Logic" here vs. "👃 Domain Logic (Nose)" in the intro.
+        pillarName: getPillarLabelWithoutOrgan(pillar.id),
         focusSummary: pillar.focusSummary,
         note: pillar.note,
         color: group.color,

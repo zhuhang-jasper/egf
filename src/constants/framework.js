@@ -94,6 +94,18 @@ export function getPillarLabel(pillarId) {
 }
 
 /**
+ * Pillar label with both the leading emoji and the body-part metaphor in parentheses dropped — e.g.
+ * "Domain Logic" from "👃 Domain Logic (Nose)". Used where the organ name would be repetitive
+ * (the competency-matrix cards); the emoji + parenthetical are introduced once in the Section I
+ * pillar grid.
+ */
+export function getPillarLabelWithoutOrgan(pillarId) {
+  return getPillarLabel(pillarId)
+    .replace(/^\S+\s+/, "")
+    .replace(/\s*\([^)]*\)\s*$/, "");
+}
+
+/**
  * Chart axis labels omit the organ name in parentheses (e.g. "🤲 Coding" not "🤲 Coding (Hands)").
  * They also strip emoji variation selectors (U+FE0F): the only pillar emoji that carries one is
  * 🗣️ Communication, and mobile Safari's canvas mis-measures/-anchors that grapheme cluster, shifting
