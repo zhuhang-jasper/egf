@@ -7,7 +7,6 @@ import { PillarGrid } from "@/components/PillarGrid";
 import { ShareLinkButton } from "@/components/ShareLinkButton";
 import { StaticCompetencyChart } from "@/components/StaticCompetencyChart";
 
-import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useShowLatestChanges } from "@/hooks/useShowLatestChanges";
 
 import { CAREER_TRACKS_SECTION_INTRO, PILLARS_SECTION_INTRO, SENIORITY_LEVEL_DEFINITIONS, SENIORITY_SECTION_INTRO } from "@/constants/theory-data";
@@ -17,6 +16,11 @@ import { scrollBelowStickyHeaderUntilSettled } from "@/utils/scroll";
 import { getPersistedExpandedPillar, getPillarCardElementId, persistExpandedPillar, THEORY_SECTION_IDS, THEORY_SECTIONS } from "@/utils/theory-url";
 
 const cardClass = "rounded-xl border border-slate-300 bg-white shadow-md shadow-slate-200/40";
+
+// Hero radar pillar-label sizing: scale linearly with the chart, from 12px at its small-mobile width
+// up to 14px at its desktop max width (the wrapper's max-w-[520px]). Module-level constant so its
+// identity is stable across renders (StaticCompetencyChart memoizes on this object).
+const HERO_POINT_LABEL_PX_RANGE = { minPx: 12, maxPx: 14, minWidthPx: 300, maxWidthPx: 520 };
 
 // On a deep-link boot, how long to let the scroll-restore loop settle at the remembered position
 // before we switch the expanded pillar. Long enough to clear restore's initial frames; short enough
@@ -99,10 +103,6 @@ function SeniorityStepper() {
 
 function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreRef, onDismissWhatsNew }) {
   const consumedRef = useRef(false);
-
-  // The hero radar's labels track the page body font, which steps at the `sm` (640px) breakpoint
-  // (text-[12px] sm:text-[14px]). So the chart has just two fixed sizes: one below sm, one at sm+.
-  const isSmUp = useMediaQuery("(min-width: 640px)");
 
   // Expanded pillar state lives here so the matrix share button can read it. On a deep-link boot we
   // intentionally start from the *persisted* pillar, NOT the deep-link's — so the page first restores
@@ -223,16 +223,15 @@ function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreR
           <LatestChangesToggle show={showLatestChanges} onToggle={handleToggleLatestChanges} />
         </div>
 
-        <div className="py-2">
+        <div className="mx-auto w-full max-w-[520px] mb-4">
           <StaticCompetencyChart
             levels={[]}
             trackVariant="fe"
             plainLabels={false}
-            pointLabelPx={isSmUp ? 14 : 12}
+            pointLabelPxRange={HERO_POINT_LABEL_PX_RANGE}
             hidePolygon
-            fullWidth={isSmUp}
-            maxWidthPx={isSmUp ? undefined : 320}
-            maxHeightPx={isSmUp ? 260 : 220}
+            showLevelTicks
+            fullWidth
             aria-label="Empty 9-pillar competency radar"
           />
         </div>

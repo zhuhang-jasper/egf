@@ -14,6 +14,9 @@ export function StaticCompetencyChart({
   className,
   hidePolygon = false,
   hidePointLabels = false,
+  // Show the L1–L5 radial tick labels. Off by default (the theory doc charts render without them);
+  // the hero radar turns this on so the empty chart still reads as a 5-level scale.
+  showLevelTicks = false,
   fillContainer = false,
   // Drop the mobile max-width cap so the chart fills its container's width; height is then driven
   // purely by maxHeightPx. Without this the chart is capped at 16rem wide on mobile.
@@ -36,6 +39,10 @@ export function StaticCompetencyChart({
   // Fixed point-label size in px. When set, pins the label size regardless of chart width (so the
   // labels can track a fixed page font). Overrides pointLabelScale. Leave undefined for width-scaled.
   pointLabelPx,
+  // Point-label size range { minPx, maxPx, minWidthPx, maxWidthPx }. When set, the label size ramps
+  // linearly from minPx→maxPx as the chart width goes minWidthPx→maxWidthPx (clamped at the ends),
+  // so labels scale fluidly with the chart. Takes precedence over pointLabelPx/pointLabelScale.
+  pointLabelPxRange,
   "aria-label": ariaLabel,
 }) {
   const canvasRef = useRef(null);
@@ -50,13 +57,14 @@ export function StaticCompetencyChart({
       plainLabels,
       pointLabelScale,
       pointLabelPx,
+      pointLabelPxRange,
       levelsPolygonHidden: hidePolygon,
-      chartLevelTicksHidden: true,
+      chartLevelTicksHidden: !showLevelTicks,
       pointLabelsHidden: hidePointLabels,
       focusedPillars,
       maxHeightPx,
     }),
-    [levels, title, trackVariant, purpose, plainLabels, pointLabelScale, pointLabelPx, hidePolygon, hidePointLabels, focusedPillars, maxHeightPx],
+    [levels, title, trackVariant, purpose, plainLabels, pointLabelScale, pointLabelPx, pointLabelPxRange, hidePolygon, hidePointLabels, showLevelTicks, focusedPillars, maxHeightPx],
   );
 
   useStaticCompetencyChart(canvasRef, frameRef, chartState);

@@ -188,7 +188,9 @@ export function applyRadarCenterFit(scale) {
   const cy = area.top + area.height / 2;
   const uWidth = getChartWidthUnit(chart.width);
   const { minPx, maxPx } = u.radarLabelReserved;
-  const reserve = Math.round(minPx + uWidth * (maxPx - minPx));
+  // Not rounded — a stepped reserve resizes the radar radius by 1px at a width threshold, which the
+  // frame-fit then amplifies into a visible jump. Fractional keeps the radius scaling continuous.
+  const reserve = minPx + uWidth * (maxPx - minPx);
   const maxR = Math.min(cx - area.left - reserve, area.right - cx - reserve);
 
   scale.xCenter = cx;
@@ -230,6 +232,25 @@ export function getRadarContentHeightPx(chart) {
   return Math.ceil(extents.maxY - extents.minY + pad * 2);
 }
 
+/**
+ * Linearly interpolate a point-label size (px) across chart width for a per-chart
+ * `pointLabelPxRange = { minPx, maxPx, minWidthPx, maxWidthPx }`. Below minWidthPx the size is
+ * minPx, above maxWidthPx it is maxPx, and it ramps linearly between — so the labels scale with the
+ * chart the same way its overall size does. Used by the theory hero radar.
+ *
+ * The result is intentionally NOT rounded: an integer font size can only reach the max via the
+ * intermediate integers (12→13→14), and each crossing is a visible 1px pop as the chart scales.
+ * Returning a fractional px (canvas renders these fine) makes the label track the chart continuously.
+ */
+function getPointLabelSizePxFromRange(chartWidthPx, range) {
+  const { minPx, maxPx, minWidthPx, maxWidthPx } = range;
+  if (maxWidthPx <= minWidthPx) {
+    return maxPx;
+  }
+  const t = Math.max(0, Math.min(1, (chartWidthPx - minWidthPx) / (maxWidthPx - minWidthPx)));
+  return minPx + t * (maxPx - minPx);
+}
+
 function getChartPointLabelSizePxForUi(chartWidthPx, ui) {
   const cf = ui.chartFonts;
   const ch = ui.chart;
@@ -248,13 +269,18 @@ function getChartPointLabelSizePxForUi(chartWidthPx, ui) {
 function getPointLabelPaddingPxForUi(chartWidthPx, ui) {
   const u = getChartWidthUnit(chartWidthPx);
   const { minPx, maxPx } = ui.chart.pointLabelPaddingRange ?? { minPx: 5, maxPx: 12 };
-  return Math.round(minPx + u * (maxPx - minPx));
+  // Not rounded: label padding offsets each label's position outward, and the frame height is fit to
+  // the resulting label span. A rounded (stepped) padding makes labels jump 1px outward at a width
+  // threshold, which pops the whole frame bigger — keep it fractional so the chart scales smoothly.
+  return minPx + u * (maxPx - minPx);
 }
 
 function getChartLayoutPaddingForUi(chartWidthPx, ui) {
   const u = getChartWidthUnit(chartWidthPx);
   const { minPx, maxPx } = ui.chart.layoutPaddingHorizontal;
-  const horizontal = Math.round(minPx + u * (maxPx - minPx));
+  // Not rounded — this padding narrows the drawing area (hence the radius, hence the label span the
+  // frame is fit to). A stepped value pops the chart size at a width threshold; fractional is smooth.
+  const horizontal = minPx + u * (maxPx - minPx);
   return { top: 0, right: horizontal, bottom: 0, left: horizontal };
 }
 
@@ -268,11 +294,19 @@ export function syncFontsForChart(chart) {
   const ch = ui.chart;
   const tickSize = Math.max(cf.tickMinPx, Math.round(w / cf.tickWidthDivisor));
   const cc = chart?.options?.plugins?.competencyChart;
-  // A fixed label px (pointLabelPx) pins the label size regardless of chart width — used by the
-  // theory hero radar so its labels track the page's fixed body font, not the chart width. Falling
-  // back to the width-scaled size (× optional pointLabelScale) for every other chart.
-  const labelScale = cc?.pointLabelScale ?? 1;
-  const labelSize = cc?.pointLabelPx ?? Math.round(getChartPointLabelSizePxForUi(w, ui) * labelScale);
+  // Label-size precedence, most specific first:
+  //   1. pointLabelPxRange — linearly interpolate minPx→maxPx across chart width (theory hero radar,
+  //      so its labels scale fluidly with the chart between two chosen sizes).
+  //   2. pointLabelPx — a fixed px that pins the label regardless of chart width.
+  //   3. preset width-scaling (× optional pointLabelScale) — every other chart.
+  let labelSize;
+  if (cc?.pointLabelPxRange) {
+    labelSize = getPointLabelSizePxFromRange(w, cc.pointLabelPxRange);
+  } else if (cc?.pointLabelPx != null) {
+    labelSize = cc.pointLabelPx;
+  } else {
+    labelSize = Math.round(getChartPointLabelSizePxForUi(w, ui) * (cc?.pointLabelScale ?? 1));
+  }
   const labelPadding = getPointLabelPaddingPxForUi(w, ui);
   const padding = getChartLayoutPaddingForUi(w, ui);
   const rScale = chart.options.scales.r;

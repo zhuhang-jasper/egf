@@ -50,11 +50,16 @@ function syncLevelTicksVisibility(chart, hidden) {
   if (!ticks) {
     return;
   }
-  if (chart?.options?.plugins?.competencyChart?.purpose === "theory") {
+  // Honor `hidden` for every preset. Theory doc charts pass hidden=true and keep their prior behavior
+  // (ticks fully off, display=false — reserves no space, draws nothing); the theory hero opts its
+  // L1–L5 ticks in. Colors come from the resolved preset so theory ticks match its palette. The tool
+  // chart uses display=true + transparent-when-hidden so the radial metrics stay stable as it toggles.
+  const ch = resolveChartUi(chart).chart;
+  const isTheory = chart?.options?.plugins?.competencyChart?.purpose === "theory";
+  if (isTheory && hidden) {
     ticks.display = false;
     return;
   }
-  const ch = FE_UI.chart;
   ticks.display = true;
   const color = hidden ? "transparent" : ch.tickLabelColor;
   const backdropColor = hidden ? "transparent" : ch.tickBackdropColor;
@@ -123,6 +128,22 @@ function syncPointLabelPxOption(chart, pointLabelPx) {
   }
 }
 
+/**
+ * Per-chart point-label size range (see syncFontsForChart) — linearly interpolates minPx→maxPx
+ * across chart width so labels scale with the chart. Takes precedence over pointLabelPx.
+ */
+function syncPointLabelPxRangeOption(chart, pointLabelPxRange) {
+  const cc = chart.options.plugins.competencyChart;
+  const next = pointLabelPxRange ?? undefined;
+  const prev = cc.pointLabelPxRange;
+  const same =
+    prev === next ||
+    (prev && next && prev.minPx === next.minPx && prev.maxPx === next.maxPx && prev.minWidthPx === next.minWidthPx && prev.maxWidthPx === next.maxWidthPx);
+  if (!same) {
+    cc.pointLabelPxRange = next;
+  }
+}
+
 function syncChartPlugins(chart, trackVariant) {
   const track = normalizeTrackVariant(trackVariant);
   chart.options.plugins.clusterBackground = {
@@ -142,6 +163,7 @@ export function applyChartState(chart, state) {
   syncPlainLabelsOption(chart, state.plainLabels);
   syncPointLabelScaleOption(chart, state.pointLabelScale);
   syncPointLabelPxOption(chart, state.pointLabelPx);
+  syncPointLabelPxRangeOption(chart, state.pointLabelPxRange);
   syncChartLabels(chart, trackVariant);
   const levels = Array.isArray(state.levels) ? state.levels : [];
   chart.data.datasets[0].data = levels.length === orderLen ? [...levels] : new Array(orderLen).fill(0);
