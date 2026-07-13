@@ -23,7 +23,6 @@ function PillarCard({ pillar, clusterLabel, color, textColor, showLatestChanges 
       </p>
       <div className={cn("mt-2 min-[470px]:mt-0", DOC_TEXT.bodyItalic)}>
         <p>&ldquo;{pillar.signatureQuestion}&rdquo;</p>
-        {pillar.note ? <p className="mt-2 min-[470px]:mt-2.5 opacity-70">{pillar.note}</p> : null}
       </div>
       {/* col only: cluster label at bottom */}
       <span className={cn("hidden min-[470px]:block text-right", DOC_TEXT.clusterLabel)} style={{ color: textColor }}>

@@ -42,7 +42,7 @@ export const FE_UI = {
   chartFonts: {
     tickMinPx: 8,
     tickWidthDivisor: 48,
-    pointLabelMinPx: 11,
+    pointLabelMinPx: 12,
     pointLabelMaxPx: 18,
     pointLabelRefWidthPx: 380,
   },
