@@ -6,8 +6,8 @@ export const DOC_TEXT = {
   bodyItalic: "text-[12px] sm:text-[14px] font-bold italic leading-snug text-slate-700",
   bodyDimMedium: "text-[11px] sm:text-[12px] font-medium leading-snug text-slate-600",
 
-  cardTitle: "text-[14px] sm:text-[16px] font-semibold leading-snug text-slate-900",
-  cardTitlePlain: "text-[14px] sm:text-[16px] font-semibold text-slate-900",
+  cardTitle: "text-[13px] sm:text-[15px] font-semibold leading-snug text-slate-900",
+  cardTitlePlain: "text-[13px] sm:text-[15px] font-semibold text-slate-900",
 
   meta: "text-[11px] sm:text-[12px] font-medium uppercase tracking-wide text-slate-700 text-right",
   metaBody: "text-[11px] sm:text-[12px] leading-snug text-slate-500",

@@ -5,7 +5,9 @@ import { CompetencyMatrix } from "@/components/CompetencyMatrix";
 import { LatestChangesToggle } from "@/components/LatestChangesToggle";
 import { PillarGrid } from "@/components/PillarGrid";
 import { ShareLinkButton } from "@/components/ShareLinkButton";
+import { StaticCompetencyChart } from "@/components/StaticCompetencyChart";
 
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useShowLatestChanges } from "@/hooks/useShowLatestChanges";
 
 import { CAREER_TRACKS_SECTION_INTRO, PILLARS_SECTION_INTRO, SENIORITY_LEVEL_DEFINITIONS, SENIORITY_SECTION_INTRO } from "@/constants/theory-data";
@@ -68,7 +70,7 @@ function SeniorityStepper() {
             <span className={cn(levelBadgeClass, "size-7", DOC_TEXT.badgeMd)}>{code}</span>
             <div className="min-w-0 space-y-2">
               <div className="flex items-baseline justify-between gap-2">
-                <SeniorityPhaseTitle phase={phase} className={cn("min-w-0", DOC_TEXT.bodySemibold, "font-bold text-[14px] sm:text-[16px]")} />
+                <SeniorityPhaseTitle phase={phase} className={cn("min-w-0", DOC_TEXT.bodySemibold, "font-bold text-[13px] sm:text-[15px]")} />
                 <p className={cn("shrink-0", DOC_TEXT.meta)}>{seniority}</p>
               </div>
               <p className={DOC_TEXT.body}>{description}</p>
@@ -84,7 +86,7 @@ function SeniorityStepper() {
               <div className="flex justify-start">
                 <span className={cn(levelBadgeClass, "size-7 shrink-0", DOC_TEXT.badgeMd)}>{code}</span>
               </div>
-              <SeniorityPhaseTitle phase={phase} className={cn("min-w-0", DOC_TEXT.bodySemibold, "font-bold text-[14px] sm:text-[16px]")} />
+              <SeniorityPhaseTitle phase={phase} className={cn("min-w-0", DOC_TEXT.bodySemibold, "font-bold text-[13px] sm:text-[15px]")} />
               <p className={DOC_TEXT.body}>{description}</p>
               <p className={DOC_TEXT.meta}>{seniority}</p>
             </div>
@@ -97,6 +99,10 @@ function SeniorityStepper() {
 
 function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreRef, onDismissWhatsNew }) {
   const consumedRef = useRef(false);
+
+  // The hero radar's labels track the page body font, which steps at the `sm` (640px) breakpoint
+  // (text-[12px] sm:text-[14px]). So the chart has just two fixed sizes: one below sm, one at sm+.
+  const isSmUp = useMediaQuery("(min-width: 640px)");
 
   // Expanded pillar state lives here so the matrix share button can read it. On a deep-link boot we
   // intentionally start from the *persisted* pillar, NOT the deep-link's — so the page first restores
@@ -215,6 +221,20 @@ function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreR
       <div className="space-y-2">
         <div className="flex justify-end print:hidden">
           <LatestChangesToggle show={showLatestChanges} onToggle={handleToggleLatestChanges} />
+        </div>
+
+        <div className="py-2">
+          <StaticCompetencyChart
+            levels={[]}
+            trackVariant="fe"
+            plainLabels={false}
+            pointLabelPx={isSmUp ? 14 : 12}
+            hidePolygon
+            fullWidth={isSmUp}
+            maxWidthPx={isSmUp ? undefined : 320}
+            maxHeightPx={isSmUp ? 260 : 220}
+            aria-label="Empty 9-pillar competency radar"
+          />
         </div>
 
         <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.pillars]} className="space-y-3">

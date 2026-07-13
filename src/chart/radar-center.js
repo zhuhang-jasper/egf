@@ -267,7 +267,12 @@ export function syncFontsForChart(chart) {
   const cf = ui.chartFonts;
   const ch = ui.chart;
   const tickSize = Math.max(cf.tickMinPx, Math.round(w / cf.tickWidthDivisor));
-  const labelSize = getChartPointLabelSizePxForUi(w, ui);
+  const cc = chart?.options?.plugins?.competencyChart;
+  // A fixed label px (pointLabelPx) pins the label size regardless of chart width — used by the
+  // theory hero radar so its labels track the page's fixed body font, not the chart width. Falling
+  // back to the width-scaled size (× optional pointLabelScale) for every other chart.
+  const labelScale = cc?.pointLabelScale ?? 1;
+  const labelSize = cc?.pointLabelPx ?? Math.round(getChartPointLabelSizePxForUi(w, ui) * labelScale);
   const labelPadding = getPointLabelPaddingPxForUi(w, ui);
   const padding = getChartLayoutPaddingForUi(w, ui);
   const rScale = chart.options.scales.r;

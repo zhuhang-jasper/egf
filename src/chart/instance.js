@@ -93,6 +93,36 @@ function syncChartLabels(chart, trackVariant) {
   chart.data.labels = plain ? getPlainChartLabels(trackVariant) : getChartLabels(trackVariant);
 }
 
+/** Allow chart state to flip a theory chart's plain labels on/off after creation (e.g. emoji labels). */
+function syncPlainLabelsOption(chart, plainLabels) {
+  if (plainLabels == null) {
+    return;
+  }
+  const cc = chart.options.plugins.competencyChart;
+  if (cc.plainLabels !== plainLabels) {
+    cc.plainLabels = plainLabels;
+  }
+}
+
+/** Per-chart point-label size multiplier (see syncFontsForChart) — lets one chart run larger labels. */
+function syncPointLabelScaleOption(chart, pointLabelScale) {
+  if (pointLabelScale == null) {
+    return;
+  }
+  const cc = chart.options.plugins.competencyChart;
+  if (cc.pointLabelScale !== pointLabelScale) {
+    cc.pointLabelScale = pointLabelScale;
+  }
+}
+
+/** Fixed point-label px (see syncFontsForChart) — pins label size independent of chart width. */
+function syncPointLabelPxOption(chart, pointLabelPx) {
+  const cc = chart.options.plugins.competencyChart;
+  if (cc.pointLabelPx !== (pointLabelPx ?? undefined)) {
+    cc.pointLabelPx = pointLabelPx ?? undefined;
+  }
+}
+
 function syncChartPlugins(chart, trackVariant) {
   const track = normalizeTrackVariant(trackVariant);
   chart.options.plugins.clusterBackground = {
@@ -109,6 +139,9 @@ export function applyChartState(chart, state) {
   const trackVariant = normalizeTrackVariant(state.trackVariant);
   const orderLen = getPillarOrder(trackVariant).length;
   syncChartPlugins(chart, trackVariant);
+  syncPlainLabelsOption(chart, state.plainLabels);
+  syncPointLabelScaleOption(chart, state.pointLabelScale);
+  syncPointLabelPxOption(chart, state.pointLabelPx);
   syncChartLabels(chart, trackVariant);
   const levels = Array.isArray(state.levels) ? state.levels : [];
   chart.data.datasets[0].data = levels.length === orderLen ? [...levels] : new Array(orderLen).fill(0);

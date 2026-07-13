@@ -125,7 +125,7 @@ export const SENIORITY_LEVEL_DEFINITIONS = [
     phase: "Impact / Strategist",
     term: "Strategist",
     description:
-      "Can navigate high ambiguity, solve systemic risks, and shape workflows or strategies beyond the immediate team. Impact is measured relative to the organization, not by company size.",
+      "Can navigate high ambiguity, solve systemic risks, and shape workflows or strategies beyond the immediate team, at a scale relative to the organization.",
     seniority: "Principal",
   },
 ];
