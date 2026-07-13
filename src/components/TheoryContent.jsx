@@ -238,7 +238,7 @@ function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreR
 
         <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.pillars]} className="space-y-3">
           <SectionHeading title="I. 9 Big Pillars" subtitle={PILLARS_SECTION_INTRO} section={THEORY_SECTIONS.pillars} />
-          <PillarGrid />
+          <PillarGrid showLatestChanges={showLatestChanges} />
         </section>
       </div>
 
@@ -250,7 +250,7 @@ function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreR
       <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.matrix]} className="space-y-3">
         <SectionHeading
           title="III. The 45-Point Competency Matrix"
-          subtitle="The full behavioral matrix: 9 pillars × 5 levels. Each cell describes the observable behaviors expected at that level, organized by the three clusters."
+          subtitle="The full behavioral matrix: 9 pillars × 5 levels. Expand any pillar to reveal its 5 cells — each describes the observable behaviors expected at that level, organized by the three clusters."
           section={THEORY_SECTIONS.matrix}
         />
         <CompetencyMatrix
