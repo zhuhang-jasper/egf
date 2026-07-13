@@ -64,7 +64,21 @@ export function StaticCompetencyChart({
       focusedPillars,
       maxHeightPx,
     }),
-    [levels, title, trackVariant, purpose, plainLabels, pointLabelScale, pointLabelPx, pointLabelPxRange, hidePolygon, hidePointLabels, showLevelTicks, focusedPillars, maxHeightPx],
+    [
+      levels,
+      title,
+      trackVariant,
+      purpose,
+      plainLabels,
+      pointLabelScale,
+      pointLabelPx,
+      pointLabelPxRange,
+      hidePolygon,
+      hidePointLabels,
+      showLevelTicks,
+      focusedPillars,
+      maxHeightPx,
+    ],
   );
 
   useStaticCompetencyChart(canvasRef, frameRef, chartState);

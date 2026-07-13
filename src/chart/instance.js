@@ -138,7 +138,12 @@ function syncPointLabelPxRangeOption(chart, pointLabelPxRange) {
   const prev = cc.pointLabelPxRange;
   const same =
     prev === next ||
-    (prev && next && prev.minPx === next.minPx && prev.maxPx === next.maxPx && prev.minWidthPx === next.minWidthPx && prev.maxWidthPx === next.maxWidthPx);
+    (prev &&
+      next &&
+      prev.minPx === next.minPx &&
+      prev.maxPx === next.maxPx &&
+      prev.minWidthPx === next.minWidthPx &&
+      prev.maxWidthPx === next.maxWidthPx);
   if (!same) {
     cc.pointLabelPxRange = next;
   }

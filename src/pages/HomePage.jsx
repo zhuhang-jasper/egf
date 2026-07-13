@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import { AppShellIntro, AppShellTabBar } from "@/components/AppShellHeader";
 import { TheoryContent } from "@/components/TheoryContent";
 import { ToolContent } from "@/components/ToolContent";
+import { Toaster } from "@/components/ui/Toaster";
 
 import { getPersistedActiveTab, useTabScrollMemory } from "@/hooks/useTabScrollMemory";
 import { useUnseenFramework } from "@/hooks/useUnseenFramework";
@@ -131,6 +132,8 @@ export default function HomePage() {
       <p className="mt-auto mb-1 text-center text-[11px] text-white/60 print:mb-0 print:text-slate-500">
         © 2026 Jasper Loo Zhu Hang · All rights reserved · <span className="tabular-nums">v{appVersion}</span>
       </p>
+
+      <Toaster />
     </div>
   );
 }

@@ -10,10 +10,13 @@ import {
   parseToCanonicalState,
   syncLevelsArrayFromMap,
 } from "@/constants/levels";
+import { exportProfilesToFile, parseImportedProfiles } from "@/utils/profile-transfer";
 import { getDefaultChartDisplay, loadDraftFromStorage, loadProfilesFromStorage, saveDraftToStorage, writeProfilesToStorage } from "@/utils/storage";
-import { downloadProfilesJson, parseImportedProfiles } from "@/utils/profile-transfer";
 
 const initialDraft = loadDraftFromStorage() ?? { ...getDefaultChartState(), ...getDefaultChartDisplay() };
+
+// Monotonic id source for toasts (module-scoped so ids stay unique across the store's lifetime).
+let toastSeq = 0;
 
 function withSyncedLevels(state) {
   const { levels } = syncLevelsArrayFromMap({
@@ -39,6 +42,28 @@ export const useAppStore = create((set, get) => ({
   profilePickerOpen: false,
   saveFeedback: null,
   levelKeyboardInputEnabled: initialDraft.levelKeyboardInputEnabled === true,
+  toasts: [],
+
+  /**
+   * Show a transient toast. `variant` is "default" | "success" | "error".
+   * Returns the toast id; auto-dismisses after `duration` ms (0 = sticky).
+   */
+  showToast: (message, { variant = "default", duration = 2600 } = {}) => {
+    const text = String(message ?? "").trim();
+    if (!text) {
+      return null;
+    }
+    const id = ++toastSeq;
+    set((state) => ({ toasts: [...state.toasts, { id, message: text, variant }] }));
+    if (duration > 0) {
+      setTimeout(() => get().dismissToast(id), duration);
+    }
+    return id;
+  },
+
+  dismissToast: (id) => {
+    set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) }));
+  },
 
   hydrate: () => {
     const draft = loadDraftFromStorage() ?? { ...getDefaultChartState(), ...getDefaultChartDisplay() };
@@ -159,13 +184,23 @@ export const useAppStore = create((set, get) => ({
     });
   },
 
-  exportProfiles: () => {
+  /**
+   * Export all saved profiles to a JSON file. Async: on browsers with the File System Access API
+   * this resolves only after the file is written (or the user cancels). Returns
+   * `{ count, outcome }` where outcome is "saved" | "cancelled" | "started" | "empty" | "error".
+   */
+  exportProfiles: async () => {
     const profiles = loadProfilesFromStorage();
     if (profiles.length === 0) {
-      return 0;
+      return { count: 0, outcome: "empty" };
     }
-    downloadProfilesJson(profiles);
-    return profiles.length;
+    try {
+      const outcome = await exportProfilesToFile(profiles);
+      return { count: profiles.length, outcome };
+    } catch (e) {
+      console.error(e);
+      return { count: profiles.length, outcome: "error" };
+    }
   },
 
   /**

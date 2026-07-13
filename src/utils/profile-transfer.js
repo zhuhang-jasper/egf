@@ -26,20 +26,70 @@ export function toExportPayload(profiles) {
   };
 }
 
-/** Trigger a browser download of the given profiles as a JSON file. */
-export function downloadProfilesJson(profiles) {
-  const payload = toExportPayload(profiles);
-  const json = JSON.stringify(payload, null, 2);
+function exportFileName() {
+  const stamp = new Date().toISOString().slice(0, 10);
+  return `egf-profiles-${stamp}.json`;
+}
+
+/**
+ * Write the given profiles to a JSON file the user picks, using the File System Access API
+ * (`showSaveFilePicker`) so completion is observable. Resolves:
+ *   - "saved"     — the file was actually written to disk.
+ *   - "cancelled" — the user dismissed the save dialog (no file written).
+ * Throws on a genuine write error. Only call when {@link canSaveWithPicker} is true.
+ */
+async function saveProfilesWithPicker(profiles, json) {
+  let handle;
+  try {
+    handle = await window.showSaveFilePicker({
+      suggestedName: exportFileName(),
+      types: [{ description: "JSON", accept: { "application/json": [".json"] } }],
+    });
+  } catch (e) {
+    // AbortError = user closed the picker without choosing. Anything else is a real failure.
+    if (e?.name === "AbortError") {
+      return "cancelled";
+    }
+    throw e;
+  }
+  const writable = await handle.createWritable();
+  await writable.write(json);
+  await writable.close();
+  return "saved";
+}
+
+/** Fallback: anchor-click download. Fires-and-forgets — the browser gives no completion signal. */
+function downloadViaAnchor(json) {
   const blob = new Blob([json], { type: "application/json" });
   const url = URL.createObjectURL(blob);
-  const stamp = new Date().toISOString().slice(0, 10);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `egf-profiles-${stamp}.json`;
+  a.download = exportFileName();
   document.body.appendChild(a);
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+}
+
+/** Whether the browser can report a truthful save-completion (Chromium: Chrome/Edge). */
+export function canSaveWithPicker() {
+  return typeof window !== "undefined" && typeof window.showSaveFilePicker === "function";
+}
+
+/**
+ * Export the given profiles as a JSON file. Returns the outcome so the caller can decide when
+ * (and whether) to show feedback:
+ *   - "saved"     — file written and confirmed (File System Access API path).
+ *   - "cancelled" — user dismissed the save dialog; no file written, show nothing.
+ *   - "started"   — anchor-download fallback fired; completion is unobservable in this browser.
+ */
+export async function exportProfilesToFile(profiles) {
+  const json = JSON.stringify(toExportPayload(profiles), null, 2);
+  if (canSaveWithPicker()) {
+    return saveProfilesWithPicker(profiles, json);
+  }
+  downloadViaAnchor(json);
+  return "started";
 }
 
 /**
@@ -69,7 +119,14 @@ function detectVersion(parsed) {
 /** Coerce any accepted input into a `{ version, profiles }` object at its detected version. */
 function toVersionedPayload(parsed) {
   const version = detectVersion(parsed);
-  const profiles = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.profiles) ? parsed.profiles : [];
+  let profiles;
+  if (Array.isArray(parsed)) {
+    profiles = parsed;
+  } else if (Array.isArray(parsed?.profiles)) {
+    profiles = parsed.profiles;
+  } else {
+    profiles = [];
+  }
   return { version, profiles };
 }
 

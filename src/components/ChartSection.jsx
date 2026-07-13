@@ -134,7 +134,7 @@ const CAN_SHARE_FILES = (() => {
 })();
 
 /** Dropdown bundling the image-export actions: copy to clipboard, and (where supported) share via the OS share sheet. */
-function ExportMenu({ label, onCopy, onShare }) {
+function ExportMenu({ onCopy, onShare }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
 
@@ -178,7 +178,7 @@ function ExportMenu({ label, onCopy, onShare }) {
         className="gap-1 pr-1"
       >
         <Share className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        {label ?? "Share"}
+        Share
         <ChevronDown className="h-3.5 w-3.5 opacity-60" />
       </Button>
       {open ? (
@@ -199,7 +199,7 @@ export function ChartSection({ isVisible }) {
   const exportRef = useRef(null);
   const canvasRef = useRef(null);
   const frameRef = useRef(null);
-  const [exportLabel, setExportLabel] = useState(null); // transient status shown on the trigger
+  const showToast = useAppStore((s) => s.showToast);
 
   const title = useAppStore((s) => s.title);
   const trackVariant = useAppStore((s) => s.trackVariant);
@@ -231,11 +231,6 @@ export function ChartSection({ isVisible }) {
     relayout();
   }, [chartTitleHidden, chartLegendHidden, relayout]);
 
-  const flashLabel = (text) => {
-    setExportLabel(text);
-    setTimeout(() => setExportLabel(null), 2000);
-  };
-
   const handleCopy = async () => {
     try {
       const result = await copyChartAsImageToClipboard({
@@ -245,16 +240,16 @@ export function ChartSection({ isVisible }) {
       });
       if (result?.method === "clipboard") {
         track("chart_copied", { method: "clipboard" });
-        flashLabel("Copied!");
+        showToast("Copied to clipboard", { variant: "success" });
       } else if (result?.method === "download") {
         track("chart_copied", { method: "download" });
-        flashLabel("Saved file");
+        showToast("Image saved", { variant: "success" });
       } else {
-        flashLabel("Failed");
+        showToast("Couldn't copy the image", { variant: "error" });
       }
     } catch (e) {
       console.error(e);
-      flashLabel("Failed");
+      showToast("Couldn't copy the image", { variant: "error" });
     }
   };
 
@@ -266,20 +261,20 @@ export function ChartSection({ isVisible }) {
         chart: chartRef.current,
       });
       if (result?.method === "share") {
-        // Native share sheet opened — completion is out of our hands, so don't claim "Shared!".
+        // Native share sheet opened — completion is out of our hands, so don't claim success.
         track("chart_shared", { method: "share" });
       } else if (result?.method === "share-fallback-clipboard") {
         track("chart_shared", { method: "fallback-clipboard" });
-        flashLabel("Copied — paste it");
+        showToast("Copied — paste it to share", { variant: "success" });
       } else if (result?.method === "share-fallback-download") {
         track("chart_shared", { method: "fallback-download" });
-        flashLabel("Saved file");
+        showToast("Image saved", { variant: "success" });
       } else {
-        flashLabel("Failed");
+        showToast("Couldn't share the image", { variant: "error" });
       }
     } catch (e) {
       console.error(e);
-      flashLabel("Failed");
+      showToast("Couldn't share the image", { variant: "error" });
     }
   };
 
@@ -288,7 +283,7 @@ export function ChartSection({ isVisible }) {
       <div className="relative z-[2] flex w-full min-w-0 items-center justify-between gap-2 border-b pb-3 border-border mb-3">
         <TrackToggle />
         <div className="flex shrink-0 items-center gap-2">
-          <ExportMenu label={exportLabel} onCopy={handleCopy} onShare={handleShare} />
+          <ExportMenu onCopy={handleCopy} onShare={handleShare} />
           <ChartDisplayMenu />
         </div>
       </div>

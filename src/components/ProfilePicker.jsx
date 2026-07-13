@@ -18,14 +18,22 @@ export function ProfilePicker() {
   const removeProfile = useAppStore((s) => s.removeProfile);
   const exportProfiles = useAppStore((s) => s.exportProfiles);
   const importProfiles = useAppStore((s) => s.importProfiles);
+  const showToast = useAppStore((s) => s.showToast);
   const rootRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  const handleExport = () => {
-    const count = exportProfiles();
-    if (count > 0) {
-      track("profiles_exported", { count });
+  const handleExport = async () => {
+    const { count, outcome } = await exportProfiles();
+    if (outcome === "cancelled" || outcome === "empty") {
+      return; // user backed out, or nothing to export — stay silent
     }
+    if (outcome === "error") {
+      showToast("Couldn't save the file", { variant: "error" });
+      return;
+    }
+    // "saved" (file confirmed written) or "started" (download fired, no completion signal).
+    track("profiles_exported", { count, outcome });
+    showToast(`Exported ${count} profile${count === 1 ? "" : "s"}`, { variant: "success" });
   };
 
   const handleImportFile = async (e) => {
@@ -38,8 +46,13 @@ export function ProfilePicker() {
       const text = await readFileAsText(file);
       const added = importProfiles(text);
       track("profiles_imported", { count: added });
+      if (added > 0) {
+        showToast(`Imported ${added} profile${added === 1 ? "" : "s"}`, { variant: "success" });
+      } else {
+        showToast("No valid profiles found in file", { variant: "error" });
+      }
     } catch {
-      /* unreadable file — ignore */
+      showToast("Couldn't read that file", { variant: "error" });
     }
   };
 
@@ -141,13 +154,7 @@ export function ProfilePicker() {
               Import
             </button>
           </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="application/json,.json"
-            className="hidden"
-            onChange={handleImportFile}
-          />
+          <input ref={fileInputRef} type="file" accept="application/json,.json" className="hidden" onChange={handleImportFile} />
         </div>
       )}
     </div>
