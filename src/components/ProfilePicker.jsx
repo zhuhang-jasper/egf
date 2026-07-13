@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { ChevronDown, Download, Trash2, Upload, Users } from "lucide-react";
 
@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 
 import { useAppStore } from "@/store/useAppStore";
 
+import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
 import { readFileAsText } from "@/utils/profile-transfer";
 
@@ -21,6 +22,8 @@ export function ProfilePicker() {
   const showToast = useAppStore((s) => s.showToast);
   const rootRef = useRef(null);
   const fileInputRef = useRef(null);
+  const menuRef = useRef(null);
+  const [openUp, setOpenUp] = useState(false);
 
   const handleExport = async () => {
     const { count, outcome } = await exportProfiles();
@@ -75,6 +78,32 @@ export function ProfilePicker() {
     };
   }, [open, setOpen]);
 
+  // Flip the menu upward when the button sits too close to the viewport bottom
+  // to fit the menu below it. Measured on open (and on resize while open).
+  useLayoutEffect(() => {
+    if (!open) {
+      setOpenUp(false);
+      return;
+    }
+    const decide = () => {
+      const button = rootRef.current;
+      const menu = menuRef.current;
+      if (!button || !menu) {
+        return;
+      }
+      const buttonRect = button.getBoundingClientRect();
+      const menuHeight = menu.offsetHeight;
+      const gap = 4;
+      const spaceBelow = window.innerHeight - buttonRect.bottom;
+      const spaceAbove = buttonRect.top;
+      // Prefer down; flip up only when it won't fit below but does fit above.
+      setOpenUp(spaceBelow < menuHeight + gap && spaceAbove > spaceBelow);
+    };
+    decide();
+    window.addEventListener("resize", decide);
+    return () => window.removeEventListener("resize", decide);
+  }, [open]);
+
   return (
     <div ref={rootRef} className="relative shrink-0">
       <Button
@@ -92,14 +121,18 @@ export function ProfilePicker() {
       </Button>
       {open && (
         <div
+          ref={menuRef}
           role="menu"
           aria-label="Saved profiles"
-          className="absolute right-0 top-[calc(100%+4px)] z-50 max-h-60 w-max max-w-[calc(100vw-2rem)] overflow-auto rounded-lg border border-border bg-card py-1 shadow-md min-[470px]:max-w-[280px]"
+          className={cn(
+            "absolute right-0 z-50 flex w-max max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border border-border bg-card shadow-md min-[470px]:max-w-[280px]",
+            openUp ? "bottom-[calc(100%+4px)]" : "top-[calc(100%+4px)]",
+          )}
         >
           {profiles.length === 0 ? (
             <p className="px-3 py-2 text-xs text-muted-foreground">No saved profiles yet.</p>
           ) : (
-            <ul className="m-0 list-none p-0 border-b border-border">
+            <ul className="m-0 max-h-60 list-none overflow-auto border-b border-border p-0 py-1">
               {profiles.map((pr) => {
                 const label = String(pr.title).trim() || "(Untitled)";
                 return (
@@ -133,12 +166,12 @@ export function ProfilePicker() {
               })}
             </ul>
           )}
-          <div className="flex items-stretch">
+          <div className="flex shrink-0 items-stretch">
             <button
               type="button"
               role="menuitem"
               disabled={profiles.length === 0}
-              className="flex flex-1 cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm text-muted-foreground hover:bg-muted/60 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
+              className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 px-3 py-2 text-xs text-muted-foreground hover:bg-muted/60 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
               onClick={handleExport}
             >
               <Download className="h-4 w-4 shrink-0" aria-hidden />
@@ -147,7 +180,7 @@ export function ProfilePicker() {
             <button
               type="button"
               role="menuitem"
-              className="flex flex-1 cursor-pointer items-center gap-2 border-l border-border px-3 py-2 text-left text-sm text-muted-foreground hover:bg-muted/60"
+              className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 border-l border-border px-3 py-2 text-xs text-muted-foreground hover:bg-muted/60"
               onClick={() => fileInputRef.current?.click()}
             >
               <Upload className="h-4 w-4 shrink-0" aria-hidden />
