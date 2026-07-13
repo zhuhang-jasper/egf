@@ -1,7 +1,7 @@
 {
   "name": "engineer-growth-framework",
   "private": true,
-  "version": "5.6.0",
+  "version": "5.6.1",
   "type": "module",
   "engines": {
     "node": ">=24.0.0",
