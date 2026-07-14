@@ -50,12 +50,14 @@ export function LevelInput({ value, onChange, ariaLabel, ariaLabelUp, ariaLabelD
         spellCheck={false}
         aria-label={ariaLabel}
         value={editing ? draft : formatLevelForInput(value)}
-        onFocus={() => {
+        onFocus={(e) => {
           if (keyboardLocked) {
             return;
           }
           setEditing(true);
           setDraft(formatLevelForInput(value));
+          // Highlight the current value so a keystroke replaces it — no double-click needed.
+          e.currentTarget.select();
         }}
         onChange={(e) => {
           const s = normalizeTypingValue(e.target.value);
@@ -73,6 +75,11 @@ export function LevelInput({ value, onChange, ariaLabel, ariaLabelUp, ariaLabelD
         onBlur={() => {
           setEditing(false);
           commit(draft);
+        }}
+        onContextMenu={(e) => {
+          // Chrome's mobile/device-toolbar emulation surfaces the native context menu on tap.
+          // Suppress it so a tap just focuses and selects the value.
+          e.preventDefault();
         }}
         onKeyDown={(e) => {
           if (e.key === "ArrowUp") {

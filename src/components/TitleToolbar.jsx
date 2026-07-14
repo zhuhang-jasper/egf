@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-import { CircleCheck, CircleDashed, CircleDot, Keyboard, Plus, RotateCcw, Save, X } from "lucide-react";
+import { CircleCheck, Plus, RotateCcw, Save, X } from "lucide-react";
 
 import { BadgePicker } from "@/components/BadgePicker";
 import { ProfilePicker } from "@/components/ProfilePicker";
@@ -14,16 +14,36 @@ import { selectProfileSaveStatus, useAppStore } from "@/store/useAppStore";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
 
-// Icon + tooltip per profile save status. `modified` means a same-named profile exists with
-// different values, so saving will overwrite it.
+// The Save button doubles as the save-status indicator. Each status sets the button's icon, label,
+// styling, and disabled state. `saved` means the draft matches a saved profile (nothing to save);
+// `modified` means a same-named profile exists with different values, so saving will overwrite it;
+// `new` means saving will create a new profile.
 const SAVE_STATUS_META = {
-  saved: { icon: CircleCheck, color: "text-green-600", label: "Saved", title: "Saved — matches a saved profile" },
-  modified: { icon: CircleDot, color: "text-amber-500", label: "Modified", title: "Modified — saving will overwrite the matching profile" },
-  new: { icon: CircleDashed, color: "text-muted-foreground", label: "Unsaved", title: "Unsaved — saving will create a new profile" },
+  saved: {
+    icon: CircleCheck,
+    label: "Saved",
+    title: "Saved — matches a saved profile",
+    className: "border-green-600/40 bg-green-50 text-green-700 hover:bg-green-50 hover:text-green-700 disabled:opacity-100",
+    disabled: true,
+  },
+  modified: {
+    icon: Save,
+    label: "Update",
+    title: "Modified — saving will overwrite the matching profile",
+    className: "border-amber-500/50 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:text-amber-800",
+    disabled: false,
+  },
+  new: {
+    icon: Save,
+    label: "Save",
+    title: "Unsaved — saving will create a new profile",
+    className: "",
+    disabled: false,
+  },
 };
 
-// Longest status label — used as an invisible sizer so the >=470px status slot reserves a stable
-// width and the title input never shifts as the status changes. Derived so it stays correct if edited.
+// Longest button label — used as an invisible sizer so the Save button reserves a stable width and
+// the title input never shifts as the status changes. Derived so it stays correct if edited.
 const WIDEST_STATUS_LABEL = Object.values(SAVE_STATUS_META).reduce((a, b) => (b.label.length > a.length ? b.label : a), "");
 
 export function TitleToolbar() {
@@ -32,10 +52,8 @@ export function TitleToolbar() {
   const saveProfile = useAppStore((s) => s.saveProfile);
   const saveFeedback = useAppStore((s) => s.saveFeedback);
   const clearSaveFeedback = useAppStore((s) => s.clearSaveFeedback);
-  const resetLevels = useAppStore((s) => s.resetLevels);
   const createNew = useAppStore((s) => s.createNew);
-  const levelKeyboardInputEnabled = useAppStore((s) => s.levelKeyboardInputEnabled);
-  const toggleLevelKeyboardInputEnabled = useAppStore((s) => s.toggleLevelKeyboardInputEnabled);
+  const resetLevels = useAppStore((s) => s.resetLevels);
   const touchPrimary = useTouchPrimary();
   const saveStatus = useAppStore(selectProfileSaveStatus); // "saved" | "modified" | "new"
   const statusMeta = SAVE_STATUS_META[saveStatus];
@@ -56,23 +74,8 @@ export function TitleToolbar() {
 
   return (
     <div className="flex w-full flex-col gap-2">
-      {/* Row 1 — create, title, save */}
+      {/* Row 1 — title, status-aware save */}
       <div className="flex w-full min-w-0 items-center gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          shape="pill"
-          className="shrink-0"
-          onClick={() => {
-            createNew();
-            document.getElementById("chart-title-input")?.focus();
-          }}
-          aria-label="Create new chart"
-          title="Create new chart"
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
         <div className="relative min-w-0 flex-1">
           <BadgePicker />
           <Input
@@ -100,40 +103,33 @@ export function TitleToolbar() {
             <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          {/* Inline label at all widths, sized to the widest status via an invisible sizer so the
-              title input never shifts as the status changes. */}
-          <span className={cn("group relative flex shrink-0 items-center gap-1", statusMeta.color)}>
-            <StatusIcon className="h-4 w-4 shrink-0" aria-hidden />
-            <span className="relative inline-grid text-xs italic text-muted-foreground">
-              <span aria-hidden className="invisible col-start-1 row-start-1 whitespace-nowrap">
-                {WIDEST_STATUS_LABEL}
-              </span>
-              <span className="col-start-1 row-start-1 truncate">{statusMeta.label}</span>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          shape="pill"
+          disabled={statusMeta.disabled}
+          className={cn("shrink-0 gap-1.5", statusMeta.className)}
+          onClick={() => {
+            if (saveProfile() !== false) {
+              track("profile_saved", { attached_badge: useAppStore.getState().attachedBadge });
+            }
+          }}
+          aria-label={statusMeta.title}
+          title={statusMeta.title}
+        >
+          <StatusIcon className="h-4 w-4 shrink-0" aria-hidden />
+          {/* Label sized to the widest status via an invisible sizer so the title input never
+              shifts as the status changes between "Save"/"Saved". */}
+          <span className="relative inline-grid">
+            <span aria-hidden className="invisible col-start-1 row-start-1 whitespace-nowrap">
+              {WIDEST_STATUS_LABEL}
             </span>
+            <span className="col-start-1 row-start-1 text-left">{statusMeta.label}</span>
           </span>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            shape="pill"
-            // Icon-only circle on mobile; expands to a "Save" pill (auto width, label + gap) at >=470px.
-            // text-xs to match the other sm toolbar buttons (size="icon" doesn't set a font size).
-            className="text-xs shrink-0 min-[470px]:w-auto min-[470px]:gap-1.5 min-[470px]:px-3"
-            onClick={() => {
-              if (saveProfile() !== false) {
-                track("profile_saved", { attached_badge: useAppStore.getState().attachedBadge });
-              }
-            }}
-            aria-label="Save"
-            title="Save"
-          >
-            <Save className="h-4 w-4 shrink-0" />
-            <span className="hidden min-[470px]:inline">Save</span>
-          </Button>
-        </div>
+        </Button>
       </div>
-      {/* Row 2 — reset, keyboard toggle, profiles */}
+      {/* Row 2 — create, profiles */}
       <div className="flex w-full items-center gap-2">
         <Button
           type="button"
@@ -141,29 +137,33 @@ export function TitleToolbar() {
           size="sm"
           shape="pill"
           className="gap-1.5"
-          onClick={resetLevels}
-          aria-label="Reset pillars to default values"
-          title="Reset pillars to default values"
+          onClick={() => {
+            createNew();
+            document.getElementById("chart-title-input")?.focus();
+          }}
+          aria-label="Create new chart"
+          title="Create new chart"
         >
-          <RotateCcw className="h-4 w-4" />
-          Reset values
+          <Plus className="h-4 w-4" />
+          New
         </Button>
-        {touchPrimary ? (
+        {/* Reset lives here on desktop (right of New). On touch it moves down next to the
+            keyboard switch — see FormControlsRow — so it sits by the inputs it acts on. */}
+        {touchPrimary ? null : (
           <Button
             type="button"
-            variant={levelKeyboardInputEnabled ? "default" : "outline"}
+            variant="outline"
             size="sm"
             shape="pill"
             className="gap-1.5"
-            onClick={toggleLevelKeyboardInputEnabled}
-            aria-label={levelKeyboardInputEnabled ? "Keyboard on — tap to turn off" : "Keyboard off — tap to turn on"}
-            aria-pressed={levelKeyboardInputEnabled}
-            title={levelKeyboardInputEnabled ? "KB on" : "KB off"}
+            onClick={resetLevels}
+            aria-label="Reset all levels to 3"
+            title="Reset all levels to 3"
           >
-            <Keyboard className="h-4 w-4" />
-            {levelKeyboardInputEnabled ? "KB on" : "KB off"}
+            <RotateCcw className="h-4 w-4" />
+            Reset levels
           </Button>
-        ) : null}
+        )}
         <div className="ml-auto">
           <ProfilePicker />
         </div>
