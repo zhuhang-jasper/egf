@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-import { CircleCheck, Plus, RotateCcw, Save, X } from "lucide-react";
+import { CircleCheck, Keyboard, Plus, RotateCcw, Save, X } from "lucide-react";
 
 import { BadgePicker } from "@/components/BadgePicker";
 import { Button } from "@/components/ui/button";
@@ -45,6 +45,36 @@ const SAVE_STATUS_META = {
 // the title input never shifts as the status changes. Derived so it stays correct if edited.
 const WIDEST_STATUS_LABEL = Object.values(SAVE_STATUS_META).reduce((a, b) => (b.label.length > a.length ? b.label : a), "");
 
+// Status-aware Save button. Rendered in two slots (Row 1 next to the title ≥470px, Row 2 rightmost
+// <470px), each toggled via a responsive `hidden` in className — so `className` also carries the
+// breakpoint visibility, not just layout.
+function SaveButton({ statusMeta, onSave, className }) {
+  const StatusIcon = statusMeta.icon;
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      shape="pill"
+      disabled={statusMeta.disabled}
+      className={cn("shrink-0 gap-1.5", statusMeta.className, className)}
+      onClick={onSave}
+      aria-label={statusMeta.title}
+      title={statusMeta.title}
+    >
+      <StatusIcon className="h-4 w-4 shrink-0" aria-hidden />
+      {/* Label sized to the widest status via an invisible sizer so the row layout never
+          shifts as the status changes between "Save"/"Saved". */}
+      <span className="relative inline-grid">
+        <span aria-hidden className="invisible col-start-1 row-start-1 whitespace-nowrap">
+          {WIDEST_STATUS_LABEL}
+        </span>
+        <span className="col-start-1 row-start-1 text-left">{statusMeta.label}</span>
+      </span>
+    </Button>
+  );
+}
+
 export function TitleToolbar() {
   const title = useAppStore((s) => s.title);
   const setTitle = useAppStore((s) => s.setTitle);
@@ -53,10 +83,17 @@ export function TitleToolbar() {
   const clearSaveFeedback = useAppStore((s) => s.clearSaveFeedback);
   const createNew = useAppStore((s) => s.createNew);
   const resetLevels = useAppStore((s) => s.resetLevels);
+  const levelKeyboardInputEnabled = useAppStore((s) => s.levelKeyboardInputEnabled);
+  const toggleLevelKeyboardInputEnabled = useAppStore((s) => s.toggleLevelKeyboardInputEnabled);
   const touchPrimary = useTouchPrimary();
   const saveStatus = useAppStore(selectProfileSaveStatus); // "saved" | "modified" | "new"
   const statusMeta = SAVE_STATUS_META[saveStatus];
-  const StatusIcon = statusMeta.icon;
+
+  const handleSave = () => {
+    if (saveProfile() !== false) {
+      track("profile_saved", { attached_badge: useAppStore.getState().attachedBadge });
+    }
+  };
 
   // Auto-clear transient save feedback (e.g. the empty-title error border) after a short delay.
   useEffect(() => {
@@ -73,8 +110,25 @@ export function TitleToolbar() {
 
   return (
     <div className="flex w-full flex-col gap-2">
-      {/* Row 1 — title, status-aware save */}
+      {/* Row 1 — create, title, and (≥470px only) Save next to the input. Below 470px Save drops
+          to Row 2's right edge instead — see the two responsive SaveButton slots. */}
       <div className="flex w-full min-w-0 items-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          shape="pill"
+          className="shrink-0 gap-1.5"
+          onClick={() => {
+            createNew();
+            document.getElementById("chart-title-input")?.focus();
+          }}
+          aria-label="Create new chart"
+          title="Create new chart"
+        >
+          <Plus className="h-4 w-4" />
+          New
+        </Button>
         <div className="relative min-w-0 flex-1">
           <BadgePicker />
           <Input
@@ -102,67 +156,56 @@ export function TitleToolbar() {
             <X className="h-4 w-4" />
           </button>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          shape="pill"
-          disabled={statusMeta.disabled}
-          className={cn("shrink-0 gap-1.5", statusMeta.className)}
-          onClick={() => {
-            if (saveProfile() !== false) {
-              track("profile_saved", { attached_badge: useAppStore.getState().attachedBadge });
-            }
-          }}
-          aria-label={statusMeta.title}
-          title={statusMeta.title}
-        >
-          <StatusIcon className="h-4 w-4 shrink-0" aria-hidden />
-          {/* Label sized to the widest status via an invisible sizer so the title input never
-              shifts as the status changes between "Save"/"Saved". */}
-          <span className="relative inline-grid">
-            <span aria-hidden className="invisible col-start-1 row-start-1 whitespace-nowrap">
-              {WIDEST_STATUS_LABEL}
-            </span>
-            <span className="col-start-1 row-start-1 text-left">{statusMeta.label}</span>
-          </span>
-        </Button>
+        {/* Save sits here only ≥470px; hidden below (it moves to Row 2). */}
+        <SaveButton statusMeta={statusMeta} onSave={handleSave} className="hidden min-[470px]:inline-flex" />
       </div>
-      {/* Row 2 — create, reset (Profiles now lives in the chart toolbar row above the chart) */}
+      {/* Row 2 — reset (left) + keypad toggle (touch only). Save appears at the right edge only
+          below 470px; ≥470px it lives on Row 1 next to the title. */}
       <div className="flex w-full items-center gap-2">
         <Button
           type="button"
           variant="outline"
           size="sm"
           shape="pill"
-          className="gap-1.5"
-          onClick={() => {
-            createNew();
-            document.getElementById("chart-title-input")?.focus();
-          }}
-          aria-label="Create new chart"
-          title="Create new chart"
+          className="shrink-0 gap-1.5"
+          onClick={resetLevels}
+          aria-label="Reset all levels to 3"
+          title="Reset all levels to 3"
         >
-          <Plus className="h-4 w-4" />
-          New
+          <RotateCcw className="h-4 w-4" />
+          Reset levels
         </Button>
-        {/* Reset lives here on desktop (right of New). On touch it moves down next to the
-            keyboard switch — see FormControlsRow — so it sits by the inputs it acts on. */}
-        {touchPrimary ? null : (
-          <Button
+        {/* Keypad toggle is touch-only — the numeric keyboard switch is meaningless with a
+            physical keyboard, so it renders only when touch is the primary input. */}
+        {touchPrimary ? (
+          <button
             type="button"
-            variant="outline"
-            size="sm"
-            shape="pill"
-            className="gap-1.5"
-            onClick={resetLevels}
-            aria-label="Reset all levels to 3"
-            title="Reset all levels to 3"
+            role="switch"
+            aria-checked={levelKeyboardInputEnabled}
+            onClick={toggleLevelKeyboardInputEnabled}
+            className="group inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-slate-300 bg-white pl-2.5 pr-1.5 text-xs font-semibold tracking-wide text-slate-600 hover:bg-slate-50 hover:text-slate-800"
           >
-            <RotateCcw className="h-4 w-4" />
-            Reset levels
-          </Button>
-        )}
+            <Keyboard className="size-3.5 shrink-0" aria-hidden />
+            Keypad
+            {/* Mini switch: black track when on, slate when off; knob slides right when on. */}
+            <span
+              aria-hidden
+              className={cn(
+                "relative ml-0.5 inline-flex h-4 w-7 shrink-0 rounded-full transition-colors",
+                levelKeyboardInputEnabled ? "bg-slate-900" : "bg-slate-300 group-hover:bg-slate-400/70",
+              )}
+            >
+              <span
+                className={cn(
+                  "absolute top-0.5 left-0.5 size-3 rounded-full bg-white shadow-sm transition-transform duration-150 ease-out",
+                  levelKeyboardInputEnabled && "translate-x-3",
+                )}
+              />
+            </span>
+          </button>
+        ) : null}
+        {/* Save appears here only below 470px; ≥470px it's on Row 1 (hidden here). */}
+        <SaveButton statusMeta={statusMeta} onSave={handleSave} className="ml-auto min-[470px]:hidden" />
       </div>
     </div>
   );
