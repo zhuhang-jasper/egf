@@ -143,11 +143,11 @@ export function ProfilePicker() {
                       className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted/60"
                       onClick={() => {
                         loadProfile(pr.id);
-                        track("profile_loaded", { track_variant: pr.trackVariant });
+                        track("profile_loaded", { attached_badge: pr.attachedBadge });
                       }}
                     >
+                      <TrackBadge variant={pr.attachedBadge} />
                       <span className="min-w-0">{label}</span>
-                      <TrackBadge variant={pr.trackVariant} />
                     </button>
                     <button
                       type="button"
@@ -156,7 +156,7 @@ export function ProfilePicker() {
                       onClick={(e) => {
                         e.stopPropagation();
                         removeProfile(pr.id);
-                        track("profile_deleted", { track_variant: pr.trackVariant });
+                        track("profile_deleted", { attached_badge: pr.attachedBadge });
                       }}
                     >
                       <Trash2 className="h-4 w-4" />

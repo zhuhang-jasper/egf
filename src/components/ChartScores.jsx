@@ -43,8 +43,8 @@ function ScoreCard({ label, value, sub, className, title, cardStyle, valueColor 
 }
 
 /** Cluster mean cards (one per pillar group), themed from the cluster tokens. */
-function buildClusterCards(clusters, trackVariant) {
-  return getPillarGroupOrder(trackVariant)
+function buildClusterCards(clusters) {
+  return getPillarGroupOrder()
     .map(({ id }) => {
       const cluster = CLUSTERS[id];
       const theme = getClusterScoreCardTheme(id);
@@ -100,14 +100,13 @@ function buildSummaryCards({ breadth, human, effective, career, breadthK, pillar
 
 export function ChartScores() {
   const levels = useAppStore((s) => s.levels);
-  const trackVariant = useAppStore((s) => s.trackVariant);
 
-  const { breadth, human, effective, career, clusters } = computeAverages(levels, trackVariant);
+  const { breadth, human, effective, career, clusters } = computeAverages(levels);
   const pillarCount = levels.length;
   const breadthK = Math.ceil(pillarCount * BREADTH_TOP_RATIO);
   const effectiveTitle = `${Math.round(CAREER_PEAK_WEIGHT * 100)}% peak + ${Math.round(CAREER_BREADTH_WEIGHT * 100)}% breadth — composite for seniority bands.`;
 
-  const clusterCards = buildClusterCards(clusters, trackVariant);
+  const clusterCards = buildClusterCards(clusters);
   const summaryCards = buildSummaryCards({ breadth, human, effective, career, breadthK, pillarCount, effectiveTitle });
 
   return (

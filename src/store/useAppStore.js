@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-import { getPillarIdByIndex, normalizeTrackVariant } from "@/constants";
+import { getPillarIdByIndex, normalizeAttachedBadge } from "@/constants";
 import {
   fillPillarLevels,
   getDefaultChartState,
@@ -21,7 +21,6 @@ let toastSeq = 0;
 function withSyncedLevels(state) {
   const { levels } = syncLevelsArrayFromMap({
     pillarLevels: state.pillarLevels,
-    trackVariant: state.trackVariant,
   });
   return { ...state, levels };
 }
@@ -30,10 +29,11 @@ export const useAppStore = create((set, get) => ({
   title: initialDraft.title,
   pillarLevels: { ...initialDraft.pillarLevels },
   levels: [...initialDraft.levels],
-  trackVariant: normalizeTrackVariant(initialDraft.trackVariant),
+  attachedBadge: normalizeAttachedBadge(initialDraft.attachedBadge),
   levelsPolygonHidden: initialDraft.levelsPolygonHidden,
   chartLevelTicksHidden: initialDraft.chartLevelTicksHidden,
   chartLegendHidden: initialDraft.chartLegendHidden,
+  chartBadgeHidden: initialDraft.chartBadgeHidden,
   chartTitleHidden: initialDraft.chartTitleHidden,
   footerScoresHidden: initialDraft.footerScoresHidden,
   footerScoresHiddenUserSet: initialDraft.footerScoresHiddenUserSet === true,
@@ -71,10 +71,11 @@ export const useAppStore = create((set, get) => ({
       withSyncedLevels({
         title: draft.title,
         pillarLevels: { ...draft.pillarLevels },
-        trackVariant: normalizeTrackVariant(draft.trackVariant),
+        attachedBadge: normalizeAttachedBadge(draft.attachedBadge),
         levelsPolygonHidden: draft.levelsPolygonHidden,
         chartLevelTicksHidden: draft.chartLevelTicksHidden,
         chartLegendHidden: draft.chartLegendHidden,
+        chartBadgeHidden: draft.chartBadgeHidden,
         chartTitleHidden: draft.chartTitleHidden,
         footerScoresHidden: draft.footerScoresHidden,
         footerScoresHiddenUserSet: draft.footerScoresHiddenUserSet === true,
@@ -88,13 +89,8 @@ export const useAppStore = create((set, get) => ({
     saveDraftToStorage(get());
   },
 
-  setTrackVariant: (trackVariant) => {
-    set((state) =>
-      withSyncedLevels({
-        ...state,
-        trackVariant: normalizeTrackVariant(trackVariant),
-      }),
-    );
+  setAttachedBadge: (attachedBadge) => {
+    set({ attachedBadge: normalizeAttachedBadge(attachedBadge) });
     get().persistDraft();
   },
 
@@ -104,8 +100,7 @@ export const useAppStore = create((set, get) => ({
   },
 
   setLevel: (index, value) => {
-    const { trackVariant } = get();
-    const pillarId = getPillarIdByIndex(index, trackVariant);
+    const pillarId = getPillarIdByIndex(index);
     if (!pillarId) {
       return;
     }
@@ -121,10 +116,11 @@ export const useAppStore = create((set, get) => ({
       withSyncedLevels({
         title: state.title,
         pillarLevels: { ...state.pillarLevels },
-        trackVariant: normalizeTrackVariant(state.trackVariant),
+        attachedBadge: normalizeAttachedBadge(state.attachedBadge),
         levelsPolygonHidden: get().levelsPolygonHidden,
         chartLevelTicksHidden: get().chartLevelTicksHidden,
         chartLegendHidden: get().chartLegendHidden,
+        chartBadgeHidden: get().chartBadgeHidden,
         chartTitleHidden: get().chartTitleHidden,
         footerScoresHidden: get().footerScoresHidden,
       }),
@@ -145,6 +141,11 @@ export const useAppStore = create((set, get) => ({
 
   setChartLegendHidden: (hidden) => {
     set({ chartLegendHidden: hidden });
+    get().persistDraft();
+  },
+
+  setChartBadgeHidden: (hidden) => {
+    set({ chartBadgeHidden: hidden });
     get().persistDraft();
   },
 
@@ -252,13 +253,12 @@ export const useAppStore = create((set, get) => ({
     const merged = mergeViewIntoCanonical({
       levels: get().levels,
       pillarLevels: get().pillarLevels,
-      trackVariant: get().trackVariant,
     });
 
     const state = parseToCanonicalState({
       title: trimmed,
       pillarLevels: merged.pillarLevels,
-      trackVariant: get().trackVariant,
+      attachedBadge: get().attachedBadge,
     });
     if (!state) {
       return false;
@@ -288,7 +288,7 @@ export const useAppStore = create((set, get) => ({
       id,
       title: state.title,
       pillarLevels: state.pillarLevels,
-      trackVariant: state.trackVariant,
+      attachedBadge: state.attachedBadge,
       savedAt: Date.now(),
     };
     const next = replaceIdx >= 0 ? existing.map((p, i) => (i === replaceIdx ? row : p)) : [...existing, row];
@@ -334,15 +334,14 @@ export const useAppStore = create((set, get) => ({
   },
 }));
 
-/** True when the stored profile's track + canonical pillar levels equal the current draft's. */
+/** True when the stored profile's badge + canonical pillar levels equal the current draft's. */
 function profileLevelsMatch(saved, s) {
-  if (normalizeTrackVariant(saved.trackVariant) !== normalizeTrackVariant(s.trackVariant)) {
+  if (normalizeAttachedBadge(saved.attachedBadge) !== normalizeAttachedBadge(s.attachedBadge)) {
     return false;
   }
   const current = mergeViewIntoCanonical({
     levels: s.levels,
     pillarLevels: s.pillarLevels,
-    trackVariant: s.trackVariant,
   }).pillarLevels;
   const savedLevels = saved.pillarLevels ?? {};
   const keys = new Set([...Object.keys(current), ...Object.keys(savedLevels)]);

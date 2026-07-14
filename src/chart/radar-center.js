@@ -3,48 +3,37 @@ import { getChartLayoutLabelsForChart, isTheoryChart, resolveChartUi } from "@/c
 import { getPillarOrder } from "@/constants";
 
 /**
- * Per-track, per-pillar pixel nudges for the chart axis labels, applied after the radar's automatic
- * placement. Keyed by track variant, then pillar id: `{ x, y }` shifts the label right/down.
- * Empty by default — populate to relieve crowding on specific axes.
+ * Per-pillar pixel nudges for the chart axis labels, applied after the radar's automatic
+ * placement. Keyed by pillar id: `{ x, y }` shifts the label right/down.
  *
  * Tuned for the interactive tool chart. The theory career-track charts are sized differently, so
  * they have their own {@link THEORY_PILLAR_LABEL_NUDGE}.
  */
 const PILLAR_LABEL_NUDGE = {
-  fe: {
-    coding: { x: -5, y: 0 },
-    domainLogic: { x: -8, y: 15 },
-    architecture: { x: 9, y: 15 },
-    uiUx: { x: -1, y: 15 },
-    ai: { x: 3, y: 15 },
-    productSense: { x: -1, y: -7 },
-    process: { x: 2, y: -7 },
-  },
-  // BE now renders the same 9-pillar layout as FE (see TRACKS), so it just points at FE's nudges.
-  // To revert BE to its own 8-axis layout, restore this object:
-  //   { coding: { x: -5, y: 0 }, domainLogic: { x: -5, y: 10 }, architecture: { x: 6, y: 10 },
-  //     ai: { x: 2, y: 0 }, communication: { x: -5, y: -10 }, process: { x: 6, y: -10 },
-  //     ownership: { x: -5, y: 0 } }
+  coding: { x: -5, y: 0 },
+  domainLogic: { x: -8, y: 15 },
+  architecture: { x: 9, y: 15 },
+  uiUx: { x: -1, y: 15 },
+  ai: { x: 3, y: 15 },
+  productSense: { x: -1, y: -7 },
+  process: { x: 2, y: -7 },
 };
-PILLAR_LABEL_NUDGE.be = PILLAR_LABEL_NUDGE.fe;
 
 /**
  * Nudges for the theory career-track charts. Cloned from {@link PILLAR_LABEL_NUDGE} as a starting
  * point — adjust independently since the theory charts render at a different size.
  */
 const THEORY_PILLAR_LABEL_NUDGE = {
-  fe: {
-    domainLogic: { x: -5, y: 10 },
-    architecture: { x: 5, y: 10 },
-    uiUx: { x: -2, y: 10 },
-    ai: { x: 2, y: 10 },
-    productSense: { x: -2, y: -7 },
-    process: { x: 2, y: -7 },
-  },
+  domainLogic: { x: -5, y: 10 },
+  architecture: { x: 5, y: 10 },
+  uiUx: { x: -2, y: 10 },
+  ai: { x: 2, y: 10 },
+  productSense: { x: -2, y: -7 },
+  process: { x: 2, y: -7 },
 };
 
-function getPillarLabelNudge(nudgeMap, trackVariant, pillarId) {
-  return nudgeMap[trackVariant]?.[pillarId] ?? { x: 0, y: 0 };
+function getPillarLabelNudge(nudgeMap, pillarId) {
+  return nudgeMap[pillarId] ?? { x: 0, y: 0 };
 }
 
 function radarTickBackdropHalf(scale) {
@@ -111,9 +100,8 @@ function rebuildRadarPointLabelItems(scale) {
     return;
   }
 
-  const trackVariant = scale.chart?.options?.plugins?.clusterBackground?.trackVariant ?? "fe";
-  const layoutLabels = getChartLayoutLabelsForChart(scale.chart, trackVariant);
-  const pillarOrder = getPillarOrder(trackVariant);
+  const layoutLabels = getChartLayoutLabelsForChart(scale.chart);
+  const pillarOrder = getPillarOrder();
   // Tool and theory charts render at different sizes, so each has its own hand-tuned nudge map.
   const nudgeMap = isTheoryChart(scale.chart) ? THEORY_PILLAR_LABEL_NUDGE : PILLAR_LABEL_NUDGE;
   const plOpts = scale.options.pointLabels;
@@ -138,7 +126,7 @@ function rebuildRadarPointLabelItems(scale) {
       angleDeg += 360;
     }
     const align = radarTextAlignForDeg(angleDeg);
-    const nudge = getPillarLabelNudge(nudgeMap, trackVariant, pillarOrder[i]);
+    const nudge = getPillarLabelNudge(nudgeMap, pillarOrder[i]);
     const x = pos.x + nudge.x;
     const y = radarYForDeg(pos.y, size.h, angleDeg) + nudge.y;
     const left = radarLeftForAlign(x, size.w, align);

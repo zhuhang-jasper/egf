@@ -3,7 +3,7 @@ import { Chart, Filler, Legend, LineElement, PointElement, RadarController, Radi
 import { createClusterBackgroundPlugin } from "@/chart/plugins";
 import { applyRadarCenterFit, syncFontsForChart } from "@/chart/radar-center";
 import { resolveChartUi, THEORY_CHART_UI } from "@/chart/theory-profile";
-import { FE_UI, getChartLabels, getPillarClusterLabelColors, getPillarOrder, getPlainChartLabels, normalizeTrackVariant, PILLAR_COUNT } from "@/constants";
+import { FE_UI, getChartLabels, getPillarClusterLabelColors, getPillarOrder, getPlainChartLabels, PILLAR_COUNT } from "@/constants";
 
 Chart.register(RadarController, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
 
@@ -89,8 +89,7 @@ function syncPointLabelColors(chart, focusedPillars, clusterLabelColors) {
   // Per-cluster label colors (matching the poster's pillar-name palette). Positionally aligned with
   // the label array, so we key off ctx.index. Focus-dimming still applies on top when set.
   if (clusterLabelColors) {
-    const trackVariant = chart?.options?.plugins?.clusterBackground?.trackVariant;
-    const colors = getPillarClusterLabelColors(trackVariant);
+    const colors = getPillarClusterLabelColors();
     const focused = focusedPillars?.length ? new Set(focusedPillars) : null;
     pointLabels.color = (ctx) => {
       const clusterColor = colors[ctx.index] ?? ui.pointLabelColor;
@@ -110,9 +109,9 @@ function syncPointLabelColors(chart, focusedPillars, clusterLabelColors) {
   pointLabels.color = (ctx) => (focused.has(chart.data.labels[ctx.index]) ? ui.pointLabelColor : ui.pointLabelDimColor);
 }
 
-function syncChartLabels(chart, trackVariant) {
+function syncChartLabels(chart) {
   const plain = chart?.options?.plugins?.competencyChart?.plainLabels;
-  chart.data.labels = plain ? getPlainChartLabels(trackVariant) : getChartLabels(trackVariant);
+  chart.data.labels = plain ? getPlainChartLabels() : getChartLabels();
 }
 
 /** Allow chart state to flip a theory chart's plain labels on/off after creation (e.g. emoji labels). */
@@ -166,27 +165,17 @@ function syncPointLabelPxRangeOption(chart, pointLabelPxRange) {
   }
 }
 
-function syncChartPlugins(chart, trackVariant) {
-  const track = normalizeTrackVariant(trackVariant);
-  chart.options.plugins.clusterBackground = {
-    ...(chart.options.plugins.clusterBackground ?? {}),
-    trackVariant: track,
-  };
-}
-
 /** Push app state into the chart and redraw. */
 export function applyChartState(chart, state) {
   if (!chart) {
     return;
   }
-  const trackVariant = normalizeTrackVariant(state.trackVariant);
-  const orderLen = getPillarOrder(trackVariant).length;
-  syncChartPlugins(chart, trackVariant);
+  const orderLen = getPillarOrder().length;
   syncPlainLabelsOption(chart, state.plainLabels);
   syncPointLabelScaleOption(chart, state.pointLabelScale);
   syncPointLabelPxOption(chart, state.pointLabelPx);
   syncPointLabelPxRangeOption(chart, state.pointLabelPxRange);
-  syncChartLabels(chart, trackVariant);
+  syncChartLabels(chart);
   const levels = Array.isArray(state.levels) ? state.levels : [];
   chart.data.datasets[0].data = levels.length === orderLen ? [...levels] : new Array(orderLen).fill(0);
   syncDatasets(chart, { levels: chart.data.datasets[0].data, title: state.title });
@@ -213,7 +202,7 @@ export function createCompetencyChart(canvas, { purpose = "tool" } = {}) {
   const chart = new Chart(canvas, {
     type: "radar",
     data: {
-      labels: isTheory ? getPlainChartLabels("fe") : getChartLabels("fe"),
+      labels: isTheory ? getPlainChartLabels() : getChartLabels(),
       datasets: [buildHumanDataset(" ", new Array(PILLAR_COUNT).fill(0))],
     },
     options: {

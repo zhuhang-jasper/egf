@@ -31,7 +31,7 @@ export function isTheoryChart(chart) {
   return chart?.options?.plugins?.competencyChart?.purpose === "theory";
 }
 
-export function getChartLayoutLabelsForChart(chart, trackVariant) {
+export function getChartLayoutLabelsForChart(chart) {
   const plain = chart?.options?.plugins?.competencyChart?.plainLabels;
-  return plain ? getPlainChartLayoutLabels(trackVariant) : getChartLayoutLabels(trackVariant);
+  return plain ? getPlainChartLayoutLabels() : getChartLayoutLabels();
 }

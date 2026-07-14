@@ -10,7 +10,6 @@ import { cn } from "@/utils";
 export function StaticCompetencyChart({
   levels,
   title = " ",
-  trackVariant = "fe",
   className,
   hidePolygon = false,
   hidePointLabels = false,
@@ -55,7 +54,6 @@ export function StaticCompetencyChart({
     () => ({
       levels,
       title,
-      trackVariant,
       purpose,
       plainLabels,
       pointLabelScale,
@@ -71,7 +69,6 @@ export function StaticCompetencyChart({
     [
       levels,
       title,
-      trackVariant,
       purpose,
       plainLabels,
       pointLabelScale,

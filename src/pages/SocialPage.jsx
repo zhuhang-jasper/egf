@@ -9,7 +9,6 @@ import { FE_UI, getPillarLabel, getPillarOrder, SITE_COPY } from "@/constants";
 import { pillarLevelsToArray } from "@/constants/levels";
 import { track } from "@/utils/analytics";
 import { copyShareToClipboard, downloadSharePng } from "@/utils/export-image";
-import { loadProfilesFromStorage } from "@/utils/storage";
 
 // Fixed design canvas — a 1200×630 landscape card (the canonical Open Graph / LinkedIn
 // link-share aspect ratio). Renders at this exact pixel size (the page scrolls if the
@@ -53,7 +52,7 @@ const FE_PILLAR_LABEL_NUDGE = {
   communication: { x: 5, y: 0 },
   ownership: { x: -5, y: 0 },
 };
-const FE_PILLAR_ORDER = getPillarOrder("fe");
+const FE_PILLAR_ORDER = getPillarOrder();
 
 // Shift each radar point label by its FE nudge. Stock Chart.js lays the labels out in
 // scale._pointLabelItems during fit; we offset them after, by pillar id, in fe-axis order.
@@ -124,7 +123,7 @@ function SocialRadar({ levels, labels }) {
         plugins: {
           legend: { display: false },
           tooltip: { enabled: false },
-          clusterBackground: { trackVariant: "fe" },
+          clusterBackground: {},
         },
         scales: {
           r: {
@@ -175,22 +174,13 @@ const SOCIAL_FILENAME = "9-pillar-engineer-growth-framework-social.png";
 const copySocialToClipboard = (node) => copyShareToClipboard(node, CANVAS_W, CANVAS_H, "social image");
 const downloadSocialPng = (node) => downloadSharePng(node, CANVAS_W, CANVAS_H, SOCIAL_FILENAME, "social image");
 
-/** Load the featured saved profile (by title) once, falling back to a sample shape. */
+/** Load the featured sample shape once. */
 function useFeaturedLevels() {
   return useMemo(() => {
-    const wanted = FEATURED_PROFILE_TITLE.trim().toLowerCase();
-    const profiles = loadProfilesFromStorage();
-    const found = profiles.find(
-      (p) =>
-        String(p.title ?? "")
-          .trim()
-          .toLowerCase() === wanted,
-    );
     const pillarLevels = FALLBACK_PROFILE;
-    const trackVariant = found?.trackVariant ?? "fe";
     return {
-      levels: pillarLevelsToArray(pillarLevels, trackVariant),
-      labels: getPillarOrder(trackVariant).map((id) => shortPillarLabel(getPillarLabel(id))),
+      levels: pillarLevelsToArray(pillarLevels),
+      labels: getPillarOrder().map((id) => shortPillarLabel(getPillarLabel(id))),
     };
   }, []);
 }

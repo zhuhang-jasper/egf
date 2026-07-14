@@ -25,11 +25,6 @@ function convergeContentHeight(frame, chart) {
   return prev;
 }
 
-function setChartLabelsFor(chart, variant) {
-  chart.data.labels = getChartLabels(variant);
-  chart.update("none");
-}
-
 function fitFrameToChart(frameRef, chart) {
   const frame = frameRef.current;
   if (!frame?.offsetWidth || !chart) {
@@ -37,40 +32,18 @@ function fitFrameToChart(frameRef, chart) {
   }
 
   const w = frame.offsetWidth;
-  const savedLabels = chart.data.labels;
 
-  // 1. Anchor on FE: it has no bottom-center label, so it converges deterministically
-  //    to the width-limited radius (maxR) with a stable frame height.
+  // There is a single pillar layout now (the FE/BE distinction is a cosmetic badge, not a different
+  // axis set), so the chart labels are the same regardless of badge. Set them once, converge the
+  // frame height once, then lock that height so display-toggle changes never shift the UI below.
   chart.$radarLockedRadius = null;
-  setChartLabelsFor(chart, "fe");
-  if (!convergeContentHeight(frame, chart)) {
-    chart.data.labels = savedLabels;
-    chart.update("none");
+  chart.data.labels = getChartLabels();
+  chart.update("none");
+  const rawH = convergeContentHeight(frame, chart);
+  if (!rawH) {
     return;
   }
-  const feR = chart.scales?.r?.drawingArea ?? null;
 
-  // 2. At FE's stable frame height, read BE's radius WITHOUT re-fitting the frame.
-  //    BE's bottom-center label makes Chart.js reserve more vertical room, so its
-  //    radius is smaller. (Re-converging BE here is unstable — it has no unique fit.)
-  setChartLabelsFor(chart, "be");
-  const beR = chart.scales?.r?.drawingArea ?? null;
-
-  // 3. Lock both tracks to the smaller (BE) radius so FE and BE render identically sized.
-  const lockedR = Math.min(feR ?? Infinity, beR ?? Infinity);
-  chart.$radarLockedRadius = Number.isFinite(lockedR) ? lockedR : null;
-
-  // 4. With the radius locked (now stable), fit the frame to the taller track's
-  //    content and lock that height so switching tracks never shifts the UI below.
-  setChartLabelsFor(chart, "be");
-  const beH = convergeContentHeight(frame, chart);
-  setChartLabelsFor(chart, "fe");
-  const feH = convergeContentHeight(frame, chart);
-
-  chart.data.labels = savedLabels;
-  chart.update("none");
-
-  const rawH = Math.max(beH ?? 0, feH ?? 0);
   const minRatioH = Math.round(w * (FE_UI.chartFrame.heightWidthRatio ?? 0));
   const finalH = Math.max(rawH, minRatioH);
   if (finalH > 0) {
@@ -87,7 +60,6 @@ export function useCompetencyChart(canvasRef, frameRef) {
 
   const levels = useAppStore((s) => s.levels);
   const title = useAppStore((s) => s.title);
-  const trackVariant = useAppStore((s) => s.trackVariant);
   const levelsPolygonHidden = useAppStore((s) => s.levelsPolygonHidden);
   const chartLevelTicksHidden = useAppStore((s) => s.chartLevelTicksHidden);
 
@@ -157,7 +129,7 @@ export function useCompetencyChart(canvasRef, frameRef) {
     // No refit here — the frame height is locked to the taller track on init/resize,
     // so switching tracks (or toggling data/ticks) never shifts UI below the chart.
     applyChartState(chart, useAppStore.getState());
-  }, [levels, title, trackVariant, levelsPolygonHidden, chartLevelTicksHidden]);
+  }, [levels, title, levelsPolygonHidden, chartLevelTicksHidden]);
 
   return { chartRef, relayout };
 }

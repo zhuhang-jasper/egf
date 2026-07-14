@@ -1,8 +1,4 @@
-import { CLUSTERS, FE_UI, getPillarGroupOrder, getPillarOrder, normalizeTrackVariant } from "@/constants";
-
-function getChartTrackVariant(chart) {
-  return normalizeTrackVariant(chart.options?.plugins?.clusterBackground?.trackVariant);
-}
+import { CLUSTERS, FE_UI, getPillarGroupOrder, getPillarOrder } from "@/constants";
 
 /** Clockwise arc order for a cluster's pillar indices on the radar (handles wrap-around). */
 function sortClusterArc(indices, total) {
@@ -97,9 +93,8 @@ export function createClusterBackgroundPlugin() {
 
       const { ctx } = chart;
       ctx.save();
-      const trackVariant = getChartTrackVariant(chart);
-      const pillarOrder = getPillarOrder(trackVariant);
-      for (const group of getPillarGroupOrder(trackVariant)) {
+      const pillarOrder = getPillarOrder();
+      for (const group of getPillarGroupOrder()) {
         const cluster = CLUSTERS[group.id];
         if (!cluster?.color) {
           continue;

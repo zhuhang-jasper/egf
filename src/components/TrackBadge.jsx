@@ -1,10 +1,14 @@
 import { getChartSecondaryLabelSizePx } from "@/chart/fonts";
-import { FE_UI, normalizeTrackVariant, TRACK_VARIANT_UI } from "@/constants";
+import { FE_UI, normalizeAttachedBadge, TRACK_BADGE_UI } from "@/constants";
 import { cn } from "@/utils";
 
 export function TrackBadge({ variant, className, size = "sm", hidden = false, chartWidth = 0 }) {
-  const track = normalizeTrackVariant(variant);
-  const ui = TRACK_VARIANT_UI[track];
+  const badge = normalizeAttachedBadge(variant);
+  // `none` = no attached badge; render nothing so untracked charts/profiles show no pill.
+  if (badge === "none") {
+    return null;
+  }
+  const ui = TRACK_BADGE_UI[badge];
   const isLarge = size === "md";
   const scaledLabelPx = getChartSecondaryLabelSizePx(chartWidth || FE_UI.page.minWidthPx);
   const scaledBadgeStyle = isLarge
@@ -33,7 +37,7 @@ export function TrackBadge({ variant, className, size = "sm", hidden = false, ch
       style={scaledBadgeStyle}
       aria-hidden={hidden || undefined}
     >
-      {isLarge ? ui.label : ui.shortLabel}
+      {ui.shortLabel}
     </span>
   );
 }

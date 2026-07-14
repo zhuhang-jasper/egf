@@ -16,8 +16,8 @@ export const FE_UI = {
     secondaryLabelMultiplier: 0.9,
     /** Floor for track + cluster legend labels (mobile). */
     secondaryLabelMinPx: 10,
-    /** md badge min width (em) — sized for "Frontend" so title does not shift on track toggle. */
-    trackBadgeMdMinWidthEm: 6.75,
+    /** md badge min width (em) — sized for the short "FE"/"BE" label. */
+    trackBadgeMdMinWidthEm: 2.75,
     /** Swatch edge length vs legend label font size — just taller than text cap height. */
     legendSwatchLabelMultiplier: 1.2,
     pointLabelPaddingRange: { minPx: 4, maxPx: 8 },

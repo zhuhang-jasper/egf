@@ -2,7 +2,7 @@ import { CLUSTERS, getPillarGroups, getPillarLabel, getPillarLabelWithoutOrgan, 
 import { COMPETENCY_LEVEL_COPY } from "@/constants/competency-matrix-data";
 
 function buildLevels(scores) {
-  return getPillarOrder("fe").map((id) => scores[id] ?? 2.5);
+  return getPillarOrder().map((id) => scores[id] ?? 2.5);
 }
 
 const PILLAR_ABOUT_COPY = {
@@ -61,7 +61,7 @@ export const PILLARS_SECTION_INTRO =
   "This framework breaks down a software engineer's real-world competencies into 9 distinct pillars. Each pillar lists its focus areas, sorted from foundational to advanced, and ends with a signature question — a quick self-check you can ask yourself in daily work.";
 
 function buildPillarClusterGroups() {
-  return getPillarGroups("fe").map(({ id, title, pillars }) => ({
+  return getPillarGroups().map(({ id, title, pillars }) => ({
     id,
     label: title,
     subtitle: CLUSTER_ABOUT_META[id]?.subtitle ?? "",
@@ -157,7 +157,7 @@ function buildCompetencyMatrix() {
 
 export const COMPETENCY_MATRIX = buildCompetencyMatrix();
 
-const ABOUT_PILLAR_SEQUENCE = getPillarGroups("fe").flatMap(({ pillars }) => pillars.map(({ id }) => id));
+const ABOUT_PILLAR_SEQUENCE = getPillarGroups().flatMap(({ pillars }) => pillars.map(({ id }) => id));
 
 const KEY_PILLAR_RANK = new Map(ABOUT_PILLAR_SEQUENCE.map((id, index) => [getPlainChartPillarLabel(id), index]));
 

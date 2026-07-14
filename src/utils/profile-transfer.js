@@ -1,5 +1,5 @@
 import { PROFILES_STORAGE_KEY } from "@/constants";
-import { normalizeStoredProfile } from "@/constants/levels";
+import { migrateBadgeKey, normalizeStoredProfile } from "@/constants/levels";
 
 export const EXPORT_FORMAT = "egf-profiles";
 
@@ -8,7 +8,7 @@ export const EXPORT_FORMAT = "egf-profiles";
  * profile changes, and add a matching entry to {@link MIGRATIONS} that maps a payload
  * of the previous version up to this one. Import walks that chain so old files keep working.
  */
-export const EXPORT_VERSION = 1;
+export const EXPORT_VERSION = 2;
 
 /** Build the JSON payload for a set of saved profiles (always the current version). */
 export function toExportPayload(profiles) {
@@ -20,7 +20,7 @@ export function toExportPayload(profiles) {
       id: p.id,
       title: p.title,
       pillarLevels: p.pillarLevels,
-      trackVariant: p.trackVariant,
+      attachedBadge: p.attachedBadge,
       savedAt: p.savedAt,
     })),
   };
@@ -102,7 +102,11 @@ export async function exportProfilesToFile(profiles) {
  *     1: (payload) => ({ ...payload, version: 2, profiles: payload.profiles.map(renameFooToBar) }),
  *   };
  */
-const MIGRATIONS = {};
+const MIGRATIONS = {
+  // v1 → v2: sunset the `trackVariant` key for the cosmetic `attachedBadge` (legacy `fe` → `none`,
+  // `be` → `be`). See migrateBadgeKey.
+  1: (payload) => ({ ...payload, version: 2, profiles: payload.profiles.map(migrateBadgeKey) }),
+};
 
 /**
  * Detect the schema version of an arbitrary parsed payload. Legacy/unversioned inputs —

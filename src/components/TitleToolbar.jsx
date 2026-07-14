@@ -2,6 +2,7 @@ import { useEffect } from "react";
 
 import { CircleCheck, CircleDashed, CircleDot, Keyboard, Plus, RotateCcw, Save, X } from "lucide-react";
 
+import { BadgePicker } from "@/components/BadgePicker";
 import { ProfilePicker } from "@/components/ProfilePicker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -73,13 +74,14 @@ export function TitleToolbar() {
           <Plus className="h-4 w-4" />
         </Button>
         <div className="relative min-w-0 flex-1">
+          <BadgePicker />
           <Input
             id="chart-title-input"
             value={title}
             placeholder="Enter a name"
             aria-invalid={titleError}
             onChange={(e) => setTitle(e.target.value)}
-            className={cn("pr-9 shadow-none", titleError && "border-red-500 focus-visible:ring-red-500/40")}
+            className={cn("pl-16 pr-9 shadow-none", titleError && "border-red-500 focus-visible:ring-red-500/40")}
           />
           <button
             type="button"
@@ -120,7 +122,7 @@ export function TitleToolbar() {
             className="text-xs shrink-0 min-[470px]:w-auto min-[470px]:gap-1.5 min-[470px]:px-3"
             onClick={() => {
               if (saveProfile() !== false) {
-                track("profile_saved", { track_variant: useAppStore.getState().trackVariant });
+                track("profile_saved", { attached_badge: useAppStore.getState().attachedBadge });
               }
             }}
             aria-label="Save"

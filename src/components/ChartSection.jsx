@@ -5,7 +5,6 @@ import { ChevronDown, Copy, Settings, Share } from "lucide-react";
 import { ChartScores } from "@/components/ChartScores";
 import { ClusterLegend } from "@/components/ClusterLegend";
 import { TrackBadge } from "@/components/TrackBadge";
-import { TrackToggle } from "@/components/TrackToggle";
 import { Button } from "@/components/ui/button";
 
 import { useCompetencyChart } from "@/hooks/useCompetencyChart";
@@ -39,6 +38,8 @@ function ChartDisplayMenu() {
 
   const chartLegendHidden = useAppStore((s) => s.chartLegendHidden);
   const setChartLegendHidden = useAppStore((s) => s.setChartLegendHidden);
+  const chartBadgeHidden = useAppStore((s) => s.chartBadgeHidden);
+  const setChartBadgeHidden = useAppStore((s) => s.setChartBadgeHidden);
   const levelsPolygonHidden = useAppStore((s) => s.levelsPolygonHidden);
   const setLevelsPolygonHidden = useAppStore((s) => s.setLevelsPolygonHidden);
   const chartLevelTicksHidden = useAppStore((s) => s.chartLevelTicksHidden);
@@ -94,6 +95,7 @@ function ChartDisplayMenu() {
           <DisplayCheckbox label="Chart" checked={!levelsPolygonHidden} onChange={(v) => setLevelsPolygonHidden(!v)} />
           <DisplayCheckbox label="Level labels" checked={!chartLevelTicksHidden} onChange={(v) => setChartLevelTicksHidden(!v)} />
           <DisplayCheckbox label="Legend" checked={!chartLegendHidden} onChange={(v) => setChartLegendHidden(!v)} />
+          <DisplayCheckbox label="Badge" checked={!chartBadgeHidden} onChange={(v) => setChartBadgeHidden(!v)} />
           {FEATURE_SCORES_SETTINGS ? (
             <DisplayCheckbox label="Scores" checked={!footerScoresHidden} onChange={(v) => setFooterScoresHidden(!v)} />
           ) : null}
@@ -223,8 +225,9 @@ export function ChartSection({ isVisible }) {
   const showToast = useAppStore((s) => s.showToast);
 
   const title = useAppStore((s) => s.title);
-  const trackVariant = useAppStore((s) => s.trackVariant);
+  const attachedBadge = useAppStore((s) => s.attachedBadge);
   const chartLegendHidden = useAppStore((s) => s.chartLegendHidden);
+  const chartBadgeHidden = useAppStore((s) => s.chartBadgeHidden);
   const chartTitleHidden = useAppStore((s) => s.chartTitleHidden);
   const footerScoresHidden = useAppStore((s) => s.footerScoresHidden);
 
@@ -301,8 +304,7 @@ export function ChartSection({ isVisible }) {
 
   return (
     <div className="flex w-full min-w-0 flex-col items-center">
-      <div className="relative z-[2] flex w-full min-w-0 items-center justify-between gap-2 border-b pb-3 border-border mb-3">
-        <TrackToggle />
+      <div className="relative z-[2] flex w-full min-w-0 items-center justify-end gap-2 border-b pb-3 border-border mb-3">
         <div className="flex shrink-0 items-center gap-2">
           <ExportMenu onCopy={handleCopy} onShare={handleShare} />
           <ChartDisplayMenu />
@@ -312,7 +314,7 @@ export function ChartSection({ isVisible }) {
       <div ref={exportRef} className="relative flex w-full min-w-0 flex-col self-stretch">
         {showTitleRow ? (
           <div className="relative z-[1] flex w-full min-w-0 items-center gap-3 leading-none mb-2" style={{ minHeight: titleRowHeightPx }}>
-            {!chartLegendHidden ? <TrackBadge variant={trackVariant} size="md" className="shrink-0" chartWidth={chartWidth} /> : null}
+            {!chartBadgeHidden ? <TrackBadge variant={attachedBadge} size="md" className="shrink-0" chartWidth={chartWidth} /> : null}
             {showVisibleTitle ? (
               <h2
                 id="competency-chart-heading"

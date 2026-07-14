@@ -1,4 +1,5 @@
-import { CANONICAL_PILLAR_IDS, DEFAULT_PILLAR_LEVEL, getPillarOrder, LEVEL_STEP, normalizeTrackVariant } from "@/constants";
+import { CANONICAL_PILLAR_IDS, DEFAULT_PILLAR_LEVEL, getPillarOrder, LEVEL_STEP, normalizeAttachedBadge } from "@/constants";
+import { SCHEMA_VERSION } from "@/constants/storage";
 
 export function clampLevel(v) {
   const step = LEVEL_STEP;
@@ -51,14 +52,14 @@ export function fillPillarLevels(map) {
   return next;
 }
 
-export function pillarLevelsToArray(pillarLevels, trackVariant = "fe") {
-  const order = getPillarOrder(trackVariant);
+export function pillarLevelsToArray(pillarLevels) {
+  const order = getPillarOrder();
   return order.map((id) => clampLevel(pillarLevels[id] ?? DEFAULT_PILLAR_LEVEL));
 }
 
-export function syncLevelsArrayFromMap({ pillarLevels, trackVariant }) {
+export function syncLevelsArrayFromMap({ pillarLevels }) {
   return {
-    levels: pillarLevelsToArray(pillarLevels, normalizeTrackVariant(trackVariant)),
+    levels: pillarLevelsToArray(pillarLevels),
   };
 }
 
@@ -66,12 +67,27 @@ function isPillarLevelsMap(value) {
   return value && typeof value === "object" && !Array.isArray(value);
 }
 
+/**
+ * Migrate a pre-v2 payload's legacy `trackVariant` to the current `attachedBadge` field:
+ * legacy `"be"` → `"be"`, everything else (incl. `"fe"` and absent) → `"none"`. Reads the legacy
+ * key by design (this is one of the only two places `trackVariant` is still referenced).
+ */
+export function migrateBadgeKey(row) {
+  if (!row || typeof row !== "object") {
+    return row;
+  }
+  const { trackVariant, ...rest } = row;
+  const attachedBadge = trackVariant === "be" ? "be" : (rest.attachedBadge ?? "none");
+  return { ...rest, attachedBadge };
+}
+
 /** Persistable snapshot for drafts and saved profiles. */
 export function toCanonicalStoragePayload(state) {
   return {
+    schemaVersion: SCHEMA_VERSION,
     title: state.title,
     pillarLevels: fillPillarLevels(state.pillarLevels ?? {}),
-    trackVariant: normalizeTrackVariant(state.trackVariant),
+    attachedBadge: normalizeAttachedBadge(state.attachedBadge),
   };
 }
 
@@ -87,7 +103,7 @@ export function parseToCanonicalState(parsed) {
   return {
     title: parsed.title,
     pillarLevels: fillPillarLevels(parsed.pillarLevels),
-    trackVariant: normalizeTrackVariant(parsed.trackVariant),
+    attachedBadge: normalizeAttachedBadge(parsed.attachedBadge),
   };
 }
 
@@ -101,7 +117,7 @@ export function normalizeSavedState(parsed) {
     title: canonical.title,
     pillarLevels: canonical.pillarLevels,
     levels: view.levels,
-    trackVariant: canonical.trackVariant,
+    attachedBadge: canonical.attachedBadge,
   };
 }
 
@@ -124,25 +140,25 @@ export function normalizeStoredProfile(p) {
     id: p.id,
     title: canonical.title,
     pillarLevels: canonical.pillarLevels,
-    trackVariant: canonical.trackVariant,
+    attachedBadge: canonical.attachedBadge,
     savedAt: Number.isFinite(p.savedAt) ? p.savedAt : 0,
   };
 }
 
 export function getDefaultChartState() {
   const pillarLevels = createDefaultPillarLevels();
-  const trackVariant = "fe";
-  const view = syncLevelsArrayFromMap({ pillarLevels, trackVariant });
+  const attachedBadge = "none";
+  const view = syncLevelsArrayFromMap({ pillarLevels });
   return {
     title: "",
     pillarLevels,
     levels: view.levels,
-    trackVariant,
+    attachedBadge,
   };
 }
 
-export function mergeViewIntoCanonical({ levels, pillarLevels, trackVariant }) {
-  const order = getPillarOrder(trackVariant);
+export function mergeViewIntoCanonical({ levels, pillarLevels }) {
+  const order = getPillarOrder();
   const nextLevels = { ...pillarLevels };
 
   for (let i = 0; i < order.length; i++) {

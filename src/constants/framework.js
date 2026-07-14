@@ -23,70 +23,59 @@ export function getClusterSurfaceBg(color) {
 }
 
 /**
- * Per-track chart order and form clusters (ids reference {@link PILLARS}).
- * To drop a pillar from a track: remove its id from `pillarOrder` and cluster lists.
+ * The single chart-axis order and form-cluster grouping (ids reference {@link PILLARS}).
+ * There is one pillar layout for the whole app; the FE/BE distinction is now a purely cosmetic
+ * badge (see {@link TRACK_BADGE_OPTIONS}), not a different pillar set.
+ * To drop a pillar: remove its id from `PILLAR_ORDER` and the cluster lists.
  */
-export const TRACK_VARIANTS = ["fe", "be"];
+export const PILLAR_ORDER = ["coding", "architecture", "ai", "process", "ownership", "communication", "productSense", "uiUx", "domainLogic"];
 
-export const TRACK_VARIANT_UI = {
+export const PILLAR_GROUPS = [
+  { id: "technical", pillars: ["coding", "domainLogic", "architecture", "ai"] },
+  { id: "product", pillars: ["uiUx", "productSense"] },
+  { id: "operational", pillars: ["process", "communication", "ownership"] },
+];
+
+/**
+ * Selectable "attached badge" options for a profile — a cosmetic label decoupled from the pillar
+ * layout. `none` = no badge. Append here (plus a {@link TRACK_BADGE_UI} entry) to add a future badge.
+ */
+export const TRACK_BADGE_OPTIONS = ["none", "fe", "be"];
+
+export const TRACK_BADGE_UI = {
+  none: {
+    shortLabel: "—",
+    label: "No badge",
+    pillClass: "",
+  },
   fe: {
     shortLabel: "FE",
     label: "Frontend",
     pillClass: "bg-track-fe text-track-fe-foreground",
-    toggleActiveClass: "bg-background shadow-sm border border-border",
   },
   be: {
     shortLabel: "BE",
     label: "Backend",
     pillClass: "bg-track-be text-track-be-foreground",
-    toggleActiveClass: "bg-background shadow-sm border border-border",
   },
 };
 
-export const TRACKS = {
-  fe: {
-    pillarOrder: ["coding", "architecture", "ai", "process", "ownership", "communication", "productSense", "uiUx", "domainLogic"],
-    pillarGroups: [
-      { id: "technical", pillars: ["coding", "domainLogic", "architecture", "ai"] },
-      { id: "product", pillars: ["uiUx", "productSense"] },
-      { id: "operational", pillars: ["process", "communication", "ownership"] },
-    ],
-  },
-  // BE mirrors FE's full 9-pillar layout (uiUx included) — the tracks differ only in badge/labeling,
-  // not pillar composition. Kept as a separate entry so they can diverge again later.
-  be: {
-    pillarOrder: ["coding", "architecture", "ai", "process", "ownership", "communication", "productSense", "uiUx", "domainLogic"],
-    pillarGroups: [
-      { id: "technical", pillars: ["coding", "domainLogic", "architecture", "ai"] },
-      { id: "product", pillars: ["uiUx", "productSense"] },
-      { id: "operational", pillars: ["process", "communication", "ownership"] },
-    ],
-  },
-};
+/** Pillar ids persisted in profiles (missing keys default on load). */
+export const CANONICAL_PILLAR_IDS = [...new Set(PILLAR_ORDER)];
 
-/** Pillar ids persisted in profiles (union of all track orders; missing keys default on load). */
-export const CANONICAL_PILLAR_IDS = [...new Set(TRACK_VARIANTS.flatMap((track) => TRACKS[track].pillarOrder))];
-
-/** Profiles/drafts without `trackVariant` are treated as front-end (FE). */
-export function normalizeTrackVariant(value) {
-  return value === "be" ? "be" : "fe";
+/** A profile's attached badge. Explicit `fe`/`be` are kept; everything else (incl. legacy/absent) is `none`. */
+export function normalizeAttachedBadge(value) {
+  return value === "fe" || value === "be" ? value : "none";
 }
 
-export function getTrackConfig(trackVariant = "fe") {
-  return TRACKS[normalizeTrackVariant(trackVariant)];
+export function getPillarOrder() {
+  return PILLAR_ORDER;
 }
-
-export function getPillarOrder(trackVariant = "fe") {
-  return getTrackConfig(trackVariant).pillarOrder;
-}
-
-/** Default-track chart order — used where track is not yet available. */
-export const PILLAR_ORDER = getPillarOrder("fe");
 
 export const PILLAR_COUNT = 9;
 
-export function getPillarGroupOrder(trackVariant = "fe") {
-  return getTrackConfig(trackVariant).pillarGroups;
+export function getPillarGroupOrder() {
+  return PILLAR_GROUPS;
 }
 
 export function getPillarLabel(pillarId) {
@@ -141,22 +130,22 @@ function orientChartPillarLabel(label, index, count) {
   return m ? `${m.groups.rest} ${m.groups.lead}` : label;
 }
 
-export function getChartLabels(trackVariant = "fe") {
-  const order = getPillarOrder(trackVariant);
+export function getChartLabels() {
+  const order = getPillarOrder();
   return order.map((id, i) => orientChartPillarLabel(getChartPillarLabel(id), i, order.length));
 }
 
-/** Longest label on the active track — reserved on the last axis so radar padding stays stable. */
-function getChartLayoutReservedLabel(trackVariant = "fe") {
-  return getPillarOrder(trackVariant).reduce((longest, id) => {
+/** Longest label — reserved on the last axis so radar padding stays stable. */
+function getChartLayoutReservedLabel() {
+  return getPillarOrder().reduce((longest, id) => {
     const label = getChartPillarLabel(id);
     return label.length > longest.length ? label : longest;
   }, "");
 }
 
-export function getChartLayoutLabels(trackVariant = "fe") {
-  const order = getPillarOrder(trackVariant);
-  const reserved = getChartLayoutReservedLabel(trackVariant);
+export function getChartLayoutLabels() {
+  const order = getPillarOrder();
+  const reserved = getChartLayoutReservedLabel();
   const lastId = order.at(-1);
   return order.map((id, i) => (id === lastId ? reserved : orientChartPillarLabel(getChartPillarLabel(id), i, order.length)));
 }
@@ -166,26 +155,26 @@ export function getPlainChartPillarLabel(pillarId) {
   return getChartPillarLabel(pillarId).replace(/^[^\s]+\s+/, "");
 }
 
-export function getPlainChartLabels(trackVariant = "fe") {
-  return getPillarOrder(trackVariant).map((id) => getPlainChartPillarLabel(id));
+export function getPlainChartLabels() {
+  return getPillarOrder().map((id) => getPlainChartPillarLabel(id));
 }
 
-function getPlainChartLayoutReservedLabel(trackVariant = "fe") {
-  return getPillarOrder(trackVariant).reduce((longest, id) => {
+function getPlainChartLayoutReservedLabel() {
+  return getPillarOrder().reduce((longest, id) => {
     const label = getPlainChartPillarLabel(id);
     return label.length > longest.length ? label : longest;
   }, "");
 }
 
-export function getPlainChartLayoutLabels(trackVariant = "fe") {
-  const order = getPillarOrder(trackVariant);
-  const reserved = getPlainChartLayoutReservedLabel(trackVariant);
+export function getPlainChartLayoutLabels() {
+  const order = getPillarOrder();
+  const reserved = getPlainChartLayoutReservedLabel();
   const lastId = order.at(-1);
   return order.map((id) => (id === lastId ? reserved : getPlainChartPillarLabel(id)));
 }
 
-function buildPillarRef(pillarId, trackVariant) {
-  const order = getPillarOrder(trackVariant);
+function buildPillarRef(pillarId) {
+  const order = getPillarOrder();
   return {
     id: pillarId,
     index: order.indexOf(pillarId),
@@ -193,32 +182,31 @@ function buildPillarRef(pillarId, trackVariant) {
   };
 }
 
-export function getPillarGroups(trackVariant = "fe") {
-  const track = normalizeTrackVariant(trackVariant);
-  return getPillarGroupOrder(track).map(({ id, pillars }) => ({
+export function getPillarGroups() {
+  return getPillarGroupOrder().map(({ id, pillars }) => ({
     id,
     title: CLUSTERS[id].label,
-    pillars: pillars.map((pillarId) => buildPillarRef(pillarId, track)),
+    pillars: pillars.map((pillarId) => buildPillarRef(pillarId)),
   }));
 }
 
-export function getPillarIdByIndex(index, trackVariant = "fe") {
-  return getPillarOrder(trackVariant)[index] ?? null;
+export function getPillarIdByIndex(index) {
+  return getPillarOrder()[index] ?? null;
 }
 
-/** Cluster id a pillar belongs to on the given track (null if the track omits it). */
-export function getClusterIdForPillar(pillarId, trackVariant = "fe") {
-  return getPillarGroupOrder(trackVariant).find((group) => group.pillars.includes(pillarId))?.id ?? null;
+/** Cluster id a pillar belongs to (null if none). */
+export function getClusterIdForPillar(pillarId) {
+  return getPillarGroupOrder().find((group) => group.pillars.includes(pillarId))?.id ?? null;
 }
 
 /**
  * Per-axis cluster text colors, positionally aligned with the chart's label array (index i →
- * pillar `getPillarOrder(track)[i]`). Same palette the poster uses for pillar names
+ * pillar `getPillarOrder()[i]`). Same palette the poster uses for pillar names
  * (`CLUSTERS[cluster].textColor`). Axes with no cluster fall back to `null`.
  */
-export function getPillarClusterLabelColors(trackVariant = "fe") {
-  return getPillarOrder(trackVariant).map((id) => {
-    const clusterId = getClusterIdForPillar(id, trackVariant);
+export function getPillarClusterLabelColors() {
+  return getPillarOrder().map((id) => {
+    const clusterId = getClusterIdForPillar(id);
     return clusterId ? CLUSTERS[clusterId].textColor : null;
   });
 }

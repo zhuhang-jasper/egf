@@ -1,5 +1,9 @@
 export const STORAGE_KEY = "fe-growth-framework:v1";
 export const PROFILES_STORAGE_KEY = "fe-growth-framework:profiles:v1";
+// Version of the persisted draft/profile payload shape (stored inline as `schemaVersion`). v1 = the
+// original shape with a `trackVariant` field; v2 sunsets it for a cosmetic `attachedBadge` (legacy
+// `fe` → `none`, `be` → `be`). On load, pre-v2 payloads are migrated in place (see storage.js).
+export const SCHEMA_VERSION = 2;
 // Theory tab: whether the "What's New" highlighter is shown, stored as `{ show, version }` so the
 // choice can be aged out on a FRAMEWORK_VERSION bump (see useShowLatestChanges). Standalone display
 // preference — kept out of the tool-tab draft payload.

@@ -226,7 +226,6 @@ function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreR
         <div className="mx-auto w-full max-w-[520px] mb-4">
           <StaticCompetencyChart
             levels={[]}
-            trackVariant="fe"
             plainLabels={false}
             pointLabelPxRange={HERO_POINT_LABEL_PX_RANGE}
             clusterLabelColors

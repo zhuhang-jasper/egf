@@ -31,7 +31,7 @@ const POSTER_PROFILE = {
   ownership: 5,
 };
 
-const POSTER_LEVELS = getPillarOrder("fe").map((id) => POSTER_PROFILE[id] ?? 3);
+const POSTER_LEVELS = getPillarOrder().map((id) => POSTER_PROFILE[id] ?? 3);
 
 const CLUSTER_META = {
   technical: { color: CLUSTERS.technical.color, accent: CLUSTERS.technical.textColor },
@@ -64,7 +64,7 @@ function splitPillarLabel(label) {
 
 // The 9 pillars in radar-axis order, each tagged with the angle of its axis so the ring
 // card and the chart spoke line up. Axis 0 is at the top (12 o'clock); axes step clockwise.
-const RING_PILLARS = getPillarOrder("fe").map((id, i, arr) => {
+const RING_PILLARS = getPillarOrder().map((id, i, arr) => {
   const { emoji, name } = splitPillarLabel(getPillarLabel(id));
   const angleDeg = (360 / arr.length) * i - 90;
   return { id, emoji, name, angleDeg, ...PILLAR_INFO[id] };
@@ -275,8 +275,7 @@ function PosterRadar({ levels, showClusters = false, showPolygon = true, showTic
         plugins: {
           legend: { display: false },
           tooltip: { enabled: false },
-          // The cluster-background plugin reads trackVariant from its own options block.
-          clusterBackground: { trackVariant: "fe" },
+          clusterBackground: {},
         },
         scales: {
           r: {

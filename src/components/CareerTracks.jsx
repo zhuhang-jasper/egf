@@ -143,7 +143,6 @@ function CareerTrackCard({ track, number }) {
               <StaticCompetencyChart
                 levels={track.levels}
                 title={track.name}
-                trackVariant="fe"
                 focusedPillars={track.keyFocusPillars}
                 maxHeightPx={180}
                 aria-label={`${track.name} competency profile`}
