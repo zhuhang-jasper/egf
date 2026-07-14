@@ -93,7 +93,7 @@
     display: grid;
     grid-template-columns: 1fr auto;
     align-items: center;
-    gap: 8px;
+    gap: 4px;
     width: 100%;
     line-height: 1.35;
     color: #1e293b;
@@ -106,7 +106,7 @@
     }
 
     #competencyInputs .field-row {
-      gap: 10px;
+      gap: 12px;
       font-size: 14px;
     }
   }
@@ -122,8 +122,14 @@
     flex-direction: row;
     align-items: center;
     justify-content: flex-end;
-    gap: 16px;
+    gap: 12px;
     flex-shrink: 0;
+  }
+
+  @media (min-width: 640px) {
+    #competencyInputs .field-row__nums {
+      gap: 24px;
+    }
   }
 
   #competencyInputs .field-row__ai {

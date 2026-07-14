@@ -26,8 +26,8 @@ export function PillarCluster({ group, onOpenPillarInMatrix }) {
       <div className="form-section-title text-[10px] sm:text-[12px] font-bold">{group.title}</div>
       {group.pillars.map((pillar) => (
         <div key={pillar.index} className="field-row">
-          <span className="inline-flex min-w-0 items-center gap-1.5">
-            <span className="min-w-0">{pillar.label}</span>
+          <span className="min-w-0">{pillar.label}</span>
+          <span className="field-row__nums">
             {onOpenPillarInMatrix ? (
               <button
                 type="button"
@@ -42,14 +42,14 @@ export function PillarCluster({ group, onOpenPillarInMatrix }) {
                 <Tooltip text="View in matrix" />
               </button>
             ) : null}
+            <LevelInput
+              value={levels[pillar.index]}
+              onChange={(v) => setLevel(pillar.index, v)}
+              ariaLabel={`${pillar.label} level`}
+              ariaLabelUp="Increase level"
+              ariaLabelDown="Decrease level"
+            />
           </span>
-          <LevelInput
-            value={levels[pillar.index]}
-            onChange={(v) => setLevel(pillar.index, v)}
-            ariaLabel={`${pillar.label} level`}
-            ariaLabelUp="Increase level"
-            ariaLabelDown="Decrease level"
-          />
         </div>
       ))}
     </div>
