@@ -85,7 +85,7 @@ function AppShellTabBar({ activeTab, onTabChange, theoryHasUnseenUpdates = false
           centered at every width (only the tablist is present). */}
       <div className={cn("relative flex items-center min-[470px]:justify-center", IS_ADMIN ? "justify-between" : "justify-center")}>
         <div
-          className="relative grid w-68 grid-cols-2 rounded-lg border border-slate-200 bg-slate-100/80 p-0.5"
+          className="relative grid w-62 max-w-full grid-cols-2 rounded-lg border border-slate-200 bg-slate-100/80 p-0.5"
           role="tablist"
           aria-label="App sections"
         >
