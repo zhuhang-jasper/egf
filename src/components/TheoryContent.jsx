@@ -82,15 +82,18 @@ function SeniorityStepper() {
       </div>
 
       <div className="hidden sm:block">
-        <div className="grid grid-cols-5 grid-rows-[repeat(4,auto)] gap-2">
+        {/* Cards stretch to equal height (grid default). Inside each, flex-col pushes the seniority
+            footer to the bottom (mt-auto) so JUNIOR/MID/SENIOR… align across columns regardless of
+            how tall each description runs. */}
+        <div className="grid grid-cols-5 items-stretch gap-2">
           {SENIORITY_LEVEL_DEFINITIONS.map(({ code, phase, description, seniority }) => (
-            <div key={code} className={cn(cardClass, "row-span-4 grid min-w-0 grid-rows-subgrid gap-y-2.5 p-3")}>
+            <div key={code} className={cn(cardClass, "flex min-w-0 flex-col gap-y-2.5 p-3")}>
               <div className="flex justify-start">
                 <span className={cn(levelBadgeClass, "size-7 shrink-0", DOC_TEXT.badgeMd)}>{code}</span>
               </div>
               <SeniorityPhaseTitle phase={phase} className={cn("min-w-0", DOC_TEXT.bodySemibold, "font-bold text-[13px] sm:text-[15px]")} />
               <p className={DOC_TEXT.body}>{description}</p>
-              <p className={DOC_TEXT.meta}>{seniority}</p>
+              <p className={cn("mt-auto", DOC_TEXT.meta)}>{seniority}</p>
             </div>
           ))}
         </div>
