@@ -12,7 +12,7 @@ import { clearStickyScrollOffset, getTabBarPinnedScrollY, getWindowScrollY, setS
 const TABS = [
   { id: "tool", label: "Tool", icon: Radar },
   // `version` derives from the single FRAMEWORK_VERSION source so the label and the "unseen" dot
-  // (see useUnseenFramework) always agree — bumping that one constant updates both.
+  // (see useTheoryUpdates) always agree — bumping that one constant updates both.
   { id: "theory", label: "Theory", icon: FileText, version: `v${FRAMEWORK_VERSION}` },
 ];
 
@@ -123,8 +123,8 @@ function AppShellTabBar({ activeTab, onTabChange, theoryHasUnseenUpdates = false
                     className={cn("inline-flex items-start text-[11px] font-semibold leading-none", selected ? "text-white/70" : "text-slate-400")}
                   >
                     {version}
-                    {/* Unseen-updates dot: a returning user hasn't dismissed this framework version
-                        yet. `-translate-y` lifts just the dot to superscript height. */}
+                    {/* Unseen-updates dot: the user last caught up to an older framework version and
+                        hasn't dismissed this one yet. `-translate-y` lifts it to superscript height. */}
                     {showUnseenDot ? (
                       // iOS notification badge red (systemRed, #FF3B30).
                       <span className="ml-0.5 size-1.5 -translate-y-0.5 rounded-full bg-[#FF3B30]" aria-label="New framework updates" />

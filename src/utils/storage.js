@@ -6,20 +6,6 @@ function isPreV2(parsed) {
   return !parsed || typeof parsed !== "object" || !(Number(parsed.schemaVersion) >= SCHEMA_VERSION);
 }
 
-/**
- * A "returning" user has any tool-tab footprint in localStorage — a saved draft or saved profiles.
- * Used to gate the Theory tab's "What's New" affordances: returning users get the highlighter on by
- * default and the "unseen updates" dot, whereas first-time users have no baseline to diff against.
- * Guarded so a disabled/throwing localStorage reads as "not returning" (the quieter default).
- */
-export function isReturningUser() {
-  try {
-    return localStorage.getItem(STORAGE_KEY) !== null || localStorage.getItem(PROFILES_STORAGE_KEY) !== null;
-  } catch {
-    return false;
-  }
-}
-
 export function getDefaultChartDisplay() {
   return {
     levelsPolygonHidden: false,

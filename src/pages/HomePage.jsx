@@ -6,7 +6,7 @@ import { ToolContent } from "@/components/ToolContent";
 import { Toaster } from "@/components/ui/Toaster";
 
 import { getPersistedActiveTab, useTabScrollMemory } from "@/hooks/useTabScrollMemory";
-import { useUnseenFramework } from "@/hooks/useUnseenFramework";
+import { useTheoryUpdates } from "@/hooks/useTheoryUpdates";
 
 import { FE_UI } from "@/constants";
 import { track } from "@/utils/analytics";
@@ -54,10 +54,12 @@ export default function HomePage() {
   // repeated clicks on the same pillar re-trigger the expand + scroll even when the tab is already open.
   const [matrixNav, setMatrixNav] = useState(null);
 
-  // "Unseen framework updates" dot on the Theory tab. It is NOT cleared merely by opening Theory —
-  // only once the user turns the "What's New" highlighter OFF (their "I've seen it, hide it" signal,
-  // wired via onDismissWhatsNew below). Toggling it back ON afterwards does not bring the dot back.
-  const [theoryHasUnseenUpdates, markTheorySeen] = useUnseenFramework();
+  // Single source of truth for the Theory tab's "What's New" affordances — the unseen-updates dot
+  // and the highlighter toggle both derive from one stored seen-version, so they can't drift. The
+  // dot is NOT cleared by merely opening Theory (except silently for a fresh user with no baseline);
+  // it clears when the user turns the highlighter OFF ("I've read it"). Passing `activeTab === "theory"`
+  // lets the hook do the fresh-user first-open stamp.
+  const { hasUnseenUpdates: theoryHasUnseenUpdates, showLatestChanges, toggleLatestChanges } = useTheoryUpdates(activeTab === "theory");
 
   const handleTabChange = (nextTab) => {
     if (nextTab === activeTab) {
@@ -124,7 +126,8 @@ export default function HomePage() {
             }}
             matrixNav={matrixNav}
             cancelRestoreRef={cancelRestoreRef}
-            onDismissWhatsNew={markTheorySeen}
+            showLatestChanges={showLatestChanges}
+            onToggleLatestChanges={toggleLatestChanges}
           />
         </div>
       </main>

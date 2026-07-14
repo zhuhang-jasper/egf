@@ -7,8 +7,6 @@ import { PillarGrid } from "@/components/PillarGrid";
 import { ShareLinkButton } from "@/components/ShareLinkButton";
 import { StaticCompetencyChart } from "@/components/StaticCompetencyChart";
 
-import { useShowLatestChanges } from "@/hooks/useShowLatestChanges";
-
 import { CAREER_TRACKS_SECTION_INTRO, PILLARS_SECTION_INTRO, SENIORITY_LEVEL_DEFINITIONS, SENIORITY_SECTION_INTRO } from "@/constants/theory-data";
 import { DOC_SECTION, DOC_TEXT } from "@/styles/doc-typography";
 import { cn } from "@/utils";
@@ -101,7 +99,7 @@ function SeniorityStepper() {
   );
 }
 
-function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreRef, onDismissWhatsNew }) {
+function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreRef, showLatestChanges, onToggleLatestChanges }) {
   const consumedRef = useRef(false);
 
   // Expanded pillar state lives here so the matrix share button can read it. On a deep-link boot we
@@ -112,19 +110,10 @@ function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreR
   // at the wrong spot.
   const [expandedPillar, setExpandedPillar] = useState(getPersistedExpandedPillar);
 
-  // Page-wide toggle for the "What's New" highlighter (see LatestChangesToggle). Threaded to every
-  // section that renders `**…**` markers so the whole Theory page shows/hides the amber fill together.
-  const [showLatestChanges, toggleLatestChanges] = useShowLatestChanges();
-
-  // Turning the highlighter OFF is the user's "I've seen it, hide it" signal — that (not merely
-  // opening the tab) is what dismisses the Theory tab's "unseen updates" dot. Turning it back ON does
-  // not bring the dot back; the version stays marked seen.
-  const handleToggleLatestChanges = () => {
-    if (showLatestChanges) {
-      onDismissWhatsNew?.();
-    }
-    toggleLatestChanges();
-  };
+  // `showLatestChanges` / `onToggleLatestChanges` come from the page's useTheoryUpdates hook (single
+  // source of truth for the dot + toggle). Threaded to every section that renders `**…**` markers so
+  // the whole Theory page shows/hides the amber fill together. Turning the toggle OFF is what
+  // dismisses the tab's unseen-updates dot — that logic lives in the hook, not here.
 
   // In-app jump from a tool-form pillar's help icon. Expanding the pillar makes CompetencyMatrix
   // scroll to it; persist so the choice survives like a normal expand. Keyed on `seq` so clicking
@@ -220,7 +209,7 @@ function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreR
     <div className="space-y-6 print:max-w-none">
       <div className="space-y-2">
         <div className="flex justify-end print:hidden">
-          <LatestChangesToggle show={showLatestChanges} onToggle={handleToggleLatestChanges} />
+          <LatestChangesToggle show={showLatestChanges} onToggle={onToggleLatestChanges} />
         </div>
 
         <div className="mx-auto w-full max-w-[520px] mb-4">
