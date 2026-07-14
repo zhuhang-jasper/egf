@@ -131,14 +131,32 @@ function ExportMenu({ onCopy, onShare }) {
   return (
     <div className="flex shrink-0 items-center gap-2">
       {CAN_SHARE_FILES ? (
-        <Button type="button" variant="outline" size="sm" shape="pill" onClick={onShare} className="gap-1">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          shape="pill"
+          onClick={onShare}
+          className="gap-1"
+          title="Share the chart image"
+          aria-label="Share image"
+        >
           <Share className="h-3.5 w-3.5 shrink-0" aria-hidden />
-          Share
+          Share image
         </Button>
       ) : null}
-      <Button type="button" variant="outline" size="sm" shape="pill" onClick={onCopy} className="gap-1" title="Copy image" aria-label="Copy image">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        shape="pill"
+        onClick={onCopy}
+        className="gap-1"
+        title="Copy the chart image to your clipboard"
+        aria-label="Copy image"
+      >
         <Copy className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        Copy
+        Copy image
       </Button>
     </div>
   );
