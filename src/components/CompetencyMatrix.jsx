@@ -19,7 +19,7 @@ function LevelPill({ code, term }) {
   return (
     <span className="inline-flex max-w-full items-center gap-1.5 self-start rounded-full border border-slate-300/60 bg-white py-0.5 pl-0.5 pr-2.5">
       <span className={levelBadgeClass}>{code}</span>
-      <span className="truncate text-[11px] font-semibold leading-snug text-slate-500 sm:text-[13px]">{term}</span>
+      <span className="truncate text-[11px] font-semibold leading-snug text-slate-500 sm:text-[12px] md:text-[13px]">{term}</span>
     </span>
   );
 }

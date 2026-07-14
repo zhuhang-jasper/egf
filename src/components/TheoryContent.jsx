@@ -72,7 +72,7 @@ function SeniorityStepper() {
             <span className={cn(levelBadgeClass, "size-7", DOC_TEXT.badgeMd)}>{code}</span>
             <div className="min-w-0 space-y-2">
               <div className="flex items-baseline justify-between gap-2">
-                <SeniorityPhaseTitle phase={phase} className={cn("min-w-0", DOC_TEXT.bodySemibold, "font-bold text-[13px] sm:text-[15px]")} />
+                <SeniorityPhaseTitle phase={phase} className={cn("min-w-0", DOC_TEXT.bodySemibold, "font-bold text-[13px] sm:text-[14px] md:text-[15px]")} />
                 <p className={cn("shrink-0", DOC_TEXT.meta)}>{seniority}</p>
               </div>
               <p className={DOC_TEXT.body}>{description}</p>
@@ -91,7 +91,7 @@ function SeniorityStepper() {
               <div className="flex justify-start">
                 <span className={cn(levelBadgeClass, "size-7 shrink-0", DOC_TEXT.badgeMd)}>{code}</span>
               </div>
-              <SeniorityPhaseTitle phase={phase} className={cn("min-w-0", DOC_TEXT.bodySemibold, "font-bold text-[13px] sm:text-[15px]")} />
+              <SeniorityPhaseTitle phase={phase} className={cn("min-w-0", DOC_TEXT.bodySemibold, "font-bold text-[13px] sm:text-[14px] md:text-[15px]")} />
               <p className={DOC_TEXT.body}>{description}</p>
               <p className={cn("mt-auto", DOC_TEXT.meta)}>{seniority}</p>
             </div>
