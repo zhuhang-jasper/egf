@@ -185,6 +185,14 @@ export const useAppStore = create((set, get) => ({
     });
   },
 
+  /** Delete every saved profile. Returns the number removed. */
+  clearAllProfiles: () => {
+    const removed = loadProfilesFromStorage().length;
+    writeProfilesToStorage([]);
+    set({ profiles: [], activeSavedProfileId: null });
+    return removed;
+  },
+
   /**
    * Export all saved profiles to a JSON file. Async: on browsers with the File System Access API
    * this resolves only after the file is written (or the user cancels). Returns

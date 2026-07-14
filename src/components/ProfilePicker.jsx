@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
-import { ChevronDown, Download, Trash2, Upload, Users } from "lucide-react";
+import { ChevronDown, Trash2, Users } from "lucide-react";
 
 import { TrackBadge } from "@/components/TrackBadge";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,6 @@ import { useAppStore } from "@/store/useAppStore";
 
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
-import { readFileAsText } from "@/utils/profile-transfer";
 
 // Rows shown before the list scrolls; the trailing ".5" leaves the next row half-visible so users
 // can tell there's more below (the standard "peek" scroll affordance).
@@ -21,54 +20,14 @@ export function ProfilePicker() {
   const setOpen = useAppStore((s) => s.setProfilePickerOpen);
   const loadProfile = useAppStore((s) => s.loadProfile);
   const removeProfile = useAppStore((s) => s.removeProfile);
-  const exportProfiles = useAppStore((s) => s.exportProfiles);
-  const importProfiles = useAppStore((s) => s.importProfiles);
-  const showToast = useAppStore((s) => s.showToast);
   const rootRef = useRef(null);
-  const fileInputRef = useRef(null);
   const menuRef = useRef(null);
   const listRef = useRef(null);
-  const footerRef = useRef(null);
   const [openUp, setOpenUp] = useState(false);
   // Max height (px) for the scrollable profile list. Capped at whichever is smaller: ~9.5 rows (so a
   // 10th row peeks to signal there's more, the standard scroll affordance) or the viewport space on
-  // the side the menu opens toward. Null = no cap (short lists size to content). The footer stays
-  // outside this, always fully visible.
+  // the side the menu opens toward. Null = no cap (short lists size to content).
   const [listMaxHeight, setListMaxHeight] = useState(null);
-
-  const handleExport = async () => {
-    const { count, outcome } = await exportProfiles();
-    if (outcome === "cancelled" || outcome === "empty") {
-      return; // user backed out, or nothing to export — stay silent
-    }
-    if (outcome === "error") {
-      showToast("Couldn't save the file", { variant: "error" });
-      return;
-    }
-    // "saved" (file confirmed written) or "started" (download fired, no completion signal).
-    track("profiles_exported", { count, outcome });
-    showToast(`Exported ${count} profile${count === 1 ? "" : "s"}`, { variant: "success" });
-  };
-
-  const handleImportFile = async (e) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) {
-      return;
-    }
-    try {
-      const text = await readFileAsText(file);
-      const added = importProfiles(text);
-      track("profiles_imported", { count: added });
-      if (added > 0) {
-        showToast(`Imported ${added} profile${added === 1 ? "" : "s"}`, { variant: "success" });
-      } else {
-        showToast("No valid profiles found in file", { variant: "error" });
-      }
-    } catch {
-      showToast("Couldn't read that file", { variant: "error" });
-    }
-  };
 
   useEffect(() => {
     const onKey = (e) => {
@@ -91,7 +50,7 @@ export function ProfilePicker() {
 
   // Position the menu on open (and on resize while open): pick the side with more room, flipping up
   // only when below is too tight, then cap the scrollable list to ~9.5 rows (or the viewport space,
-  // whichever is smaller) so the 10th row peeks and the footer stays fully visible.
+  // whichever is smaller) so the 10th row peeks.
   useLayoutEffect(() => {
     if (!open) {
       setOpenUp(false);
@@ -123,21 +82,18 @@ export function ProfilePicker() {
       setOpenUp(up);
 
       // Cap the scrollable list. Two limits, take the smaller: (a) ~9.5 rows so the next row peeks,
-      // (b) whatever vertical space is left for the list after the footer, within `availableMenu`.
+      // (b) whatever vertical space is available within `availableMenu`.
       const list = listRef.current;
-      const footer = footerRef.current;
       if (!list) {
         setListMaxHeight(null);
         return;
       }
       const firstRow = list.firstElementChild;
       const rowH = firstRow ? firstRow.getBoundingClientRect().height : 0;
-      const footerH = footer ? footer.getBoundingClientRect().height : 0;
       // List box padding (py-1) + its bottom border, so the peek math targets the content area.
       const listChrome = list.offsetHeight - list.clientHeight + 8;
       const nineHalf = rowH > 0 ? Math.round(VISIBLE_ROWS * rowH + listChrome) : Infinity;
-      const availableForList = Math.floor(availableMenu - footerH);
-      const listCap = Math.min(nineHalf, availableForList);
+      const listCap = Math.min(nineHalf, availableMenu);
       // Only cap when the natural list would overflow it; otherwise let it size to content.
       const naturalListH = list.scrollHeight;
       setListMaxHeight(naturalListH <= listCap ? null : Math.max(0, listCap));
@@ -147,8 +103,8 @@ export function ProfilePicker() {
     return () => window.removeEventListener("resize", decide);
   }, [open, profiles.length]);
 
-  // Redirect wheel events anywhere over the menu (including the non-scrollable Export/Import footer)
-  // to the inner profile list, and swallow them so the page behind never scrolls. Uses a native
+  // Redirect wheel events anywhere over the menu to the inner profile list, and swallow them so the
+  // page behind never scrolls. Uses a native
   // non-passive listener because React's synthetic onWheel is passive — preventDefault() there is a
   // no-op and the page would still scroll.
   useEffect(() => {
@@ -197,7 +153,7 @@ export function ProfilePicker() {
           ) : (
             <ul
               ref={listRef}
-              className="m-0 min-h-0 flex-1 list-none overflow-auto border-b border-border p-0 py-1"
+              className="m-0 min-h-0 flex-1 list-none overflow-auto p-0 py-1"
               // Cap to ~9.5 rows (or viewport space); null lets a short list size to content.
               style={{ maxHeight: listMaxHeight != null ? `${listMaxHeight}px` : undefined }}
             >
@@ -234,28 +190,6 @@ export function ProfilePicker() {
               })}
             </ul>
           )}
-          <div ref={footerRef} className="flex shrink-0 items-stretch">
-            <button
-              type="button"
-              role="menuitem"
-              disabled={profiles.length === 0}
-              className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 px-3 py-2 text-xs text-muted-foreground hover:bg-muted/60 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
-              onClick={handleExport}
-            >
-              <Upload className="h-4 w-4 shrink-0" aria-hidden />
-              Export
-            </button>
-            <button
-              type="button"
-              role="menuitem"
-              className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 border-l border-border px-3 py-2 text-xs text-muted-foreground hover:bg-muted/60"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Download className="h-4 w-4 shrink-0" aria-hidden />
-              Import
-            </button>
-          </div>
-          <input ref={fileInputRef} type="file" accept="application/json,.json" className="hidden" onChange={handleImportFile} />
         </div>
       )}
     </div>

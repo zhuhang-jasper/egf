@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { CircleCheck, Keyboard, RotateCcw, Save, X } from "lucide-react";
 
 import { BadgePicker } from "@/components/BadgePicker";
+import { ProfileActionsMenu } from "@/components/ProfileActionsMenu";
 import { ProfilePicker } from "@/components/ProfilePicker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -190,8 +191,9 @@ export function TitleToolbar() {
             </span>
           </button>
         ) : null}
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-1.5">
           <ProfilePicker />
+          <ProfileActionsMenu />
         </div>
       </div>
     </div>
