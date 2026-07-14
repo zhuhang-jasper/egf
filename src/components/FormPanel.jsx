@@ -6,6 +6,7 @@ import { getPillarGroups } from "@/constants";
 export function FormPanel({ onOpenPillarInMatrix }) {
   return (
     <aside className="relative z-10 w-full min-w-0 border-t border-border pt-3 mt-3">
+      {/* <h2 className="mb-2 text-sm font-semibold text-slate-900">Build Your Profile</h2> */}
       <TitleToolbar />
       <div id="competencyInputs" className="mt-2 flex flex-col gap-2">
         {getPillarGroups().map((group) => (

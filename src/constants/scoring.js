@@ -4,7 +4,7 @@ export const HUMAN_STRENGTH_TOP_K = 3;
 export const BREADTH_TOP_RATIO = 2 / 3;
 export const CAREER_PEAK_WEIGHT = 0.55;
 export const CAREER_BREADTH_WEIGHT = 0.45;
-export const DEFAULT_PILLAR_LEVEL = 3;
+export const DEFAULT_PILLAR_LEVEL = 2;
 export const SENIORITY_LEVEL_COUNT = 5;
 
 /** Core technical pillars for career floor (excludes AI — newer, role-dependent). */

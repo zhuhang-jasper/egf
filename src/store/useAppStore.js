@@ -306,19 +306,6 @@ export const useAppStore = create((set, get) => ({
 
   clearSaveFeedback: () => set({ saveFeedback: null }),
 
-  resetLevels: () => {
-    const defaults = getDefaultChartState();
-    set(
-      withSyncedLevels({
-        ...get(),
-        pillarLevels: { ...defaults.pillarLevels },
-        levels: [...defaults.levels],
-        activeSavedProfileId: null,
-      }),
-    );
-    get().persistDraft();
-  },
-
   createNew: () => {
     const defaults = getDefaultChartState();
     set(

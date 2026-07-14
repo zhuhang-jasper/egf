@@ -4,7 +4,6 @@ import { Copy, Settings, Share } from "lucide-react";
 
 import { ChartScores } from "@/components/ChartScores";
 import { ClusterLegend } from "@/components/ClusterLegend";
-import { ProfilePicker } from "@/components/ProfilePicker";
 import { TrackBadge } from "@/components/TrackBadge";
 import { Button } from "@/components/ui/button";
 
@@ -231,8 +230,7 @@ export function ChartSection({ isVisible }) {
 
   return (
     <div className="flex w-full min-w-0 flex-col items-center">
-      <div className="relative z-[2] flex w-full min-w-0 items-center justify-between gap-2 border-b pb-3 border-border mb-3">
-        <ProfilePicker />
+      <div className="relative z-[2] flex w-full min-w-0 items-center justify-end gap-2 border-b pb-3 border-border mb-3">
         <div className="flex shrink-0 items-center gap-2">
           <ExportMenu onCopy={handleCopy} onShare={handleShare} />
           <ChartDisplayMenu />

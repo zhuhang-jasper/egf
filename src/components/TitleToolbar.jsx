@@ -1,8 +1,9 @@
 import { useEffect } from "react";
 
-import { CircleCheck, Keyboard, Plus, RotateCcw, Save, X } from "lucide-react";
+import { CircleCheck, Keyboard, RotateCcw, Save, X } from "lucide-react";
 
 import { BadgePicker } from "@/components/BadgePicker";
+import { ProfilePicker } from "@/components/ProfilePicker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -45,9 +46,9 @@ const SAVE_STATUS_META = {
 // the title input never shifts as the status changes. Derived so it stays correct if edited.
 const WIDEST_STATUS_LABEL = Object.values(SAVE_STATUS_META).reduce((a, b) => (b.label.length > a.length ? b.label : a), "");
 
-// Status-aware Save button. Rendered in two slots (Row 1 next to the title ≥470px, Row 2 rightmost
-// <470px), each toggled via a responsive `hidden` in className — so `className` also carries the
-// breakpoint visibility, not just layout.
+// Status-aware Save button, sitting on Row 1 next to the title input. Extracted so the invisible
+// widest-label sizer (which keeps the row from shifting as the status label changes) lives in one
+// place. `className` is a passthrough for optional layout tweaks.
 function SaveButton({ statusMeta, onSave, className }) {
   const StatusIcon = statusMeta.icon;
   return (
@@ -82,7 +83,6 @@ export function TitleToolbar() {
   const saveFeedback = useAppStore((s) => s.saveFeedback);
   const clearSaveFeedback = useAppStore((s) => s.clearSaveFeedback);
   const createNew = useAppStore((s) => s.createNew);
-  const resetLevels = useAppStore((s) => s.resetLevels);
   const levelKeyboardInputEnabled = useAppStore((s) => s.levelKeyboardInputEnabled);
   const toggleLevelKeyboardInputEnabled = useAppStore((s) => s.toggleLevelKeyboardInputEnabled);
   const touchPrimary = useTouchPrimary();
@@ -110,25 +110,8 @@ export function TitleToolbar() {
 
   return (
     <div className="flex w-full flex-col gap-2">
-      {/* Row 1 — create, title, and (≥470px only) Save next to the input. Below 470px Save drops
-          to Row 2's right edge instead — see the two responsive SaveButton slots. */}
+      {/* Row 1 — title + Save (Save lives here permanently now that New/Reset merged into Row 2). */}
       <div className="flex w-full min-w-0 items-center gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          shape="pill"
-          className="shrink-0 gap-1.5"
-          onClick={() => {
-            createNew();
-            document.getElementById("chart-title-input")?.focus();
-          }}
-          aria-label="Create new chart"
-          title="Create new chart"
-        >
-          <Plus className="h-4 w-4" />
-          New
-        </Button>
         <div className="relative min-w-0 flex-1">
           <BadgePicker />
           <Input
@@ -156,11 +139,11 @@ export function TitleToolbar() {
             <X className="h-4 w-4" />
           </button>
         </div>
-        {/* Save sits here only ≥470px; hidden below (it moves to Row 2). */}
-        <SaveButton statusMeta={statusMeta} onSave={handleSave} className="hidden min-[470px]:inline-flex" />
+        <SaveButton statusMeta={statusMeta} onSave={handleSave} />
       </div>
-      {/* Row 2 — reset (left) + keypad toggle (touch only). Save appears at the right edge only
-          below 470px; ≥470px it lives on Row 1 next to the title. */}
+      {/* Row 2 — reset + keypad toggle (touch only) on the left, Profiles on the right. Reset
+          doubles as "start over": it clears the title and resets every pillar to the default
+          (badge is kept). */}
       <div className="flex w-full items-center gap-2">
         <Button
           type="button"
@@ -168,12 +151,15 @@ export function TitleToolbar() {
           size="sm"
           shape="pill"
           className="shrink-0 gap-1.5"
-          onClick={resetLevels}
-          aria-label="Reset all levels to 3"
-          title="Reset all levels to 3"
+          onClick={() => {
+            createNew();
+            document.getElementById("chart-title-input")?.focus();
+          }}
+          aria-label="Reset — clear the title and reset all levels"
+          title="Reset — clear the title and reset all levels"
         >
           <RotateCcw className="h-4 w-4" />
-          Reset levels
+          Reset
         </Button>
         {/* Keypad toggle is touch-only — the numeric keyboard switch is meaningless with a
             physical keyboard, so it renders only when touch is the primary input. */}
@@ -183,7 +169,7 @@ export function TitleToolbar() {
             role="switch"
             aria-checked={levelKeyboardInputEnabled}
             onClick={toggleLevelKeyboardInputEnabled}
-            className="group inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-slate-300 bg-white pl-2.5 pr-1.5 text-xs font-semibold tracking-wide text-slate-600 hover:bg-slate-50 hover:text-slate-800"
+            className="group inline-flex h-[26.5px] shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-slate-300 bg-white pl-2.5 pr-1.5 text-xs font-semibold tracking-wide text-slate-600 hover:bg-slate-50 hover:text-slate-800"
           >
             <Keyboard className="size-3.5 shrink-0" aria-hidden />
             Keypad
@@ -204,8 +190,9 @@ export function TitleToolbar() {
             </span>
           </button>
         ) : null}
-        {/* Save appears here only below 470px; ≥470px it's on Row 1 (hidden here). */}
-        <SaveButton statusMeta={statusMeta} onSave={handleSave} className="ml-auto min-[470px]:hidden" />
+        <div className="ml-auto">
+          <ProfilePicker />
+        </div>
       </div>
     </div>
   );
