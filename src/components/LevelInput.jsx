@@ -41,7 +41,16 @@ export function LevelInput({ value, onChange, ariaLabel, ariaLabelUp, ariaLabelD
   };
 
   return (
-    <span className="level-value-stepper group/level">
+    <span className="group/level inline-flex items-stretch shrink-0 w-fit max-w-full overflow-hidden rounded-lg border border-[#ccc] bg-white focus-within:border-[#888]">
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label={ariaLabelDown}
+        onClick={() => bump(-1)}
+        className="inline-flex items-center justify-center w-7 shrink-0 bg-[#f7f7f7] text-base font-medium leading-none text-[#444] cursor-pointer select-none hover:bg-[#efefef] hover:text-[#111] active:bg-[#e4e4e4]"
+      >
+        −
+      </button>
       <input
         type="text"
         inputMode={keyboardInputEnabled ? "decimal" : "none"}
@@ -92,23 +101,14 @@ export function LevelInput({ value, onChange, ariaLabel, ariaLabelUp, ariaLabelD
             e.currentTarget.blur();
           }
         }}
-        className="level-value"
+        className="w-12 text-center bg-transparent border-x border-x-[#e0e0e0] px-1 py-[7px] md:py-2 text-[13px] md:text-[14px]"
       />
-      <button
-        type="button"
-        tabIndex={-1}
-        aria-label={ariaLabelDown}
-        onClick={() => bump(-1)}
-        className="level-value-step__btn level-value-step__btn--dec"
-      >
-        −
-      </button>
       <button
         type="button"
         tabIndex={-1}
         aria-label={ariaLabelUp}
         onClick={() => bump(1)}
-        className="level-value-step__btn level-value-step__btn--inc"
+        className="inline-flex items-center justify-center w-7 shrink-0 bg-[#f7f7f7] text-base font-medium leading-none text-[#444] cursor-pointer select-none hover:bg-[#efefef] hover:text-[#111] active:bg-[#e4e4e4]"
       >
         +
       </button>

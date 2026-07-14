@@ -15,19 +15,26 @@ export function PillarCluster({ group, onOpenPillarInMatrix }) {
 
   return (
     <div
-      className="form-cluster overflow-hidden rounded-xl border border-white/70 border-l-[3px] shadow-sm shadow-slate-200/40"
+      className="relative w-full overflow-hidden rounded-xl border border-white/70 border-l-[3px] px-4 py-3 shadow-sm shadow-slate-200/40"
       data-cluster={group.id}
       style={{
-        "--cluster-text-color": cluster.textColor,
-        "backgroundColor": getClusterSurfaceBg(cluster.color),
-        "borderLeftColor": cluster.textColor,
+        backgroundColor: getClusterSurfaceBg(cluster.color),
+        borderLeftColor: cluster.textColor,
       }}
     >
-      <div className="form-section-title text-[10px] sm:text-[12px] font-bold">{group.title}</div>
+      <div
+        className="mb-2 text-[10px] sm:text-[11px] md:text-[12px] font-semibold uppercase leading-tight tracking-[0.06em]"
+        style={{ color: cluster.textColor }}
+      >
+        {group.title}
+      </div>
       {group.pillars.map((pillar) => (
-        <div key={pillar.index} className="field-row">
+        <div
+          key={pillar.index}
+          className="grid grid-cols-[1fr_auto] items-center w-full gap-1 sm:gap-3 leading-[1.35] text-slate-800 text-[12px] sm:text-[13px] md:text-[14px]"
+        >
           <span className="min-w-0">{pillar.label}</span>
-          <span className="field-row__nums">
+          <span className="flex flex-row items-center justify-end shrink-0 gap-3 sm:gap-6">
             {onOpenPillarInMatrix ? (
               <button
                 type="button"

@@ -32,11 +32,11 @@ function ScoreCard({ label, value, sub, className, title, cardStyle, valueColor 
         className,
       )}
     >
-      <span className="max-w-[11rem] text-[10px] font-semibold tracking-wide sm:text-[12px]">{label}</span>
-      <span className="text-[16px] font-extrabold tabular-nums sm:text-[20px]" style={{ color: valueColor }}>
+      <span className="max-w-[11rem] text-[10px] font-semibold tracking-wide sm:text-[11px] md:text-[12px]">{label}</span>
+      <span className="text-[16px] font-extrabold tabular-nums sm:text-[18px] md:text-[20px]" style={{ color: valueColor }}>
         {value}
       </span>
-      {sub ? <span className="max-w-[12rem] text-[9px] font-bold opacity-95 sm:text-[12px]">{sub}</span> : null}
+      {sub ? <span className="max-w-[12rem] text-[9px] font-bold opacity-95 sm:text-[10px] md:text-[12px]">{sub}</span> : null}
       <Tooltip text={title} className="w-[12rem] max-w-[80vw] whitespace-normal text-center font-normal leading-snug" />
     </div>
   );
