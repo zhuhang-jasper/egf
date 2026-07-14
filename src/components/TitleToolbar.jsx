@@ -3,7 +3,6 @@ import { useEffect } from "react";
 import { CircleCheck, Plus, RotateCcw, Save, X } from "lucide-react";
 
 import { BadgePicker } from "@/components/BadgePicker";
-import { ProfilePicker } from "@/components/ProfilePicker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -129,7 +128,7 @@ export function TitleToolbar() {
           </span>
         </Button>
       </div>
-      {/* Row 2 — create, profiles */}
+      {/* Row 2 — create, reset (Profiles now lives in the chart toolbar row above the chart) */}
       <div className="flex w-full items-center gap-2">
         <Button
           type="button"
@@ -164,9 +163,6 @@ export function TitleToolbar() {
             Reset levels
           </Button>
         )}
-        <div className="ml-auto">
-          <ProfilePicker />
-        </div>
       </div>
     </div>
   );

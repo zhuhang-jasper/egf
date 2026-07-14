@@ -4,6 +4,7 @@ import { Copy, Settings, Share } from "lucide-react";
 
 import { ChartScores } from "@/components/ChartScores";
 import { ClusterLegend } from "@/components/ClusterLegend";
+import { ProfilePicker } from "@/components/ProfilePicker";
 import { TrackBadge } from "@/components/TrackBadge";
 import { Button } from "@/components/ui/button";
 
@@ -136,9 +137,9 @@ function ExportMenu({ onCopy, onShare }) {
           Share
         </Button>
       ) : null}
-      <Button type="button" variant="outline" size="sm" shape="pill" onClick={onCopy} className="gap-1">
+      <Button type="button" variant="outline" size="sm" shape="pill" onClick={onCopy} className="gap-1" title="Copy image" aria-label="Copy image">
         <Copy className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        Copy image
+        Copy
       </Button>
     </div>
   );
@@ -230,7 +231,8 @@ export function ChartSection({ isVisible }) {
 
   return (
     <div className="flex w-full min-w-0 flex-col items-center">
-      <div className="relative z-[2] flex w-full min-w-0 items-center justify-end gap-2 border-b pb-3 border-border mb-3">
+      <div className="relative z-[2] flex w-full min-w-0 items-center justify-between gap-2 border-b pb-3 border-border mb-3">
+        <ProfilePicker />
         <div className="flex shrink-0 items-center gap-2">
           <ExportMenu onCopy={handleCopy} onShare={handleShare} />
           <ChartDisplayMenu />
