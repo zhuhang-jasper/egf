@@ -19,7 +19,7 @@ export const COMPETENCY_LEVEL_COPY = {
     },
     L5: {
       persona: "The Grandmaster.",
-      text: "Can **set the coding direction beyond the immediate team — choosing language paradigms, testing strategies, and abstraction conventions that outlive any single project**. Executes systemic algorithmic refactoring **across codebases that no single team owns**. Evaluates emerging programming models **and decides what the organization adopts, ignores, or retires** to mitigate future technical debt.",
+      text: "Can **set the coding direction beyond the immediate team. Chooses language paradigms, testing strategies, and abstraction conventions that outlive any single project**. Executes systemic algorithmic refactoring **across codebases that no single team owns**. Evaluates emerging programming models **and decides what the organization adopts, ignores, or retires** to mitigate future technical debt.",
     },
   },
   domainLogic: {
@@ -144,7 +144,7 @@ export const COMPETENCY_LEVEL_COPY = {
       text: "Can maintain proactive communication clarity to drive routine cross-functional alignment. Executes standard technical translation to clarify feature constraints. **Delivers consistent stakeholder reporting independently. Documents their own work so others can pick it up without asking.** Escalates issues promptly to assist leadership with conflict mediation.",
     },
     L3: {
-      text: "Can navigate complex blockers by driving robust cross-functional alignment. Performs advanced technical translation to articulate risks during planning. **Tailors stakeholder reporting to what each audience needs to decide. Writes technical documentation that outlives the conversation — decisions, trade-offs, and system knowledge.** Facilitates routine conflict mediation.",
+      text: "Can navigate complex blockers by driving robust cross-functional alignment. Performs advanced technical translation to articulate risks during planning. **Tailors stakeholder reporting to what each audience needs to decide. Writes technical documentation that outlives the conversation: decisions, trade-offs, and system knowledge.** Facilitates routine conflict mediation.",
     },
     L4: {
       persona: "The Mediator.",
@@ -167,7 +167,7 @@ export const COMPETENCY_LEVEL_COPY = {
     },
     L4: {
       persona: "The Finisher.",
-      text: "Can drive team resilience through systemic initiative and de-risking, **ensuring delivery never depends on a single person — including themselves**. Audits peer estimation integrity. Orchestrates major incident resolution while enforcing rigorous sprint accountability **until commitments are trusted without follow-up**.",
+      text: "Can drive team resilience through systemic initiative and de-risking, **ensuring delivery never depends on a single person, including themselves**. Audits peer estimation integrity. Orchestrates major incident resolution while enforcing rigorous sprint accountability **until commitments are trusted without follow-up**.",
     },
     L5: {
       persona: "The Founder's Mindset.",

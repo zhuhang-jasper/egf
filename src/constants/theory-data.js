@@ -28,7 +28,7 @@ const PILLAR_ABOUT_COPY = {
   uiUx: {
     focusSummary: "Visual Fidelity, Detail Accuracy, Component Reuse, Design System Alignment, User Empathy, UX Improvisation",
     signatureQuestion: "Am I creating an intuitive and frictionless interface?",
-    note: "Backend engineers touch this pillar less often — mainly through internal tools they build and by sensing how their work affects the end user's experience. A flatter UI/UX corner is a normal backend shape, not a gap to fix.",
+    note: "Backend engineers touch this pillar less often, mainly through internal tools they build and by sensing how their work affects the end user's experience. A flatter UI/UX corner is a normal backend shape, not a gap to fix.",
   },
   productSense: {
     focusSummary:
@@ -58,7 +58,7 @@ const CLUSTER_ABOUT_META = {
 };
 
 export const PILLARS_SECTION_INTRO =
-  "This framework breaks down a software engineer's real-world competencies into 9 distinct pillars. Each pillar lists its focus areas, sorted from foundational to advanced, and ends with a signature question — a quick self-check you can ask yourself in daily work.";
+  "This framework breaks down a software engineer's real-world competencies into 9 distinct pillars. Each pillar lists its focus areas, sorted from foundational to advanced, and ends with a signature question: a quick self-check you can ask yourself in daily work.";
 
 function buildPillarClusterGroups() {
   return getPillarGroups().map(({ id, title, pillars }) => ({
