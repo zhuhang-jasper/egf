@@ -242,7 +242,7 @@ export function ProfilePicker() {
               className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 px-3 py-2 text-xs text-muted-foreground hover:bg-muted/60 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
               onClick={handleExport}
             >
-              <Download className="h-4 w-4 shrink-0" aria-hidden />
+              <Upload className="h-4 w-4 shrink-0" aria-hidden />
               Export
             </button>
             <button
@@ -251,7 +251,7 @@ export function ProfilePicker() {
               className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 border-l border-border px-3 py-2 text-xs text-muted-foreground hover:bg-muted/60"
               onClick={() => fileInputRef.current?.click()}
             >
-              <Upload className="h-4 w-4 shrink-0" aria-hidden />
+              <Download className="h-4 w-4 shrink-0" aria-hidden />
               Import
             </button>
           </div>
