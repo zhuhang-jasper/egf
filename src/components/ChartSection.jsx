@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
-import { ChevronDown, Copy, Settings, Share } from "lucide-react";
+import { Copy, Settings, Share } from "lucide-react";
 
 import { ChartScores } from "@/components/ChartScores";
 import { ClusterLegend } from "@/components/ClusterLegend";
@@ -92,29 +92,16 @@ function ChartDisplayMenu() {
           className="absolute right-0 top-[calc(100%+4px)] z-50 w-max rounded-lg border border-border bg-card py-1 shadow-md"
         >
           <DisplayCheckbox label="Title" checked={!chartTitleHidden} onChange={(v) => setChartTitleHidden(!v)} />
+          <DisplayCheckbox label="Badge" checked={!chartBadgeHidden} onChange={(v) => setChartBadgeHidden(!v)} />
           <DisplayCheckbox label="Chart" checked={!levelsPolygonHidden} onChange={(v) => setLevelsPolygonHidden(!v)} />
           <DisplayCheckbox label="Level labels" checked={!chartLevelTicksHidden} onChange={(v) => setChartLevelTicksHidden(!v)} />
           <DisplayCheckbox label="Legend" checked={!chartLegendHidden} onChange={(v) => setChartLegendHidden(!v)} />
-          <DisplayCheckbox label="Badge" checked={!chartBadgeHidden} onChange={(v) => setChartBadgeHidden(!v)} />
           {FEATURE_SCORES_SETTINGS ? (
             <DisplayCheckbox label="Scores" checked={!footerScoresHidden} onChange={(v) => setFooterScoresHidden(!v)} />
           ) : null}
         </div>
       ) : null}
     </div>
-  );
-}
-
-function ExportMenuItem({ label, onClick }) {
-  return (
-    <button
-      type="button"
-      role="menuitem"
-      onClick={onClick}
-      className="flex w-full cursor-pointer whitespace-nowrap rounded-md px-3 py-2 text-left text-xs hover:bg-muted/60"
-    >
-      {label}
-    </button>
   );
 }
 
@@ -136,84 +123,23 @@ const CAN_SHARE_FILES = (() => {
 })();
 
 /**
- * Image-export control. Where the Web Share API can share files, this is a Share dropdown offering
- * both copy-to-clipboard and the OS share sheet. Where it can't (e.g. desktop Chrome/Firefox), the
- * dropdown would only ever hold a single "Copy image" item — so we collapse it into a direct Copy
- * button (no caret) that copies in one click instead of two.
+ * Image-export controls, as two standalone buttons: "Copy image" is always shown (copies to the
+ * clipboard, or downloads as a fallback). "Share" is shown additionally only where the Web Share
+ * API can share files (e.g. mobile Safari/Chrome), opening the OS share sheet.
  */
 function ExportMenu({ onCopy, onShare }) {
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef(null);
-
-  if (!CAN_SHARE_FILES) {
-    return (
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        shape="pill"
-        onClick={onCopy}
-        className="shrink-0 gap-1"
-      >
+  return (
+    <div className="flex shrink-0 items-center gap-2">
+      {CAN_SHARE_FILES ? (
+        <Button type="button" variant="outline" size="sm" shape="pill" onClick={onShare} className="gap-1">
+          <Share className="h-3.5 w-3.5 shrink-0" aria-hidden />
+          Share
+        </Button>
+      ) : null}
+      <Button type="button" variant="outline" size="sm" shape="pill" onClick={onCopy} className="gap-1">
         <Copy className="h-3.5 w-3.5 shrink-0" aria-hidden />
         Copy image
       </Button>
-    );
-  }
-
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === "Escape") {
-        setOpen(false);
-      }
-    };
-    const onMouse = (e) => {
-      if (rootRef.current && !rootRef.current.contains(e.target)) {
-        setOpen(false);
-      }
-    };
-    if (!open) {
-      return undefined;
-    }
-    document.addEventListener("keydown", onKey);
-    document.addEventListener("mousedown", onMouse);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.removeEventListener("mousedown", onMouse);
-    };
-  }, [open]);
-
-  const run = (fn) => () => {
-    setOpen(false);
-    fn();
-  };
-
-  return (
-    <div ref={rootRef} className="relative shrink-0">
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        aria-expanded={open}
-        aria-haspopup="menu"
-        shape="pill"
-        onClick={() => setOpen((v) => !v)}
-        className="gap-1 pr-1"
-      >
-        <Share className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        Share
-        <ChevronDown className="h-3.5 w-3.5 opacity-60" />
-      </Button>
-      {open ? (
-        <div
-          role="menu"
-          aria-label="Export image"
-          className="absolute right-0 top-[calc(100%+4px)] z-50 w-max rounded-lg border border-border bg-card p-1 shadow-md"
-        >
-          <ExportMenuItem label="Copy image (clipboard)" onClick={run(onCopy)} />
-          <ExportMenuItem label="Share external..." onClick={run(onShare)} />
-        </div>
-      ) : null}
     </div>
   );
 }
