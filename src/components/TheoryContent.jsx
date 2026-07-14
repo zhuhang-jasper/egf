@@ -66,7 +66,7 @@ function SeniorityPhaseTitle({ phase, className, breakAfterSlash = false }) {
 function SeniorityStepper() {
   return (
     <>
-      <div className="space-y-2 min-[650px]:hidden">
+      <div className="space-y-2 sm:hidden">
         {SENIORITY_LEVEL_DEFINITIONS.map(({ code, phase, description, seniority }) => (
           <div key={code} className={cn(cardClass, "flex items-center gap-2.5 p-3")}>
             <span className={cn(levelBadgeClass, "size-7", DOC_TEXT.badgeMd)}>{code}</span>
@@ -81,7 +81,7 @@ function SeniorityStepper() {
         ))}
       </div>
 
-      <div className="hidden min-[650px]:block">
+      <div className="hidden sm:block">
         <div className="grid grid-cols-5 grid-rows-[repeat(4,auto)] gap-2">
           {SENIORITY_LEVEL_DEFINITIONS.map(({ code, phase, description, seniority }) => (
             <div key={code} className={cn(cardClass, "row-span-4 grid min-w-0 grid-rows-subgrid gap-y-2.5 p-3")}>

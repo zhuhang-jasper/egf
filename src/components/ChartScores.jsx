@@ -28,7 +28,7 @@ function ScoreCard({ label, value, sub, className, title, cardStyle, valueColor 
       data-chart-export="chart-score-card"
       style={cardStyle}
       className={cn(
-        "group relative flex min-w-0 flex-col items-center justify-center gap-1 leading-none rounded-lg border px-2 py-1.5 text-center min-[470px]:px-4 min-[470px]:py-1.5",
+        "group relative flex min-w-0 flex-col items-center justify-center gap-1 leading-none rounded-lg border px-2 py-1.5 text-center xs:px-4 xs:py-1.5",
         className,
       )}
     >
@@ -111,12 +111,12 @@ export function ChartScores() {
 
   return (
     <>
-      <div className="grid grid-cols-3 gap-2 min-[470px]:gap-3">
+      <div className="grid grid-cols-3 gap-2 xs:gap-3">
         {clusterCards.map(({ key, ...card }) => (
           <ScoreCard key={key} {...card} />
         ))}
       </div>
-      <div className="grid grid-cols-4 gap-2 min-[470px]:gap-3">
+      <div className="grid grid-cols-4 gap-2 xs:gap-3">
         {summaryCards.map(({ key, ...card }) => (
           <ScoreCard key={key} {...card} />
         ))}

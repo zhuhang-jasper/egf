@@ -144,7 +144,7 @@ export function ProfilePicker() {
           role="menu"
           aria-label="Saved profiles"
           className={cn(
-            "absolute right-0 z-30 flex w-max max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border border-border bg-card shadow-md min-[470px]:max-w-[280px]",
+            "absolute right-0 z-30 flex w-max max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border border-border bg-card shadow-md xs:max-w-[280px]",
             openUp ? "bottom-[calc(100%+4px)]" : "top-[calc(100%+4px)]",
           )}
         >

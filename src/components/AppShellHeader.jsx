@@ -79,11 +79,11 @@ function AppShellTabBar({ activeTab, onTabChange, theoryHasUnseenUpdates = false
 
   return (
     <div ref={barRef} id="app-shell-tab-bar" className="sticky top-0 z-40 -mx-3 mt-0 bg-white px-3 py-2 shadow-sm print:static print:shadow-none">
-      {/* ≥470px: tabs centered (justify-center), admin icons absolute-floated right so they don't
-          shift the tabs off-center. <470px + admin: justify-between — tabs to the left edge, icons
+      {/* ≥xs (470px): tabs centered (justify-center), admin icons absolute-floated right so they don't
+          shift the tabs off-center. <xs + admin: justify-between — tabs to the left edge, icons
           to the right (absolute positioning drops so the flow spacing applies). Non-admin stays
           centered at every width (only the tablist is present). */}
-      <div className={cn("relative flex items-center min-[470px]:justify-center", IS_ADMIN ? "justify-between" : "justify-center")}>
+      <div className={cn("relative flex items-center xs:justify-center", IS_ADMIN ? "justify-between" : "justify-center")}>
         <div
           className="relative grid w-62 max-w-full grid-cols-2 rounded-lg border border-slate-200 bg-slate-100/80 p-0.5"
           role="tablist"
@@ -138,10 +138,10 @@ function AppShellTabBar({ activeTab, onTabChange, theoryHasUnseenUpdates = false
         </div>
 
         {/* Admin-only page-nav: compact icon buttons. Icon-only (labelled via title/aria-label);
-            distinct icon per destination. ≥470px: absolute right edge (keeps tabs centered).
-            <470px: static, so justify-between on the row pushes it to the right edge. */}
+            distinct icon per destination. ≥xs (470px): absolute right edge (keeps tabs centered).
+            <xs: static, so justify-between on the row pushes it to the right edge. */}
         {IS_ADMIN ? (
-          <div className="flex items-center gap-1.5 min-[470px]:absolute min-[470px]:right-0 min-[470px]:top-1/2 min-[470px]:-translate-y-1/2">
+          <div className="flex items-center gap-1.5 xs:absolute xs:right-0 xs:top-1/2 xs:-translate-y-1/2">
             {ADMIN_LINKS.map(({ route, label, icon: Icon }) => (
               <a
                 key={route}

@@ -16,12 +16,12 @@ function PillarCard({ pillar, clusterLabel, color, textColor, showLatestChanges 
   const { emoji, name } = splitEmoji(pillar.pillar);
   return (
     <article
-      className="rounded-xl border border-white/70 p-3 shadow-sm shadow-slate-200/40 min-[470px]:row-span-4 min-[470px]:grid min-[470px]:grid-rows-subgrid gap-2.5"
+      className="rounded-xl border border-white/70 p-3 shadow-sm shadow-slate-200/40 xs:row-span-4 xs:grid xs:grid-rows-subgrid gap-2.5"
       style={{ backgroundColor: getClusterSurfaceBg(color) }}
     >
       {/* single-col: title left + cluster label right; col: title only */}
-      <div className="flex flex-row-reverse items-start justify-between gap-3 min-[470px]:block">
-        <span className={cn("shrink-0 text-right min-[470px]:hidden", DOC_TEXT.clusterLabel)} style={{ color: textColor }}>
+      <div className="flex flex-row-reverse items-start justify-between gap-3 xs:block">
+        <span className={cn("shrink-0 text-right xs:hidden", DOC_TEXT.clusterLabel)} style={{ color: textColor }}>
           {clusterLabel}
         </span>
         <p className={cn("flex min-w-0 flex-1 items-center gap-1.5", DOC_TEXT.cardTitle, "font-bold")}>
@@ -29,14 +29,14 @@ function PillarCard({ pillar, clusterLabel, color, textColor, showLatestChanges 
           <span className="min-w-0">{name}</span>
         </p>
       </div>
-      <p className={cn("mt-2 min-[470px]:mt-0", DOC_TEXT.body)}>
+      <p className={cn("mt-2 xs:mt-0", DOC_TEXT.body)}>
         <EmphasizedText text={pillar.focusSummary} boldClassName={WHATS_NEW_HIGHLIGHT_CLASS} plain={!showLatestChanges} />
       </p>
-      <div className={cn("mt-2 min-[470px]:mt-0", DOC_TEXT.bodyItalic)}>
+      <div className={cn("mt-2 xs:mt-0", DOC_TEXT.bodyItalic)}>
         <p>&ldquo;{pillar.signatureQuestion}&rdquo;</p>
       </div>
       {/* col only: cluster label at bottom */}
-      <span className={cn("hidden min-[470px]:block text-right", DOC_TEXT.clusterLabel)} style={{ color: textColor }}>
+      <span className={cn("hidden xs:block text-right", DOC_TEXT.clusterLabel)} style={{ color: textColor }}>
         {clusterLabel}
       </span>
     </article>
@@ -45,7 +45,7 @@ function PillarCard({ pillar, clusterLabel, color, textColor, showLatestChanges 
 
 export function PillarGrid({ showLatestChanges = true }) {
   return (
-    <div className="grid grid-cols-1 gap-2 min-[470px]:grid-cols-2 min-[470px]:grid-rows-[repeat(20,auto)] min-[800px]:grid-cols-3 min-[800px]:grid-rows-[repeat(12,auto)]">
+    <div className="grid grid-cols-1 gap-2 xs:grid-cols-2 xs:grid-rows-[repeat(20,auto)] md:grid-cols-3 md:grid-rows-[repeat(12,auto)]">
       {PILLAR_CLUSTER_GROUPS.flatMap((group) =>
         group.pillars.map((pillar) => (
           <PillarCard

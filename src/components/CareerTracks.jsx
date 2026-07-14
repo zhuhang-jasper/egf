@@ -69,7 +69,7 @@ function TrackRoleSequence({ roleLevels, badgeBg, badgeColor, desktopGridColumns
 
   return (
     <>
-      <ol className="flex flex-col gap-1 min-[470px]:hidden">
+      <ol className="flex flex-col gap-1 xs:hidden">
         {roleLevels.map(({ level, title }) => (
           <li
             key={`${level}-${title}-mobile`}
@@ -82,10 +82,10 @@ function TrackRoleSequence({ roleLevels, badgeBg, badgeColor, desktopGridColumns
       </ol>
 
       {centerDesktop ? (
-        <ol className="hidden w-full list-none text-center min-[470px]:block">{roleLevels.map((role) => desktopTile(role, true))}</ol>
+        <ol className="hidden w-full list-none text-center xs:block">{roleLevels.map((role) => desktopTile(role, true))}</ol>
       ) : (
         <ol
-          className="hidden w-full list-none items-stretch gap-1 min-[470px]:grid"
+          className="hidden w-full list-none items-stretch gap-1 xs:grid"
           style={{ gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` }}
         >
           {roleLevels.map((role) => desktopTile(role))}
@@ -137,8 +137,8 @@ function CareerTrackCard({ track, number }) {
           Track {number}: {track.name}
         </h3>
 
-        <div className="grid grid-cols-1 gap-3 min-[470px]:grid-cols-2 min-[470px]:items-start min-[470px]:gap-x-4">
-          <div className="order-2 w-full min-[470px]:order-1">
+        <div className="grid grid-cols-1 gap-3 xs:grid-cols-2 xs:items-start xs:gap-x-4">
+          <div className="order-2 w-full xs:order-1">
             <div className="rounded-lg p-2" style={{ backgroundColor: style.chipBg }}>
               <StaticCompetencyChart
                 levels={track.levels}
@@ -150,7 +150,7 @@ function CareerTrackCard({ track, number }) {
             </div>
           </div>
 
-          <div className="order-1 space-y-1.5 min-[470px]:order-2">
+          <div className="order-1 space-y-1.5 xs:order-2">
             <p className={DOC_TEXT.bodyMedium}>{track.summary}</p>
             <KeyPillarChips pillars={sortKeyFocusPillars(track.keyFocusPillars)} chipBg={style.chipBg} textColor={style.textColor} />
           </div>

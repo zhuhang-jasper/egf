@@ -90,9 +90,9 @@ export function StaticCompetencyChart({
       ref={frameRef}
       style={maxWidthPx ? { maxWidth: `${maxWidthPx}px` } : undefined}
       className={cn(
-        "relative mx-auto box-border aspect-square w-full min-[470px]:max-w-none min-[470px]:min-h-[80px]",
+        "relative mx-auto box-border aspect-square w-full xs:max-w-none xs:min-h-[80px]",
         !fullWidth && !maxWidthPx && "max-w-[16rem]",
-        fillContainer && "h-full min-h-0 min-[470px]:min-h-0",
+        fillContainer && "h-full min-h-0 xs:min-h-0",
         className,
       )}
     >

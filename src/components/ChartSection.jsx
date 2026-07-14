@@ -279,7 +279,7 @@ export function ChartSection({ isVisible }) {
         {FEATURE_SCORES_SETTINGS && !footerScoresHidden ? (
           <div
             data-chart-export="chart-scores"
-            className="mt-3 flex flex-col gap-2 min-[470px]:gap-3"
+            className="mt-3 flex flex-col gap-2 xs:gap-3"
             aria-label="Cluster averages and score summary"
           >
             <ChartScores />

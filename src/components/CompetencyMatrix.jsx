@@ -44,7 +44,7 @@ function LevelCellContent({ level, showLatestChanges }) {
 function PillarMatrixLevels({ levels, showLatestChanges }) {
   return (
     <>
-      <div className="divide-y divide-slate-300/50 px-3 py-1 min-[650px]:hidden">
+      <div className="divide-y divide-slate-300/50 px-3 py-1 sm:hidden">
         {SENIORITY_LEVEL_DEFINITIONS.map(({ code, term }) => (
           <div key={code} className="flex flex-col py-2 gap-2">
             <LevelPill code={code} term={term} />
@@ -55,7 +55,7 @@ function PillarMatrixLevels({ levels, showLatestChanges }) {
         ))}
       </div>
 
-      <div className="hidden grid-cols-5 gap-2 px-3 py-2 min-[650px]:grid">
+      <div className="hidden grid-cols-5 gap-2 px-3 py-2 sm:grid">
         {SENIORITY_LEVEL_DEFINITIONS.map(({ code, term }) => (
           <div key={code} className="flex min-w-0 flex-col gap-2.5 border-r border-slate-300/50 px-1 last:border-r-0">
             <LevelPill code={code} term={term} />
@@ -103,7 +103,7 @@ function PillarMatrixCard({
           expanded ? "pb-1.5 border-b border-slate-300/60" : "pb-2.5",
         )}
       >
-        <div className="min-w-0 flex-1 space-y-2 min-[650px]:space-y-2.5">
+        <div className="min-w-0 flex-1 space-y-2 sm:space-y-2.5">
           <h3 className={cn("min-w-0", DOC_TEXT.cardTitlePlain, "font-bold")}>
             {order}. {pillarName}
           </h3>
