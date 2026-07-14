@@ -45,6 +45,9 @@ export function StaticCompetencyChart({
   // linearly from minPx→maxPx as the chart width goes minWidthPx→maxWidthPx (clamped at the ends),
   // so labels scale fluidly with the chart. Takes precedence over pointLabelPx/pointLabelScale.
   pointLabelPxRange,
+  // Use the theory hero radar's label-nudge map instead of the career-track charts' map. Only the
+  // large empty hero radar at the top of the theory tab sets this.
+  heroLabelNudge = false,
   "aria-label": ariaLabel,
 }) {
   const canvasRef = useRef(null);
@@ -65,6 +68,7 @@ export function StaticCompetencyChart({
       focusedPillars,
       clusterLabelColors,
       maxHeightPx,
+      heroLabelNudge,
     }),
     [
       levels,

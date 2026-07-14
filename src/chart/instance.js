@@ -166,12 +166,22 @@ function syncPointLabelPxRangeOption(chart, pointLabelPxRange) {
 }
 
 /** Push app state into the chart and redraw. */
+/** Flags a theory chart as the hero radar so it uses the hero (not career-track) label nudge map. */
+function syncHeroLabelNudgeOption(chart, heroLabelNudge) {
+  const cc = chart.options.plugins.competencyChart;
+  const next = Boolean(heroLabelNudge);
+  if (cc.heroLabelNudge !== next) {
+    cc.heroLabelNudge = next;
+  }
+}
+
 export function applyChartState(chart, state) {
   if (!chart) {
     return;
   }
   const orderLen = getPillarOrder().length;
   syncPlainLabelsOption(chart, state.plainLabels);
+  syncHeroLabelNudgeOption(chart, state.heroLabelNudge);
   syncPointLabelScaleOption(chart, state.pointLabelScale);
   syncPointLabelPxOption(chart, state.pointLabelPx);
   syncPointLabelPxRangeOption(chart, state.pointLabelPxRange);
@@ -257,7 +267,7 @@ export function createCompetencyChart(canvas, { purpose = "tool" } = {}) {
       plugins: {
         legend: { display: false },
         tooltip: { enabled: false },
-        competencyChart: { purpose, plainLabels: isTheory },
+        competencyChart: { purpose, plainLabels: isTheory, heroLabelNudge: false },
       },
     },
     plugins: [createClusterBackgroundPlugin()],

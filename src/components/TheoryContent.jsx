@@ -221,6 +221,7 @@ function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreR
             plainLabels={false}
             pointLabelPxRange={HERO_POINT_LABEL_PX_RANGE}
             clusterLabelColors
+            heroLabelNudge
             hidePolygon
             showLevelTicks
             fullWidth

@@ -31,6 +31,11 @@ export function isTheoryChart(chart) {
   return chart?.options?.plugins?.competencyChart?.purpose === "theory";
 }
 
+/** The theory tab's large empty hero radar (vs. the small per-track career-track charts). */
+export function isHeroChart(chart) {
+  return chart?.options?.plugins?.competencyChart?.heroLabelNudge === true;
+}
+
 export function getChartLayoutLabelsForChart(chart) {
   const plain = chart?.options?.plugins?.competencyChart?.plainLabels;
   return plain ? getPlainChartLayoutLabels() : getChartLayoutLabels();

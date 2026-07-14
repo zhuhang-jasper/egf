@@ -1,5 +1,5 @@
 import { getChartWidthUnit } from "@/chart/fonts";
-import { getChartLayoutLabelsForChart, isTheoryChart, resolveChartUi } from "@/chart/theory-profile";
+import { getChartLayoutLabelsForChart, isHeroChart, isTheoryChart, resolveChartUi } from "@/chart/theory-profile";
 import { getPillarOrder } from "@/constants";
 
 /**
@@ -20,16 +20,29 @@ const PILLAR_LABEL_NUDGE = {
 };
 
 /**
- * Nudges for the theory career-track charts. Cloned from {@link PILLAR_LABEL_NUDGE} as a starting
- * point — adjust independently since the theory charts render at a different size.
+ * Nudges for the theory career-track charts (the small per-track profiles in CareerTracks, ~180px).
+ * Kept at the older, more conservative values — adjust independently of the hero radar.
  */
-const THEORY_PILLAR_LABEL_NUDGE = {
+const CAREER_TRACK_PILLAR_LABEL_NUDGE = {
   domainLogic: { x: -5, y: 10 },
   architecture: { x: 5, y: 10 },
   uiUx: { x: -2, y: 10 },
   ai: { x: 2, y: 10 },
   productSense: { x: -2, y: -7 },
   process: { x: 2, y: -7 },
+};
+
+/**
+ * Nudges for the theory hero radar (the large empty chart at the top of the theory tab). Tuned
+ * independently of {@link CAREER_TRACK_PILLAR_LABEL_NUDGE} since it renders much larger.
+ */
+const HERO_PILLAR_LABEL_NUDGE = {
+  domainLogic: { x: -10, y: 20 },
+  architecture: { x: 10, y: 20 },
+  uiUx: { x: -3, y: 15 },
+  ai: { x: 3, y: 15 },
+  productSense: { x: -3, y: -10 },
+  process: { x: 3, y: -10 },
 };
 
 function getPillarLabelNudge(nudgeMap, pillarId) {
@@ -102,8 +115,12 @@ function rebuildRadarPointLabelItems(scale) {
 
   const layoutLabels = getChartLayoutLabelsForChart(scale.chart);
   const pillarOrder = getPillarOrder();
-  // Tool and theory charts render at different sizes, so each has its own hand-tuned nudge map.
-  const nudgeMap = isTheoryChart(scale.chart) ? THEORY_PILLAR_LABEL_NUDGE : PILLAR_LABEL_NUDGE;
+  // Each chart renders at a different size, so each has its own hand-tuned nudge map: the tool
+  // chart, the theory hero radar, and the small career-track profiles.
+  let nudgeMap = PILLAR_LABEL_NUDGE;
+  if (isTheoryChart(scale.chart)) {
+    nudgeMap = isHeroChart(scale.chart) ? HERO_PILLAR_LABEL_NUDGE : CAREER_TRACK_PILLAR_LABEL_NUDGE;
+  }
   const plOpts = scale.options.pointLabels;
   const valueCount = count;
   const addAngle = plOpts.centerPointLabels ? Math.PI / valueCount : 0;
