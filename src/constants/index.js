@@ -36,6 +36,7 @@ export {
   SENIORITY_LEVEL_COUNT,
   TECHNICAL_FLOOR_PILLARS,
 } from "@/constants/scoring";
+export { CHANGELOG } from "@/constants/changelog";
 export { FEATURE_SCORES_SETTINGS, IS_ADMIN } from "@/constants/features";
 export { SITE_COPY } from "@/constants/site";
 export {
