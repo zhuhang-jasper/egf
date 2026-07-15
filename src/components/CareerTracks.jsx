@@ -193,14 +193,21 @@ function FoundationalPhase() {
           <KeyPillarChips pillars={FOUNDATIONAL_PHASE.technicalPillars} ringColor={style.ringColor} textColor={style.textColor} />
         </div>
 
-        <FoundationCarousel stageCharts={FOUNDATIONAL_PHASE.stageCharts} style={style} />
+        {/* Carousel (mobile) and 3-up grid (xs+) are wrapped together. `space-y-2.5` on the parent
+            applies `margin-bottom` to every child *except the DOM `:last-child`* — and `:last-child`
+            ignores `display:none`, so toggling the two with `hidden` would leave whichever comes
+            first with a phantom bottom margin against its hidden sibling. Wrapping them in a single
+            child avoids that: the wrapper is the last child, so no stray gap below it. */}
+        <div>
+          <FoundationCarousel stageCharts={FOUNDATIONAL_PHASE.stageCharts} style={style} />
 
-        <div className="-mx-2 hidden grid-cols-3 divide-x divide-slate-300/70 xs:grid">
-          {FOUNDATIONAL_PHASE.stageCharts.map((chart) => (
-            <div key={chart.id} className="space-y-1.5 px-2">
-              <FoundationStageBody chart={chart} style={style} />
-            </div>
-          ))}
+          <div className="-mx-2 hidden grid-cols-3 divide-x divide-slate-300/70 xs:grid">
+            {FOUNDATIONAL_PHASE.stageCharts.map((chart) => (
+              <div key={chart.id} className="space-y-1.5 px-2">
+                <FoundationStageBody chart={chart} style={style} />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </article>
