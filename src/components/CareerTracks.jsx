@@ -1,4 +1,8 @@
+import { useEffect, useRef, useState } from "react";
+
 import { StaticCompetencyChart } from "@/components/StaticCompetencyChart";
+
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 import { CLUSTERS, getClusterSurfaceBg } from "@/constants";
 import { CAREER_TRACK_PROFILES, FOUNDATIONAL_PHASE, JUNIOR_TO_SENIOR, SENIOR_FORK, sortKeyFocusPillars } from "@/constants/theory-data";
@@ -93,6 +97,88 @@ function KeyPillarChips({ pillars, ringColor, textColor, flexRowMd = false }) {
   );
 }
 
+/** The chart + role-label body for one foundational stage. Shared by the desktop 3-up grid
+ *  (left-aligned role row) and the mobile carousel (centered under the centered chart). */
+function FoundationStageBody({ chart, style, centerRole = false }) {
+  return (
+    <>
+      <ChartPanel levels={chart.levels} title={chart.title} className="p-2" />
+      <div className={cn("flex items-center gap-2", centerRole ? "justify-center" : "justify-start")}>
+        <LevelBadge level={chart.role.level} backgroundColor={style.levelBadgeBg} color={style.levelBadgeText} />
+        <p className={cn("min-w-0", DOC_TEXT.bodyDimMedium, "font-semibold", !centerRole && "flex-1")}>{chart.role.title}</p>
+      </div>
+    </>
+  );
+}
+
+/** Mobile-only (<xs): one chart at a time with a centered horizontal L1/L2/L3 badge selector above
+ *  it, so the chart stays centered. Tapping a level swaps the chart. Starts on the first stage (L1).
+ *  At xs and up the desktop 3-up grid is shown instead (this whole block is `xs:hidden`). */
+// How long each stage stays on screen before the carousel auto-advances to the next.
+const FOUNDATION_AUTOPLAY_MS = 2000;
+// After the user taps a stage, autoplay pauses this long before resuming (so it doesn't immediately
+// yank them off their choice, but the loop still comes back on its own).
+const FOUNDATION_RESUME_MS = 8000;
+
+function FoundationCarousel({ stageCharts, style }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  // Autoplay pauses when the user taps a stage, then resumes after FOUNDATION_RESUME_MS of no taps.
+  const [paused, setPaused] = useState(false);
+  // Users who ask for reduced motion never get the auto-advance loop.
+  const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
+  const resumeTimerRef = useRef(null);
+  const activeChart = stageCharts[activeIndex];
+
+  useEffect(() => {
+    if (paused || prefersReducedMotion) {
+      return undefined;
+    }
+    const id = setInterval(() => setActiveIndex((prev) => (prev + 1) % stageCharts.length), FOUNDATION_AUTOPLAY_MS);
+    return () => clearInterval(id);
+  }, [paused, prefersReducedMotion, stageCharts.length]);
+
+  // Clear the pending resume timer on unmount.
+  useEffect(() => () => clearTimeout(resumeTimerRef.current), []);
+
+  const selectStage = (index) => {
+    setActiveIndex(index);
+    if (prefersReducedMotion) {
+      return;
+    }
+    setPaused(true);
+    clearTimeout(resumeTimerRef.current);
+    resumeTimerRef.current = setTimeout(() => setPaused(false), FOUNDATION_RESUME_MS);
+  };
+
+  return (
+    <div className="space-y-2 xs:hidden">
+      <div className="flex justify-center gap-1.5" role="tablist" aria-label="Foundational stage">
+        {stageCharts.map((chart, index) => {
+          const isActive = index === activeIndex;
+          return (
+            <button
+              key={chart.id}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              aria-label={`${chart.role.level} ${chart.role.title}`}
+              onClick={() => selectStage(index)}
+              className={cn(levelBadgeClass, "cursor-pointer px-2 py-1 transition-opacity", !isActive && "opacity-35")}
+              style={{ backgroundColor: style.levelBadgeBg, color: style.levelBadgeText }}
+            >
+              {chart.role.level}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="space-y-1.5">
+        <FoundationStageBody chart={activeChart} style={style} centerRole />
+      </div>
+    </div>
+  );
+}
+
 function FoundationalPhase() {
   const style = TRACK_STYLE.foundation;
 
@@ -107,14 +193,12 @@ function FoundationalPhase() {
           <KeyPillarChips pillars={FOUNDATIONAL_PHASE.technicalPillars} ringColor={style.ringColor} textColor={style.textColor} />
         </div>
 
-        <div className="grid grid-cols-1 divide-y divide-slate-300/70 xs:-mx-2 xs:grid-cols-3 xs:divide-x xs:divide-y-0">
+        <FoundationCarousel stageCharts={FOUNDATIONAL_PHASE.stageCharts} style={style} />
+
+        <div className="-mx-2 hidden grid-cols-3 divide-x divide-slate-300/70 xs:grid">
           {FOUNDATIONAL_PHASE.stageCharts.map((chart) => (
-            <div key={chart.id} className="space-y-1.5 py-2 first:pt-0 last:pb-0 xs:px-2 xs:py-0">
-              <ChartPanel levels={chart.levels} title={chart.title} className="p-2" />
-              <div className="flex items-center justify-center gap-2 xs:justify-start">
-                <LevelBadge level={chart.role.level} backgroundColor={style.levelBadgeBg} color={style.levelBadgeText} />
-                <p className={cn("min-w-0", DOC_TEXT.bodyDimMedium, "font-semibold", "xs:flex-1")}>{chart.role.title}</p>
-              </div>
+            <div key={chart.id} className="space-y-1.5 px-2">
+              <FoundationStageBody chart={chart} style={style} />
             </div>
           ))}
         </div>
