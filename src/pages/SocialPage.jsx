@@ -5,7 +5,7 @@ import { Chart, Filler, LineElement, PointElement, RadarController, RadialLinear
 import { BackToToolButton } from "@/components/BackToToolButton";
 
 import { createClusterBackgroundPlugin } from "@/chart/plugins";
-import { FE_UI, getPillarLabel, getPillarOrder, SITE_COPY } from "@/constants";
+import { FE_UI, getEmojiChartLabels, getPillarOrder, SITE_COPY } from "@/constants";
 import { pillarLevelsToArray } from "@/constants/levels";
 import { track } from "@/utils/analytics";
 import { copyShareToClipboard, downloadSharePng } from "@/utils/export-image";
@@ -18,12 +18,6 @@ const CANVAS_H = 630;
 
 // The saved profile to feature on the card. Matched case-insensitively by title.
 const FEATURED_PROFILE_TITLE = "Jasper Loo";
-
-/** Keep only the leading emoji from a "🤲 Coding (Hands)" label → "🤲" for an icon-only spoke. */
-function shortPillarLabel(label) {
-  const m = label.match(/^(?<lead>\S+)/u);
-  return m ? m.groups.lead : label;
-}
 
 // Fallback shape if the named profile isn't in localStorage yet (e.g. fresh browser) — a
 // well-rounded-but-varied profile so the radar still reads as a rich asymmetric shape.
@@ -180,7 +174,7 @@ function useFeaturedLevels() {
     const pillarLevels = FALLBACK_PROFILE;
     return {
       levels: pillarLevelsToArray(pillarLevels),
-      labels: getPillarOrder().map((id) => shortPillarLabel(getPillarLabel(id))),
+      labels: getEmojiChartLabels(),
     };
   }, []);
 }

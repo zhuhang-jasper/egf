@@ -48,6 +48,12 @@ export function StaticCompetencyChart({
   // Use the theory hero radar's label-nudge map instead of the career-track charts' map. Only the
   // large empty hero radar at the top of the theory tab sets this.
   heroLabelNudge = false,
+  // Render pillar spokes as emoji only (no text). Takes precedence over plainLabels.
+  emojiOnlyLabels = false,
+  // Width-responsive emoji↔text: at/below this chart width, spokes are emoji-only; above it, full
+  // text (and focus-dimming). Overrides emojiOnlyLabels. Use for charts that go full-width in a row
+  // layout (text) but shrink to a narrow column (emoji).
+  emojiMaxWidthPx,
   "aria-label": ariaLabel,
 }) {
   const canvasRef = useRef(null);
@@ -59,6 +65,8 @@ export function StaticCompetencyChart({
       title,
       purpose,
       plainLabels,
+      emojiOnlyLabels,
+      emojiMaxWidthPx,
       pointLabelScale,
       pointLabelPx,
       pointLabelPxRange,
@@ -75,6 +83,8 @@ export function StaticCompetencyChart({
       title,
       purpose,
       plainLabels,
+      emojiOnlyLabels,
+      emojiMaxWidthPx,
       pointLabelScale,
       pointLabelPx,
       pointLabelPxRange,

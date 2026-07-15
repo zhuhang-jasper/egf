@@ -173,6 +173,16 @@ export function getPlainChartLayoutLabels() {
   return order.map((id) => (id === lastId ? reserved : getPlainChartPillarLabel(id)));
 }
 
+/** Emoji-only pillar label — the leading emoji, text dropped (variation selectors stripped). */
+export function getEmojiChartPillarLabel(pillarId) {
+  const m = getChartPillarLabel(pillarId).match(/^(?<emoji>\S+)/u);
+  return m ? m.groups.emoji : "";
+}
+
+export function getEmojiChartLabels() {
+  return getPillarOrder().map((id) => getEmojiChartPillarLabel(id));
+}
+
 function buildPillarRef(pillarId) {
   const order = getPillarOrder();
   return {

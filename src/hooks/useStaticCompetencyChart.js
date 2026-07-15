@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 
-import { applyChartFrameLayout } from "@/chart/fonts";
+import { applyChartFrameLayout, getChartFrameEstimatedHeightPx } from "@/chart/fonts";
 import { applyChartState, createCompetencyChart, refreshChart } from "@/chart/instance";
 import { getRadarContentHeightPx } from "@/chart/radar-center";
 
@@ -14,10 +14,10 @@ function fitFrameToChart(frameRef, chart, maxHeightPx) {
 
   let prevContentH = null;
   for (let pass = 0; pass < 3; pass++) {
-    let contentH = getRadarContentHeightPx(chart);
-    if (!contentH) {
-      return;
-    }
+    // If the label extents can't be measured (e.g. the center-fit early-returned on a transient
+    // tiny chart area, leaving stale/empty label items), keep the width-based estimate instead of
+    // bailing — bailing here can leave the frame at a collapsed height and hide the chart.
+    let contentH = getRadarContentHeightPx(chart) ?? getChartFrameEstimatedHeightPx(w);
     if (maxHeightPx) {
       contentH = Math.min(contentH, maxHeightPx);
     }
@@ -58,7 +58,21 @@ export function useStaticCompetencyChart(canvasRef, frameRef, chartState) {
   relayoutRef.current = relayout;
 
   useLayoutEffect(() => {
-    const run = () => relayoutRef.current();
+    // Run the relayout (which calls chart.resize(), mutating the frame the ResizeObserver watches)
+    // on a rAF tick OUTSIDE the observer callback. Doing it synchronously inside the callback forms
+    // an observe→resize→observe loop; the browser then drops the "undelivered" follow-up
+    // notifications, and if the dropped pass was a transient collapse (a momentary 0-width during a
+    // drag-resize) the chart is left at ~0 height and never recovers — the chart "disappears".
+    let rafId = null;
+    const run = () => {
+      if (rafId != null) {
+        return;
+      }
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        relayoutRef.current();
+      });
+    };
     run();
     const ro = new ResizeObserver(run);
     if (frameRef.current) {
@@ -66,6 +80,9 @@ export function useStaticCompetencyChart(canvasRef, frameRef, chartState) {
     }
     window.addEventListener("resize", run);
     return () => {
+      if (rafId != null) {
+        cancelAnimationFrame(rafId);
+      }
       ro.disconnect();
       window.removeEventListener("resize", run);
     };

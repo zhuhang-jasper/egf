@@ -2,13 +2,13 @@ import { Chart, Filler, Legend, LineElement, PointElement, RadarController, Radi
 
 import { createClusterBackgroundPlugin } from "@/chart/plugins";
 import { applyRadarCenterFit, syncFontsForChart } from "@/chart/radar-center";
-import { resolveChartUi, THEORY_CHART_UI } from "@/chart/theory-profile";
-import { FE_UI, getChartLabels, getPillarClusterLabelColors, getPillarOrder, getPlainChartLabels, PILLAR_COUNT } from "@/constants";
+import { isEmojiMode, resolveChartUi, THEORY_CHART_UI } from "@/chart/theory-profile";
+import { FE_UI, getChartLabels, getEmojiChartLabels, getPillarClusterLabelColors, getPillarOrder, getPlainChartLabels, PILLAR_COUNT } from "@/constants";
 
 Chart.register(RadarController, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
 
-function buildHumanDataset(label, data) {
-  const d = FE_UI.dataset;
+function buildHumanDataset(label, data, dataset) {
+  const d = dataset ?? FE_UI.dataset;
   return {
     label: label || " ",
     data,
@@ -86,11 +86,15 @@ function syncPointLabelColors(chart, focusedPillars, clusterLabelColors) {
   }
   const ui = resolveChartUi(chart).chart;
 
+  // In emoji mode the spokes are icons, not text — no focus-dimming (the faded-label treatment has
+  // nothing to fade), so every emoji renders at full color.
+  const emoji = isEmojiMode(chart);
+
   // Per-cluster label colors (matching the poster's pillar-name palette). Positionally aligned with
   // the label array, so we key off ctx.index. Focus-dimming still applies on top when set.
   if (clusterLabelColors) {
     const colors = getPillarClusterLabelColors();
-    const focused = focusedPillars?.length ? new Set(focusedPillars) : null;
+    const focused = !emoji && focusedPillars?.length ? new Set(focusedPillars) : null;
     pointLabels.color = (ctx) => {
       const clusterColor = colors[ctx.index] ?? ui.pointLabelColor;
       if (focused && !focused.has(chart.data.labels[ctx.index])) {
@@ -101,7 +105,7 @@ function syncPointLabelColors(chart, focusedPillars, clusterLabelColors) {
     return;
   }
 
-  if (!focusedPillars?.length) {
+  if (emoji || !focusedPillars?.length) {
     pointLabels.color = ui.pointLabelColor;
     return;
   }
@@ -110,8 +114,12 @@ function syncPointLabelColors(chart, focusedPillars, clusterLabelColors) {
 }
 
 function syncChartLabels(chart) {
-  const plain = chart?.options?.plugins?.competencyChart?.plainLabels;
-  chart.data.labels = plain ? getPlainChartLabels() : getChartLabels();
+  const cc = chart?.options?.plugins?.competencyChart;
+  if (isEmojiMode(chart)) {
+    chart.data.labels = getEmojiChartLabels();
+    return;
+  }
+  chart.data.labels = cc?.plainLabels ? getPlainChartLabels() : getChartLabels();
 }
 
 /** Allow chart state to flip a theory chart's plain labels on/off after creation (e.g. emoji labels). */
@@ -122,6 +130,28 @@ function syncPlainLabelsOption(chart, plainLabels) {
   const cc = chart.options.plugins.competencyChart;
   if (cc.plainLabels !== plainLabels) {
     cc.plainLabels = plainLabels;
+  }
+}
+
+/** Emoji-only pillar labels (icon spokes, no text) — takes precedence over plain/emoji-full. */
+function syncEmojiOnlyLabelsOption(chart, emojiOnlyLabels) {
+  if (emojiOnlyLabels == null) {
+    return;
+  }
+  const cc = chart.options.plugins.competencyChart;
+  if (cc.emojiOnlyLabels !== emojiOnlyLabels) {
+    cc.emojiOnlyLabels = emojiOnlyLabels;
+  }
+}
+
+/**
+ * Width threshold for responsive emoji↔text labels (see isEmojiMode): at/below this chart width the
+ * spokes are emoji-only, above it they show full text. Overrides the emojiOnlyLabels boolean.
+ */
+function syncEmojiMaxWidthPxOption(chart, emojiMaxWidthPx) {
+  const cc = chart.options.plugins.competencyChart;
+  if (cc.emojiMaxWidthPx !== (emojiMaxWidthPx ?? undefined)) {
+    cc.emojiMaxWidthPx = emojiMaxWidthPx ?? undefined;
   }
 }
 
@@ -181,6 +211,8 @@ export function applyChartState(chart, state) {
   }
   const orderLen = getPillarOrder().length;
   syncPlainLabelsOption(chart, state.plainLabels);
+  syncEmojiOnlyLabelsOption(chart, state.emojiOnlyLabels);
+  syncEmojiMaxWidthPxOption(chart, state.emojiMaxWidthPx);
   syncHeroLabelNudgeOption(chart, state.heroLabelNudge);
   syncPointLabelScaleOption(chart, state.pointLabelScale);
   syncPointLabelPxOption(chart, state.pointLabelPx);
@@ -213,7 +245,7 @@ export function createCompetencyChart(canvas, { purpose = "tool" } = {}) {
     type: "radar",
     data: {
       labels: isTheory ? getPlainChartLabels() : getChartLabels(),
-      datasets: [buildHumanDataset(" ", new Array(PILLAR_COUNT).fill(0))],
+      datasets: [buildHumanDataset(" ", new Array(PILLAR_COUNT).fill(0), ui.dataset)],
     },
     options: {
       responsive: true,
@@ -267,7 +299,7 @@ export function createCompetencyChart(canvas, { purpose = "tool" } = {}) {
       plugins: {
         legend: { display: false },
         tooltip: { enabled: false },
-        competencyChart: { purpose, plainLabels: isTheory, heroLabelNudge: false },
+        competencyChart: { purpose, plainLabels: isTheory, emojiOnlyLabels: false, emojiMaxWidthPx: undefined, heroLabelNudge: false },
       },
     },
     plugins: [createClusterBackgroundPlugin()],

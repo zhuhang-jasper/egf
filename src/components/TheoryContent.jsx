@@ -255,7 +255,7 @@ function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreR
       </section>
 
       <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.tracks]} className="space-y-3">
-        <SectionHeading title="IV. From Foundation to 3 Career Tracks" subtitle={CAREER_TRACKS_SECTION_INTRO} section={THEORY_SECTIONS.tracks} />
+        <SectionHeading title="IV. Career Growth Roadmap" subtitle={CAREER_TRACKS_SECTION_INTRO} section={THEORY_SECTIONS.tracks} />
         <CareerTracks />
       </section>
     </div>

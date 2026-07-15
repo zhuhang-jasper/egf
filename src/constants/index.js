@@ -4,6 +4,7 @@ export {
   getChartLabels,
   getChartLayoutLabels,
   getClusterIdForPillar,
+  getEmojiChartLabels,
   getPillarClusterLabelColors,
   getPlainChartLabels,
   getPlainChartLayoutLabels,

@@ -11,7 +11,7 @@ export const THEORY_SHOW_CHANGES_KEY = "fe-growth-framework:theory-show-changes:
 // The framework revision surfaced in the Theory tab. Bump this only when there's genuinely new
 // framework material worth alerting returning users to (not for minor copy tweaks). Rendered next to
 // the Theory tab label and compared against THEORY_SEEN_VERSION_KEY to show the "unseen" dot.
-export const FRAMEWORK_VERSION = "3.1";
+export const FRAMEWORK_VERSION = "3.2";
 // The framework version the user last caught up to. Single source of truth for the Theory tab's
 // unseen-updates dot AND the "What's New" toggle default (see useTheoryUpdates): absent = fresh user
 // (no dot, default off); < FRAMEWORK_VERSION = behind (dot on, default on); == current = caught up.

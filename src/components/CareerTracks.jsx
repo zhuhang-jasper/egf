@@ -5,101 +5,87 @@ import { CAREER_TRACK_PROFILES, FOUNDATIONAL_PHASE, SENIOR_FORK, sortKeyFocusPil
 import { DOC_TEXT } from "@/styles/doc-typography";
 import { cn } from "@/utils";
 
-const cardClass = "rounded-xl border border-slate-100 bg-white shadow-md shadow-slate-200/40";
-const levelBadgeClass = cn("inline-flex min-w-[1.75rem] shrink-0 items-center justify-center rounded px-1 py-1", DOC_TEXT.badgeSm);
+// Career-track chart spokes are width-responsive: emoji icons while the chart is narrow (the 3-up
+// columned view), full text pillar names once it goes full-width in the stacked/row view. The chart
+// also drops the focus-dimming of non-key pillars whenever it's in emoji mode. This px threshold
+// sits between the ~1/3-width columned charts and the full-width row charts.
+const TRACK_CHART_EMOJI_MAX_WIDTH_PX = 220;
 
-function LevelBadge({ level, backgroundColor, color, fullWidth = false }) {
+const cardClass = "rounded-xl border border-white/70 shadow-md shadow-slate-200/40";
+const levelBadgeClass = cn(
+  "inline-flex min-w-[1.5rem] shrink-0 items-center justify-center rounded-md px-1.5 py-0.5 text-white",
+  DOC_TEXT.badgeMicro,
+  "text-[9px] font-extrabold sm:text-[10px] md:text-[11px]",
+);
+
+function LevelBadge({ level, backgroundColor, color }) {
   return (
-    <span className={cn(levelBadgeClass, fullWidth && "w-full")} style={{ backgroundColor, color }}>
+    <span className={levelBadgeClass} style={{ backgroundColor, color }}>
       {level}
     </span>
   );
 }
 
+function buildTrackStyle(cluster, accent) {
+  const resolvedAccent = accent ?? cluster.textColor;
+  return {
+    accent: resolvedAccent,
+    chipBg: getClusterSurfaceBg(cluster.color),
+    // Chip: white pill with a colored inset ring + colored text (matches the poster).
+    ringColor: cluster.color,
+    textColor: cluster.textColor,
+    // Role badge: solid cluster color with white text (matches the poster). Uses the cluster color
+    // rather than the accent so the foundation badges stay technical-purple, not the dark-slate accent.
+    levelBadgeBg: cluster.textColor,
+    levelBadgeText: "#ffffff",
+  };
+}
+
 const TRACK_STYLE = {
-  "foundation": {
-    accent: "#0f172a",
-    chipBg: getClusterSurfaceBg(CLUSTERS.technical.color),
-    textColor: CLUSTERS.technical.textColor,
-    levelBadgeBg: CLUSTERS.technical.badgeBg,
-    levelBadgeText: CLUSTERS.technical.badgeText,
-  },
-  "deep-technical": {
-    accent: CLUSTERS.technical.textColor,
-    chipBg: getClusterSurfaceBg(CLUSTERS.technical.color),
-    textColor: CLUSTERS.technical.textColor,
-    levelBadgeBg: CLUSTERS.technical.badgeBg,
-    levelBadgeText: CLUSTERS.technical.badgeText,
-  },
-  "product-focused": {
-    accent: CLUSTERS.product.textColor,
-    chipBg: getClusterSurfaceBg(CLUSTERS.product.color),
-    textColor: CLUSTERS.product.textColor,
-    levelBadgeBg: CLUSTERS.product.badgeBg,
-    levelBadgeText: CLUSTERS.product.badgeText,
-  },
-  "people-delivery": {
-    accent: CLUSTERS.operational.textColor,
-    chipBg: getClusterSurfaceBg(CLUSTERS.operational.color),
-    textColor: CLUSTERS.operational.textColor,
-    levelBadgeBg: CLUSTERS.operational.badgeBg,
-    levelBadgeText: CLUSTERS.operational.badgeText,
-  },
+  "foundation": buildTrackStyle(CLUSTERS.technical, "#0f172a"),
+  "deep-technical": buildTrackStyle(CLUSTERS.technical),
+  "product-focused": buildTrackStyle(CLUSTERS.product),
+  "people-delivery": buildTrackStyle(CLUSTERS.operational),
 };
 
-function RoleCellContent({ title }) {
+function TrackRoleSequence({ roleLevels, badgeBg, badgeColor }) {
   return (
-    <div className="min-w-0 flex-1">
-      <p className={DOC_TEXT.bodyMedium}>{title}</p>
+    <ol className="flex flex-col gap-1.5 justify-between">
+      {roleLevels.map(({ level, title }) => (
+        <li key={`${level}-${title}`} className="flex items-center gap-2">
+          <LevelBadge level={level} backgroundColor={badgeBg} color={badgeColor} />
+          <p className={cn("min-w-0 flex-1", DOC_TEXT.bodyDimMedium, "font-semibold")}>{title}</p>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function ChartPanel({ levels, title, focusedPillars, className }) {
+  return (
+    <div className={className}>
+      <StaticCompetencyChart
+        levels={levels}
+        title={title}
+        // Focus-dimming applies only in text mode; the chart auto-disables it in emoji mode.
+        focusedPillars={undefined}
+        emojiMaxWidthPx={TRACK_CHART_EMOJI_MAX_WIDTH_PX}
+        maxHeightPx={180}
+        aria-label={`${title} competency profile`}
+      />
     </div>
   );
 }
 
-function TrackRoleSequence({ roleLevels, badgeBg, badgeColor, desktopGridColumns, centerDesktop }) {
-  const gridColumns = desktopGridColumns ?? roleLevels.length;
-
-  const desktopTile = ({ level, title }, fullWidthBadge = false) => (
-    <li key={`${level}-${title}`} className="flex min-w-0 flex-col rounded-md border border-slate-200/90 bg-white px-1.5 py-1.5 shadow-sm">
-      <LevelBadge level={level} backgroundColor={badgeBg} color={badgeColor} fullWidth={fullWidthBadge} />
-      <div className="mt-1.5 min-w-0 flex-1">
-        <RoleCellContent title={title} />
-      </div>
-    </li>
-  );
-
+function KeyPillarChips({ pillars, ringColor, textColor, flexRowMd = false }) {
   return (
-    <>
-      <ol className="flex flex-col gap-1 xs:hidden">
-        {roleLevels.map(({ level, title }) => (
-          <li
-            key={`${level}-${title}-mobile`}
-            className="flex items-center gap-2 rounded-md border border-slate-200/90 bg-white px-2 py-1.5 shadow-sm"
-          >
-            <LevelBadge level={level} backgroundColor={badgeBg} color={badgeColor} />
-            <RoleCellContent title={title} />
-          </li>
-        ))}
-      </ol>
-
-      {centerDesktop ? (
-        <ol className="hidden w-full list-none text-center xs:block">{roleLevels.map((role) => desktopTile(role, true))}</ol>
-      ) : (
-        <ol
-          className="hidden w-full list-none items-stretch gap-1 xs:grid"
-          style={{ gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` }}
-        >
-          {roleLevels.map((role) => desktopTile(role))}
-        </ol>
-      )}
-    </>
-  );
-}
-
-function KeyPillarChips({ pillars, chipBg, textColor }) {
-  return (
-    <div className="flex flex-wrap gap-1">
+    <div className={cn("flex flex-wrap content-start gap-1", flexRowMd && "flex-row sm:flex-col md:flex-row")}>
       {pillars.map((pillar) => (
-        <span key={pillar} className={cn("rounded-md px-1.5 py-0.5", DOC_TEXT.chip)} style={{ backgroundColor: chipBg, color: textColor }}>
+        <span
+          key={pillar}
+          className={cn("rounded-full bg-white px-2.5 py-1 text-[9px] sm:text-[10px] md:text-[11px]", DOC_TEXT.chip, "font-bold")}
+          style={{ color: textColor, boxShadow: `inset 0 0 0 1.5px ${ringColor}` }}
+        >
           {pillar}
         </span>
       ))}
@@ -111,17 +97,27 @@ function FoundationalPhase() {
   const style = TRACK_STYLE.foundation;
 
   return (
-    <article className={cn(cardClass, "overflow-hidden border-l-[3px] p-3")} style={{ borderLeftColor: style.accent }}>
+    <article className={cn(cardClass, "overflow-hidden border-l-[3px] p-3")} style={{ borderLeftColor: style.accent, backgroundColor: style.chipBg }}>
       <div className="space-y-2.5">
         <h3 className={cn(DOC_TEXT.cardTitlePlain, "font-bold")}>{FOUNDATIONAL_PHASE.title}</h3>
 
         <div className="space-y-2">
           <p className={DOC_TEXT.bodyMedium}>{FOUNDATIONAL_PHASE.intro}</p>
 
-          <KeyPillarChips pillars={FOUNDATIONAL_PHASE.technicalPillars} chipBg={style.chipBg} textColor={style.textColor} />
+          <KeyPillarChips pillars={FOUNDATIONAL_PHASE.technicalPillars} ringColor={style.ringColor} textColor={style.textColor} />
         </div>
 
-        <TrackRoleSequence roleLevels={FOUNDATIONAL_PHASE.roleLevels} badgeBg={style.levelBadgeBg} badgeColor={style.levelBadgeText} centerDesktop />
+        <div className="grid grid-cols-1 divide-y divide-slate-300/70 xs:-mx-2 xs:grid-cols-3 xs:divide-x xs:divide-y-0">
+          {FOUNDATIONAL_PHASE.stageCharts.map((chart) => (
+            <div key={chart.id} className="space-y-1.5 py-2 first:pt-0 last:pb-0 xs:px-2 xs:py-0">
+              <ChartPanel levels={chart.levels} title={chart.title} className="p-2" />
+              <div className="flex items-center justify-center gap-2 xs:justify-start">
+                <LevelBadge level={chart.role.level} backgroundColor={style.levelBadgeBg} color={style.levelBadgeText} />
+                <p className={cn("min-w-0", DOC_TEXT.bodyDimMedium, "font-semibold", "xs:flex-1")}>{chart.role.title}</p>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </article>
   );
@@ -131,33 +127,26 @@ function CareerTrackCard({ track, number }) {
   const style = TRACK_STYLE[track.id] ?? TRACK_STYLE["deep-technical"];
 
   return (
-    <article className={cn(cardClass, "overflow-hidden border-l-[3px]")} style={{ borderLeftColor: style.accent }}>
-      <div className="space-y-2.5 p-3">
-        <h3 className={cn(DOC_TEXT.cardTitlePlain, "font-bold")} style={{ color: style.accent }}>
-          Track {number}: {track.name}
-        </h3>
+    <article
+      className={cn(cardClass, "flex flex-col gap-2.5 overflow-hidden border-l-[3px] p-3 sm:row-span-5 sm:grid sm:grid-rows-subgrid")}
+      style={{ borderLeftColor: style.accent, backgroundColor: style.chipBg }}
+    >
+      <h3 className={cn(DOC_TEXT.cardTitlePlain, "font-bold")} style={{ color: style.accent }}>
+        Track {number}: {track.name}
+      </h3>
 
-        <div className="grid grid-cols-1 gap-3 xs:grid-cols-2 xs:items-start xs:gap-x-4">
-          <div className="order-2 w-full xs:order-1">
-            <div className="rounded-lg p-2" style={{ backgroundColor: style.chipBg }}>
-              <StaticCompetencyChart
-                levels={track.levels}
-                title={track.name}
-                focusedPillars={track.keyFocusPillars}
-                maxHeightPx={180}
-                aria-label={`${track.name} competency profile`}
-              />
-            </div>
-          </div>
+      <ChartPanel levels={track.levels} title={track.chartTitle ?? track.name} focusedPillars={track.keyFocusPillars} />
 
-          <div className="order-1 space-y-1.5 xs:order-2">
-            <p className={DOC_TEXT.bodyMedium}>{track.summary}</p>
-            <KeyPillarChips pillars={sortKeyFocusPillars(track.keyFocusPillars)} chipBg={style.chipBg} textColor={style.textColor} />
-          </div>
-        </div>
+      <p className={DOC_TEXT.bodyMedium}>{track.summary}</p>
 
-        <TrackRoleSequence roleLevels={track.roleLevels} badgeBg={style.levelBadgeBg} badgeColor={style.levelBadgeText} />
-      </div>
+      <KeyPillarChips
+        pillars={track.chipOrder ?? sortKeyFocusPillars(track.keyFocusPillars)}
+        ringColor={style.ringColor}
+        textColor={style.textColor}
+        flexRowMd
+      />
+
+      <TrackRoleSequence roleLevels={track.roleLevels} badgeBg={style.levelBadgeBg} badgeColor={style.levelBadgeText} />
     </article>
   );
 }
@@ -172,11 +161,11 @@ export function CareerTracks() {
         <p className={DOC_TEXT.bodyMedium}>{SENIOR_FORK.intro}</p>
       </div>
 
-      {CAREER_TRACK_PROFILES.map((track, index) => (
-        <CareerTrackCard key={track.id} track={track} number={index + 1} />
-      ))}
-
-      <p className={cn("pt-1 pb-2", DOC_TEXT.bodyItalic)}>{SENIOR_FORK.outro}</p>
+      <div className="grid grid-cols-1 items-start gap-2 sm:grid-cols-3 sm:grid-rows-[auto_auto_auto_auto_auto]">
+        {CAREER_TRACK_PROFILES.map((track, index) => (
+          <CareerTrackCard key={track.id} track={track} number={index + 1} />
+        ))}
+      </div>
     </div>
   );
 }
