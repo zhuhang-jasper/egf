@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 
 import { CareerTracks } from "@/components/CareerTracks";
 import { CompetencyMatrix } from "@/components/CompetencyMatrix";
-import { LatestChangesToggle } from "@/components/LatestChangesToggle";
 import { PillarGrid } from "@/components/PillarGrid";
 import { ShareLinkButton } from "@/components/ShareLinkButton";
 import { StaticCompetencyChart } from "@/components/StaticCompetencyChart";
@@ -102,7 +101,7 @@ function SeniorityStepper() {
   );
 }
 
-function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreRef, showLatestChanges, onToggleLatestChanges }) {
+function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreRef }) {
   const consumedRef = useRef(false);
 
   // Expanded pillar state lives here so the matrix share button can read it. On a deep-link boot we
@@ -113,10 +112,9 @@ function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreR
   // at the wrong spot.
   const [expandedPillar, setExpandedPillar] = useState(getPersistedExpandedPillar);
 
-  // `showLatestChanges` / `onToggleLatestChanges` come from the page's useTheoryUpdates hook (single
-  // source of truth for the dot + toggle). Threaded to every section that renders `**…**` markers so
-  // the whole Theory page shows/hides the amber fill together. Turning the toggle OFF is what
-  // dismisses the tab's unseen-updates dot — that logic lives in the hook, not here.
+  // The "What's New" highlighter is permanently OFF: the `**…**` markers still exist in the copy
+  // (kept for future use) but the amber fill never renders, so elevated text always reads as plain
+  // text. The page-level toggle has been removed; sections receive a hardcoded `false`.
 
   // In-app jump from a tool-form pillar's help icon. Expanding the pillar makes CompetencyMatrix
   // scroll to it; persist so the choice survives like a normal expand. Keyed on `seq` so clicking
@@ -211,10 +209,6 @@ function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreR
   return (
     <div className="space-y-6 print:max-w-none">
       <div className="space-y-2">
-        <div className="flex justify-end print:hidden">
-          <LatestChangesToggle show={showLatestChanges} onToggle={onToggleLatestChanges} />
-        </div>
-
         <div className="mx-auto w-full max-w-[520px] mb-4">
           <StaticCompetencyChart
             levels={[]}
@@ -231,7 +225,7 @@ function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreR
 
         <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.pillars]} className="space-y-3">
           <SectionHeading title="I. 9 Big Pillars" subtitle={PILLARS_SECTION_INTRO} section={THEORY_SECTIONS.pillars} />
-          <PillarGrid showLatestChanges={showLatestChanges} />
+          <PillarGrid showLatestChanges={false} />
         </section>
       </div>
 
@@ -250,7 +244,7 @@ function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreR
           expandedPillar={expandedPillar}
           onExpandedPillarChange={setExpandedPillar}
           scrollNav={matrixNav}
-          showLatestChanges={showLatestChanges}
+          showLatestChanges={false}
         />
       </section>
 

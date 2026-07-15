@@ -45,6 +45,5 @@ export {
   SCHEMA_VERSION,
   STORAGE_KEY,
   THEORY_SEEN_VERSION_KEY,
-  THEORY_SHOW_CHANGES_KEY,
 } from "@/constants/storage";
 export { FE_UI } from "@/styles/ui";

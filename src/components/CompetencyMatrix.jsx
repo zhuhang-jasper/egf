@@ -140,7 +140,7 @@ function PillarMatrixCard({
   );
 }
 
-function CompetencyMatrix({ expandedPillar, onExpandedPillarChange, scrollNav, showLatestChanges = true }) {
+function CompetencyMatrix({ expandedPillar, onExpandedPillarChange, scrollNav, showLatestChanges = false }) {
   const cardRefs = useRef({});
   const scrollTimerRef = useRef(null);
   const cancelScrollRef = useRef(null);

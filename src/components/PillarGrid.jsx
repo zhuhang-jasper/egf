@@ -43,7 +43,7 @@ function PillarCard({ pillar, clusterLabel, color, textColor, showLatestChanges 
   );
 }
 
-export function PillarGrid({ showLatestChanges = true }) {
+export function PillarGrid({ showLatestChanges = false }) {
   return (
     <div className="grid grid-cols-1 gap-2 xs:grid-cols-2 xs:grid-rows-[repeat(20,auto)] md:grid-cols-3 md:grid-rows-[repeat(12,auto)]">
       {PILLAR_CLUSTER_GROUPS.flatMap((group) =>
