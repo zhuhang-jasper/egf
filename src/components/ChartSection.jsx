@@ -184,7 +184,8 @@ export function ChartSection({ isVisible }) {
   const titleIsBlank = trimmedTitle.length === 0;
   const displayTitle = titleIsBlank ? SITE_COPY.chartTitlePlaceholder : trimmedTitle;
   const showVisibleTitle = !chartTitleHidden;
-  const showTitleRow = showVisibleTitle || !chartLegendHidden;
+  const showBadge = !chartBadgeHidden;
+  const showTitleRow = showVisibleTitle || showBadge;
   const layoutWidth = chartWidth || FE_UI.page.minWidthPx;
   const titleSizePx = getChartTitleSizePx(layoutWidth);
   const titleRowHeightPx = getTrackBadgeMdHeightPx(layoutWidth);
@@ -197,7 +198,7 @@ export function ChartSection({ isVisible }) {
 
   useEffect(() => {
     relayout();
-  }, [chartTitleHidden, chartLegendHidden, relayout]);
+  }, [chartTitleHidden, chartBadgeHidden, chartLegendHidden, relayout]);
 
   const handleCopy = async () => {
     try {
@@ -258,7 +259,7 @@ export function ChartSection({ isVisible }) {
       <div ref={exportRef} className="relative flex w-full min-w-0 flex-col self-stretch">
         {showTitleRow ? (
           <div className="relative z-[1] flex w-full min-w-0 items-center gap-3 leading-none mb-2" style={{ minHeight: titleRowHeightPx }}>
-            {!chartBadgeHidden ? <TrackBadge variant={attachedBadge} size="md" className="shrink-0" chartWidth={chartWidth} /> : null}
+            {showBadge ? <TrackBadge variant={attachedBadge} size="md" className="shrink-0" chartWidth={chartWidth} /> : null}
             {showVisibleTitle ? (
               <h2
                 id="competency-chart-heading"
