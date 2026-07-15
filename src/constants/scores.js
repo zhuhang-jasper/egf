@@ -122,11 +122,7 @@ function meetsClusterFloors(clusterAvgs, clusterRequirements) {
 }
 
 function meetsCareerRequirements(peak, breadth, clusterAvgs, requirements) {
-  return (
-    peak >= requirements.peak &&
-    breadth >= requirements.breadth &&
-    meetsClusterFloors(clusterAvgs, resolveClusterRequirements(requirements))
-  );
+  return peak >= requirements.peak && breadth >= requirements.breadth && meetsClusterFloors(clusterAvgs, resolveClusterRequirements(requirements));
 }
 
 /** Highest level (L5→L2) where peak, breadth, and cluster floors pass; else L1. */

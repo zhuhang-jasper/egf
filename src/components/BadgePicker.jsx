@@ -18,7 +18,12 @@ function BadgePill({ id }) {
     return <span className="inline-flex min-w-[1.5em] justify-center text-muted-foreground">{ui.shortLabel}</span>;
   }
   return (
-    <span className={cn("inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none tracking-wide", ui.pillClass)}>
+    <span
+      className={cn(
+        "inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none tracking-wide",
+        ui.pillClass,
+      )}
+    >
       {ui.shortLabel}
     </span>
   );

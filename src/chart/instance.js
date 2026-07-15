@@ -3,7 +3,15 @@ import { Chart, Filler, Legend, LineElement, PointElement, RadarController, Radi
 import { createClusterBackgroundPlugin } from "@/chart/plugins";
 import { applyRadarCenterFit, syncFontsForChart } from "@/chart/radar-center";
 import { isEmojiMode, resolveChartUi, THEORY_CHART_UI } from "@/chart/theory-profile";
-import { FE_UI, getChartLabels, getEmojiChartLabels, getPillarClusterLabelColors, getPillarOrder, getPlainChartLabels, PILLAR_COUNT } from "@/constants";
+import {
+  FE_UI,
+  getChartLabels,
+  getEmojiChartLabels,
+  getPillarClusterLabelColors,
+  getPillarOrder,
+  getPlainChartLabels,
+  PILLAR_COUNT,
+} from "@/constants";
 
 Chart.register(RadarController, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
 

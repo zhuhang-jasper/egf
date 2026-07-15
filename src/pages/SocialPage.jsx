@@ -16,9 +16,6 @@ import { copyShareToClipboard, downloadSharePng } from "@/utils/export-image";
 const CANVAS_W = 1200;
 const CANVAS_H = 630;
 
-// The saved profile to feature on the card. Matched case-insensitively by title.
-const FEATURED_PROFILE_TITLE = "Jasper Loo";
-
 // Fallback shape if the named profile isn't in localStorage yet (e.g. fresh browser) — a
 // well-rounded-but-varied profile so the radar still reads as a rich asymmetric shape.
 const FALLBACK_PROFILE = {

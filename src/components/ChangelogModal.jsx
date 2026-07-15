@@ -45,17 +45,13 @@ export function ChangelogModal({ open, onClose }) {
   return createPortal(
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role
       role="dialog"
       aria-modal="true"
       aria-labelledby="changelog-modal-title"
     >
       {/* Backdrop — click to dismiss. */}
-      <button
-        type="button"
-        aria-label="Close changelog"
-        onClick={onClose}
-        className="absolute inset-0 cursor-default bg-slate-900/50"
-      />
+      <button type="button" aria-label="Close changelog" onClick={onClose} className="absolute inset-0 cursor-default bg-slate-900/50" />
 
       {/* Panel */}
       <div className="relative flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">

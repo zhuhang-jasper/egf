@@ -94,6 +94,7 @@ export function StaticCompetencyChart({
       focusedPillars,
       clusterLabelColors,
       maxHeightPx,
+      heroLabelNudge,
     ],
   );
 

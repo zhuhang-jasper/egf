@@ -39,12 +39,5 @@ export {
 export { CHANGELOG } from "@/constants/changelog";
 export { FEATURE_SCORES_SETTINGS, IS_ADMIN } from "@/constants/features";
 export { SITE_COPY } from "@/constants/site";
-export {
-  ADMIN_UNLOCK_KEY,
-  FRAMEWORK_VERSION,
-  PROFILES_STORAGE_KEY,
-  SCHEMA_VERSION,
-  STORAGE_KEY,
-  THEORY_SEEN_VERSION_KEY,
-} from "@/constants/storage";
+export { ADMIN_UNLOCK_KEY, FRAMEWORK_VERSION, PROFILES_STORAGE_KEY, SCHEMA_VERSION, STORAGE_KEY, THEORY_SEEN_VERSION_KEY } from "@/constants/storage";
 export { FE_UI } from "@/styles/ui";
