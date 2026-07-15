@@ -166,14 +166,19 @@ export function sortKeyFocusPillars(pillarNames) {
   return [...pillarNames].sort((a, b) => (KEY_PILLAR_RANK.get(a) ?? Number.MAX_SAFE_INTEGER) - (KEY_PILLAR_RANK.get(b) ?? Number.MAX_SAFE_INTEGER));
 }
 
-export const CAREER_TRACKS_SECTION_INTRO =
-  "Every engineer starts on the same foundation. At L3 (Senior), the path forks into one of three tracks — chosen by where you naturally drive the most impact.";
+export const CAREER_TRACKS_SECTION_INTRO = "";
 
-export const FOUNDATIONAL_PHASE = {
+export const JUNIOR_TO_SENIOR = {
   title: "From Junior to Senior (L1–L3)",
   intro:
     "At L1 and L2, your title is simply Software Engineer: build your foundation in the Technical cluster. Your daily domain (frontend, backend, fullstack) will naturally shape which pillars grow first, but it does not decide your career track.",
-  technicalPillars: ["Coding", "Domain Logic", "Architecture", "AI Leverage"],
+};
+
+export const FOUNDATIONAL_PHASE = {
+  title: "Foundational Phase",
+  intro:
+    "Across L1–L3 the whole chart grows fairly evenly, but the Technical cluster leads. Notice the shape stays balanced as you're widening the whole base, not specializing yet.",
+  technicalPillars: ["Coding", "UI/UX", "Domain Logic", "Architecture"],
   stageCharts: [
     {
       id: "junior",

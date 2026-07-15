@@ -1,7 +1,7 @@
 import { StaticCompetencyChart } from "@/components/StaticCompetencyChart";
 
 import { CLUSTERS, getClusterSurfaceBg } from "@/constants";
-import { CAREER_TRACK_PROFILES, FOUNDATIONAL_PHASE, SENIOR_FORK, sortKeyFocusPillars } from "@/constants/theory-data";
+import { CAREER_TRACK_PROFILES, FOUNDATIONAL_PHASE, JUNIOR_TO_SENIOR, SENIOR_FORK, sortKeyFocusPillars } from "@/constants/theory-data";
 import { DOC_TEXT } from "@/styles/doc-typography";
 import { cn } from "@/utils";
 
@@ -154,6 +154,11 @@ function CareerTrackCard({ track, number }) {
 export function CareerTracks() {
   return (
     <div className="space-y-3">
+      <div className="space-y-1 pt-1">
+        <h3 className={cn(DOC_TEXT.cardTitlePlain, "font-bold")}>{JUNIOR_TO_SENIOR.title}</h3>
+        <p className={DOC_TEXT.bodyMedium}>{JUNIOR_TO_SENIOR.intro}</p>
+      </div>
+
       <FoundationalPhase />
 
       <div className="space-y-1 pt-1">

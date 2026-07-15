@@ -14,24 +14,21 @@ export const CHANGELOG = [
     date: "Jul 15, 2026",
     changes: [
       "Section II — condensed L5 description.",
-      "Section IV — renamed section, full rewrite, added junior to senior charts, updated senior fork charts, updated L6 role mapping.",
+      "Section III — renamed section, full rewrite, added junior to senior charts, updated senior fork charts, updated L6 role mapping.",
       "All sections — em-dashes replaced with plain punctuation.",
     ],
   },
   {
     version: "3.1",
     date: "Jul 8, 2026",
-    changes: [
-      "Section II — level titles unified into quality/identity pairs.",
-      "Section III — L5 persona rewrite and matrix column headers updated.",
-    ],
+    changes: ["Section II — level titles unified into quality/identity pairs.", "Section IV — L5 persona rewrite and matrix column headers updated."],
   },
   {
     version: "3.0",
     date: "Jul 7, 2026",
     changes: [
-      "Section I & III — focus summary rewrite, added missing competencies, fixed mentorship double counting.",
-      "Section III — full matrix rewrite: L4/L5 rescoped, observable behaviors added, personas revised.",
+      "Section I & IV — focus summary rewrite, added missing competencies, fixed mentorship double counting.",
+      "Section IV — full matrix rewrite: L4/L5 rescoped, observable behaviors added, personas revised.",
     ],
   },
   // {

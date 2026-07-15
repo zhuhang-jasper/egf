@@ -258,9 +258,16 @@ function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreR
         <SeniorityStepper />
       </section>
 
+      {/* space-y-1 (not the other sections' space-y-3): this section's intro is empty, so the heading
+          is a bare title line and needs to hug the first track card rather than sit above a full gap. */}
+      <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.tracks]} className="space-y-1">
+        <SectionHeading title="III. Career Growth Roadmap" subtitle={CAREER_TRACKS_SECTION_INTRO} section={THEORY_SECTIONS.tracks} />
+        <CareerTracks />
+      </section>
+
       <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.matrix]} className="space-y-3">
         <SectionHeading
-          title="III. The 45-Point Competency Matrix"
+          title="IV. The 45-Point Competency Matrix"
           subtitle="The full behavioral matrix: 9 pillars × 5 levels. Expand any pillar to reveal its 5 cells — each describes the observable behaviors expected at that level, organized by the three clusters."
           section={THEORY_SECTIONS.matrix}
         />
@@ -270,11 +277,6 @@ function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreR
           scrollNav={matrixNav}
           showLatestChanges={false}
         />
-      </section>
-
-      <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.tracks]} className="space-y-3">
-        <SectionHeading title="IV. Career Growth Roadmap" subtitle={CAREER_TRACKS_SECTION_INTRO} section={THEORY_SECTIONS.tracks} />
-        <CareerTracks />
       </section>
     </div>
   );
