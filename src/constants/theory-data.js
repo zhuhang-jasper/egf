@@ -171,13 +171,13 @@ export const CAREER_TRACKS_SECTION_INTRO = "";
 export const JUNIOR_TO_SENIOR = {
   title: "From Junior to Senior (L1–L3)",
   intro:
-    "At L1 and L2, your title is simply Software Engineer: build your foundation in the Technical cluster. Your daily domain (frontend, backend, fullstack) will naturally shape which pillars grow first, but it does not decide your career track.",
+    "At L1 and L2, your title is simply Software Engineer, whatever your daily domain (frontend, backend, fullstack). The domain shapes which pillars grow first, but it does not decide your career track. That choice comes at L3.",
 };
 
 export const FOUNDATIONAL_PHASE = {
-  title: "Foundational Phase",
+  title: "Building the Foundation",
   intro:
-    "Across L1–L3 the whole chart grows fairly evenly, but the Technical cluster leads. Notice the shape stays balanced as you're widening the whole base, not specializing yet.",
+    "Across L1–L3 the whole chart grows fairly evenly, with the Technical cluster leading. The shape stays balanced: you're widening the base, not specializing yet.",
   technicalPillars: ["Coding", "UI/UX", "Domain Logic", "Architecture"],
   stageCharts: [
     {

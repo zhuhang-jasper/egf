@@ -261,7 +261,7 @@ function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreR
       {/* space-y-1 (not the other sections' space-y-3): this section's intro is empty, so the heading
           is a bare title line and needs to hug the first track card rather than sit above a full gap. */}
       <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.tracks]} className="space-y-1">
-        <SectionHeading title="III. Career Growth Roadmap" subtitle={CAREER_TRACKS_SECTION_INTRO} section={THEORY_SECTIONS.tracks} />
+        <SectionHeading title="III. Career Growth Paths" subtitle={CAREER_TRACKS_SECTION_INTRO} section={THEORY_SECTIONS.tracks} />
         <CareerTracks />
       </section>
 
