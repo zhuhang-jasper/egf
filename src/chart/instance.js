@@ -213,6 +213,31 @@ function syncHeroLabelNudgeOption(chart, heroLabelNudge) {
   }
 }
 
+// Duration (ms) for the opt-in data tween (see applyChartState's animateDataChanges). The radar
+// points ease from their old values to the new ones; base geometry/labels stay put.
+const DATA_TWEEN_MS = 500;
+
+/**
+ * Decide the Chart.js update mode. The app default is "none" (no animation) because the
+ * layout/convergence pipeline relies on chart.resize() applying synchronously — an in-flight
+ * animation makes Chart.js defer resize() and radius measurement reads stale dimensions.
+ *
+ * We only tween when the caller opts in (animateDataChanges) AND this is a pure data change:
+ * the chart already holds a same-length, non-empty dataset (so it's laid out) and only the values
+ * moved. First paint (prev all-zero / empty) and any length change fall back to "none" so the
+ * chart doesn't swoop up from zero and the fit loop isn't disturbed. The fit loop itself goes
+ * through refreshChart, which always forces "none", so this never runs during resize.
+ */
+function resolveUpdateMode(chart, prevData, nextData, animateDataChanges) {
+  if (!animateDataChanges) {
+    return "none";
+  }
+  const sameLength = prevData.length > 0 && prevData.length === nextData.length;
+  const prevHadValues = prevData.some((v) => v > 0);
+  const changed = sameLength && nextData.some((v, i) => v !== prevData[i]);
+  return sameLength && prevHadValues && changed ? undefined : "none";
+}
+
 export function applyChartState(chart, state) {
   if (!chart) {
     return;
@@ -226,14 +251,26 @@ export function applyChartState(chart, state) {
   syncPointLabelPxOption(chart, state.pointLabelPx);
   syncPointLabelPxRangeOption(chart, state.pointLabelPxRange);
   syncChartLabels(chart);
+  const prevData = Array.isArray(chart.data.datasets[0].data) ? [...chart.data.datasets[0].data] : [];
   const levels = Array.isArray(state.levels) ? state.levels : [];
-  chart.data.datasets[0].data = levels.length === orderLen ? [...levels] : new Array(orderLen).fill(0);
-  syncDatasets(chart, { levels: chart.data.datasets[0].data, title: state.title });
+  const nextData = levels.length === orderLen ? [...levels] : new Array(orderLen).fill(0);
+  chart.data.datasets[0].data = nextData;
+  syncDatasets(chart, { levels: nextData, title: state.title });
   syncPolygonVisibility(chart, state.levelsPolygonHidden);
   syncLevelTicksVisibility(chart, state.chartLevelTicksHidden);
   syncPointLabelsVisibility(chart, Boolean(state.pointLabelsHidden));
   syncPointLabelColors(chart, state.focusedPillars, state.clusterLabelColors);
-  chart.update("none");
+
+  const mode = resolveUpdateMode(chart, prevData, nextData, state.animateDataChanges);
+  if (mode === undefined) {
+    // Scope the tween to this one update; the option persists, so restore "no animation" right after
+    // so nothing else (resize-driven refreshChart, next data swap's own decision) inherits it.
+    chart.options.animation = { duration: DATA_TWEEN_MS };
+    chart.update();
+    chart.options.animation = false;
+  } else {
+    chart.update("none");
+  }
 }
 
 export function refreshChart(chart, state) {
@@ -241,7 +278,10 @@ export function refreshChart(chart, state) {
     return;
   }
   chart.resize();
-  applyChartState(chart, state);
+  // The fit/convergence loop must apply synchronously — never tween here, regardless of the
+  // caller's animateDataChanges. (Also: resize can shift the data, which would otherwise be seen
+  // as a "data change" and animate.)
+  applyChartState(chart, { ...state, animateDataChanges: false });
   syncFontsForChart(chart);
 }
 

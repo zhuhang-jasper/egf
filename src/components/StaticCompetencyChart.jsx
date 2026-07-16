@@ -48,6 +48,9 @@ export function StaticCompetencyChart({
   // Use the theory hero radar's label-nudge map instead of the career-track charts' map. Only the
   // large empty hero radar at the top of the theory tab sets this.
   heroLabelNudge = false,
+  // Animate the radar points tweening from their old values to the new ones when only `levels`
+  // changes (base geometry/labels stay put). Off by default — most charts swap data instantly.
+  animateDataChanges = false,
   // Render pillar spokes as emoji only (no text). Takes precedence over plainLabels.
   emojiOnlyLabels = false,
   // Width-responsive emoji↔text: at/below this chart width, spokes are emoji-only; above it, full
@@ -77,6 +80,7 @@ export function StaticCompetencyChart({
       clusterLabelColors,
       maxHeightPx,
       heroLabelNudge,
+      animateDataChanges,
     }),
     [
       levels,
@@ -95,6 +99,7 @@ export function StaticCompetencyChart({
       clusterLabelColors,
       maxHeightPx,
       heroLabelNudge,
+      animateDataChanges,
     ],
   );
 

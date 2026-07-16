@@ -65,7 +65,7 @@ function TrackRoleSequence({ roleLevels, badgeBg, badgeColor }) {
   );
 }
 
-function ChartPanel({ levels, title, focusedPillars, className }) {
+function ChartPanel({ levels, title, focusedPillars, className, animateDataChanges = false }) {
   return (
     <div className={className}>
       <StaticCompetencyChart
@@ -75,6 +75,7 @@ function ChartPanel({ levels, title, focusedPillars, className }) {
         focusedPillars={undefined}
         emojiMaxWidthPx={TRACK_CHART_EMOJI_MAX_WIDTH_PX}
         maxHeightPx={180}
+        animateDataChanges={animateDataChanges}
         aria-label={`${title} competency profile`}
       />
     </div>
@@ -99,10 +100,10 @@ function KeyPillarChips({ pillars, ringColor, textColor, flexRowMd = false }) {
 
 /** The chart + role-label body for one foundational stage. Shared by the desktop 3-up grid
  *  (left-aligned role row) and the mobile carousel (centered under the centered chart). */
-function FoundationStageBody({ chart, style, centerRole = false }) {
+function FoundationStageBody({ chart, style, centerRole = false, animateChart = false }) {
   return (
     <>
-      <ChartPanel levels={chart.levels} title={chart.title} className="p-2" />
+      <ChartPanel levels={chart.levels} title={chart.title} className="p-2" animateDataChanges={animateChart} />
       <div className={cn("flex items-center gap-2", centerRole ? "justify-center" : "justify-start")}>
         <LevelBadge level={chart.role.level} backgroundColor={style.levelBadgeBg} color={style.levelBadgeText} />
         <p className={cn("min-w-0", DOC_TEXT.bodyDimMedium, "font-semibold", !centerRole && "flex-1")}>{chart.role.title}</p>
@@ -115,10 +116,10 @@ function FoundationStageBody({ chart, style, centerRole = false }) {
  *  it, so the chart stays centered. Tapping a level swaps the chart. Starts on the first stage (L1).
  *  At xs and up the desktop 3-up grid is shown instead (this whole block is `xs:hidden`). */
 // How long each stage stays on screen before the carousel auto-advances to the next.
-const FOUNDATION_AUTOPLAY_MS = 2000;
+const FOUNDATION_AUTOPLAY_MS = 1400;
 // After the user taps a stage, autoplay pauses this long before resuming (so it doesn't immediately
 // yank them off their choice, but the loop still comes back on its own).
-const FOUNDATION_RESUME_MS = 8000;
+const FOUNDATION_RESUME_MS = 7000;
 
 function FoundationCarousel({ stageCharts, style }) {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -151,8 +152,8 @@ function FoundationCarousel({ stageCharts, style }) {
   };
 
   return (
-    <div className="space-y-2 xs:hidden">
-      <div className="flex justify-center gap-1.5" role="tablist" aria-label="Foundational stage">
+    <div className="space-y-1 xs:hidden">
+      <div className="flex justify-center gap-1.5 pt-1" role="tablist" aria-label="Foundational stage">
         {stageCharts.map((chart, index) => {
           const isActive = index === activeIndex;
           return (
@@ -172,8 +173,12 @@ function FoundationCarousel({ stageCharts, style }) {
         })}
       </div>
 
+      {/* One persistent chart. Changing the active stage only swaps the dataset values, which
+          Chart.js tweens (animateChart) — the radar points ease to their new spots while the base
+          geometry and labels stay put. No stacked canvases; the role label below swaps instantly.
+          Reduced-motion users get an instant value swap (no tween). */}
       <div className="space-y-1.5">
-        <FoundationStageBody chart={activeChart} style={style} centerRole />
+        <FoundationStageBody chart={activeChart} style={style} centerRole animateChart={!prefersReducedMotion} />
       </div>
     </div>
   );
