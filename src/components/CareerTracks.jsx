@@ -112,9 +112,9 @@ function FoundationStageBody({ chart, style, centerRole = false, animateChart = 
   );
 }
 
-/** Mobile-only (<xs): one chart at a time with a centered horizontal L1/L2/L3 badge selector above
+/** Mobile-only (<sm): one chart at a time with a centered horizontal L1/L2/L3 badge selector above
  *  it, so the chart stays centered. Tapping a level swaps the chart. Starts on the first stage (L1).
- *  At xs and up the desktop 3-up grid is shown instead (this whole block is `xs:hidden`). */
+ *  At sm and up the desktop 3-up grid is shown instead (this whole block is `sm:hidden`). */
 // How long each stage stays on screen before the carousel auto-advances to the next.
 const FOUNDATION_AUTOPLAY_MS = 1400;
 // After the user taps a stage, autoplay pauses this long before resuming (so it doesn't immediately
@@ -152,7 +152,7 @@ function FoundationCarousel({ stageCharts, style }) {
   };
 
   return (
-    <div className="space-y-1 xs:hidden">
+    <div className="space-y-1 sm:hidden">
       <div className="flex justify-center gap-1.5 pt-1" role="tablist" aria-label="Foundational stage">
         {stageCharts.map((chart, index) => {
           const isActive = index === activeIndex;
@@ -198,7 +198,7 @@ function FoundationalPhase() {
           <KeyPillarChips pillars={FOUNDATIONAL_PHASE.technicalPillars} ringColor={style.ringColor} textColor={style.textColor} />
         </div>
 
-        {/* Carousel (mobile) and 3-up grid (xs+) are wrapped together. `space-y-2.5` on the parent
+        {/* Carousel (mobile) and 3-up grid (sm+) are wrapped together. `space-y-2.5` on the parent
             applies `margin-bottom` to every child *except the DOM `:last-child`* — and `:last-child`
             ignores `display:none`, so toggling the two with `hidden` would leave whichever comes
             first with a phantom bottom margin against its hidden sibling. Wrapping them in a single
@@ -206,7 +206,7 @@ function FoundationalPhase() {
         <div>
           <FoundationCarousel stageCharts={FOUNDATIONAL_PHASE.stageCharts} style={style} />
 
-          <div className="-mx-2 hidden grid-cols-3 divide-x divide-slate-300/70 xs:grid">
+          <div className="-mx-2 hidden grid-cols-3 divide-x divide-slate-300/70 sm:grid">
             {FOUNDATIONAL_PHASE.stageCharts.map((chart) => (
               <div key={chart.id} className="space-y-1.5 px-2">
                 <FoundationStageBody chart={chart} style={style} />
