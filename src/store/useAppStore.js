@@ -322,6 +322,7 @@ export const useAppStore = create((set, get) => ({
         title: "",
         pillarLevels: { ...defaults.pillarLevels },
         levels: [...defaults.levels],
+        attachedBadge: normalizeAttachedBadge(defaults.attachedBadge),
         activeSavedProfileId: null,
       }),
     );

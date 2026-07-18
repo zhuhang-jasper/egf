@@ -143,8 +143,8 @@ export function TitleToolbar() {
         <SaveButton statusMeta={statusMeta} onSave={handleSave} />
       </div>
       {/* Row 2 — reset + keypad toggle (touch only) on the left, Profiles on the right. Reset
-          doubles as "start over": it clears the title and resets every pillar to the default
-          (badge is kept). */}
+          doubles as "start over": it clears the title, the badge, and resets every pillar to
+          the default. */}
       <div className="flex w-full items-center gap-2">
         <Button
           type="button"
