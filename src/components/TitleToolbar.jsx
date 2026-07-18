@@ -64,9 +64,10 @@ const WIDEST_STATUS_LABEL = Object.values(SAVE_STATUS_META).reduce((a, b) => (b.
 // For a linked profile (`showMenu` — status "saved", "renaming" or "modified") it becomes a split
 // button: the primary action Saves/Renames/Updates the linked profile (disabled when already
 // saved), while a caret opens a menu with the copy action (`copyAction` — "Save new" while renaming
-// saves a copy under the changed name, else "Save as…" detaches to be renamed) and, while renaming,
-// "Undo rename". For an unlinked draft ("new") it renders as a plain single button.
-function SaveButton({ statusMeta, showMenu, onSave, copyAction, onUndoRename }) {
+// saves a copy under the changed name, else "Save as…" detaches to be renamed) and an optional undo
+// action (`undoAction` — "Undo rename" while renaming, "Undo changes" while modified) that reverts
+// the draft to the linked profile. For an unlinked draft ("new") it renders as a plain single button.
+function SaveButton({ statusMeta, showMenu, onSave, copyAction, undoAction }) {
   const StatusIcon = statusMeta.icon;
   const rootRef = useRef(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -173,19 +174,20 @@ function SaveButton({ statusMeta, showMenu, onSave, copyAction, onUndoRename }) 
             <Copy className="h-4 w-4 shrink-0" aria-hidden />
             {copyAction.label}
           </button>
-          {/* Only offered while renaming — reverts the title to the linked profile's saved name. */}
-          {onUndoRename ? (
+          {/* Reverts the draft to the linked profile — "Undo rename" (renaming) or "Undo changes"
+              (modified). Absent when there's nothing to revert (e.g. "saved"). */}
+          {undoAction ? (
             <button
               type="button"
               role="menuitem"
               className="flex cursor-pointer items-center gap-2 border-t border-border px-3 py-2 text-left text-xs text-foreground hover:bg-muted/60"
               onClick={() => {
                 setMenuOpen(false);
-                onUndoRename();
+                undoAction.onSelect();
               }}
             >
               <Undo2 className="h-4 w-4 shrink-0" aria-hidden />
-              Undo rename
+              {undoAction.label}
             </button>
           ) : null}
         </div>
@@ -200,6 +202,8 @@ export function TitleToolbar() {
   const saveProfile = useAppStore((s) => s.saveProfile);
   const saveAsNew = useAppStore((s) => s.saveAsNew);
   const duplicateDraft = useAppStore((s) => s.duplicateDraft);
+  const loadProfile = useAppStore((s) => s.loadProfile);
+  const activeSavedProfileId = useAppStore((s) => s.activeSavedProfileId);
   const saveOverwriting = useAppStore((s) => s.saveOverwriting);
   const saveFeedback = useAppStore((s) => s.saveFeedback);
   const clearSaveFeedback = useAppStore((s) => s.clearSaveFeedback);
@@ -210,11 +214,19 @@ export function TitleToolbar() {
   const saveStatus = useAppStore(selectProfileSaveStatus); // "saved" | "renaming" | "modified" | "new"
   const statusMeta = SAVE_STATUS_META[saveStatus];
 
-  // The linked profile's saved title, used to offer "Undo rename" while renaming.
+  // "Undo rename" (renaming) — restore just the title to the linked profile's saved name.
   const linkedTitle = useAppStore((s) => s.profiles.find((p) => p.id === s.activeSavedProfileId)?.title ?? null);
   const handleUndoRename = () => {
     setTitle(linkedTitle ?? "");
     document.getElementById("chart-title-input")?.focus();
+  };
+
+  // "Undo changes" (modified) — reload the linked profile, reverting the edited badge/levels to its
+  // saved state (the title already matches, so reloading only restores the values).
+  const handleUndoChanges = () => {
+    if (activeSavedProfileId != null) {
+      loadProfile(activeSavedProfileId);
+    }
   };
 
   // The pending name+badge collision from a save attempt, if any. While set, the confirm dialog is
@@ -250,8 +262,15 @@ export function TitleToolbar() {
   };
 
   // The copy action's label + handler depend on whether the name already differs from the source.
-  const copyAction =
-    saveStatus === "renaming" ? { label: "Save new", onSelect: handleSaveAsNew } : { label: "Save as…", onSelect: handleDuplicate };
+  const copyAction = saveStatus === "renaming" ? { label: "Save new", onSelect: handleSaveAsNew } : { label: "Save as…", onSelect: handleDuplicate };
+
+  // The undo action reverts the draft to the linked profile: title while renaming, values while
+  // modified. No undo for "saved" (nothing changed) or "new" (no link).
+  const UNDO_ACTIONS = {
+    renaming: { label: "Undo rename", onSelect: handleUndoRename },
+    modified: { label: "Undo changes", onSelect: handleUndoChanges },
+  };
+  const undoAction = UNDO_ACTIONS[saveStatus];
 
   // The collision dialog's "Overwrite it" carries the blocked attempt's analytics forward.
   const handleOverwrite = () => {
@@ -315,7 +334,7 @@ export function TitleToolbar() {
           showMenu={saveStatus === "saved" || saveStatus === "renaming" || saveStatus === "modified"}
           onSave={handleSave}
           copyAction={copyAction}
-          onUndoRename={saveStatus === "renaming" ? handleUndoRename : undefined}
+          undoAction={undoAction}
         />
       </div>
       {/* Row 2 — New profile + keypad toggle (touch only) on the left, Profiles on the right.
@@ -338,18 +357,20 @@ export function TitleToolbar() {
           <FilePlus className="h-4 w-4" />
           New profile
         </Button>
-        {/* Keypad toggle is touch-only — the numeric keyboard switch is meaningless with a
-            physical keyboard, so it renders only when touch is the primary input. */}
+        {/* Keypad toggle is touch-only — the numeric keyboard switch is meaningless with a physical
+            keyboard, so it renders only when touch is the primary input. Icon + switch only (no text
+            label) to keep this row from overflowing on narrow mobile widths. */}
         {touchPrimary ? (
           <button
             type="button"
             role="switch"
             aria-checked={levelKeyboardInputEnabled}
+            aria-label="Keypad — numeric keyboard for level inputs"
+            title="Keypad — numeric keyboard for level inputs"
             onClick={toggleLevelKeyboardInputEnabled}
-            className="group inline-flex h-[26.5px] shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-slate-300 bg-white pl-2.5 pr-1.5 text-xs font-semibold tracking-wide text-slate-600 hover:bg-slate-50 hover:text-slate-800"
+            className="group inline-flex h-[26.5px] shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-slate-300 bg-white px-1.5 text-xs font-semibold tracking-wide text-slate-600 hover:bg-slate-50 hover:text-slate-800"
           >
             <Keyboard className="size-3.5 shrink-0" aria-hidden />
-            Keypad
             {/* Mini switch: black track when on, slate when off; knob slides right when on. */}
             <span
               aria-hidden
