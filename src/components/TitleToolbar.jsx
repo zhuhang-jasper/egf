@@ -196,7 +196,7 @@ export function TitleToolbar() {
   const saveFeedback = useAppStore((s) => s.saveFeedback);
   const clearSaveFeedback = useAppStore((s) => s.clearSaveFeedback);
   const createNew = useAppStore((s) => s.createNew);
-  const restoreDraft = useAppStore((s) => s.restoreDraft);
+  const showDraftDiscardedToast = useAppStore((s) => s.showDraftDiscardedToast);
   const levelKeyboardInputEnabled = useAppStore((s) => s.levelKeyboardInputEnabled);
   const toggleLevelKeyboardInputEnabled = useAppStore((s) => s.toggleLevelKeyboardInputEnabled);
   const touchPrimary = useTouchPrimary();
@@ -280,23 +280,15 @@ export function TitleToolbar() {
   // "New profile" — start a fresh blank draft, wiping the current one. Offer an Undo only when there
   // are genuinely unsaved edits to lose: an in-flight rename/update ("renaming"/"modified"), or an
   // unsaved draft with content ("new" + hadContent). A clean loaded profile ("saved") or an already
-  // blank draft loses nothing, so no toast.
+  // blank draft loses nothing, so no toast. Routes through the shared "draft discarded" toast so New
+  // profile and profile-load behave identically — one coalescing Undo toast (a newer discard replaces
+  // the older), recovering the most recent discarded draft.
   const handleNewProfile = () => {
     const wasEditing = saveStatus === "renaming" || saveStatus === "modified";
     const { undo, hadContent } = createNew();
     document.getElementById("chart-title-input")?.focus();
     if (wasEditing || (saveStatus === "new" && hadContent)) {
-      showToast("Started a new profile", {
-        variant: "dark",
-        duration: 10000,
-        action: {
-          label: "Undo",
-          onAction: () => {
-            restoreDraft(undo);
-            track("new_profile_undone");
-          },
-        },
-      });
+      showDraftDiscardedToast(undo, () => track("new_profile_undone"));
     }
   };
 

@@ -113,8 +113,7 @@ export function ProfileCombobox({ titleError = false }) {
   const loadProfile = useAppStore((s) => s.loadProfile);
   const deleteProfileWithUndo = useAppStore((s) => s.deleteProfileWithUndo);
   const activeSavedProfileId = useAppStore((s) => s.activeSavedProfileId);
-  const restoreDraft = useAppStore((s) => s.restoreDraft);
-  const showToast = useAppStore((s) => s.showToast);
+  const showDraftDiscardedToast = useAppStore((s) => s.showDraftDiscardedToast);
 
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState(""); // the dropdown's own search text — independent of the name
@@ -173,23 +172,12 @@ export function ProfileCombobox({ titleError = false }) {
     const result = loadProfile(pr.id);
     track("profile_loaded", { attached_badge: pr.attachedBadge });
     close();
-    // If the load discarded unsaved work, warn that those changes were lost and offer an Undo that
-    // restores the pre-load draft. A clean/"saved" draft or a no-op reload has nothing to recover.
+    // If the load discarded unsaved work, warn (with an Undo) via the shared coalescing toast — so
+    // load and "New profile" behave identically. Only one such toast shows at a time (a newer discard
+    // replaces it), so Undo recovers the most recent. A clean/"saved" draft or a no-op reload recovers
+    // nothing.
     if (result?.hadUnsavedChanges) {
-      // Name what was lost when it had a title, so the warning is concrete.
-      const prevName = String(result.undo.title).trim();
-      const message = prevName ? `Unsaved changes to “${prevName}” were discarded` : "Unsaved changes to your draft were discarded";
-      showToast(message, {
-        variant: "dark",
-        duration: 10000,
-        action: {
-          label: "Undo",
-          onAction: () => {
-            restoreDraft(result.undo);
-            track("profile_load_undone");
-          },
-        },
-      });
+      showDraftDiscardedToast(result.undo, () => track("profile_load_undone"));
     }
   };
 

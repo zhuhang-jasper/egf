@@ -26,6 +26,12 @@ const toastTimers = new Map();
 const DELETE_TOAST_KEY = "profile-delete";
 let deleteBatch = [];
 
+// Coalescing key for the "unsaved draft discarded" Undo toast (fired when a load / New profile wipes
+// a dirty draft). Only one is ever shown: a newer discard REPLACES the older toast (same key), so
+// Undo always recovers just the most recent discarded draft. Simpler and less confusing than tracking
+// several — only one draft fits the single draft slot anyway. See showDraftDiscardedToast.
+const DISCARD_TOAST_KEY = "draft-discard";
+
 /** Keep a restored link only if the referenced profile still exists — else the draft is unlinked. */
 function validateActiveId(activeSavedProfileId, profiles) {
   return activeSavedProfileId != null && profiles.some((p) => p.id === activeSavedProfileId) ? activeSavedProfileId : null;
@@ -63,7 +69,8 @@ export const useAppStore = create((set, get) => ({
    *
    * `key` coalesces: if a live toast already has the same `key`, this replaces its content in place
    * and resets its countdown instead of stacking a new toast (used to batch rapid deletes into one
-   * "Deleted N profiles" toast). Returns the toast id (the existing one when coalescing).
+   * "Deleted N profiles" toast, and so a newer "draft discarded" toast replaces the older one).
+   * Returns the toast id (the existing one when coalescing).
    */
   showToast: (message, { variant = "default", duration = 2600, action = null, key = null } = {}) => {
     const text = String(message ?? "").trim();
@@ -553,6 +560,28 @@ export const useAppStore = create((set, get) => ({
       }),
     );
     get().persistDraft();
+  },
+
+  // Show the "unsaved draft discarded" Undo toast when a load / New profile wiped a dirty draft.
+  // `undo` is that draft's pre-discard snapshot (restoreDraft shape). Shared by loadProfile's caller
+  // and handleNewProfile so both behave identically. Only ONE such toast exists at a time: a newer
+  // discard replaces the older (same key), so Undo recovers just the most recent discarded draft —
+  // simple and predictable. `onUndone` fires analytics for the specific path.
+  showDraftDiscardedToast: (undo, onUndone) => {
+    const name = String(undo.title).trim();
+    const message = name ? `Unsaved changes to “${name}” were discarded` : "Unsaved changes to your draft were discarded";
+    get().showToast(message, {
+      variant: "dark",
+      duration: 10000,
+      key: DISCARD_TOAST_KEY,
+      action: {
+        label: "Undo",
+        onAction: () => {
+          get().restoreDraft(undo);
+          onUndone?.();
+        },
+      },
+    });
   },
 }));
 
