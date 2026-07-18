@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { Download, MoreVertical, Trash2, Upload } from "lucide-react";
 
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 
 import { useAppStore } from "@/store/useAppStore";
@@ -26,8 +27,8 @@ export function ProfileActionsMenu() {
   const fileInputRef = useRef(null);
   const [open, setOpen] = useState(false);
   const [openUp, setOpenUp] = useState(false);
-  // Two-step confirm for "clear all": first click arms it, second click within the window wipes.
-  const [confirmClear, setConfirmClear] = useState(false);
+  // "Delete all" opens a confirm dialog (see ConfirmDialog) rather than an inline two-step.
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
 
   const hasProfiles = profiles.length > 0;
 
@@ -67,14 +68,15 @@ export function ProfileActionsMenu() {
     }
   };
 
-  const handleClearAll = () => {
-    if (!confirmClear) {
-      setConfirmClear(true);
-      return;
-    }
-    const { removed, undo } = clearAllProfiles();
-    setConfirmClear(false);
+  // Clicking "Delete all" opens the confirm dialog; the actual wipe happens on confirm.
+  const handleDeleteAll = () => {
+    setConfirmDeleteAll(true);
     setOpen(false);
+  };
+
+  const confirmDeleteAllProfiles = () => {
+    const { removed, undo } = clearAllProfiles();
+    setConfirmDeleteAll(false);
     track("profiles_cleared", { count: removed });
     showToast(`Deleted ${removed} profile${removed === 1 ? "" : "s"}`, {
       variant: "dark",
@@ -88,13 +90,6 @@ export function ProfileActionsMenu() {
       },
     });
   };
-
-  // Reset the armed "clear all" confirm whenever the menu closes.
-  useEffect(() => {
-    if (!open) {
-      setConfirmClear(false);
-    }
-  }, [open]);
 
   useEffect(() => {
     const onKey = (e) => {
@@ -184,19 +179,25 @@ export function ProfileActionsMenu() {
             <button
               type="button"
               role="menuitem"
-              className={cn(
-                "flex cursor-pointer items-center gap-2 border-t border-border px-3 py-2 text-left text-xs hover:bg-destructive/10",
-                confirmClear ? "font-medium text-destructive" : "text-foreground",
-              )}
-              onClick={handleClearAll}
+              className="flex cursor-pointer items-center gap-2 border-t border-border px-3 py-2 text-left text-xs text-foreground hover:bg-destructive/10"
+              onClick={handleDeleteAll}
             >
               <Trash2 className="h-4 w-4 shrink-0" aria-hidden />
-              {confirmClear ? "Tap again to delete all" : "Delete all"}
+              Delete all
             </button>
           )}
           <input ref={fileInputRef} type="file" accept="application/json,.json" className="hidden" onChange={handleImportFile} />
         </div>
       )}
+      <ConfirmDialog
+        open={confirmDeleteAll}
+        title="Delete all profiles?"
+        message={`This deletes all ${profiles.length} saved profile${profiles.length === 1 ? "" : "s"}. You can undo this right after.`}
+        confirmLabel="Delete all"
+        destructive
+        onConfirm={confirmDeleteAllProfiles}
+        onCancel={() => setConfirmDeleteAll(false)}
+      />
     </div>
   );
 }
