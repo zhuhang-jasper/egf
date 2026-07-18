@@ -19,6 +19,7 @@ export function ProfileActionsMenu() {
   const exportProfiles = useAppStore((s) => s.exportProfiles);
   const importProfiles = useAppStore((s) => s.importProfiles);
   const clearAllProfiles = useAppStore((s) => s.clearAllProfiles);
+  const restoreProfiles = useAppStore((s) => s.restoreProfiles);
   const showToast = useAppStore((s) => s.showToast);
   const rootRef = useRef(null);
   const menuRef = useRef(null);
@@ -71,11 +72,21 @@ export function ProfileActionsMenu() {
       setConfirmClear(true);
       return;
     }
-    const removed = clearAllProfiles();
+    const { removed, undo } = clearAllProfiles();
     setConfirmClear(false);
     setOpen(false);
     track("profiles_cleared", { count: removed });
-    showToast(`Cleared ${removed} profile${removed === 1 ? "" : "s"}`, { variant: "success" });
+    showToast(`Deleted ${removed} profile${removed === 1 ? "" : "s"}`, {
+      variant: "dark",
+      duration: 10000,
+      action: {
+        label: "Undo",
+        onAction: () => {
+          restoreProfiles(undo);
+          track("profiles_delete_undone", { count: removed });
+        },
+      },
+    });
   };
 
   // Reset the armed "clear all" confirm whenever the menu closes.
@@ -180,7 +191,7 @@ export function ProfileActionsMenu() {
               onClick={handleClearAll}
             >
               <Trash2 className="h-4 w-4 shrink-0" aria-hidden />
-              {confirmClear ? "Tap again to clear all" : "Clear all"}
+              {confirmClear ? "Tap again to delete all" : "Delete all"}
             </button>
           )}
           <input ref={fileInputRef} type="file" accept="application/json,.json" className="hidden" onChange={handleImportFile} />

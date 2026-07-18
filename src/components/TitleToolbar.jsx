@@ -194,6 +194,8 @@ export function TitleToolbar() {
   const loadProfile = useAppStore((s) => s.loadProfile);
   const activeSavedProfileId = useAppStore((s) => s.activeSavedProfileId);
   const saveOverwriting = useAppStore((s) => s.saveOverwriting);
+  const restoreProfiles = useAppStore((s) => s.restoreProfiles);
+  const showToast = useAppStore((s) => s.showToast);
   const saveFeedback = useAppStore((s) => s.saveFeedback);
   const clearSaveFeedback = useAppStore((s) => s.clearSaveFeedback);
   const createNew = useAppStore((s) => s.createNew);
@@ -227,6 +229,9 @@ export function TitleToolbar() {
   // Route a writeProfile result: a collision opens the dialog; a real save fires analytics. Blank
   // title / normalize errors fall through silently (the input already flags the empty-title case).
   // `analytics` carries any flags (e.g. overwrite) onto the profile_saved event.
+  //
+  // A destructive save (result.undo present — an existing profile was overwritten and/or merged
+  // away) shows an "Undo" toast so an accidental Update/Rename/Overwrite is recoverable.
   const handleResult = (result, analytics = {}) => {
     if (result?.status === "collision") {
       setPendingCollision({ ...result, analytics });
@@ -234,6 +239,19 @@ export function TitleToolbar() {
     }
     if (result?.status === "saved") {
       trackSaved(analytics);
+      if (result.undo) {
+        showToast(`Updated “${result.savedTitle}”`, {
+          variant: "dark",
+          duration: 10000,
+          action: {
+            label: "Undo",
+            onAction: () => {
+              restoreProfiles(result.undo);
+              track("profile_save_undone", { attached_badge: useAppStore.getState().attachedBadge });
+            },
+          },
+        });
+      }
     }
   };
 

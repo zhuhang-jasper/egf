@@ -19,7 +19,7 @@ export function ProfilePicker() {
   const open = useAppStore((s) => s.profilePickerOpen);
   const setOpen = useAppStore((s) => s.setProfilePickerOpen);
   const loadProfile = useAppStore((s) => s.loadProfile);
-  const removeProfile = useAppStore((s) => s.removeProfile);
+  const deleteProfileWithUndo = useAppStore((s) => s.deleteProfileWithUndo);
   const rootRef = useRef(null);
   const menuRef = useRef(null);
   const listRef = useRef(null);
@@ -179,7 +179,7 @@ export function ProfilePicker() {
                       aria-label={`Remove profile ${label}`}
                       onClick={(e) => {
                         e.stopPropagation();
-                        removeProfile(pr.id);
+                        deleteProfileWithUndo(pr.id);
                         track("profile_deleted", { attached_badge: pr.attachedBadge });
                       }}
                     >

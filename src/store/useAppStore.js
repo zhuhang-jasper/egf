@@ -10,6 +10,7 @@ import {
   parseToCanonicalState,
   syncLevelsArrayFromMap,
 } from "@/constants/levels";
+import { track } from "@/utils/analytics";
 import { exportProfilesToFile, parseImportedProfiles } from "@/utils/profile-transfer";
 import { getDefaultChartDisplay, loadDraftFromStorage, loadProfilesFromStorage, saveDraftToStorage, writeProfilesToStorage } from "@/utils/storage";
 
@@ -18,6 +19,12 @@ const initialProfiles = loadProfilesFromStorage();
 
 // Monotonic id source for toasts (module-scoped so ids stay unique across the store's lifetime).
 let toastSeq = 0;
+// Per-toast auto-dismiss timers, so a coalescing toast can reset its own countdown.
+const toastTimers = new Map();
+// Coalescing key + accumulator for the batched delete-Undo toast. `deleteBatch` collects the rows
+// removed while the toast is still on screen; it resets once that toast is gone (expired/undone).
+const DELETE_TOAST_KEY = "profile-delete";
+let deleteBatch = [];
 
 /** Keep a restored link only if the referenced profile still exists — else the draft is unlinked. */
 function validateActiveId(activeSavedProfileId, profiles) {
@@ -51,23 +58,47 @@ export const useAppStore = create((set, get) => ({
   toasts: [],
 
   /**
-   * Show a transient toast. `variant` is "default" | "success" | "error".
-   * Returns the toast id; auto-dismisses after `duration` ms (0 = sticky).
+   * Show a transient toast. `variant` is "default" | "success" | "error" | "dark". `action`, if
+   * given, is `{ label, onAction }` and renders a button (e.g. "Undo") that fires `onAction` then
+   * dismisses. `duration` ms until auto-dismiss (0 = sticky).
+   *
+   * `key` coalesces: if a live toast already has the same `key`, this replaces its content in place
+   * and resets its countdown instead of stacking a new toast (used to batch rapid deletes into one
+   * "Deleted N profiles" toast). Returns the toast id (the existing one when coalescing).
    */
-  showToast: (message, { variant = "default", duration = 2600 } = {}) => {
+  showToast: (message, { variant = "default", duration = 2600, action = null, key = null } = {}) => {
     const text = String(message ?? "").trim();
     if (!text) {
       return null;
     }
-    const id = ++toastSeq;
-    set((state) => ({ toasts: [...state.toasts, { id, message: text, variant }] }));
+    const existing = key != null ? get().toasts.find((t) => t.key === key) : null;
+    const id = existing ? existing.id : ++toastSeq;
+    if (existing) {
+      set((state) => ({ toasts: state.toasts.map((t) => (t.id === id ? { ...t, message: text, variant, action, key } : t)) }));
+    } else {
+      set((state) => ({ toasts: [...state.toasts, { id, message: text, variant, action, key }] }));
+    }
+    // (Re)arm the auto-dismiss timer — clearing any prior one so a coalesced toast restarts its clock.
+    const prevTimer = toastTimers.get(id);
+    if (prevTimer) {
+      clearTimeout(prevTimer);
+      toastTimers.delete(id);
+    }
     if (duration > 0) {
-      setTimeout(() => get().dismissToast(id), duration);
+      toastTimers.set(
+        id,
+        setTimeout(() => get().dismissToast(id), duration),
+      );
     }
     return id;
   },
 
   dismissToast: (id) => {
+    const timer = toastTimers.get(id);
+    if (timer) {
+      clearTimeout(timer);
+      toastTimers.delete(id);
+    }
     set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) }));
   },
 
@@ -187,21 +218,57 @@ export const useAppStore = create((set, get) => ({
     }
   },
 
+  // Delete one profile. Returns the removed row (or null if the id was gone).
   removeProfile: (id) => {
-    const next = loadProfilesFromStorage().filter((p) => p.id !== id);
+    const existing = loadProfilesFromStorage();
+    const target = existing.find((p) => p.id === id);
+    if (!target) {
+      return null;
+    }
+    const activeId = get().activeSavedProfileId;
+    const next = existing.filter((p) => p.id !== id);
     writeProfilesToStorage(next);
-    set({
-      profiles: next,
-      activeSavedProfileId: get().activeSavedProfileId === id ? null : get().activeSavedProfileId,
+    set({ profiles: next, activeSavedProfileId: activeId === id ? null : activeId });
+    return target;
+  },
+
+  // Delete a profile via the bin icon and surface a batched Undo toast. Rapid deletes coalesce: each
+  // one while the toast is still up merges into a single "Deleted N profiles" toast, accumulates the
+  // removed row, and resets the 10s countdown. Undo re-inserts every row from the current batch. The
+  // batch clears once the toast is gone (expired or undone), so the next delete starts fresh.
+  deleteProfileWithUndo: (id) => {
+    const removed = get().removeProfile(id);
+    if (!removed) {
+      return;
+    }
+    // Start a fresh batch unless the previous delete's toast is still on screen (coalescing window).
+    const toastLive = get().toasts.some((t) => t.key === DELETE_TOAST_KEY);
+    deleteBatch = toastLive ? [...deleteBatch, removed] : [removed];
+    const rows = deleteBatch; // capture for the Undo closure
+    const count = rows.length;
+    const message = count === 1 ? `Deleted “${rows[0].title}”` : `Deleted ${count} profiles`;
+    get().showToast(message, {
+      variant: "dark",
+      duration: 10000,
+      key: DELETE_TOAST_KEY,
+      action: {
+        label: "Undo",
+        onAction: () => {
+          get().restoreDeletedProfiles(rows);
+          deleteBatch = [];
+          track("profiles_delete_undone", { count });
+        },
+      },
     });
   },
 
-  /** Delete every saved profile. Returns the number removed. */
+  // Delete every saved profile. Returns `{ removed, undo }` — count removed + a snapshot for undo.
   clearAllProfiles: () => {
-    const removed = loadProfilesFromStorage().length;
+    const existing = loadProfilesFromStorage();
+    const undo = { profiles: existing, activeSavedProfileId: get().activeSavedProfileId };
     writeProfilesToStorage([]);
     set({ profiles: [], activeSavedProfileId: null });
-    return removed;
+    return { removed: existing.length, undo };
   },
 
   /**
@@ -339,10 +406,16 @@ export const useAppStore = create((set, get) => ({
       savedAt: Date.now(),
     };
     let next = replaceIdx >= 0 ? existing.map((p, i) => (i === replaceIdx ? row : p)) : [...existing, row];
+    const removedSource = removeId != null && removeId !== id;
     // Drop the merged-away source row (never the one we just wrote into).
-    if (removeId != null && removeId !== id) {
+    if (removedSource) {
       next = next.filter((p) => p.id !== removeId);
     }
+
+    // A destructive write replaces an existing row and/or removes the merged source. Snapshot the
+    // whole prior list + link so the UI can offer an "Undo" that restores the exact previous state.
+    const overwrote = replaceIdx >= 0 ? existing[replaceIdx] : null;
+    const undo = overwrote || removedSource ? { profiles: existing, activeSavedProfileId: get().activeSavedProfileId } : null;
 
     writeProfilesToStorage(next);
     set({
@@ -352,7 +425,7 @@ export const useAppStore = create((set, get) => ({
       saveFeedback: "saved",
     });
     get().persistDraft();
-    return { status: "saved" };
+    return { status: "saved", savedTitle: state.title, overwroteTitle: overwrote?.title ?? null, undo };
   },
 
   // Save/Update the current draft. Updates the linked profile in place (renaming it if the title
@@ -379,6 +452,32 @@ export const useAppStore = create((set, get) => ({
     const activeId = get().activeSavedProfileId;
     const removeId = activeId != null && activeId !== overwriteId ? activeId : null;
     return get().writeProfile({ overwriteId, removeId });
+  },
+
+  // Undo a destructive save: restore the profile list + link captured in a writeProfile `undo`
+  // snapshot, then re-sync the draft to the restored active profile (if it still exists) so the
+  // chart/form reflect the reverted state.
+  restoreProfiles: ({ profiles, activeSavedProfileId }) => {
+    writeProfilesToStorage(profiles);
+    const restored = activeSavedProfileId != null ? profiles.find((p) => p.id === activeSavedProfileId) : null;
+    if (restored) {
+      const state = normalizeSavedState(restored);
+      if (state) {
+        get().applyState(state, { profileId: restored.id });
+      }
+    }
+    set({ profiles: loadProfilesFromStorage() });
+  },
+
+  // Undo one or more deletes by re-inserting the removed rows into the *current* list (deduped by id
+  // in case one already came back). Unlike restoreProfiles this merges rather than replaces, so any
+  // saves/edits made after the deletes survive. Used by the batched delete-Undo toast.
+  restoreDeletedProfiles: (rows) => {
+    const current = loadProfilesFromStorage();
+    const have = new Set(current.map((p) => p.id));
+    const merged = [...current, ...rows.filter((r) => !have.has(r.id))];
+    writeProfilesToStorage(merged);
+    set({ profiles: loadProfilesFromStorage() });
   },
 
   clearSaveFeedback: () => set({ saveFeedback: null }),
