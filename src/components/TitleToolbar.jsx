@@ -332,7 +332,8 @@ export function TitleToolbar() {
           undoAction={undoAction}
         />
       </div>
-      {/* Row 2 — New profile + keypad toggle (touch only) on the left, Profiles on the right.
+      {/* Row 2 — New profile + keypad toggle (touch only) on the left, the "Manage" profile-actions
+          menu (import / export / delete all) on the right.
           "New profile" starts a fresh blank draft: it clears the title, the badge, resets every
           pillar to the default, and unlinks any loaded profile. */}
       <div className="flex w-full items-center gap-2">

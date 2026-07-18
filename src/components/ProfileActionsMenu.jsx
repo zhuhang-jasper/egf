@@ -150,14 +150,14 @@ export function ProfileActionsMenu() {
         type="button"
         variant="outline"
         size="sm"
-        aria-label="Profile actions"
+        aria-label="Manage profiles — import, export, or delete all"
         aria-expanded={open}
         aria-haspopup="menu"
         onClick={() => setOpen(!open)}
         className="group relative px-2"
       >
         <MoreVertical className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        {open ? null : <Tooltip text="Profile actions" placement="bottom" />}
+        {open ? null : <Tooltip text="Manage profiles" placement="bottom" />}
       </Button>
       {open && (
         <div
@@ -177,7 +177,7 @@ export function ProfileActionsMenu() {
             onClick={handleExport}
           >
             <Upload className="h-4 w-4 shrink-0" aria-hidden />
-            Export
+            Export profiles
           </button>
           <button
             type="button"
@@ -186,7 +186,7 @@ export function ProfileActionsMenu() {
             onClick={() => fileInputRef.current?.click()}
           >
             <Download className="h-4 w-4 shrink-0" aria-hidden />
-            Import
+            Import profiles
           </button>
           {hasProfiles && (
             <button
@@ -196,7 +196,7 @@ export function ProfileActionsMenu() {
               onClick={handleDeleteAll}
             >
               <Trash2 className="h-4 w-4 shrink-0" aria-hidden />
-              Delete all
+              Delete all profiles
             </button>
           )}
           <input ref={fileInputRef} type="file" accept="application/json,.json" className="hidden" onChange={handleImportFile} />
