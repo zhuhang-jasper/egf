@@ -87,3 +87,28 @@
     animation: none;
   }
 }
+
+/* Marquee / "LED sign" scroll for over-long profile names — see src/components/ProfileCombobox.jsx.
+   Two copies of the text sit side by side in the track; scrolling one full copy width (-50% of the
+   track) and looping lands the second copy exactly where the first began, so it reads seamlessly. */
+@keyframes marquee-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee-track {
+  display: inline-flex;
+  flex-shrink: 0;
+  width: max-content;
+  animation: marquee-scroll linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
+}

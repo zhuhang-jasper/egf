@@ -6,6 +6,7 @@ import { ChartScores } from "@/components/ChartScores";
 import { ClusterLegend } from "@/components/ClusterLegend";
 import { TrackBadge } from "@/components/TrackBadge";
 import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 import { useCompetencyChart } from "@/hooks/useCompetencyChart";
 import { useElementWidth } from "@/hooks/useElementWidth";
@@ -80,10 +81,13 @@ function ChartDisplayMenu() {
         aria-expanded={open}
         aria-haspopup="menu"
         aria-label="Chart display settings"
-        title="Chart display settings"
         onClick={() => setOpen((v) => !v)}
+        className="group relative"
       >
         <Settings className="h-4 w-4" />
+        {/* Points down, into clear space — a top tooltip would render up into the sticky header
+            (z-40) and get covered. */}
+        {open ? null : <Tooltip text="Chart display settings" placement="bottom" />}
       </Button>
       {open ? (
         <div

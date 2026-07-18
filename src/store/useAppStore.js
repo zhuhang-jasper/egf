@@ -52,7 +52,6 @@ export const useAppStore = create((set, get) => ({
   footerScoresHiddenUserSet: initialDraft.footerScoresHiddenUserSet === true,
   activeSavedProfileId: validateActiveId(initialDraft.activeSavedProfileId, initialProfiles),
   profiles: initialProfiles,
-  profilePickerOpen: false,
   saveFeedback: null,
   levelKeyboardInputEnabled: initialDraft.levelKeyboardInputEnabled === true,
   toasts: [],
@@ -216,13 +215,6 @@ export const useAppStore = create((set, get) => ({
     get().persistDraft();
   },
 
-  setProfilePickerOpen: (open) => {
-    set({ profilePickerOpen: open });
-    if (open) {
-      set({ profiles: loadProfilesFromStorage() });
-    }
-  },
-
   // Delete one profile. Returns the removed row (or null if the id was gone).
   removeProfile: (id) => {
     const existing = loadProfilesFromStorage();
@@ -342,7 +334,6 @@ export const useAppStore = create((set, get) => ({
       return;
     }
     get().applyState(state, { profileId: id });
-    set({ profilePickerOpen: false });
   },
 
   // Shared writer for the save paths. Identity is tracked by uuid (`activeSavedProfileId`), never by

@@ -1,13 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 
-import { ChevronDown, CircleCheck, Copy, FilePlus, Keyboard, Pencil, Save, Undo2, X } from "lucide-react";
+import { ChevronDown, CircleCheck, Copy, FilePlus, Keyboard, Pencil, Save, Undo2 } from "lucide-react";
 
-import { BadgePicker } from "@/components/BadgePicker";
 import { ProfileActionsMenu } from "@/components/ProfileActionsMenu";
-import { ProfilePicker } from "@/components/ProfilePicker";
+import { ProfileCombobox } from "@/components/ProfileCombobox";
 import { SaveCollisionDialog } from "@/components/SaveCollisionDialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 
 import { useTouchPrimary } from "@/hooks/useTouchPrimary";
 
@@ -186,7 +184,6 @@ function SaveButton({ statusMeta, showMenu, onSave, copyAction, undoAction }) {
 }
 
 export function TitleToolbar() {
-  const title = useAppStore((s) => s.title);
   const setTitle = useAppStore((s) => s.setTitle);
   const saveProfile = useAppStore((s) => s.saveProfile);
   const saveAsNew = useAppStore((s) => s.saveAsNew);
@@ -321,45 +318,12 @@ export function TitleToolbar() {
 
   // A save attempt with no title flags the input with a red error border (auto-cleared above).
   const titleError = saveFeedback === "add-title";
-  const showClear = title.length > 0;
 
   return (
     <div className="flex w-full flex-col gap-2">
       {/* Row 1 — title + Save (Save lives here permanently now that New/Reset merged into Row 2). */}
       <div className="flex w-full min-w-0 items-center gap-2">
-        <div className="relative min-w-0 flex-1">
-          <BadgePicker />
-          <Input
-            id="chart-title-input"
-            value={title}
-            placeholder="Enter a name"
-            aria-invalid={titleError}
-            onChange={(e) => setTitle(e.target.value)}
-            onBlur={() => {
-              const trimmed = title.trim();
-              if (trimmed !== title) {
-                setTitle(trimmed);
-              }
-            }}
-            className={cn("pl-16 pr-9 shadow-none", titleError && "border-red-500 focus-visible:ring-red-500/40")}
-          />
-          <button
-            type="button"
-            aria-label="Clear chart title"
-            title="Clear title"
-            hidden={!showClear}
-            onClick={() => {
-              setTitle("");
-              document.getElementById("chart-title-input")?.focus();
-            }}
-            className={cn(
-              "absolute right-0 top-0 flex h-full w-7 items-center justify-center text-muted-foreground hover:text-foreground",
-              !showClear && "pointer-events-none opacity-0",
-            )}
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
+        <ProfileCombobox titleError={titleError} />
         <SaveButton
           statusMeta={statusMeta}
           showMenu={saveStatus === "saved" || saveStatus === "renaming" || saveStatus === "modified"}
@@ -417,7 +381,6 @@ export function TitleToolbar() {
           </button>
         ) : null}
         <div className="ml-auto flex items-center gap-1.5">
-          <ProfilePicker />
           <ProfileActionsMenu />
         </div>
       </div>

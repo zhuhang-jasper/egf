@@ -60,6 +60,10 @@ export const TRACK_BADGE_UI = {
   },
 };
 
+/** Max characters allowed in a profile name. Enforced at the input and when parsing to canonical
+ * state, so typed, imported, and any other write path all stay bounded. */
+export const MAX_PROFILE_NAME_LENGTH = 60;
+
 /** Pillar ids persisted in profiles (missing keys default on load). */
 export const CANONICAL_PILLAR_IDS = [...new Set(PILLAR_ORDER)];
 

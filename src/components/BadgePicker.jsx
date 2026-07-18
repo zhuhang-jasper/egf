@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 
 import { ChevronDown } from "lucide-react";
 
+import { Tooltip } from "@/components/ui/Tooltip";
+
 import { useAppStore } from "@/store/useAppStore";
 
 import { normalizeAttachedBadge, TRACK_BADGE_OPTIONS, TRACK_BADGE_UI } from "@/constants";
@@ -79,12 +81,12 @@ export function BadgePicker() {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={`Attached badge: ${current.label}`}
-        title="Attached badge"
         onClick={() => setOpen((v) => !v)}
-        className="my-1.5 flex h-[calc(100%-0.75rem)] items-center gap-1 border-r border-border pl-2.5 pr-1.5 text-muted-foreground hover:text-foreground"
+        className="group my-1.5 flex h-[calc(100%-0.75rem)] cursor-pointer items-center gap-1 border-r border-border pl-2.5 pr-1.5 text-muted-foreground hover:text-foreground"
       >
         <BadgePill id={attachedBadge} />
         <ChevronDown className="h-3 w-3 opacity-60" />
+        {open ? null : <Tooltip text="Attached badge" />}
       </button>
       {open ? (
         <div
@@ -102,14 +104,14 @@ export function BadgePicker() {
                 aria-checked={attachedBadge === id}
                 onClick={() => select(id)}
                 className={cn(
-                  "flex cursor-pointer items-center gap-2 px-3 py-1.5 text-left text-xs hover:bg-muted/60",
+                  "flex cursor-pointer items-center gap-3 px-3 py-1.5 text-left text-xs hover:bg-muted/60",
                   attachedBadge === id && "font-semibold",
                 )}
               >
-                <span className="inline-flex min-w-[1.75em] justify-center">
+                <span className="inline-flex w-7 shrink-0 justify-center">
                   <BadgePill id={id} />
                 </span>
-                <span className="text-muted-foreground">{ui.label}</span>
+                <span className={cn(attachedBadge === id ? "text-foreground" : "text-muted-foreground")}>{ui.label}</span>
               </button>
             );
           })}

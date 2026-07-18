@@ -4,6 +4,7 @@ import { Download, MoreVertical, Trash2, Upload } from "lucide-react";
 
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 import { useAppStore } from "@/store/useAppStore";
 
@@ -153,9 +154,10 @@ export function ProfileActionsMenu() {
         aria-expanded={open}
         aria-haspopup="menu"
         onClick={() => setOpen(!open)}
-        className="px-2"
+        className="group relative px-2"
       >
         <MoreVertical className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        {open ? null : <Tooltip text="Profile actions" placement="bottom" />}
       </Button>
       {open && (
         <div

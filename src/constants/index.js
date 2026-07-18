@@ -15,6 +15,7 @@ export {
   getPillarLabel,
   getPillarLabelWithoutOrgan,
   getPillarOrder,
+  MAX_PROFILE_NAME_LENGTH,
   normalizeAttachedBadge,
   PILLAR_COUNT,
   PILLAR_GROUPS,

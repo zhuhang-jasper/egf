@@ -1,4 +1,4 @@
-import { CANONICAL_PILLAR_IDS, DEFAULT_PILLAR_LEVEL, getPillarOrder, LEVEL_STEP, normalizeAttachedBadge } from "@/constants";
+import { CANONICAL_PILLAR_IDS, DEFAULT_PILLAR_LEVEL, getPillarOrder, LEVEL_STEP, MAX_PROFILE_NAME_LENGTH, normalizeAttachedBadge } from "@/constants";
 import { SCHEMA_VERSION } from "@/constants/storage";
 
 export function clampLevel(v) {
@@ -101,7 +101,8 @@ export function parseToCanonicalState(parsed) {
   }
 
   return {
-    title: parsed.title,
+    // Cap the name so typed, imported, and legacy profiles all stay within the limit.
+    title: parsed.title.slice(0, MAX_PROFILE_NAME_LENGTH),
     pillarLevels: fillPillarLevels(parsed.pillarLevels),
     attachedBadge: normalizeAttachedBadge(parsed.attachedBadge),
   };
