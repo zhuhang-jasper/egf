@@ -7,6 +7,8 @@ import { TrackBadge } from "@/components/TrackBadge";
 import { Input } from "@/components/ui/input";
 import { Tooltip } from "@/components/ui/Tooltip";
 
+import { useTouchPrimary } from "@/hooks/useTouchPrimary";
+
 import { useAppStore } from "@/store/useAppStore";
 
 import { MAX_PROFILE_NAME_LENGTH, normalizeAttachedBadge, TRACK_BADGE_OPTIONS, TRACK_BADGE_UI } from "@/constants";
@@ -114,6 +116,7 @@ export function ProfileCombobox({ titleError = false }) {
   const deleteProfileWithUndo = useAppStore((s) => s.deleteProfileWithUndo);
   const activeSavedProfileId = useAppStore((s) => s.activeSavedProfileId);
   const showDraftDiscardedToast = useAppStore((s) => s.showDraftDiscardedToast);
+  const touchPrimary = useTouchPrimary();
 
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState(""); // the dropdown's own search text — independent of the name
@@ -147,13 +150,17 @@ export function ProfileCombobox({ titleError = false }) {
     [profiles, q],
   );
 
-  // Open the dropdown fresh (search cleared, showing all) and focus its search box.
+  // Open the dropdown fresh (search cleared, showing all). On desktop, focus the search box so you
+  // can type immediately; on touch, DON'T — auto-focus would pop the on-screen keyboard on every
+  // open, which is intrusive when you're just browsing. Touch users tap the search box to type.
   const openDropdown = () => {
     setQuery("");
     setHighlight(-1);
     setOpen(true);
-    // Focus after the popover mounts.
-    requestAnimationFrame(() => searchRef.current?.focus());
+    if (!touchPrimary) {
+      // Focus after the popover mounts.
+      requestAnimationFrame(() => searchRef.current?.focus());
+    }
   };
 
   // Close + reset the search box and keyboard highlight.

@@ -23,8 +23,12 @@ let toastSeq = 0;
 const toastTimers = new Map();
 // Coalescing key + accumulator for the batched delete-Undo toast. `deleteBatch` collects the rows
 // removed while the toast is still on screen; it resets once that toast is gone (expired/undone).
+// `deleteBatchReloadRow` holds the one removed row that was the *loaded* profile at delete time (if
+// any) — deleting the active profile resets the draft to blank, so Undo reloads that row to fully
+// reverse. At most one row per batch can be the active one (only one is loaded at a time).
 const DELETE_TOAST_KEY = "profile-delete";
 let deleteBatch = [];
+let deleteBatchReloadRow = null;
 
 // Coalescing key for the "unsaved draft discarded" Undo toast (fired when a load / New profile wipes
 // a dirty draft). Only one is ever shown: a newer discard REPLACES the older toast (same key), so
@@ -109,6 +113,7 @@ export const useAppStore = create((set, get) => ({
     // held in memory. (Undo already clears the batch itself before dismissing.)
     if (get().toasts.find((t) => t.id === id)?.key === DELETE_TOAST_KEY) {
       deleteBatch = [];
+      deleteBatchReloadRow = null;
     }
     set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) }));
   },
@@ -241,14 +246,30 @@ export const useAppStore = create((set, get) => ({
   // removed row, and resets the 10s countdown. Undo re-inserts every row from the current batch. The
   // batch clears once the toast is gone (expired or undone), so the next delete starts fresh.
   deleteProfileWithUndo: (id) => {
+    // Was this the currently-loaded profile? If so the app resets to a blank draft after removal.
+    const wasActive = get().activeSavedProfileId === id;
     const removed = get().removeProfile(id);
     if (!removed) {
       return;
     }
+    // Deleting the loaded profile resets everything to a fresh blank draft (no name-field focus).
+    if (wasActive) {
+      get().resetDraftToBlank();
+    }
     // Start a fresh batch unless the previous delete's toast is still on screen (coalescing window).
     const toastLive = get().toasts.some((t) => t.key === DELETE_TOAST_KEY);
-    deleteBatch = toastLive ? [...deleteBatch, removed] : [removed];
+    if (toastLive) {
+      deleteBatch = [...deleteBatch, removed];
+    } else {
+      deleteBatch = [removed];
+      deleteBatchReloadRow = null; // fresh batch — clear any prior reload target
+    }
+    // Remember the removed row that was loaded, so Undo reloads it (only one can be active).
+    if (wasActive) {
+      deleteBatchReloadRow = removed;
+    }
     const rows = deleteBatch; // capture for the Undo closure
+    const reloadRow = deleteBatchReloadRow;
     const count = rows.length;
     const message = count === 1 ? `Deleted “${rows[0].title}”` : `Deleted ${count} profiles`;
     get().showToast(message, {
@@ -259,7 +280,15 @@ export const useAppStore = create((set, get) => ({
         label: "Undo",
         onAction: () => {
           get().restoreDeletedProfiles(rows);
+          // If the loaded profile was among the deleted, reload it so the draft is fully restored.
+          if (reloadRow) {
+            const state = normalizeSavedState(reloadRow);
+            if (state) {
+              get().applyState(state, { profileId: reloadRow.id });
+            }
+          }
           deleteBatch = [];
+          deleteBatchReloadRow = null;
           track("profiles_delete_undone", { count });
         },
       },
@@ -351,11 +380,10 @@ export const useAppStore = create((set, get) => ({
       attachedBadge: normalizeAttachedBadge(prev.attachedBadge),
       activeSavedProfileId: prev.activeSavedProfileId,
     };
-    // Unsaved work at risk = the draft differs from its saved state (or is an unlinked draft with
-    // content). Reuse selectProfileSaveStatus: "saved" loses nothing; a no-op reload of the same
-    // profile is also nothing to recover.
-    const status = selectProfileSaveStatus(prev);
-    const hadUnsavedChanges = status !== "saved" && prev.activeSavedProfileId !== id;
+    // Warn only if the replaced draft actually had unsaved work (a blank all-default new draft loses
+    // nothing), and never for a no-op reload of the already-active profile. Same dirty-test as
+    // "New profile" (selectHasUnsavedWork), so the two agree.
+    const hadUnsavedChanges = prev.activeSavedProfileId !== id && selectHasUnsavedWork(prev);
     get().applyState(state, { profileId: id });
     return { undo, hadUnsavedChanges };
   },
@@ -513,26 +541,10 @@ export const useAppStore = create((set, get) => ({
 
   clearSaveFeedback: () => set({ saveFeedback: null }),
 
-  // Start a fresh blank draft (the "New profile" button). Returns `{ undo }` — a snapshot of the
-  // draft it replaced — so the UI can offer an "Undo" that restores those in-flight, unsaved edits.
-  // The snapshot is draft-only (title/levels/badge/link); it does not touch saved profiles.
-  createNew: () => {
-    const prev = get();
-    const undo = {
-      title: prev.title,
-      pillarLevels: { ...prev.pillarLevels },
-      attachedBadge: normalizeAttachedBadge(prev.attachedBadge),
-      activeSavedProfileId: prev.activeSavedProfileId,
-    };
+  // Wipe the draft to a fresh blank all-default state, unlinked. Does NOT snapshot, focus, or toast —
+  // callers layer those on. Used by "New profile" and by deleting the currently-loaded profile.
+  resetDraftToBlank: () => {
     const defaults = getDefaultChartState();
-    // "Had content" gates whether the caller offers an Undo — no point offering it when the draft
-    // was already blank + all-default (nothing would be lost). Any title, badge, link, or off-default
-    // level counts.
-    const hadContent =
-      prev.title.trim() !== "" ||
-      prev.activeSavedProfileId != null ||
-      normalizeAttachedBadge(prev.attachedBadge) !== normalizeAttachedBadge(defaults.attachedBadge) ||
-      Object.keys({ ...prev.pillarLevels, ...defaults.pillarLevels }).some((k) => prev.pillarLevels[k] !== defaults.pillarLevels[k]);
     set(
       withSyncedLevels({
         ...get(),
@@ -544,7 +556,22 @@ export const useAppStore = create((set, get) => ({
       }),
     );
     get().persistDraft();
-    return { undo, hadContent };
+  },
+
+  // Start a fresh blank draft (the "New profile" button). Returns `{ undo }` — a snapshot of the
+  // draft it replaced — so the UI can offer an "Undo" that restores those in-flight, unsaved edits.
+  // The snapshot is draft-only (title/levels/badge/link); it does not touch saved profiles.
+  createNew: () => {
+    const prev = get();
+    const undo = {
+      title: prev.title,
+      pillarLevels: { ...prev.pillarLevels },
+      attachedBadge: normalizeAttachedBadge(prev.attachedBadge),
+      activeSavedProfileId: prev.activeSavedProfileId,
+    };
+    // Whether the caller offers an Undo is decided by selectHasUnsavedWork on the pre-blank draft.
+    get().resetDraftToBlank();
+    return { undo };
   },
 
   // Restore a draft snapshot captured by createNew — undo of "New profile". Re-links to the saved
@@ -645,4 +672,29 @@ export function selectProfileSaveStatus(s) {
     return "renaming";
   }
   return profileLevelsMatch(target, s) ? "saved" : "modified";
+}
+
+/**
+ * Whether the current draft holds unsaved work that replacing it (loading a profile, "New profile")
+ * would lose. True when the draft is a linked-but-edited profile ("renaming"/"modified"), OR an
+ * unlinked "new" draft that actually has content (a title, badge, or off-default level). A clean
+ * "saved" draft, or a blank all-default new draft, has nothing to recover → false.
+ *
+ * Single source of truth so load and "New profile" agree on when to offer an Undo.
+ */
+export function selectHasUnsavedWork(s) {
+  const status = selectProfileSaveStatus(s);
+  if (status === "renaming" || status === "modified") {
+    return true;
+  }
+  if (status !== "new") {
+    return false; // "saved" — nothing unsaved
+  }
+  // "new": only counts if the draft differs from a blank all-default draft.
+  const defaults = getDefaultChartState();
+  return (
+    String(s.title).trim() !== "" ||
+    normalizeAttachedBadge(s.attachedBadge) !== normalizeAttachedBadge(defaults.attachedBadge) ||
+    Object.keys({ ...s.pillarLevels, ...defaults.pillarLevels }).some((k) => s.pillarLevels[k] !== defaults.pillarLevels[k])
+  );
 }

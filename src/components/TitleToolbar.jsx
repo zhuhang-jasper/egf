@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 
 import { useTouchPrimary } from "@/hooks/useTouchPrimary";
 
-import { selectProfileSaveStatus, useAppStore } from "@/store/useAppStore";
+import { selectHasUnsavedWork, selectProfileSaveStatus, useAppStore } from "@/store/useAppStore";
 
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
@@ -203,11 +203,20 @@ export function TitleToolbar() {
   const saveStatus = useAppStore(selectProfileSaveStatus); // "saved" | "renaming" | "modified" | "new"
   const statusMeta = SAVE_STATUS_META[saveStatus];
 
+  // Place the cursor in the name field so the user can type a name (Save as… / New profile / Undo
+  // rename). Skipped on touch — auto-focus there pops the on-screen keyboard unbidden. Touch users
+  // tap the field to type.
+  const focusNameInput = () => {
+    if (!touchPrimary) {
+      document.getElementById("chart-title-input")?.focus();
+    }
+  };
+
   // "Undo rename" (renaming) — restore just the title to the linked profile's saved name.
   const linkedTitle = useAppStore((s) => s.profiles.find((p) => p.id === s.activeSavedProfileId)?.title ?? null);
   const handleUndoRename = () => {
     setTitle(linkedTitle ?? "");
-    document.getElementById("chart-title-input")?.focus();
+    focusNameInput();
   };
 
   // "Undo changes" (modified) — reload the linked profile, reverting the edited badge/levels to its
@@ -263,7 +272,7 @@ export function TitleToolbar() {
   const handleDuplicate = () => {
     duplicateDraft();
     track("profile_duplicated", { attached_badge: useAppStore.getState().attachedBadge });
-    document.getElementById("chart-title-input")?.focus();
+    focusNameInput();
   };
 
   // The copy action's label + handler depend on whether the name already differs from the source.
@@ -277,17 +286,17 @@ export function TitleToolbar() {
   };
   const undoAction = UNDO_ACTIONS[saveStatus];
 
-  // "New profile" — start a fresh blank draft, wiping the current one. Offer an Undo only when there
-  // are genuinely unsaved edits to lose: an in-flight rename/update ("renaming"/"modified"), or an
-  // unsaved draft with content ("new" + hadContent). A clean loaded profile ("saved") or an already
-  // blank draft loses nothing, so no toast. Routes through the shared "draft discarded" toast so New
-  // profile and profile-load behave identically — one coalescing Undo toast (a newer discard replaces
-  // the older), recovering the most recent discarded draft.
+  // "New profile" — start a fresh blank draft, wiping the current one. Offer an Undo only when the
+  // draft had genuine unsaved work (selectHasUnsavedWork): a clean loaded profile or an already-blank
+  // draft loses nothing, so no toast. Routes through the shared "draft discarded" toast so New profile
+  // and profile-load behave identically — one coalescing Undo toast (a newer discard replaces the
+  // older), recovering the most recent discarded draft.
   const handleNewProfile = () => {
-    const wasEditing = saveStatus === "renaming" || saveStatus === "modified";
-    const { undo, hadContent } = createNew();
-    document.getElementById("chart-title-input")?.focus();
-    if (wasEditing || (saveStatus === "new" && hadContent)) {
+    // Check for unsaved work BEFORE createNew() blanks the draft. Same selector load uses, so both agree.
+    const hadUnsavedWork = selectHasUnsavedWork(useAppStore.getState());
+    const { undo } = createNew();
+    focusNameInput();
+    if (hadUnsavedWork) {
       showDraftDiscardedToast(undo, () => track("new_profile_undone"));
     }
   };
