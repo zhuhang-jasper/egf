@@ -199,6 +199,7 @@ export function TitleToolbar() {
   const saveFeedback = useAppStore((s) => s.saveFeedback);
   const clearSaveFeedback = useAppStore((s) => s.clearSaveFeedback);
   const createNew = useAppStore((s) => s.createNew);
+  const restoreDraft = useAppStore((s) => s.restoreDraft);
   const levelKeyboardInputEnabled = useAppStore((s) => s.levelKeyboardInputEnabled);
   const toggleLevelKeyboardInputEnabled = useAppStore((s) => s.toggleLevelKeyboardInputEnabled);
   const touchPrimary = useTouchPrimary();
@@ -279,6 +280,29 @@ export function TitleToolbar() {
   };
   const undoAction = UNDO_ACTIONS[saveStatus];
 
+  // "New profile" — start a fresh blank draft, wiping the current one. Offer an Undo only when there
+  // are genuinely unsaved edits to lose: an in-flight rename/update ("renaming"/"modified"), or an
+  // unsaved draft with content ("new" + hadContent). A clean loaded profile ("saved") or an already
+  // blank draft loses nothing, so no toast.
+  const handleNewProfile = () => {
+    const wasEditing = saveStatus === "renaming" || saveStatus === "modified";
+    const { undo, hadContent } = createNew();
+    document.getElementById("chart-title-input")?.focus();
+    if (wasEditing || (saveStatus === "new" && hadContent)) {
+      showToast("Started a new profile", {
+        variant: "dark",
+        duration: 10000,
+        action: {
+          label: "Undo",
+          onAction: () => {
+            restoreDraft(undo);
+            track("new_profile_undone");
+          },
+        },
+      });
+    }
+  };
+
   // The collision dialog's "Overwrite it" carries the blocked attempt's analytics forward.
   const handleOverwrite = () => {
     const { id, analytics } = pendingCollision;
@@ -354,10 +378,7 @@ export function TitleToolbar() {
           size="sm"
           shape="pill"
           className="shrink-0 gap-1.5"
-          onClick={() => {
-            createNew();
-            document.getElementById("chart-title-input")?.focus();
-          }}
+          onClick={handleNewProfile}
           aria-label="New profile — clear the name, badge and all levels to start fresh"
           title="New profile — clear the name, badge and all levels to start fresh"
         >

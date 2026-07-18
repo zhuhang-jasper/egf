@@ -493,8 +493,26 @@ export const useAppStore = create((set, get) => ({
 
   clearSaveFeedback: () => set({ saveFeedback: null }),
 
+  // Start a fresh blank draft (the "New profile" button). Returns `{ undo }` — a snapshot of the
+  // draft it replaced — so the UI can offer an "Undo" that restores those in-flight, unsaved edits.
+  // The snapshot is draft-only (title/levels/badge/link); it does not touch saved profiles.
   createNew: () => {
+    const prev = get();
+    const undo = {
+      title: prev.title,
+      pillarLevels: { ...prev.pillarLevels },
+      attachedBadge: normalizeAttachedBadge(prev.attachedBadge),
+      activeSavedProfileId: prev.activeSavedProfileId,
+    };
     const defaults = getDefaultChartState();
+    // "Had content" gates whether the caller offers an Undo — no point offering it when the draft
+    // was already blank + all-default (nothing would be lost). Any title, badge, link, or off-default
+    // level counts.
+    const hadContent =
+      prev.title.trim() !== "" ||
+      prev.activeSavedProfileId != null ||
+      normalizeAttachedBadge(prev.attachedBadge) !== normalizeAttachedBadge(defaults.attachedBadge) ||
+      Object.keys({ ...prev.pillarLevels, ...defaults.pillarLevels }).some((k) => prev.pillarLevels[k] !== defaults.pillarLevels[k]);
     set(
       withSyncedLevels({
         ...get(),
@@ -503,6 +521,22 @@ export const useAppStore = create((set, get) => ({
         levels: [...defaults.levels],
         attachedBadge: normalizeAttachedBadge(defaults.attachedBadge),
         activeSavedProfileId: null,
+      }),
+    );
+    get().persistDraft();
+    return { undo, hadContent };
+  },
+
+  // Restore a draft snapshot captured by createNew — undo of "New profile". Re-links to the saved
+  // profile only if it still exists (it may have been deleted meanwhile); otherwise stays unlinked.
+  restoreDraft: ({ title, pillarLevels, attachedBadge, activeSavedProfileId }) => {
+    set(
+      withSyncedLevels({
+        ...get(),
+        title,
+        pillarLevels: { ...pillarLevels },
+        attachedBadge: normalizeAttachedBadge(attachedBadge),
+        activeSavedProfileId: validateActiveId(activeSavedProfileId, get().profiles),
       }),
     );
     get().persistDraft();
