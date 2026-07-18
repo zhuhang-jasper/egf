@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
-import { ChevronDown, Trash2 } from "lucide-react";
+import { ChevronDown, Search, Trash2 } from "lucide-react";
 
 import { BadgePicker } from "@/components/BadgePicker";
 import { TrackBadge } from "@/components/TrackBadge";
@@ -95,16 +95,16 @@ function ScrollingLabel({ label, className, deps }) {
 }
 
 /**
- * The profile name field, doubling as a searchable load/browse/delete combobox.
+ * The profile name field plus a browse/load/delete dropdown.
  *
- * The input is bound to the store's `title` — the same value serves as the draft name to save AND
- * the search query, which is the whole point of the merge. Typing filters the saved-profile list
- * (case-insensitive substring, sorted A–Z); an empty query lists everything so it still works as a
- * browse-all picker. Clicking (or ↓/↑+Enter on) a row loads that profile; the trailing bin deletes
- * it with the usual Undo toast.
+ * Two intents are kept deliberately SEPARATE (an earlier "type in the field = search" combobox
+ * conflated them and broke naming): the name <Input> is only for naming/creating the draft — it
+ * never filters and never auto-opens anything. Browsing is a distinct surface: the caret opens a
+ * dropdown that has its OWN search box at the top; searching, keyboard nav, load and delete all
+ * live there. Picking a row loads it; the trailing bin deletes it with the usual Undo toast.
  *
- * Saving is deliberately NOT handled here — the status-aware Save button next to this input owns
- * Save/Rename/Update + the collision dialog, so this popover is a pure load/browse/delete surface.
+ * Saving is NOT handled here — the status-aware Save button next to this input owns
+ * Save/Rename/Update + the collision dialog.
  */
 export function ProfileCombobox({ titleError = false }) {
   const title = useAppStore((s) => s.title);
@@ -115,31 +115,27 @@ export function ProfileCombobox({ titleError = false }) {
   const activeSavedProfileId = useAppStore((s) => s.activeSavedProfileId);
 
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState(""); // the dropdown's own search text — independent of the name
   const [highlight, setHighlight] = useState(-1);
   const [listMaxHeight, setListMaxHeight] = useState(null);
   const [openUp, setOpenUp] = useState(false);
 
   const rootRef = useRef(null);
-  const inputRef = useRef(null);
+  const inputRef = useRef(null); // the name <Input>
+  const searchRef = useRef(null); // the dropdown's search box
   const listRef = useRef(null);
   const menuRef = useRef(null);
   // True only for keyboard-driven highlight moves, so the scroll-into-view effect fires for arrow
   // keys but NOT for mouse hover (hovering a partially-visible row shouldn't yank the scrollbar).
   const keyboardMoveRef = useRef(false);
 
-  // The name of the currently-loaded profile, if any. When the input still holds exactly that name
-  // the user isn't searching — they just have a profile loaded — so we browse the full list rather
-  // than filter down to the single self-match (which reads as a broken one-item dropdown).
-  const activeTitle = profiles.find((p) => p.id === activeSavedProfileId)?.title;
-  const q = title.trim().toLowerCase();
-  const browsingAll = q === "" || (activeTitle != null && q === String(activeTitle).trim().toLowerCase());
-
-  // Filtered rows, grouped by badge (badge-dropdown order) then A–Z within each group. Storage
-  // hands us profiles newest-first; we re-sort for display only.
+  // Filtered rows (by the dropdown's search box), grouped by badge (badge-dropdown order) then A–Z
+  // within each group. Storage hands us profiles newest-first; we re-sort for display only.
+  const q = query.trim().toLowerCase();
   const rows = useMemo(
     () =>
       profiles
-        .filter((p) => browsingAll || String(p.title).toLowerCase().includes(q))
+        .filter((p) => q === "" || String(p.title).toLowerCase().includes(q))
         .sort((a, b) => {
           const byBadge = badgeRank(a.attachedBadge) - badgeRank(b.attachedBadge);
           if (byBadge !== 0) {
@@ -147,12 +143,22 @@ export function ProfileCombobox({ titleError = false }) {
           }
           return String(a.title).localeCompare(String(b.title), undefined, { sensitivity: "base" });
         }),
-    [profiles, q, browsingAll],
+    [profiles, q],
   );
 
-  // Close + reset the keyboard highlight.
+  // Open the dropdown fresh (search cleared, showing all) and focus its search box.
+  const openDropdown = () => {
+    setQuery("");
+    setHighlight(-1);
+    setOpen(true);
+    // Focus after the popover mounts.
+    requestAnimationFrame(() => searchRef.current?.focus());
+  };
+
+  // Close + reset the search box and keyboard highlight.
   const close = () => {
     setOpen(false);
+    setQuery("");
     setHighlight(-1);
   };
 
@@ -219,12 +225,16 @@ export function ProfileCombobox({ titleError = false }) {
       const available = Math.floor(up ? spaceAbove : spaceBelow);
       setOpenUp(up);
 
+      // The search box (menu's first child) is a non-scrolling sibling above the list — reserve its
+      // height so the whole popover, not just the list, fits within the available space.
+      const searchBox = menu.firstElementChild;
+      const searchH = searchBox ? searchBox.getBoundingClientRect().height : 0;
       const firstRow = list.firstElementChild;
       const rowH = firstRow ? firstRow.getBoundingClientRect().height : 0;
       // List box padding (py-1) + bottom border, so the peek math targets the content area.
       const listChrome = list.offsetHeight - list.clientHeight + 8;
       const peekRows = rowH > 0 ? Math.round(VISIBLE_ROWS * rowH + listChrome) : Infinity;
-      const listCap = Math.min(peekRows, available);
+      const listCap = Math.min(peekRows, Math.max(0, available - searchH));
       const naturalListH = list.scrollHeight;
       setListMaxHeight(naturalListH <= listCap ? null : Math.max(0, listCap));
     };
@@ -266,35 +276,26 @@ export function ProfileCombobox({ titleError = false }) {
     row?.scrollIntoView({ block: "nearest" });
   }, [highlight, open]);
 
-  const handleKeyDown = (e) => {
+  // Keyboard nav for the dropdown's search box: arrows move the highlight, Enter loads it, Escape
+  // closes. (The name <Input> has none of this — it's a plain text field.)
+  const handleSearchKeyDown = (e) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
       keyboardMoveRef.current = true;
-      if (!open) {
-        setOpen(true);
-        setHighlight(rows.length > 0 ? 0 : -1);
-        return;
-      }
       setHighlight((h) => (rows.length === 0 ? -1 : Math.min(h + 1, rows.length - 1)));
     } else if (e.key === "ArrowUp") {
-      if (!open) {
-        return;
-      }
       e.preventDefault();
       keyboardMoveRef.current = true;
       setHighlight((h) => Math.max(h - 1, 0));
     } else if (e.key === "Enter") {
-      // Enter loads the highlighted row only. Saving stays the Save button's job, so a plain Enter
-      // with nothing highlighted is left alone (no accidental save).
-      if (open && highlight >= 0 && rows[highlight]) {
+      if (highlight >= 0 && rows[highlight]) {
         e.preventDefault();
         handleLoad(rows[highlight]);
       }
     } else if (e.key === "Escape") {
-      // Handled by the document listener too, but stop it bubbling to any parent handlers.
-      if (open) {
-        e.stopPropagation();
-      }
+      e.stopPropagation();
+      close();
+      inputRef.current?.focus();
     }
   };
 
@@ -303,29 +304,16 @@ export function ProfileCombobox({ titleError = false }) {
   return (
     <div ref={rootRef} className="relative min-w-0 flex-1">
       <BadgePicker />
+      {/* The name field — naming/creating only. It never filters and never opens the dropdown, so
+          "Save as…"/"New profile" can focus it for typing a name without triggering a browse/load. */}
       <Input
         ref={inputRef}
         id="chart-title-input"
         value={title}
         placeholder="Enter a name"
         maxLength={MAX_PROFILE_NAME_LENGTH}
-        // Native <input> with role="combobox" is the WAI-ARIA combobox pattern; a native
-        // <input>/<select> tag can't hold this custom listbox, so prefer-tag-over-role doesn't apply.
-        // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role
-        role="combobox"
-        tabIndex={0}
         aria-invalid={titleError}
-        aria-expanded={open}
-        aria-controls="profile-combobox-list"
-        aria-autocomplete="list"
-        aria-activedescendant={open && highlight >= 0 ? activeRowId : undefined}
-        onChange={(e) => {
-          setTitle(e.target.value);
-          setOpen(true);
-          setHighlight(-1);
-        }}
-        onFocus={() => setOpen(true)}
-        onKeyDown={handleKeyDown}
+        onChange={(e) => setTitle(e.target.value)}
         onBlur={() => {
           const trimmed = title.trim();
           if (trimmed !== title) {
@@ -334,16 +322,18 @@ export function ProfileCombobox({ titleError = false }) {
         }}
         className={cn("pl-16 pr-9 shadow-none", titleError && "border-red-500 focus-visible:ring-red-500/40")}
       />
-      {/* Right adornment: a single browse caret that toggles the list (rotates when open). The
-          combobox is the picker now, so there's no separate clear-X — the caret is always shown. */}
+      {/* Right adornment: the browse caret — the only way to open the profile dropdown. */}
       <button
         type="button"
         aria-label="Browse saved profiles"
         aria-expanded={open}
         aria-haspopup="listbox"
         onClick={() => {
-          setOpen((v) => !v);
-          inputRef.current?.focus();
+          if (open) {
+            close();
+          } else {
+            openDropdown();
+          }
         }}
         className="group absolute right-0 top-0 flex h-full w-7 items-center justify-center text-muted-foreground hover:text-foreground"
       >
@@ -361,12 +351,37 @@ export function ProfileCombobox({ titleError = false }) {
             openUp ? "bottom-[calc(100%+4px)]" : "top-[calc(100%+4px)]",
           )}
         >
+          {/* Dedicated search box — searching lives here, NOT in the name field above. Always shown
+              so you can filter (or clear back to all) even from a "No matches" state. */}
+          <div className="relative border-b border-border">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden />
+            <input
+              ref={searchRef}
+              type="text"
+              value={query}
+              placeholder="Search profiles…"
+              // Native <input> with role="combobox" is the WAI-ARIA pattern; the listbox can't be a
+              // native <select>, so prefer-tag-over-role doesn't apply.
+              // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role
+              role="combobox"
+              aria-expanded="true"
+              aria-controls="profile-combobox-list"
+              aria-autocomplete="list"
+              aria-activedescendant={highlight >= 0 ? activeRowId : undefined}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setHighlight(-1);
+              }}
+              onKeyDown={handleSearchKeyDown}
+              className="w-full bg-transparent py-2 pl-8 pr-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none"
+            />
+          </div>
           {rows.length === 0 ? (
-            <p className="px-3 py-2 text-xs text-muted-foreground">{browsingAll ? "No saved profiles yet." : "No matches."}</p>
+            <p className="px-3 py-2 text-xs text-muted-foreground">{profiles.length === 0 ? "No saved profiles yet." : "No matches."}</p>
           ) : (
             <ul
               ref={listRef}
-              // ARIA combobox listbox: a <ul>/<li> carrying listbox/option roles, since a native
+              // ARIA listbox: a <ul>/<li> carrying listbox/option roles, since a native
               // <select>/<option> can't hold the badge + name + delete-button row layout.
               // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role, jsx-a11y/no-noninteractive-element-to-interactive-role
               role="listbox"
