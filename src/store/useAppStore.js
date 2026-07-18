@@ -99,6 +99,11 @@ export const useAppStore = create((set, get) => ({
       clearTimeout(timer);
       toastTimers.delete(id);
     }
+    // Once the batched-delete toast is gone, drop the accumulated rows so the "gone" profiles aren't
+    // held in memory. (Undo already clears the batch itself before dismissing.)
+    if (get().toasts.find((t) => t.id === id)?.key === DELETE_TOAST_KEY) {
+      deleteBatch = [];
+    }
     set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) }));
   },
 
