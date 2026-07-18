@@ -36,10 +36,13 @@ export function parseChartDisplay(parsed) {
   };
 }
 
-/** Draft JSON: pillar key-value data + session chart display toggles. */
+/** Draft JSON: pillar key-value data + session chart display toggles + linked-profile id. */
 export function toDraftStoragePayload(state) {
   return {
     ...toCanonicalStoragePayload(state),
+    // The saved profile this draft was loaded from, so the "Saved/Rename/Update" status survives a
+    // refresh. Draft-only (never part of a saved profile's own shape); null when unlinked.
+    activeSavedProfileId: state.activeSavedProfileId ?? null,
     levelsPolygonHidden: state.levelsPolygonHidden,
     chartLevelTicksHidden: state.chartLevelTicksHidden,
     chartLegendHidden: state.chartLegendHidden,
@@ -66,7 +69,8 @@ export function loadDraftFromStorage() {
       return null;
     }
     const display = parseChartDisplay(parsed);
-    const result = { ...normalized, ...display };
+    const activeSavedProfileId = parsed?.activeSavedProfileId ?? null;
+    const result = { ...normalized, ...display, activeSavedProfileId };
     // Persist the migrated draft back once so the legacy `trackVariant` key is dropped for good.
     if (needsMigration) {
       saveDraftToStorage(result);

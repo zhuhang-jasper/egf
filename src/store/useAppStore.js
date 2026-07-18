@@ -14,9 +14,15 @@ import { exportProfilesToFile, parseImportedProfiles } from "@/utils/profile-tra
 import { getDefaultChartDisplay, loadDraftFromStorage, loadProfilesFromStorage, saveDraftToStorage, writeProfilesToStorage } from "@/utils/storage";
 
 const initialDraft = loadDraftFromStorage() ?? { ...getDefaultChartState(), ...getDefaultChartDisplay() };
+const initialProfiles = loadProfilesFromStorage();
 
 // Monotonic id source for toasts (module-scoped so ids stay unique across the store's lifetime).
 let toastSeq = 0;
+
+/** Keep a restored link only if the referenced profile still exists — else the draft is unlinked. */
+function validateActiveId(activeSavedProfileId, profiles) {
+  return activeSavedProfileId != null && profiles.some((p) => p.id === activeSavedProfileId) ? activeSavedProfileId : null;
+}
 
 function withSyncedLevels(state) {
   const { levels } = syncLevelsArrayFromMap({
@@ -37,8 +43,8 @@ export const useAppStore = create((set, get) => ({
   chartTitleHidden: initialDraft.chartTitleHidden,
   footerScoresHidden: initialDraft.footerScoresHidden,
   footerScoresHiddenUserSet: initialDraft.footerScoresHiddenUserSet === true,
-  activeSavedProfileId: null,
-  profiles: loadProfilesFromStorage(),
+  activeSavedProfileId: validateActiveId(initialDraft.activeSavedProfileId, initialProfiles),
+  profiles: initialProfiles,
   profilePickerOpen: false,
   saveFeedback: null,
   levelKeyboardInputEnabled: initialDraft.levelKeyboardInputEnabled === true,
@@ -67,6 +73,7 @@ export const useAppStore = create((set, get) => ({
 
   hydrate: () => {
     const draft = loadDraftFromStorage() ?? { ...getDefaultChartState(), ...getDefaultChartDisplay() };
+    const profiles = loadProfilesFromStorage();
     set(
       withSyncedLevels({
         title: draft.title,
@@ -82,7 +89,7 @@ export const useAppStore = create((set, get) => ({
         levelKeyboardInputEnabled: draft.levelKeyboardInputEnabled === true,
       }),
     );
-    set({ profiles: loadProfilesFromStorage() });
+    set({ profiles, activeSavedProfileId: validateActiveId(draft.activeSavedProfileId, profiles) });
   },
 
   persistDraft: () => {
@@ -95,7 +102,11 @@ export const useAppStore = create((set, get) => ({
   },
 
   setTitle: (title) => {
-    set({ title, activeSavedProfileId: null });
+    // Keep the link to the loaded profile (`activeSavedProfileId`) even when the title is edited.
+    // A renamed draft then reads as "renaming" against its source, so the Save control can offer
+    // Rename (in place) vs. Save new (save a copy under the new name). Use `saveAsNew`/`duplicateDraft`
+    // /`createNew`/Reset to fork or detach.
+    set({ title });
     get().persistDraft();
   },
 
@@ -251,11 +262,32 @@ export const useAppStore = create((set, get) => ({
     set({ profilePickerOpen: false });
   },
 
-  saveProfile: () => {
+  // Shared writer for the save paths. Identity is tracked by uuid (`activeSavedProfileId`), never by
+  // name, so name collisions are surfaced as an explicit confirm rather than silently overwriting.
+  //
+  // Target resolution:
+  //   - `overwriteId` set → write into that exact profile (the "Overwrite it" collision path).
+  //   - `forceNew` true   → always insert a new row, ignoring the link ("Save new" — save a copy
+  //                         under the already-changed name, leaving the source untouched).
+  //   - otherwise         → update the linked profile (`activeSavedProfileId`), else insert new.
+  //
+  // `removeId` deletes another profile in the same write — used when overwriting resolves a rename
+  // collision: the renamed source is merged into the clash target, so the source row is dropped.
+  //
+  // Before writing, unless `overwriteId` is set, it checks for a *different* stored profile with the
+  // same name+badge and, if found, returns a `collision` result instead of writing so the UI can
+  // prompt (Overwrite / Cancel).
+  //
+  // Returns one of:
+  //   { status: "saved" }                    — written successfully
+  //   { status: "add-title" }                — blank title, nothing written
+  //   { status: "error" }                    — payload failed to normalize
+  //   { status: "collision", name, badge }   — name+badge clash; caller must decide
+  writeProfile: ({ overwriteId = null, forceNew = false, removeId = null } = {}) => {
     const trimmed = String(get().title).trim();
     if (!trimmed) {
       set({ saveFeedback: "add-title" });
-      return false;
+      return { status: "add-title" };
     }
 
     const merged = mergeViewIntoCanonical({
@@ -269,28 +301,35 @@ export const useAppStore = create((set, get) => ({
       attachedBadge: get().attachedBadge,
     });
     if (!state) {
-      return false;
+      return { status: "error" };
     }
 
     const existing = loadProfilesFromStorage();
+
+    // Resolve the profile id we intend to write into (null → a brand-new row).
     let id = null;
-    let replaceIdx = -1;
-    const activeId = get().activeSavedProfileId;
-    const byActive = activeId != null ? existing.findIndex((p) => p.id === activeId) : -1;
-    if (byActive >= 0) {
-      id = activeId;
-      replaceIdx = byActive;
-    } else {
-      const byTitle = existing.findIndex((p) => String(p.title).trim() === trimmed);
-      if (byTitle >= 0) {
-        ({ id } = existing[byTitle]);
-        replaceIdx = byTitle;
+    if (overwriteId != null) {
+      id = overwriteId;
+    } else if (!forceNew) {
+      const activeId = get().activeSavedProfileId;
+      if (activeId != null && existing.some((p) => p.id === activeId)) {
+        id = activeId;
       }
     }
+
+    // Name+badge collision guard: block only when the clashing profile is a *different* row than the
+    // one we're about to write into. Skipped when the caller already resolved the collision.
+    if (overwriteId == null) {
+      const clash = findNameBadgeCollision(existing, state.title, state.attachedBadge, id);
+      if (clash) {
+        return { status: "collision", id: clash.id, name: state.title, badge: state.attachedBadge };
+      }
+    }
+
     if (id == null) {
       id = newSavedProfileId();
-      replaceIdx = -1;
     }
+    const replaceIdx = existing.findIndex((p) => p.id === id);
 
     const row = {
       id,
@@ -299,7 +338,11 @@ export const useAppStore = create((set, get) => ({
       attachedBadge: state.attachedBadge,
       savedAt: Date.now(),
     };
-    const next = replaceIdx >= 0 ? existing.map((p, i) => (i === replaceIdx ? row : p)) : [...existing, row];
+    let next = replaceIdx >= 0 ? existing.map((p, i) => (i === replaceIdx ? row : p)) : [...existing, row];
+    // Drop the merged-away source row (never the one we just wrote into).
+    if (removeId != null && removeId !== id) {
+      next = next.filter((p) => p.id !== removeId);
+    }
 
     writeProfilesToStorage(next);
     set({
@@ -309,7 +352,33 @@ export const useAppStore = create((set, get) => ({
       saveFeedback: "saved",
     });
     get().persistDraft();
-    return true;
+    return { status: "saved" };
+  },
+
+  // Save/Update the current draft. Updates the linked profile in place (renaming it if the title
+  // changed), or creates a new one when unlinked. May return a `collision` result — see writeProfile.
+  saveProfile: () => get().writeProfile(),
+
+  // "Save new" (offered while renaming): the title already differs from the linked profile, so save
+  // a copy under that new name right away, leaving the source untouched. The new copy becomes the
+  // active profile. May still return a `collision` if the new name clashes with a *third* profile.
+  saveAsNew: () => get().writeProfile({ forceNew: true }),
+
+  // "Save as…" (offered when the title still matches the source): detach from the linked profile
+  // (new, unsaved draft keeping the same badge + levels) and clear the title so the user can name it
+  // before saving. Nothing is written yet — the draft just becomes unlinked with a blank name.
+  duplicateDraft: () => {
+    set({ title: "", activeSavedProfileId: null });
+    get().persistDraft();
+  },
+
+  // Resolve a pending collision from the dialog's "Overwrite it": write into the clashing profile.
+  // If the draft was a rename of a *different* linked profile, that source is merged away (removed)
+  // so the two collapse into one. A plain new-save (unlinked draft) has no source to remove.
+  saveOverwriting: (overwriteId) => {
+    const activeId = get().activeSavedProfileId;
+    const removeId = activeId != null && activeId !== overwriteId ? activeId : null;
+    return get().writeProfile({ overwriteId, removeId });
   },
 
   clearSaveFeedback: () => set({ saveFeedback: null }),
@@ -329,6 +398,17 @@ export const useAppStore = create((set, get) => ({
     get().persistDraft();
   },
 }));
+
+/**
+ * Find a stored profile that clashes with the draft on name+badge, excluding `selfId` (the row we
+ * are about to write into — updating a profile in place is never a "collision" with itself).
+ * Comparison is case-insensitive on the trimmed title, matching how a user perceives duplicates.
+ */
+function findNameBadgeCollision(profiles, title, badge, selfId) {
+  const name = String(title).trim().toLowerCase();
+  const b = normalizeAttachedBadge(badge);
+  return profiles.find((p) => p.id !== selfId && String(p.title).trim().toLowerCase() === name && normalizeAttachedBadge(p.attachedBadge) === b) ?? null;
+}
 
 /** True when the stored profile's badge + canonical pillar levels equal the current draft's. */
 function profileLevelsMatch(saved, s) {
@@ -350,26 +430,33 @@ function profileLevelsMatch(saved, s) {
 }
 
 /**
- * The save status of the current draft, mirroring how {@link saveProfile} resolves its target
- * (active profile first, else a same-title profile, else a new row):
+ * The save status of the current draft. Identity is tracked purely by uuid — a draft is "linked"
+ * only when it was loaded from a saved profile (`activeSavedProfileId`). A same-named profile that
+ * the draft was NOT loaded from is not a target; typing an existing name reads as "new" (the
+ * name+badge clash is instead surfaced as a confirm at save time — see {@link writeProfile}).
  *
- * - `"saved"`    — the target profile exists and its title, track and levels match the draft exactly;
- *                  saving would be a no-op.
- * - `"modified"` — a target profile exists (by active id or matching title) but its values differ;
- *                  saving will OVERWRITE it.
- * - `"new"`      — no target profile exists (or the title is blank); saving will create a new one.
+ * - `"saved"`    — the linked profile exists and its title, badge and levels match exactly (no-op).
+ * - `"renaming"` — the linked profile exists but the draft's title differs (including a blank title);
+ *                  saving renames it in place (badge/levels may also differ). Distinguished from
+ *                  "modified" so the button can read "Rename" instead of "Update". A blank title
+ *                  can't actually be saved — the save attempt just flags the input (see saveProfile).
+ * - `"modified"` — the linked profile exists, the title matches, but the badge/levels differ; saving
+ *                  overwrites it.
+ * - `"new"`      — no linked profile; saving creates a new one.
  */
 export function selectProfileSaveStatus(s) {
   const trimmed = String(s.title).trim();
-  // A blank title can't be saved (saveProfile rejects it), so there is no target to compare against.
   const activeId = s.activeSavedProfileId;
-  const target =
-    (activeId != null ? s.profiles.find((p) => p.id === activeId) : null) ??
-    (trimmed ? s.profiles.find((p) => String(p.title).trim() === trimmed) : null);
+  const target = activeId != null ? s.profiles.find((p) => p.id === activeId) : null;
 
+  // A linked profile keeps the draft linked even with a cleared name — that's a rename-to-empty in
+  // progress, not a detach. Only a genuinely unlinked draft is "new".
   if (!target) {
     return "new";
   }
   const titleMatches = String(target.title).trim() === trimmed;
-  return titleMatches && profileLevelsMatch(target, s) ? "saved" : "modified";
+  if (!titleMatches) {
+    return "renaming";
+  }
+  return profileLevelsMatch(target, s) ? "saved" : "modified";
 }
