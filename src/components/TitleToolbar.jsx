@@ -53,13 +53,7 @@ const SAVE_STATUS_META = {
   },
 };
 
-// Longest button label — used as an invisible sizer so the Save button reserves a stable width and
-// the title input never shifts as the status changes. Derived so it stays correct if edited.
-const WIDEST_STATUS_LABEL = Object.values(SAVE_STATUS_META).reduce((a, b) => (b.label.length > a.length ? b.label : a), "");
-
-// Status-aware Save button, sitting on Row 1 next to the title input. Extracted so the invisible
-// widest-label sizer (which keeps the row from shifting as the status label changes) lives in one
-// place.
+// Status-aware Save button, sitting on Row 1 next to the title input.
 //
 // For a linked profile (`showMenu` — status "saved", "renaming" or "modified") it becomes a split
 // button: the primary action Saves/Renames/Updates the linked profile (disabled when already
@@ -94,15 +88,9 @@ function SaveButton({ statusMeta, showMenu, onSave, copyAction, undoAction }) {
     };
   }, [menuOpen]);
 
-  // The primary action's visible label, width-locked to the widest status so the row never shifts.
-  const primaryLabel = (
-    <span className="relative inline-grid">
-      <span aria-hidden className="invisible col-start-1 row-start-1 whitespace-nowrap">
-        {WIDEST_STATUS_LABEL}
-      </span>
-      <span className="col-start-1 row-start-1 text-left">{statusMeta.label}</span>
-    </span>
-  );
+  // The label sizes to its own text — the row is allowed to shift as the status changes so the
+  // control stays as narrow as possible, leaving more room for the title input.
+  const primaryLabel = <span className="whitespace-nowrap">{statusMeta.label}</span>;
 
   // Plain single button — an unlinked draft has nothing to duplicate or rename.
   if (!showMenu) {
@@ -113,7 +101,7 @@ function SaveButton({ statusMeta, showMenu, onSave, copyAction, undoAction }) {
         size="sm"
         shape="pill"
         disabled={statusMeta.disabled}
-        className={cn("shrink-0 gap-1.5", statusMeta.className)}
+        className={cn("shrink-0 gap-1 px-2.5", statusMeta.className)}
         onClick={onSave}
         aria-label={statusMeta.title}
         title={statusMeta.title}
@@ -126,14 +114,15 @@ function SaveButton({ statusMeta, showMenu, onSave, copyAction, undoAction }) {
 
   return (
     <div ref={rootRef} className="relative flex shrink-0">
-      {/* Primary Save/Update — pill flattened on its right edge to butt against the caret. */}
+      {/* Primary Save/Update — pill flattened on its right edge to butt against the caret. Tighter
+          right padding since the divider (not empty space) closes off this side. */}
       <Button
         type="button"
         variant="outline"
         size="sm"
         shape="pill"
         disabled={statusMeta.disabled}
-        className={cn("gap-1.5 rounded-r-none", statusMeta.className)}
+        className={cn("gap-1 rounded-r-none pl-2.5 pr-2", statusMeta.className)}
         onClick={onSave}
         aria-label={statusMeta.title}
         title={statusMeta.title}
@@ -151,7 +140,7 @@ function SaveButton({ statusMeta, showMenu, onSave, copyAction, undoAction }) {
         aria-label="More save options"
         aria-haspopup="menu"
         aria-expanded={menuOpen}
-        className={cn("-ml-px rounded-l-none px-1.5", statusMeta.className)}
+        className={cn("-ml-px rounded-l-none px-1", statusMeta.className)}
         onClick={() => setMenuOpen((v) => !v)}
       >
         <ChevronDown className="h-4 w-4 shrink-0" aria-hidden />
