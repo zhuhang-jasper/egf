@@ -293,12 +293,13 @@ export const useAppStore = create((set, get) => ({
   /**
    * Merge profiles parsed from an exported JSON file into the saved list.
    * Rows with an id that already exists get a fresh id (import never overwrites existing profiles).
-   * Returns the number of profiles added, or 0 if the file had none.
+   * Returns `{ added, addedIds }` — the count and the ids assigned to the newly imported rows (so
+   * the caller can offer an "Undo" via removeProfilesByIds). `added` is 0 if the file had none.
    */
   importProfiles: (text) => {
     const incoming = parseImportedProfiles(text);
     if (incoming.length === 0) {
-      return 0;
+      return { added: 0, addedIds: [] };
     }
     const existing = loadProfilesFromStorage();
     const usedIds = new Set(existing.map((p) => p.id));
@@ -313,7 +314,17 @@ export const useAppStore = create((set, get) => ({
     const next = [...existing, ...added];
     writeProfilesToStorage(next);
     set({ profiles: loadProfilesFromStorage() });
-    return added.length;
+    return { added: added.length, addedIds: added.map((p) => p.id) };
+  },
+
+  // Remove profiles by id (used to undo an import). Also unlinks the draft if its active profile was
+  // among them. No-op for ids that no longer exist.
+  removeProfilesByIds: (ids) => {
+    const drop = new Set(ids);
+    const next = loadProfilesFromStorage().filter((p) => !drop.has(p.id));
+    writeProfilesToStorage(next);
+    const activeId = get().activeSavedProfileId;
+    set({ profiles: next, activeSavedProfileId: activeId != null && drop.has(activeId) ? null : activeId });
   },
 
   loadProfile: (id) => {

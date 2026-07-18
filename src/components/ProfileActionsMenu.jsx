@@ -19,6 +19,7 @@ export function ProfileActionsMenu() {
   const profiles = useAppStore((s) => s.profiles);
   const exportProfiles = useAppStore((s) => s.exportProfiles);
   const importProfiles = useAppStore((s) => s.importProfiles);
+  const removeProfilesByIds = useAppStore((s) => s.removeProfilesByIds);
   const clearAllProfiles = useAppStore((s) => s.clearAllProfiles);
   const restoreProfiles = useAppStore((s) => s.restoreProfiles);
   const showToast = useAppStore((s) => s.showToast);
@@ -56,10 +57,20 @@ export function ProfileActionsMenu() {
     setOpen(false);
     try {
       const text = await readFileAsText(file);
-      const added = importProfiles(text);
+      const { added, addedIds } = importProfiles(text);
       track("profiles_imported", { count: added });
       if (added > 0) {
-        showToast(`Imported ${added} profile${added === 1 ? "" : "s"}`, { variant: "success" });
+        showToast(`Imported ${added} profile${added === 1 ? "" : "s"}`, {
+          variant: "success",
+          duration: 10000,
+          action: {
+            label: "Undo",
+            onAction: () => {
+              removeProfilesByIds(addedIds);
+              track("profiles_import_undone", { count: added });
+            },
+          },
+        });
       } else {
         showToast("No valid profiles found in file", { variant: "error" });
       }
