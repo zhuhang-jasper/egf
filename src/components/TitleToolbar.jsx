@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import { ChevronDown, CircleCheck, Copy, Keyboard, Pencil, RotateCcw, Save, Undo2, X } from "lucide-react";
+import { ChevronDown, CircleCheck, Copy, FilePlus, Keyboard, Pencil, Save, Undo2, X } from "lucide-react";
 
 import { BadgePicker } from "@/components/BadgePicker";
 import { ProfileActionsMenu } from "@/components/ProfileActionsMenu";
@@ -318,9 +318,9 @@ export function TitleToolbar() {
           onUndoRename={saveStatus === "renaming" ? handleUndoRename : undefined}
         />
       </div>
-      {/* Row 2 — reset + keypad toggle (touch only) on the left, Profiles on the right. Reset
-          doubles as "start over": it clears the title, the badge, and resets every pillar to
-          the default. */}
+      {/* Row 2 — New profile + keypad toggle (touch only) on the left, Profiles on the right.
+          "New profile" starts a fresh blank draft: it clears the title, the badge, resets every
+          pillar to the default, and unlinks any loaded profile. */}
       <div className="flex w-full items-center gap-2">
         <Button
           type="button"
@@ -332,11 +332,11 @@ export function TitleToolbar() {
             createNew();
             document.getElementById("chart-title-input")?.focus();
           }}
-          aria-label="Reset — clear the title and reset all levels"
-          title="Reset — clear the title and reset all levels"
+          aria-label="New profile — clear the name, badge and all levels to start fresh"
+          title="New profile — clear the name, badge and all levels to start fresh"
         >
-          <RotateCcw className="h-4 w-4" />
-          Reset
+          <FilePlus className="h-4 w-4" />
+          New profile
         </Button>
         {/* Keypad toggle is touch-only — the numeric keyboard switch is meaningless with a
             physical keyboard, so it renders only when touch is the primary input. */}
