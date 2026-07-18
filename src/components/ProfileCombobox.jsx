@@ -113,6 +113,8 @@ export function ProfileCombobox({ titleError = false }) {
   const loadProfile = useAppStore((s) => s.loadProfile);
   const deleteProfileWithUndo = useAppStore((s) => s.deleteProfileWithUndo);
   const activeSavedProfileId = useAppStore((s) => s.activeSavedProfileId);
+  const restoreDraft = useAppStore((s) => s.restoreDraft);
+  const showToast = useAppStore((s) => s.showToast);
 
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState(""); // the dropdown's own search text — independent of the name
@@ -163,9 +165,32 @@ export function ProfileCombobox({ titleError = false }) {
   };
 
   const handleLoad = (pr) => {
-    loadProfile(pr.id);
+    // The already-loaded profile isn't loadable — it's the current draft. Just close.
+    if (pr.id === activeSavedProfileId) {
+      close();
+      return;
+    }
+    const result = loadProfile(pr.id);
     track("profile_loaded", { attached_badge: pr.attachedBadge });
     close();
+    // If the load discarded unsaved work, warn that those changes were lost and offer an Undo that
+    // restores the pre-load draft. A clean/"saved" draft or a no-op reload has nothing to recover.
+    if (result?.hadUnsavedChanges) {
+      // Name what was lost when it had a title, so the warning is concrete.
+      const prevName = String(result.undo.title).trim();
+      const message = prevName ? `Unsaved changes to “${prevName}” were discarded` : "Unsaved changes to your draft were discarded";
+      showToast(message, {
+        variant: "dark",
+        duration: 10000,
+        action: {
+          label: "Undo",
+          onAction: () => {
+            restoreDraft(result.undo);
+            track("profile_load_undone");
+          },
+        },
+      });
+    }
   };
 
   // Outside-click + Escape close (ported from ProfilePicker).
@@ -416,7 +441,14 @@ export function ProfileCombobox({ titleError = false }) {
                   >
                     <button
                       type="button"
-                      className="flex min-w-0 flex-1 cursor-pointer items-center py-2 pl-0 pr-3 text-left text-sm"
+                      // The active profile is already loaded — its row isn't a load target (just the
+                      // delete button stays live). Disabled so the click reads as "already loaded"
+                      // rather than a dead click.
+                      disabled={isActive}
+                      className={cn(
+                        "flex min-w-0 flex-1 items-center py-2 pl-0 pr-3 text-left text-sm",
+                        isActive ? "cursor-default" : "cursor-pointer",
+                      )}
                       onMouseEnter={() => setHighlight(i)}
                       onClick={() => handleLoad(pr)}
                     >

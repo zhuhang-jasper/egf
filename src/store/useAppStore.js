@@ -324,16 +324,33 @@ export const useAppStore = create((set, get) => ({
     set({ profiles: next, activeSavedProfileId: activeId != null && drop.has(activeId) ? null : activeId });
   },
 
+  // Load a saved profile into the draft. Returns `{ undo, hadUnsavedChanges }` — a draft-only
+  // snapshot of the state it replaced (title/levels/badge/link) plus whether that state had unsaved
+  // work the load discarded — so the caller can offer an "Undo" (via restoreDraft) only when there's
+  // something to recover. Returns null if the id is gone or the payload can't be normalized.
   loadProfile: (id) => {
     const pr = loadProfilesFromStorage().find((p) => p.id === id);
     if (!pr) {
-      return;
+      return null;
     }
     const state = normalizeSavedState(pr);
     if (!state) {
-      return;
+      return null;
     }
+    const prev = get();
+    const undo = {
+      title: prev.title,
+      pillarLevels: { ...prev.pillarLevels },
+      attachedBadge: normalizeAttachedBadge(prev.attachedBadge),
+      activeSavedProfileId: prev.activeSavedProfileId,
+    };
+    // Unsaved work at risk = the draft differs from its saved state (or is an unlinked draft with
+    // content). Reuse selectProfileSaveStatus: "saved" loses nothing; a no-op reload of the same
+    // profile is also nothing to recover.
+    const status = selectProfileSaveStatus(prev);
+    const hadUnsavedChanges = status !== "saved" && prev.activeSavedProfileId !== id;
     get().applyState(state, { profileId: id });
+    return { undo, hadUnsavedChanges };
   },
 
   // Shared writer for the save paths. Identity is tracked by uuid (`activeSavedProfileId`), never by
