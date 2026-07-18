@@ -123,6 +123,9 @@ export function ProfileCombobox({ titleError = false }) {
   const inputRef = useRef(null);
   const listRef = useRef(null);
   const menuRef = useRef(null);
+  // True only for keyboard-driven highlight moves, so the scroll-into-view effect fires for arrow
+  // keys but NOT for mouse hover (hovering a partially-visible row shouldn't yank the scrollbar).
+  const keyboardMoveRef = useRef(false);
 
   // The name of the currently-loaded profile, if any. When the input still holds exactly that name
   // the user isn't searching — they just have a profile loaded — so we browse the full list rather
@@ -249,11 +252,15 @@ export function ProfileCombobox({ titleError = false }) {
     return () => root.removeEventListener("wheel", onWheel);
   }, [open]);
 
-  // Keep the highlighted row scrolled into view as the user arrows through the list.
+  // Keep the highlighted row scrolled into view as the user arrows through the list — but only for
+  // keyboard moves. Mouse hover also sets `highlight`, and scrolling then would auto-yank a
+  // partially-visible hovered row into full view, which is jarring.
   useEffect(() => {
-    if (!open || highlight < 0) {
+    if (!open || highlight < 0 || !keyboardMoveRef.current) {
+      keyboardMoveRef.current = false;
       return;
     }
+    keyboardMoveRef.current = false;
     const list = listRef.current;
     const row = list?.children?.[highlight];
     row?.scrollIntoView({ block: "nearest" });
@@ -262,6 +269,7 @@ export function ProfileCombobox({ titleError = false }) {
   const handleKeyDown = (e) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
+      keyboardMoveRef.current = true;
       if (!open) {
         setOpen(true);
         setHighlight(rows.length > 0 ? 0 : -1);
@@ -273,6 +281,7 @@ export function ProfileCombobox({ titleError = false }) {
         return;
       }
       e.preventDefault();
+      keyboardMoveRef.current = true;
       setHighlight((h) => Math.max(h - 1, 0));
     } else if (e.key === "Enter") {
       // Enter loads the highlighted row only. Saving stays the Save button's job, so a plain Enter
@@ -378,12 +387,16 @@ export function ProfileCombobox({ titleError = false }) {
                     role="option"
                     aria-selected={isHighlighted}
                     aria-current={isActive ? "true" : undefined}
-                    // The loaded profile gets a "now playing" treatment: a solid tint + left accent
-                    // bar + stronger label, so it's clearly the one currently in the chart.
+                    // Three distinct, non-conflicting states:
+                    //  - hover: a soft transient tint.
+                    //  - active/loaded: solid tint + left accent bar + bold label ("now playing").
+                    //  - keyboard highlight: an inset primary ring + firmer tint. The ring is an
+                    //    outline (not a background), so it layers cleanly on top of the active row
+                    //    rather than competing with its tint.
                     className={cn(
                       "relative flex items-stretch pr-2 hover:bg-muted/60",
-                      isHighlighted && "bg-muted/60",
                       isActive && "bg-muted before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:bg-primary hover:bg-muted",
+                      isHighlighted && "z-10 bg-accent ring-2 ring-inset ring-primary/40 hover:bg-accent",
                     )}
                   >
                     <button
