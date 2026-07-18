@@ -19,7 +19,7 @@ import { track } from "@/utils/analytics";
 // `renaming` means the linked profile's title was changed, so saving renames it in place;
 // `modified` means the linked profile's badge/levels changed but the title still matches, so saving
 // overwrites it. For linked statuses the caret offers a copy action ("Save new" while renaming,
-// else "Save as…") plus "Undo rename" while renaming. `new` means saving creates a new profile.
+// else "Save as copy") plus "Undo rename" while renaming. `new` means saving creates a new profile.
 const SAVE_STATUS_META = {
   saved: {
     icon: CircleCheck,
@@ -56,7 +56,7 @@ const SAVE_STATUS_META = {
 // For a linked profile (`showMenu` — status "saved", "renaming" or "modified") it becomes a split
 // button: the primary action Saves/Renames/Updates the linked profile (disabled when already
 // saved), while a caret opens a menu with the copy action (`copyAction` — "Save new" while renaming
-// saves a copy under the changed name, else "Save as…" detaches to be renamed) and an optional undo
+// saves a copy under the changed name, else "Save as copy" detaches with a "Copy of …" name) and an optional undo
 // action (`undoAction` — "Undo rename" while renaming, "Undo changes" while modified) that reverts
 // the draft to the linked profile. For an unlinked draft ("new") it renders as a plain single button.
 function SaveButton({ statusMeta, showMenu, onSave, copyAction, undoAction }) {
@@ -203,12 +203,19 @@ export function TitleToolbar() {
   const saveStatus = useAppStore(selectProfileSaveStatus); // "saved" | "renaming" | "modified" | "new"
   const statusMeta = SAVE_STATUS_META[saveStatus];
 
-  // Place the cursor in the name field so the user can type a name (Save as… / New profile / Undo
+  // Place the cursor in the name field so the user can type a name (Save as copy / New profile / Undo
   // rename). Skipped on touch — auto-focus there pops the on-screen keyboard unbidden. Touch users
-  // tap the field to type.
-  const focusNameInput = () => {
-    if (!touchPrimary) {
-      document.getElementById("chart-title-input")?.focus();
+  // tap the field to type. `select` also selects the current text (for a prefilled "Copy of …" name),
+  // so the user can immediately overtype the whole thing.
+  const focusNameInput = ({ select = false } = {}) => {
+    if (touchPrimary) {
+      return;
+    }
+    const el = document.getElementById("chart-title-input");
+    el?.focus();
+    if (select) {
+      // Defer so the controlled input has rendered the prefilled name before we select it.
+      requestAnimationFrame(() => document.getElementById("chart-title-input")?.select());
     }
   };
 
@@ -267,16 +274,18 @@ export function TitleToolbar() {
   // "Save new" (while renaming): the name already differs, so save a copy under it immediately.
   const handleSaveAsNew = () => handleResult(saveAsNew(), { copy: true });
 
-  // "Save as…" (name still matches the source): detach into a new unsaved draft (same badge +
-  // levels, blank name) and focus the name field so the user names it before saving.
+  // "Save as copy" (name still matches the source): detach into a new unsaved draft (same badge +
+  // levels) with the name prefilled "Copy of <source>", then focus + select it (desktop) so the user
+  // can overtype a name before saving.
   const handleDuplicate = () => {
     duplicateDraft();
     track("profile_duplicated", { attached_badge: useAppStore.getState().attachedBadge });
-    focusNameInput();
+    focusNameInput({ select: true });
   };
 
   // The copy action's label + handler depend on whether the name already differs from the source.
-  const copyAction = saveStatus === "renaming" ? { label: "Save new", onSelect: handleSaveAsNew } : { label: "Save as…", onSelect: handleDuplicate };
+  // "Save as copy" prefills "Copy of <source>" and detaches so the user can rename before saving.
+  const copyAction = saveStatus === "renaming" ? { label: "Save new", onSelect: handleSaveAsNew } : { label: "Save as copy", onSelect: handleDuplicate };
 
   // The undo action reverts the draft to the linked profile: title while renaming, values while
   // modified. No undo for "saved" (nothing changed) or "new" (no link).

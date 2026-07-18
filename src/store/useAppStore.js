@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-import { getPillarIdByIndex, normalizeAttachedBadge } from "@/constants";
+import { getPillarIdByIndex, MAX_PROFILE_NAME_LENGTH, normalizeAttachedBadge } from "@/constants";
 import {
   fillPillarLevels,
   getDefaultChartState,
@@ -497,10 +497,14 @@ export const useAppStore = create((set, get) => ({
   saveAsNew: () => get().writeProfile({ forceNew: true }),
 
   // "Save as…" (offered when the title still matches the source): detach from the linked profile
-  // (new, unsaved draft keeping the same badge + levels) and clear the title so the user can name it
-  // before saving. Nothing is written yet — the draft just becomes unlinked with a blank name.
+  // (new, unsaved draft keeping the same badge + levels) and prefill the name with "Copy of <source>"
+  // so the draft clearly reads as a duplicate to name — not a blank new draft — even without the
+  // autofocus we skip on touch. Nothing is written yet; the user edits the name then Saves.
   duplicateDraft: () => {
-    set({ title: "", activeSavedProfileId: null });
+    const source = get().profiles.find((p) => p.id === get().activeSavedProfileId);
+    const sourceName = String(source?.title ?? "").trim();
+    const title = sourceName ? `Copy of ${sourceName}`.slice(0, MAX_PROFILE_NAME_LENGTH) : "";
+    set({ title, activeSavedProfileId: null });
     get().persistDraft();
   },
 
