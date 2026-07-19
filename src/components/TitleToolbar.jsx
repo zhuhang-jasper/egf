@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 
 import { useTouchPrimary } from "@/hooks/useTouchPrimary";
 
-import { selectHasUnsavedWork, selectProfileSaveStatus, useAppStore } from "@/store/useAppStore";
+import { selectHasUnsavedWork, selectProfileSaveStatus, UNDO_TOAST_KEY, useAppStore } from "@/store/useAppStore";
 
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
@@ -257,6 +257,7 @@ export function TitleToolbar() {
         showToast(`Updated “${result.savedTitle}”`, {
           variant: "dark",
           duration: 10000,
+          key: UNDO_TOAST_KEY, // only one Undo toast at a time — replaces any live delete/discard/import undo
           action: {
             label: "Undo",
             onAction: () => {

@@ -6,7 +6,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/Tooltip";
 
-import { useAppStore } from "@/store/useAppStore";
+import { UNDO_TOAST_KEY, useAppStore } from "@/store/useAppStore";
 
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
@@ -22,7 +22,6 @@ export function ProfileActionsMenu() {
   const importProfiles = useAppStore((s) => s.importProfiles);
   const removeProfilesByIds = useAppStore((s) => s.removeProfilesByIds);
   const clearAllProfiles = useAppStore((s) => s.clearAllProfiles);
-  const restoreProfiles = useAppStore((s) => s.restoreProfiles);
   const showToast = useAppStore((s) => s.showToast);
   const rootRef = useRef(null);
   const menuRef = useRef(null);
@@ -64,6 +63,7 @@ export function ProfileActionsMenu() {
         showToast(`Imported ${added} profile${added === 1 ? "" : "s"}`, {
           variant: "success",
           duration: 10000,
+          key: UNDO_TOAST_KEY, // only one Undo toast at a time — replaces any live delete/discard undo
           action: {
             label: "Undo",
             onAction: () => {
@@ -87,20 +87,11 @@ export function ProfileActionsMenu() {
   };
 
   const confirmDeleteAllProfiles = () => {
-    const { removed, undo } = clearAllProfiles();
+    // clearAllProfiles folds the wipe into the shared delete batch and renders the combined
+    // "Deleted N profiles" Undo toast itself (so a preceding single delete + delete-all combine).
+    const { removed } = clearAllProfiles();
     setConfirmDeleteAll(false);
     track("profiles_cleared", { count: removed });
-    showToast(`Deleted ${removed} profile${removed === 1 ? "" : "s"}`, {
-      variant: "dark",
-      duration: 10000,
-      action: {
-        label: "Undo",
-        onAction: () => {
-          restoreProfiles(undo);
-          track("profiles_delete_undone", { count: removed });
-        },
-      },
-    });
   };
 
   useEffect(() => {
