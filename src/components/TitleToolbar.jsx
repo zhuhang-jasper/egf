@@ -138,7 +138,7 @@ function SaveButton({ statusMeta, showMenu, onSave, copyAction, undoAction }) {
         aria-label="More save options"
         aria-haspopup="menu"
         aria-expanded={menuOpen}
-        className={cn("-ml-px rounded-l-none px-1", statusMeta.className)}
+        className={cn("-ml-px min-w-9 justify-center rounded-l-none px-2", statusMeta.className)}
         onClick={() => setMenuOpen((v) => !v)}
       >
         <ChevronDown className="h-4 w-4 shrink-0" aria-hidden />
