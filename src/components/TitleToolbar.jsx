@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import { ChevronDown, CircleCheck, Copy, FilePlus, Keyboard, Pencil, Save, Undo2 } from "lucide-react";
+import { CircleCheck, Copy, FilePlus, Keyboard, MoreVertical, Pencil, Save, Undo2 } from "lucide-react";
 
 import { ProfileActionsMenu } from "@/components/ProfileActionsMenu";
 import { ProfileCombobox } from "@/components/ProfileCombobox";
@@ -141,7 +141,7 @@ function SaveButton({ statusMeta, showMenu, onSave, copyAction, undoAction }) {
         className={cn("-ml-px min-w-9 justify-center rounded-l-none px-2", statusMeta.className)}
         onClick={() => setMenuOpen((v) => !v)}
       >
-        <ChevronDown className="h-4 w-4 shrink-0" aria-hidden />
+        <MoreVertical className="h-4 w-4 shrink-0" aria-hidden />
       </Button>
       {menuOpen && (
         <div

@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
-import { Download, MoreVertical, Trash2, Upload } from "lucide-react";
+import { Download, Trash2, Upload, Wrench } from "lucide-react";
 
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/button";
@@ -156,7 +156,7 @@ export function ProfileActionsMenu() {
         onClick={() => setOpen(!open)}
         className="group relative px-2"
       >
-        <MoreVertical className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        <Wrench className="h-4 w-4 shrink-0 -scale-x-100" aria-hidden />
         {open ? null : <Tooltip text="Manage profiles" placement="bottom" />}
       </Button>
       {open && (
