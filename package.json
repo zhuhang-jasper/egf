@@ -22,9 +22,10 @@
     "updateDependencies": "npx npm-check-updates --target minor -u",
     "checkForUpdates": "npx npm-check-updates",
     "checkForUpdates:minor": "npx npm-check-updates --target minor",
-    "bumpver:patch": "npm version patch --no-git-tag-version",
-    "bumpver:minor": "npm version minor --no-git-tag-version",
-    "bumpver:major": "npm version major --no-git-tag-version"
+    "bumpver:commit": "git add package.json package-lock.json && git commit -m \"v$npm_package_version\"",
+    "bumpver:patch": "npm version patch --no-git-tag-version && npm run -s bumpver:commit",
+    "bumpver:minor": "npm version minor --no-git-tag-version && npm run -s bumpver:commit",
+    "bumpver:major": "npm version major --no-git-tag-version && npm run -s bumpver:commit"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",
