@@ -1,4 +1,4 @@
-import { FE_UI, getChartLayoutLabels, getEmojiChartLabels, getPlainChartLayoutLabels } from "@/constants";
+import { FE_UI, getChartLabels, getChartLayoutLabels, getEmojiChartLabels, getPlainChartLabels, getPlainChartLayoutLabels } from "@/constants";
 
 /** Compact radar preset for theory tab static charts — smaller labels, tighter padding, no L ticks. */
 export const THEORY_CHART_UI = {
@@ -65,4 +65,16 @@ export function getChartLayoutLabelsForChart(chart) {
     return getEmojiChartLabels();
   }
   return cc?.plainLabels ? getPlainChartLayoutLabels() : getChartLayoutLabels();
+}
+
+/**
+ * The labels actually painted on the spokes — the real pillar names, with no layout substitution.
+ * Counterpart to getChartLayoutLabelsForChart: use that one to measure, this one to display.
+ */
+export function getDisplayLabelsForChart(chart) {
+  const cc = chart?.options?.plugins?.competencyChart;
+  if (isEmojiMode(chart)) {
+    return getEmojiChartLabels();
+  }
+  return cc?.plainLabels ? getPlainChartLabels() : getChartLabels();
 }

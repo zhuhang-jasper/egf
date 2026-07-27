@@ -72,6 +72,8 @@ export const useAppStore = create((set, get) => ({
   chartTitleHidden: initialDraft.chartTitleHidden,
   footerScoresHidden: initialDraft.footerScoresHidden,
   footerScoresHiddenUserSet: initialDraft.footerScoresHiddenUserSet === true,
+  clusterLabelColors: initialDraft.clusterLabelColors === true,
+  pillarEmojiHidden: initialDraft.pillarEmojiHidden === true,
   activeSavedProfileId: validateActiveId(initialDraft.activeSavedProfileId, initialProfiles),
   profiles: initialProfiles,
   saveFeedback: null,
@@ -152,6 +154,8 @@ export const useAppStore = create((set, get) => ({
         footerScoresHidden: draft.footerScoresHidden,
         footerScoresHiddenUserSet: draft.footerScoresHiddenUserSet === true,
         levelKeyboardInputEnabled: draft.levelKeyboardInputEnabled === true,
+        clusterLabelColors: draft.clusterLabelColors === true,
+        pillarEmojiHidden: draft.pillarEmojiHidden === true,
       }),
     );
     set({ profiles, activeSavedProfileId: validateActiveId(draft.activeSavedProfileId, profiles) });
@@ -199,6 +203,8 @@ export const useAppStore = create((set, get) => ({
         chartBadgeHidden: get().chartBadgeHidden,
         chartTitleHidden: get().chartTitleHidden,
         footerScoresHidden: get().footerScoresHidden,
+        clusterLabelColors: get().clusterLabelColors,
+        pillarEmojiHidden: get().pillarEmojiHidden,
       }),
     );
     set({ activeSavedProfileId: profileId });
@@ -227,6 +233,16 @@ export const useAppStore = create((set, get) => ({
 
   setChartTitleHidden: (hidden) => {
     set({ chartTitleHidden: hidden });
+    get().persistDraft();
+  },
+
+  setClusterLabelColors: (enabled) => {
+    set({ clusterLabelColors: enabled });
+    get().persistDraft();
+  },
+
+  setPillarEmojiHidden: (hidden) => {
+    set({ pillarEmojiHidden: hidden });
     get().persistDraft();
   },
 

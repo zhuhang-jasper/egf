@@ -47,6 +47,10 @@ function ChartDisplayMenu() {
   const setChartLevelTicksHidden = useAppStore((s) => s.setChartLevelTicksHidden);
   const chartTitleHidden = useAppStore((s) => s.chartTitleHidden);
   const setChartTitleHidden = useAppStore((s) => s.setChartTitleHidden);
+  const clusterLabelColors = useAppStore((s) => s.clusterLabelColors);
+  const setClusterLabelColors = useAppStore((s) => s.setClusterLabelColors);
+  const pillarEmojiHidden = useAppStore((s) => s.pillarEmojiHidden);
+  const setPillarEmojiHidden = useAppStore((s) => s.setPillarEmojiHidden);
   const footerScoresHidden = useAppStore((s) => s.footerScoresHidden);
   const setFooterScoresHidden = useAppStore((s) => s.setFooterScoresHidden);
 
@@ -100,6 +104,10 @@ function ChartDisplayMenu() {
           <DisplayCheckbox label="Chart" checked={!levelsPolygonHidden} onChange={(v) => setLevelsPolygonHidden(!v)} />
           <DisplayCheckbox label="Level labels" checked={!chartLevelTicksHidden} onChange={(v) => setChartLevelTicksHidden(!v)} />
           <DisplayCheckbox label="Legend" checked={!chartLegendHidden} onChange={(v) => setChartLegendHidden(!v)} />
+          {/* Appearance of the pillar labels themselves, as opposed to the show/hide toggles above. */}
+          <hr className="my-1 border-t border-border" />
+          <DisplayCheckbox label="Colored pillar labels" checked={clusterLabelColors} onChange={setClusterLabelColors} />
+          <DisplayCheckbox label="Pillar emoji" checked={!pillarEmojiHidden} onChange={(v) => setPillarEmojiHidden(!v)} />
           {FEATURE_SCORES_SETTINGS ? (
             <DisplayCheckbox label="Scores" checked={!footerScoresHidden} onChange={(v) => setFooterScoresHidden(!v)} />
           ) : null}
@@ -253,7 +261,7 @@ export function ChartSection({ isVisible }) {
 
   return (
     <div className="flex w-full min-w-0 flex-col items-center">
-      <div className="relative z-[2] flex w-full min-w-0 items-center justify-end gap-2 border-b pb-3 border-border mb-3">
+      <div className="relative z-[2] flex w-full min-w-0 items-center justify-end gap-2 mb-3">
         <div className="flex shrink-0 items-center gap-2">
           <ExportMenu onCopy={handleCopy} onShare={handleShare} />
           <ChartDisplayMenu />

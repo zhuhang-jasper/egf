@@ -5,7 +5,8 @@ import { useAppStore } from "@/store/useAppStore";
 import { applyChartFrameLayout } from "@/chart/fonts";
 import { applyChartState, createCompetencyChart, refreshChart } from "@/chart/instance";
 import { getRadarContentHeightPx } from "@/chart/radar-center";
-import { FE_UI, getChartLabels } from "@/constants";
+import { getChartLayoutLabelsForChart, getDisplayLabelsForChart } from "@/chart/theory-profile";
+import { FE_UI } from "@/constants";
 
 function convergeContentHeight(frame, chart) {
   const w = frame.offsetWidth;
@@ -36,20 +37,39 @@ function fitFrameToChart(frameRef, chart) {
   // There is a single pillar layout now (the FE/BE distinction is a cosmetic badge, not a different
   // axis set), so the chart labels are the same regardless of badge. Set them once, converge the
   // frame height once, then lock that height so display-toggle changes never shift the UI below.
+  // Emoji-aware: the fit has to measure whichever labels are actually rendered.
+  //
+  // The *layout* labels substitute the longest label onto the last spoke as a width spacer, so they
+  // must never survive past the fit — otherwise the last pillar paints under another pillar's name.
+  // Restore the display labels on every exit path.
   chart.$radarLockedRadius = null;
-  chart.data.labels = getChartLabels();
+  chart.data.labels = getChartLayoutLabelsForChart(chart);
   chart.update("none");
-  const rawH = convergeContentHeight(frame, chart);
-  if (!rawH) {
-    return;
-  }
+  try {
+    const rawH = convergeContentHeight(frame, chart);
+    if (!rawH) {
+      return;
+    }
 
-  const minRatioH = Math.round(w * (FE_UI.chartFrame.heightWidthRatio ?? 0));
-  const finalH = Math.max(rawH, minRatioH);
-  if (finalH > 0) {
-    applyChartFrameLayout(frame, w, finalH);
-    chart.resize();
+    const minRatioH = Math.round(w * (FE_UI.chartFrame.heightWidthRatio ?? 0));
+    const finalH = Math.max(rawH, minRatioH);
+    if (finalH > 0) {
+      applyChartFrameLayout(frame, w, finalH);
+      chart.resize();
+    }
+  } finally {
+    chart.data.labels = getDisplayLabelsForChart(chart);
+    chart.update("none");
   }
+}
+
+/**
+ * Store state → chart state. The chart's option is `plainLabels` ("strip the emoji"), which is the
+ * negation of what the UI toggle stores, so map it here rather than at each call site.
+ */
+function chartState() {
+  const state = useAppStore.getState();
+  return { ...state, plainLabels: state.pillarEmojiHidden === true };
 }
 
 /**
@@ -62,6 +82,8 @@ export function useCompetencyChart(canvasRef, frameRef) {
   const title = useAppStore((s) => s.title);
   const levelsPolygonHidden = useAppStore((s) => s.levelsPolygonHidden);
   const chartLevelTicksHidden = useAppStore((s) => s.chartLevelTicksHidden);
+  const clusterLabelColors = useAppStore((s) => s.clusterLabelColors);
+  const pillarEmojiHidden = useAppStore((s) => s.pillarEmojiHidden);
 
   const relayout = useCallback(() => {
     const chart = chartRef.current;
@@ -75,7 +97,7 @@ export function useCompetencyChart(canvasRef, frameRef) {
       return;
     }
 
-    refreshChart(chart, useAppStore.getState());
+    refreshChart(chart, chartState());
     fitFrameToChart(frameRef, chart);
   }, [frameRef]);
 
@@ -104,7 +126,7 @@ export function useCompetencyChart(canvasRef, frameRef) {
 
     const chart = createCompetencyChart(canvas);
     chartRef.current = chart;
-    applyChartState(chart, useAppStore.getState());
+    applyChartState(chart, chartState());
 
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -127,9 +149,17 @@ export function useCompetencyChart(canvasRef, frameRef) {
       return;
     }
     // No refit here — the frame height is locked to the taller track on init/resize,
-    // so switching tracks (or toggling data/ticks) never shifts UI below the chart.
-    applyChartState(chart, useAppStore.getState());
-  }, [levels, title, levelsPolygonHidden, chartLevelTicksHidden]);
+    // so switching tracks (or toggling data/ticks/label colors) never shifts UI below the chart.
+    applyChartState(chart, chartState());
+  }, [levels, title, levelsPolygonHidden, chartLevelTicksHidden, clusterLabelColors]);
+
+  // Dropping the emoji changes the spoke metrics (label widths, and thus wrapping), so the radar has
+  // to be re-fitted to the frame — unlike the other display toggles, which leave the layout alone.
+  useEffect(() => {
+    if (chartRef.current) {
+      relayout();
+    }
+  }, [pillarEmojiHidden, relayout]);
 
   return { chartRef, relayout };
 }

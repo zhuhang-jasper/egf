@@ -10,13 +10,13 @@ import { getPillarOrder } from "@/constants";
  * they have their own {@link THEORY_PILLAR_LABEL_NUDGE}.
  */
 const PILLAR_LABEL_NUDGE = {
-  coding: { x: -5, y: 0 },
-  domainLogic: { x: -8, y: 15 },
-  architecture: { x: 9, y: 15 },
-  uiUx: { x: -1, y: 15 },
-  ai: { x: 3, y: 15 },
-  productSense: { x: -1, y: -7 },
-  process: { x: 2, y: -7 },
+  // coding: { x: -5, y: 0 },
+  domainLogic: { x: -10, y: 17 },
+  architecture: { x: 10, y: 17 },
+  uiUx: { x: -2, y: 15 },
+  ai: { x: 2, y: 15 },
+  productSense: { x: -2, y: -10 },
+  process: { x: 2, y: -10 },
 };
 
 /**
@@ -24,8 +24,8 @@ const PILLAR_LABEL_NUDGE = {
  * Kept at the older, more conservative values — adjust independently of the hero radar.
  */
 const CAREER_TRACK_PILLAR_LABEL_NUDGE = {
-  domainLogic: { x: -5, y: 10 },
-  architecture: { x: 5, y: 10 },
+  domainLogic: { x: -7, y: 10 },
+  architecture: { x: 7, y: 10 },
   uiUx: { x: -2, y: 10 },
   ai: { x: 2, y: 10 },
   productSense: { x: -2, y: -7 },

@@ -16,6 +16,12 @@ export function getDefaultChartDisplay() {
     footerScoresHidden: false,
     footerScoresHiddenUserSet: false,
     levelKeyboardInputEnabled: false,
+    // Per-cluster pillar-label colors (the theory hero chart's palette). Off by default: the cluster
+    // wedges and legend already encode the grouping, and colored labels cost contrast against the
+    // polygon without adding information.
+    clusterLabelColors: false,
+    // Strip the leading emoji from pillar labels (text-only spokes).
+    pillarEmojiHidden: false,
   };
 }
 
@@ -33,6 +39,8 @@ export function parseChartDisplay(parsed) {
     footerScoresHidden: Object.hasOwn(parsed, "footerScoresHidden") ? parsed.footerScoresHidden === true : defaults.footerScoresHidden,
     footerScoresHiddenUserSet: Object.hasOwn(parsed, "footerScoresHidden"),
     levelKeyboardInputEnabled: parsed.levelKeyboardInputEnabled === true,
+    clusterLabelColors: parsed.clusterLabelColors === true,
+    pillarEmojiHidden: parsed.pillarEmojiHidden === true,
   };
 }
 
@@ -50,6 +58,8 @@ export function toDraftStoragePayload(state) {
     chartTitleHidden: state.chartTitleHidden,
     ...(state.footerScoresHiddenUserSet ? { footerScoresHidden: state.footerScoresHidden === true } : {}),
     levelKeyboardInputEnabled: state.levelKeyboardInputEnabled === true,
+    clusterLabelColors: state.clusterLabelColors === true,
+    pillarEmojiHidden: state.pillarEmojiHidden === true,
   };
 }
 
