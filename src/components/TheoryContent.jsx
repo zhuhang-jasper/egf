@@ -93,12 +93,49 @@ function SeniorityPhaseTitle({ phase, className, breakAfterSlash = false }) {
  * An L1-L5 ruler sits above the bands to anchor what the horizontal axis means. On mobile that ruler
  * is the only thing naming the axis, since the level cards are stacked by then and no longer form
  * visual columns above it; on desktop the ruler is aligned to those columns (see below) so the two
- * read as one scale. Only the ruler registers with the cards — the bands stay on plain percentages,
- * because their edges are meant to land mid-column.
+ * read as one scale, and the bands are positioned on that same axis via `axisPos`.
  */
+
+/**
+ * Where a percentage of the logical L1-L5 axis falls, as a CSS length measured from the LEFT EDGE OF
+ * THE BAND TRACK (i.e. inside this card's padding).
+ *
+ * The axis is defined by the seniority cards above: a real `grid-cols-5 gap-2`, so a column is
+ * `(100% - 4g)/5` and NOT 20% of the width. A percentage `p` sits `p/20` columns along — that many
+ * column-widths plus the gutters crossed getting there. Gutters are `min(cols, 4)`, never `cols`:
+ * five columns have only four gutters, and counting a fifth pushes the 100% mark a full gap past the
+ * right edge.
+ *
+ * The band track is inset by this card's `p-3` + 1px border, while the cards' container is not, so
+ * the card-relative position is shifted left by that inset to land in track coordinates. Widths must
+ * therefore be a DIFFERENCE of two `axisPos` values — the inset and the gutter terms only cancel for
+ * a span measured from 0.
+ *
+ * `--egf-axis-gap` collapses to 0 on mobile, where the cards are stacked, there are no columns to
+ * register with, and the whole expression degrades cleanly to a plain percentage of the track.
+ */
+const AXIS_GAP = "var(--egf-axis-gap)";
+const AXIS_INSET = "var(--egf-axis-inset)";
+
+function axisPos(pct) {
+  const cols = pct / 20;
+  const gutters = Math.min(cols, 4);
+  return `calc(${cols} * (100% + 2 * ${AXIS_INSET} - 4 * ${AXIS_GAP}) / 5 + ${gutters} * ${AXIS_GAP} - ${AXIS_INSET})`;
+}
+
 function SkillTierBands() {
   return (
-    <div className={cn(cardClass, "flex flex-col gap-2 p-3")}>
+    // `--egf-axis-gap` mirrors the card grid's `gap-2`, `--egf-axis-inset` this card's `p-3` + 1px
+    // border. Both are 0 on mobile, where the cards are stacked: with no columns to register with,
+    // `axisPos` degrades to a plain percentage of the track, which is the right behavior there.
+    <div
+      className={cn(
+        cardClass,
+        "flex flex-col gap-2 p-3",
+        "[--egf-axis-gap:0px] [--egf-axis-inset:0px]",
+        "sm:[--egf-axis-gap:0.5rem] sm:[--egf-axis-inset:calc(0.75rem+1px)]",
+      )}
+    >
       <h3 className={cn(DOC_TEXT.cardTitlePlain, "font-bold")}>Skill Tiers</h3>
 
       <div>
@@ -122,8 +159,7 @@ function SkillTierBands() {
 
             Mobile stacks the cards, so there is nothing to register against and both are dropped.
 
-            The BANDS below deliberately stay on plain percentages of the padded track: their edges
-            land mid-column by design, so they are not trying to register with anything. */}
+            The bands below register with the same axis via `axisPos`. */}
         <div className="grid grid-cols-5 border-b border-slate-200 pb-1 sm:-mx-[calc(0.75rem+1px)] sm:gap-2">
           {SENIORITY_LEVEL_DEFINITIONS.map(({ code }) => (
             <span key={code} className={cn("text-center", DOC_TEXT.badgeMicro, "text-slate-400")}>
@@ -132,12 +168,11 @@ function SkillTierBands() {
           ))}
         </div>
 
-        {/* Bands are normal flow rows, indented with a percentage margin rather than absolutely
+        {/* Bands are normal flow rows, indented with a computed margin rather than absolutely
             positioned, so the track's height comes from its content and the row gap is just
-            `space-y`. The percentage offset still lets an edge land mid-column, which a
-            column-snapped grid could not express. */}
+            `space-y`. A computed offset (not a grid column) is what lets an edge land mid-column. */}
         <div className="mt-1.5 flex flex-col gap-1 sm:gap-2">
-          {SKILL_TIER_BANDS.map(({ id, label, startPct, widthPct, bandClass }) => (
+          {SKILL_TIER_BANDS.map(({ id, label, startPct, endPct, bandClass }) => (
             <div
               key={id}
               // `bodySemibold` for the 12/13/14 body ramp (these labels are content, not a heading);
@@ -150,14 +185,27 @@ function SkillTierBands() {
                 DOC_TEXT.bodySemibold,
                 bandClass,
               )}
-              // `minWidth: max-content` is the guard that actually makes the label safe: the browser
-              // measures the rendered text (italic semibold, at whichever step of the 12/13/14 ramp
-              // is active) and refuses to draw the band narrower than that. Computing the fit by hand
-              // means estimating font metrics AND the container chain, and being wrong there is what
-              // truncated this label twice. A band only exceeds its `widthPct` when the percentage
-              // would have clipped — in which case a few extra px is the better error, since the
-              // percentages are approximate (see `SKILL_TIERS`) but a cut-off word is just a bug.
-              style={{ marginLeft: `${startPct}%`, width: `${widthPct}%`, minWidth: "max-content" }}
+              // Edges sit on the card axis via `axisPos`, and width is the DIFFERENCE of two axis
+              // positions — the card-padding inset and the gutter terms only cancel for a span
+              // measured from 0, so mapping a width on its own would come out short.
+              //
+              // The two OUTER edges are clamped into the track and are knowingly inexact: 0% and 100%
+              // are the card grid's outer edges, which lie under this card's padding, so drawing them
+              // truly would overhang the card. `max(0px, …)` and the `min(…, 100%)` implied by
+              // clamping the right edge give up those two positions to keep the band inside its box.
+              // The four INTERIOR edges — Foundational's end, Core's start and end, Advanced's start
+              // — are the ones that carry meaning against the level cards, and they stay exact.
+              //
+              // `minWidth: max-content` still guards the label: the browser measures the rendered
+              // text and refuses to draw the band narrower. It only binds in narrow layouts (chiefly
+              // mobile, where there are no columns to register with anyway); where it does bind it
+              // wins over exact positioning, since an approximate percentage is fine but a clipped
+              // word is a bug.
+              style={{
+                marginLeft: `max(0px, ${axisPos(startPct)})`,
+                width: `calc(min(100%, ${axisPos(endPct)}) - max(0px, ${axisPos(startPct)}))`,
+                minWidth: "max-content",
+              }}
             >
               {label}
             </div>
