@@ -15,6 +15,12 @@ import {
 
 Chart.register(RadarController, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
 
+/**
+ * Tabular-figures alias of Inter (declared in index.css) so the L1–L5 tick digits share one advance
+ * width and "L1" stops reading narrower than "L4". Falls back to the normal chart font stack.
+ */
+export const TICK_FONT_FAMILY = '"Inter Tabular", "Inter Variable", system-ui, sans-serif';
+
 function buildHumanDataset(label, data, dataset) {
   const d = dataset ?? FE_UI.dataset;
   return {
@@ -331,7 +337,7 @@ export function createCompetencyChart(canvas, { purpose = "tool" } = {}) {
               }
               return `L${value}`;
             },
-            font: { size: ch.tickInitialPx },
+            font: { size: ch.tickInitialPx, family: TICK_FONT_FAMILY },
             z: 0,
           },
           pointLabels: {

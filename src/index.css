@@ -31,6 +31,24 @@
   --color-track-be-foreground: hsl(0 0% 100%);
 }
 
+/* The same Inter files as "Inter Variable" (see main.jsx), re-declared under a distinct family with
+   tabular figures baked into the face. Chart.js draws the radar's L1–L5 ticks on a canvas, where
+   digits take Inter's proportional advances — "1" is narrower than "2"–"5", so "L1" and its backdrop
+   pill rendered thinner than its siblings. Chart.js has no tick-width option (and its backdrop is
+   sized from the measured text, so padding can't equalise it), while canvas 2D takes no CSS
+   font-feature-settings — there's no element for `tabular-nums` to style. Features declared on the
+   @font-face are part of the resolved face, so they do reach canvas text. Latin-only subset: these
+   ticks are just "L" + a digit. */
+@font-face {
+  font-family: "Inter Tabular";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("@fontsource-variable/inter/files/inter-latin-opsz-normal.woff2") format("woff2-variations");
+  unicode-range: U+0041-005A, U+0030-0039;
+  font-feature-settings: "tnum" 1;
+}
+
 @layer base {
   * {
     @apply border-border;

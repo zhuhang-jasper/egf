@@ -30,7 +30,10 @@ export const FE_UI = {
     tickLabelColor: "rgba(0, 0, 0, 0.3)",
     centerPointLabels: false,
     tickInitialPx: 12,
-    tickBackdropPad: { top: 2, bottom: 2, left: 3, right: 3 },
+    /* Vertical padding stays tight: the backdrop is (tick font size + top/bottom) tall while the gap
+       between rings shrinks with the radius, so at the narrowest viewport a taller pill collides with
+       the one above. Also feeds radarTickBackdropHalf() → the scale's reserved layout space. */
+    tickBackdropPad: { top: 1.5, bottom: 1.5, left: 2, right: 2 },
     tickBackdropColor: "rgba(255, 255, 255, 0.5)",
     exportImageCssScale: 8,
     exportImageCssScaleMax: 12,

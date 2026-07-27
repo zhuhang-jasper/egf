@@ -4,6 +4,7 @@ import { Chart, Filler, LineElement, PointElement, RadarController, RadialLinear
 
 import { BackToToolButton } from "@/components/BackToToolButton";
 
+import { TICK_FONT_FAMILY } from "@/chart/instance";
 import { createClusterBackgroundPlugin } from "@/chart/plugins";
 import { CLUSTERS, FE_UI, getPillarLabel, getPillarOrder, SITE_COPY } from "@/constants";
 import { CAREER_TRACK_PROFILES, PILLAR_CLUSTER_GROUPS } from "@/constants/theory-data";
@@ -288,7 +289,7 @@ function PosterRadar({ levels, showClusters = false, showPolygon = true, showTic
               backdropColor: ch.tickBackdropColor,
               backdropPadding: { ...ch.tickBackdropPad },
               showLabelBackdrop: (ctx) => ctx.tick?.value >= 1 && ctx.tick?.value <= 5,
-              font: { size: 20, weight: "bold" },
+              font: { size: 20, weight: "bold", family: TICK_FONT_FAMILY },
               callback: (v) => (v >= 1 && v <= 5 ? `L${v}` : ""),
               z: 1,
             },
