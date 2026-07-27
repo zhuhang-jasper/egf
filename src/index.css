@@ -88,6 +88,31 @@
   }
 }
 
+/* Countdown ring around a toast's dismiss "X" — see src/components/ui/Toaster.jsx. The circle is
+   drawn with its full circumference as one dash, so animating `stroke-dashoffset` unwinds the arc
+   over the toast's remaining lifetime. The offset runs 0 → *negative* circumference, which retreats
+   the arc's end clockwise from 12 o'clock (a positive offset would unwind counter-clockwise).
+   `--toast-ring-circumference` and the animation duration are set inline per toast. */
+@keyframes toast-ring-drain {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: calc(var(--toast-ring-circumference) * -1);
+  }
+}
+
+.toast-ring-track {
+  animation: toast-ring-drain linear forwards;
+  animation-duration: var(--toast-ring-duration);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast-ring-track {
+    animation: none;
+  }
+}
+
 /* Marquee / "LED sign" scroll for over-long profile names — see src/components/ProfileCombobox.jsx.
    Two copies of the text sit side by side in the track; scrolling one full copy width (-50% of the
    track) and looping lands the second copy exactly where the first began, so it reads seamlessly. */

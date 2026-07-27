@@ -27,6 +27,50 @@ const VARIANT_META = {
   },
 };
 
+// Dismiss-button / countdown-ring geometry. The ring is drawn in its own SVG user space (a 20-unit
+// box) and scaled by the button's Tailwind size, so the stroke stays crisp at any rendered size.
+const RING_BOX = "h-5 w-5";
+// Radius leaves room for half the stroke width inside the 20-unit box, so the ring never clips.
+const RING_RADIUS = 8.5;
+const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
+
+/**
+ * The thin arc wrapping a toast's dismiss "X", unwinding clockwise from 12 o'clock over `duration`
+ * ms to show how long is left before the toast auto-dismisses. Purely decorative — the timer itself
+ * lives in the store — so remount it (via a changing React `key`) whenever the toast's countdown is
+ * re-armed. Under `prefers-reduced-motion` the animation is off and the ring simply sits full,
+ * acting as a static border on the button.
+ *
+ * The dash values are pushed through CSS custom properties as `px` strings, NOT bare numbers: the
+ * keyframes feed them to `stroke-dashoffset` via `calc()`, and an unitless custom property makes
+ * that calc invalid, which silently drops the whole animation.
+ */
+function CountdownRing({ duration }) {
+  return (
+    <svg
+      className="pointer-events-none absolute inset-0 -rotate-90"
+      viewBox="0 0 20 20"
+      fill="none"
+      aria-hidden
+      style={{
+        "--toast-ring-circumference": `${RING_CIRCUMFERENCE}px`,
+        "--toast-ring-duration": `${duration}ms`,
+      }}
+    >
+      <circle cx="10" cy="10" r={RING_RADIUS} stroke="currentColor" strokeWidth="2" className="opacity-25" />
+      <circle
+        cx="10"
+        cy="10"
+        r={RING_RADIUS}
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeDasharray={RING_CIRCUMFERENCE}
+        className="toast-ring-track"
+      />
+    </svg>
+  );
+}
+
 /**
  * App-wide toast host. Mount once near the app root; it subscribes to the store's `toasts`
  * stack and renders a bottom-centered pile of transient notices (newest nearest the edge). Toasts
@@ -74,10 +118,11 @@ export function Toaster() {
             <button
               type="button"
               aria-label="Dismiss notification"
-              className={cn("ml-1 shrink-0 rounded-sm", meta.dismissClass)}
+              className={cn("relative ml-1 grid shrink-0 place-items-center rounded-full", RING_BOX, meta.dismissClass)}
               onClick={() => dismissToast(t.id)}
             >
-              <X className="h-3.5 w-3.5" />
+              {t.duration > 0 ? <CountdownRing key={t.cycle} duration={t.duration} /> : null}
+              <X className="h-3 w-3" />
             </button>
           </output>
         );

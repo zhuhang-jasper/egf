@@ -28,6 +28,11 @@ const toastTimers = new Map();
 // (single delete, delete-all, draft-discard, import, destructive save) pass this key.
 export const UNDO_TOAST_KEY = "undo";
 
+// How long an undo toast stays up. Longer than the default toast duration — undoing is a decision,
+// and the user needs time to notice the toast and react. The dismiss button's countdown ring
+// animates over exactly this window (see src/components/ui/Toaster.jsx).
+const UNDO_TOAST_DURATION = 8000;
+
 // Accumulator for the batched single-delete Undo toast. `deleteBatch` collects the rows removed while
 // that toast is still on screen; it resets once the toast is gone (expired/undone) or is replaced by
 // a different undo action. `deleteBatchLive` tracks whether the *current* undo toast is a delete batch
@@ -104,10 +109,13 @@ export const useAppStore = create((set, get) => ({
     }
     const existing = key != null ? get().toasts.find((t) => t.key === key) : null;
     const id = existing ? existing.id : ++toastSeq;
+    // `cycle` bumps every time a coalescing toast is refreshed, so the dismiss button's countdown
+    // ring can key off it and restart its animation in lockstep with the re-armed timer below.
+    const cycle = existing ? existing.cycle + 1 : 0;
     if (existing) {
-      set((state) => ({ toasts: state.toasts.map((t) => (t.id === id ? { ...t, message: text, variant, action, key } : t)) }));
+      set((state) => ({ toasts: state.toasts.map((t) => (t.id === id ? { ...t, message: text, variant, action, key, duration, cycle } : t)) }));
     } else {
-      set((state) => ({ toasts: [...state.toasts, { id, message: text, variant, action, key }] }));
+      set((state) => ({ toasts: [...state.toasts, { id, message: text, variant, action, key, duration, cycle }] }));
     }
     // (Re)arm the auto-dismiss timer — clearing any prior one so a coalesced toast restarts its clock.
     const prevTimer = toastTimers.get(id);
@@ -289,7 +297,7 @@ export const useAppStore = create((set, get) => ({
     const message = count === 1 ? `Deleted “${rows[0].title}”` : `Deleted ${count} profiles`;
     get().showToast(message, {
       variant: "dark",
-      duration: 10000,
+      duration: UNDO_TOAST_DURATION,
       key: UNDO_TOAST_KEY,
       keepDeleteBatch: true,
       action: {
@@ -673,7 +681,7 @@ export const useAppStore = create((set, get) => ({
     const message = name ? `Unsaved changes to “${name}” were discarded` : "Unsaved changes to your draft were discarded";
     get().showToast(message, {
       variant: "dark",
-      duration: 10000,
+      duration: UNDO_TOAST_DURATION,
       key: UNDO_TOAST_KEY,
       action: {
         label: "Undo",
