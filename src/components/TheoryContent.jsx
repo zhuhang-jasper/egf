@@ -84,9 +84,12 @@ function SeniorityPhaseTitle({ phase, className, breakAfterSlash = false }) {
  * rather than degrading to a stacked list on mobile, which would flatten the idea into three
  * unrelated rows.
  *
- * ONE layout at all sizes. The narrowest band (Foundational, 30% of the track) is ~79px at a 320px
- * viewport, which just fits its label at 11px, so the only responsive concessions are type size and
- * the band height. An L1-L5 ruler sits above the bands to anchor what the horizontal axis means —
+ * ONE layout at all sizes. The narrowest band (Foundational, 34% of the track) is the binding
+ * constraint: it carries the LONGEST label, so it is the only band whose text can outgrow its box.
+ * At a 320px viewport that is ~109px against a ~12px-padded 12px label, and the margin stays
+ * positive up through the 14px step. Widen the band in `SKILL_TIERS` before shrinking the type if a
+ * label ever stops fitting — the percentages are approximate, the ruler alignment is not.
+ * An L1-L5 ruler sits above the bands to anchor what the horizontal axis means —
  * on mobile that ruler is the only thing naming the axis, since the level cards are stacked by then
  * and no longer form visual columns above it.
  */
@@ -116,13 +119,23 @@ function SkillTierBands() {
               // `bodySemibold` for the 12/13/14 body ramp (these labels are content, not a heading);
               // `bandClass` stays last so the tier's text color beats that token's `text-slate-800`.
               className={cn(
-                "flex items-center justify-center overflow-hidden rounded-md px-1.5 py-1 italic sm:rounded-lg sm:px-3 sm:py-1.5",
+                // `px-2` at sm and up, not `px-3`: the widest label ("Foundational") sits in the
+                // NARROWEST band, so horizontal padding is charged against the tightest budget on
+                // the track.
+                "flex items-center justify-center rounded-md px-1.5 py-1 italic sm:rounded-lg sm:px-2 sm:py-1.5",
                 DOC_TEXT.bodySemibold,
                 bandClass,
               )}
-              style={{ marginLeft: `${startPct}%`, width: `${widthPct}%` }}
+              // `minWidth: max-content` is the guard that actually makes the label safe: the browser
+              // measures the rendered text (italic semibold, at whichever step of the 12/13/14 ramp
+              // is active) and refuses to draw the band narrower than that. Computing the fit by hand
+              // means estimating font metrics AND the container chain, and being wrong there is what
+              // truncated this label twice. A band only exceeds its `widthPct` when the percentage
+              // would have clipped — in which case a few extra px is the better error, since the
+              // percentages are approximate (see `SKILL_TIERS`) but a cut-off word is just a bug.
+              style={{ marginLeft: `${startPct}%`, width: `${widthPct}%`, minWidth: "max-content" }}
             >
-              <span className="truncate">{label}</span>
+              {label}
             </div>
           ))}
         </div>

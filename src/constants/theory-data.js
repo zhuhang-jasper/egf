@@ -11,17 +11,25 @@ function buildLevels(scores) {
  * back into one prose line (see `flattenFocusTiers`) to keep the nine cards compact.
  *
  * `endPct` is how far the band reaches across the L1-L5 track (0% = left edge of L1, 100% = right
- * edge of L5) and is the only authored GEOMETRY. Each band's start is derived: a tier begins at the
- * MIDPOINT of the one before it, so the bands chain off each other rather than snapping to the level
- * columns. That staggered overlap is the point — the tiers are cumulative, and you start picking up
- * the next one about halfway through the current. See `getSkillTierBands`.
+ * edge of L5). A band's start is normally derived — a tier begins at the MIDPOINT of the one before
+ * it, so the bands chain off each other rather than snapping to the level columns. That staggered
+ * overlap is the point: the tiers are cumulative, and you start picking up the next one about
+ * halfway through the current. A tier may author its own `startPct` to break out of that chain; see
+ * `getSkillTierBands`.
+ *
+ * These are APPROXIMATE by intent — "Foundational fades out somewhere mid-L2" — not exact fractions
+ * of the ruler. The ruler is five equal 20% cells, so mid-L2 is 30% on the nose, but Foundational is
+ * authored at 35%: the extra 5% is what keeps its label from truncating in the narrowest cards, and
+ * it still reads as mid-L2. Prefer widening a band over shrinking its type if a label stops fitting.
  *
  *     L1        L2        L3        L4        L5
- *     |█████████████|                              Foundational    0% →  30%
- *           ^ mid (15%)
- *           |███████████████████████|              Core           15% →  64%
- *                        ^ mid (39.5%)
- *                        |█████████████████████|   Advanced     39.5% → 100%
+ *     |███████████████|                            Foundational    0% →  35%
+ *            ^ mid (17.5%)
+ *            |█████████████████████████|          Core         17.5% →  65%
+ *                         |███████████████████|   Advanced     40.5% → 100%  (start pinned)
+ *
+ * Core's midpoint is 41.25%, but Advanced pins its start to 40.5% so the two stay independent:
+ * how far Core carries you and when Advanced begins are separate claims about the framework.
  *
  * `bandClass` is the tier's fill/border/text tint, shared by the bands here and the pills labelling
  * each tier in the competency matrix, so the two places tiers surface read as one system.
@@ -33,21 +41,31 @@ function buildLevels(scores) {
 // the cluster surface tint behind it. Foundational uses `green`, not `emerald`, which goes neon
 // against those tints.
 export const SKILL_TIERS = [
-  { id: "foundational", label: "Foundational", endPct: 30, bandClass: "border border-green-900/20 bg-green-100/80 text-green-900" },
-  { id: "core", label: "Core", endPct: 64, bandClass: "border border-amber-900/20 bg-amber-100/80 text-amber-900" },
-  { id: "advanced", label: "Advanced", endPct: 100, bandClass: "border border-rose-900/20 bg-rose-100/80 text-rose-900" },
+  { id: "foundational", label: "Foundational", endPct: 35, bandClass: "border border-green-900/20 bg-green-100/80 text-green-900" },
+  { id: "core", label: "Core", endPct: 65, bandClass: "border border-amber-900/20 bg-amber-100/80 text-amber-900" },
+  // `startPct` pinned rather than derived. Core's midpoint is 41%, which would drift Advanced's left
+  // edge rightward; 40.5% holds it where it was authored. The two claims are independent — how far
+  // Core carries you, and when Advanced starts showing up — so moving one should not silently move
+  // the other.
+  { id: "advanced", label: "Advanced", startPct: 40.5, endPct: 100, bandClass: "border border-rose-900/20 bg-rose-100/80 text-rose-900" },
 ];
 
 /**
  * Resolve {@link SKILL_TIERS} into drawable bands, deriving each `startPct` from the previous band's
  * midpoint (the first starts at 0).
+ *
+ * A tier may instead AUTHOR its own `startPct` to opt out of that chain, which decouples it from the
+ * band before it — needed once a tier's `endPct` moves for reasons that shouldn't drag its successor
+ * along. An authored start still seeds the midpoint for whatever follows, so the chain resumes from
+ * the position actually drawn rather than the one that would have been derived.
  */
 export function getSkillTierBands() {
-  let startPct = 0;
+  let derivedStartPct = 0;
 
   return SKILL_TIERS.map((tier) => {
+    const startPct = tier.startPct ?? derivedStartPct;
     const band = { ...tier, startPct, widthPct: tier.endPct - startPct };
-    startPct = (startPct + tier.endPct) / 2;
+    derivedStartPct = (startPct + tier.endPct) / 2;
     return band;
   });
 }
