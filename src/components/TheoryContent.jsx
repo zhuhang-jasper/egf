@@ -9,13 +9,23 @@ import { PillarGrid } from "@/components/PillarGrid";
 import { ShareLinkButton } from "@/components/ShareLinkButton";
 import { StaticCompetencyChart } from "@/components/StaticCompetencyChart";
 
-import { CAREER_TRACKS_SECTION_INTRO, PILLARS_SECTION_INTRO, SENIORITY_LEVEL_DEFINITIONS, SENIORITY_SECTION_INTRO } from "@/constants/theory-data";
+import {
+  CAREER_TRACKS_SECTION_INTRO,
+  getSkillTierBands,
+  PILLARS_SECTION_INTRO,
+  SENIORITY_LEVEL_DEFINITIONS,
+  SENIORITY_SECTION_INTRO,
+  SKILL_TIERS_CAPTION,
+} from "@/constants/theory-data";
 import { DOC_SECTION, DOC_TEXT } from "@/styles/doc-typography";
 import { cn } from "@/utils";
 import { scrollBelowStickyHeaderUntilSettled } from "@/utils/scroll";
 import { getPersistedExpandedPillar, getPillarCardElementId, persistExpandedPillar, THEORY_SECTION_IDS, THEORY_SECTIONS } from "@/utils/theory-url";
 
 const cardClass = "rounded-xl border border-slate-300 bg-white shadow-md shadow-slate-200/40";
+
+// Skill-tier band geometry is static — resolve the chained start/width percentages once.
+const SKILL_TIER_BANDS = getSkillTierBands();
 
 // Hero radar pillar-label sizing: scale linearly with the chart, from 12px at its small-mobile width
 // up to 14px at its desktop max width (the wrapper's max-w-[520px]). Module-level constant so its
@@ -32,7 +42,7 @@ const DEEPLINK_EXPAND_ANIM_MS = 300;
 
 function SectionHeading({ title, subtitle, section }) {
   return (
-    <header className="space-y-1">
+    <header className="flex flex-col gap-1">
       <div className="flex items-center gap-2">
         <h2 className={DOC_SECTION.title}>{title}</h2>
         <ShareLinkButton section={section} ariaLabel="Copy link to this content" />
@@ -65,21 +75,75 @@ function SeniorityPhaseTitle({ phase, className, breakAfterSlash = false }) {
   );
 }
 
+/**
+ * The three cumulative skill tiers, drawn as staggered bands across the L1-L5 axis. Each band starts
+ * at the MIDPOINT of the one before it, so the overlap is visible as horizontal offset: the tiers
+ * build on each other rather than partitioning the scale. That overlap is the whole point of the
+ * diagram — it is what stops L3 reading as "done with Core" — so the stagger is kept at every width
+ * rather than degrading to a stacked list on mobile, which would flatten the idea into three
+ * unrelated rows.
+ *
+ * ONE layout at all sizes. The narrowest band (Foundational, 30% of the track) is ~79px at a 320px
+ * viewport, which just fits its label at 11px, so the only responsive concessions are type size and
+ * the band height. An L1-L5 ruler sits above the bands to anchor what the horizontal axis means —
+ * on mobile that ruler is the only thing naming the axis, since the level cards are stacked by then
+ * and no longer form visual columns above it.
+ */
+function SkillTierBands() {
+  return (
+    <div className={cn(cardClass, "flex flex-col gap-2 p-3")}>
+      <h3 className={cn(DOC_TEXT.cardTitlePlain, "font-bold")}>Skill Tiers</h3>
+
+      <div>
+        {/* Ruler: five equal cells naming the axis the bands are measured against. */}
+        <div className="grid grid-cols-5 border-b border-slate-200 pb-1">
+          {SENIORITY_LEVEL_DEFINITIONS.map(({ code }) => (
+            <span key={code} className={cn("text-center", DOC_TEXT.badgeMicro, "text-slate-400")}>
+              {code}
+            </span>
+          ))}
+        </div>
+
+        {/* Bands are normal flow rows, indented with a percentage margin rather than absolutely
+            positioned, so the track's height comes from its content and the row gap is just
+            `space-y`. The percentage offset still lets an edge land mid-column, which a
+            column-snapped grid could not express. */}
+        <div className="mt-1.5 flex flex-col gap-1 sm:gap-2">
+          {SKILL_TIER_BANDS.map(({ id, label, startPct, widthPct, bandClass }) => (
+            <div
+              key={id}
+              // `bodySemibold` for the 12/13/14 body ramp (these labels are content, not a heading);
+              // `bandClass` stays last so the tier's text color beats that token's `text-slate-800`.
+              className={cn(
+                "flex items-center justify-center overflow-hidden rounded-md px-1.5 py-1 italic sm:rounded-lg sm:px-3 sm:py-1.5",
+                DOC_TEXT.bodySemibold,
+                bandClass,
+              )}
+              style={{ marginLeft: `${startPct}%`, width: `${widthPct}%` }}
+            >
+              <span className="truncate">{label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <p className={DOC_TEXT.body}>{SKILL_TIERS_CAPTION}</p>
+    </div>
+  );
+}
+
 function SeniorityStepper() {
   return (
-    <>
-      <div className="space-y-2 sm:hidden">
-        {SENIORITY_LEVEL_DEFINITIONS.map(({ code, phase, description, seniority }) => (
-          <div key={code} className={cn(cardClass, "flex items-center gap-2.5 p-3")}>
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2 sm:hidden">
+        {SENIORITY_LEVEL_DEFINITIONS.map(({ code, phase, description }) => (
+          <div key={code} className={cn(cardClass, "flex items-center gap-2 p-3")}>
             <span className={cn(levelBadgeClass, "size-7", DOC_TEXT.badgeMd)}>{code}</span>
-            <div className="min-w-0 space-y-2">
-              <div className="flex items-baseline justify-between gap-2">
-                <SeniorityPhaseTitle
-                  phase={phase}
-                  className={cn("min-w-0", DOC_TEXT.bodySemibold, "font-bold text-[13px] sm:text-[14px] md:text-[15px]")}
-                />
-                <p className={cn("shrink-0", DOC_TEXT.meta)}>{seniority}</p>
-              </div>
+            <div className="flex min-w-0 flex-col gap-2">
+              <SeniorityPhaseTitle
+                phase={phase}
+                className={cn("min-w-0", DOC_TEXT.bodySemibold, "font-bold text-[13px] sm:text-[14px] md:text-[15px]")}
+              />
               <p className={DOC_TEXT.body}>{description}</p>
             </div>
           </div>
@@ -87,26 +151,31 @@ function SeniorityStepper() {
       </div>
 
       <div className="hidden sm:block">
-        {/* Cards stretch to equal height (grid default). Inside each, flex-col pushes the seniority
-            footer to the bottom (mt-auto) so JUNIOR/MID/SENIOR… align across columns regardless of
-            how tall each description runs. */}
-        <div className="grid grid-cols-5 items-stretch gap-2">
-          {SENIORITY_LEVEL_DEFINITIONS.map(({ code, phase, description, seniority }) => (
-            <div key={code} className={cn(cardClass, "flex min-w-0 flex-col gap-y-2.5 p-3")}>
+        {/* Three shared rows (badge / title / description) declared on the track, with each card a
+            `grid-rows-subgrid` spanning all three, so every row is sized by the tallest card and the
+            three parts line up horizontally across all five columns. `breakAfterSlash` splits each
+            title at the slash, making the title band a uniform two lines rather than letting each
+            column wrap wherever it happens to run out of width. `items-start` top-aligns each part
+            within its row band. */}
+        <div className="grid grid-cols-5 grid-rows-[repeat(3,auto)] gap-2">
+          {SENIORITY_LEVEL_DEFINITIONS.map(({ code, phase, description }) => (
+            <div key={code} className={cn(cardClass, "row-span-3 grid min-w-0 grid-rows-subgrid items-start gap-y-2 p-3")}>
               <div className="flex justify-start">
                 <span className={cn(levelBadgeClass, "size-7 shrink-0", DOC_TEXT.badgeMd)}>{code}</span>
               </div>
               <SeniorityPhaseTitle
                 phase={phase}
+                breakAfterSlash
                 className={cn("min-w-0", DOC_TEXT.bodySemibold, "font-bold text-[13px] sm:text-[14px] md:text-[15px]")}
               />
               <p className={DOC_TEXT.body}>{description}</p>
-              <p className={cn("mt-auto", DOC_TEXT.meta)}>{seniority}</p>
             </div>
           ))}
         </div>
       </div>
-    </>
+
+      <SkillTierBands />
+    </div>
   );
 }
 
@@ -218,8 +287,8 @@ function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreR
   }, []);
 
   return (
-    <div className="space-y-6 print:max-w-none">
-      <div className="space-y-2">
+    <div className="flex flex-col gap-6 print:max-w-none">
+      <div className="flex flex-col gap-2">
         <div className="flex justify-end print:hidden">
           <button
             type="button"
@@ -247,28 +316,21 @@ function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreR
           />
         </div>
 
-        <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.pillars]} className="space-y-3">
-          <SectionHeading title="I. 9 Big Pillars" subtitle={PILLARS_SECTION_INTRO} section={THEORY_SECTIONS.pillars} />
+        <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.pillars]} className="flex flex-col gap-3">
+          <SectionHeading title="I. The 9 Pillars" subtitle={PILLARS_SECTION_INTRO} section={THEORY_SECTIONS.pillars} />
           <PillarGrid showLatestChanges={false} />
         </section>
       </div>
 
-      <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.seniority]} className="space-y-3">
-        <SectionHeading title="II. 5 Seniority Levels" subtitle={SENIORITY_SECTION_INTRO} section={THEORY_SECTIONS.seniority} />
+      <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.seniority]} className="flex flex-col gap-3">
+        <SectionHeading title="II. The 5 Proficiency Levels (L1–L5)" subtitle={SENIORITY_SECTION_INTRO} section={THEORY_SECTIONS.seniority} />
         <SeniorityStepper />
       </section>
 
-      {/* space-y-1 (not the other sections' space-y-3): this section's intro is empty, so the heading
-          is a bare title line and needs to hug the first track card rather than sit above a full gap. */}
-      <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.tracks]} className="space-y-1">
-        <SectionHeading title="III. Career Growth Paths" subtitle={CAREER_TRACKS_SECTION_INTRO} section={THEORY_SECTIONS.tracks} />
-        <CareerTracks />
-      </section>
-
-      <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.matrix]} className="space-y-3">
+      <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.matrix]} className="flex flex-col gap-3">
         <SectionHeading
-          title="IV. The 45-Point Competency Matrix"
-          subtitle="The full behavioral matrix: 9 pillars × 5 levels. Expand any pillar to reveal its 5 cells — each describes the observable behaviors expected at that level, organized by the three clusters."
+          title="III. The 45-Point Competency Matrix"
+          subtitle="The full behavioral matrix: 9 pillars across 5 levels. For each pillar, the focus areas are grouped into 3 skill tiers. Expand a pillar to reveal the 5 cells, each describing the observable behaviors expected at that level."
           section={THEORY_SECTIONS.matrix}
         />
         <CompetencyMatrix
@@ -277,6 +339,13 @@ function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreR
           scrollNav={matrixNav}
           showLatestChanges={false}
         />
+      </section>
+
+      {/* gap-1 (not the other sections' gap-3): this section's intro is empty, so the heading is a
+          bare title line and needs to hug the first track card rather than sit above a full gap. */}
+      <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.tracks]} className="flex flex-col gap-1">
+        <SectionHeading title="IV. Career Growth Paths" subtitle={CAREER_TRACKS_SECTION_INTRO} section={THEORY_SECTIONS.tracks} />
+        <CareerTracks />
       </section>
     </div>
   );

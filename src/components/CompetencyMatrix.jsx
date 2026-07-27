@@ -6,7 +6,7 @@ import { EmphasizedText } from "@/components/EmphasizedText";
 import { ShareLinkButton } from "@/components/ShareLinkButton";
 
 import { getClusterSurfaceBg } from "@/constants";
-import { COMPETENCY_MATRIX, SENIORITY_LEVEL_DEFINITIONS } from "@/constants/theory-data";
+import { COMPETENCY_MATRIX, SENIORITY_LEVEL_DEFINITIONS, SKILL_TIERS } from "@/constants/theory-data";
 import { DOC_TEXT, WHATS_NEW_HIGHLIGHT_CLASS } from "@/styles/doc-typography";
 import { cn } from "@/utils";
 import { scrollBelowStickyHeaderUntilSettled } from "@/utils/scroll";
@@ -35,7 +35,7 @@ function LevelCellContent({ level, showLatestChanges }) {
 
   return (
     <>
-      <span className="mb-1.5 block font-bold underline text-slate-900">{level.persona}</span>{" "}
+      <span className="mb-1.5 block font-bold text-slate-900">{level.persona}</span>{" "}
       <EmphasizedText text={level.text} boldClassName={WHATS_NEW_HIGHLIGHT_CLASS} plain={!showLatestChanges} />
     </>
   );
@@ -57,7 +57,7 @@ function PillarMatrixLevels({ levels, showLatestChanges }) {
 
       <div className="hidden grid-cols-5 gap-2 px-3 py-2 sm:grid">
         {SENIORITY_LEVEL_DEFINITIONS.map(({ code, term }) => (
-          <div key={code} className="flex min-w-0 flex-col gap-2.5 border-r border-slate-300/50 px-1 last:border-r-0">
+          <div key={code} className="flex min-w-0 flex-col gap-2 border-r border-slate-300/50 px-1 last:border-r-0">
             <LevelPill code={code} term={term} />
             <p className={DOC_TEXT.bodyMedium}>
               <LevelCellContent level={levels[code]} showLatestChanges={showLatestChanges} />
@@ -69,11 +69,44 @@ function PillarMatrixLevels({ levels, showLatestChanges }) {
   );
 }
 
+/**
+ * The pillar's focus areas as three cumulative skill tiers (framework v4.0). Rendered in the always
+ * visible card header, so the tiers read without expanding the pillar.
+ *
+ * Each tier is labelled with a colored pill carrying the same tint as its band in the Proficiency
+ * Levels section, so the two places tiers appear read as one system. The list is a two-column grid
+ * whose first track is `max-content`: the pill column sizes itself to the longest label, so the three
+ * pills share one width and the focus-area text starts on a common edge, with no hardcoded width to
+ * outgrow (a wider label at a smaller breakpoint just widens the track).
+ */
+function FocusTierList({ focusTiers }) {
+  const tiers = SKILL_TIERS.filter(({ id }) => focusTiers?.[id]);
+  if (!tiers.length) {
+    return null;
+  }
+
+  return (
+    <ul className="grid min-w-0 grid-cols-[max-content_1fr] gap-x-2 gap-y-1.5">
+      {tiers.map(({ id, label, bandClass }) => (
+        // Each row spans both tracks via subgrid, so every pill lands in the shared first column.
+        <li key={id} className={cn("col-span-2 grid min-w-0 grid-cols-subgrid", DOC_TEXT.body)}>
+          {/* `font-semibold` last so it beats `badgeMicro`'s `font-bold` (twMerge keeps the later of
+              two conflicting utilities). */}
+          <span className={cn("self-start rounded-full px-2 py-0.5 text-center", DOC_TEXT.badgeMicro, bandClass, "font-semibold")}>
+            {label}
+          </span>
+          <span className="min-w-0">{focusTiers[id]}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function PillarMatrixCard({
   order,
   pillarId,
   pillarName,
-  focusSummary,
+  focusTiers,
   note,
   color,
   textColor,
@@ -103,13 +136,11 @@ function PillarMatrixCard({
           expanded ? "pb-1.5 border-b border-slate-300/60" : "pb-2.5",
         )}
       >
-        <div className="min-w-0 flex-1 space-y-2 sm:space-y-2.5">
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
           <h3 className={cn("min-w-0", DOC_TEXT.cardTitlePlain, "font-bold")}>
             {order}. {pillarName}
           </h3>
-          <p className={cn("min-w-0", DOC_TEXT.body)}>
-            <EmphasizedText text={focusSummary} boldClassName={WHATS_NEW_HIGHLIGHT_CLASS} plain={!showLatestChanges} />
-          </p>
+          <FocusTierList focusTiers={focusTiers} />
           {note ? <p className={cn("min-w-0", DOC_TEXT.bodyItalic, "opacity-90")}>{note}</p> : null}
         </div>
         <ChevronDown className={cn("size-4 shrink-0 text-slate-800 transition-transform", expanded && "rotate-180")} aria-hidden />
@@ -240,7 +271,7 @@ function CompetencyMatrix({ expandedPillar, onExpandedPillarChange, scrollNav, s
   }, [scrollNavSeq, expandedPillar]);
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       {COMPETENCY_MATRIX.map((pillar) => (
         <PillarMatrixCard
           key={pillar.pillarId}

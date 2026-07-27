@@ -7,7 +7,7 @@ export const SCHEMA_VERSION = 2;
 // The framework revision surfaced in the Theory tab. Bump this only when there's genuinely new
 // framework material worth alerting returning users to (not for minor copy tweaks). Rendered next to
 // the Theory tab label and compared against THEORY_SEEN_VERSION_KEY to show the "unseen" dot.
-export const FRAMEWORK_VERSION = "3.2";
+export const FRAMEWORK_VERSION = "4.1";
 // The framework version the user last opened the Theory tab at. Drives the unseen-updates dot (see
 // useTheoryUpdates): absent = fresh user (no dot); < FRAMEWORK_VERSION = behind (dot on); == current
 // = caught up. Stamped to current whenever the Theory tab is opened, which dismisses the dot.

@@ -1,7 +1,7 @@
 export const SITE_COPY = {
   title: "The 9-Pillar Engineer Growth Framework",
   tagline: "A spider chart to measure software engineering mastery, identify core interests, and guide career paths.",
-  detail: "Supported by a 45-point competency matrix across 5 seniority levels.",
+  detail: "Supported by a 45-point competency matrix across 5 proficiency levels.",
   byline: "— Jasper Loo Zhu Hang",
   shortName: "9-Pillar Framework",
   // Shown (muted) as the chart title when the title field is left blank but the title is enabled.

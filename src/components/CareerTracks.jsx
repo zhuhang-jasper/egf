@@ -152,7 +152,7 @@ function FoundationCarousel({ stageCharts, style }) {
   };
 
   return (
-    <div className="space-y-1 sm:hidden">
+    <div className="flex flex-col gap-1 sm:hidden">
       <div className="flex justify-center gap-1.5 pt-1" role="tablist" aria-label="Foundational stage">
         {stageCharts.map((chart, index) => {
           const isActive = index === activeIndex;
@@ -177,7 +177,7 @@ function FoundationCarousel({ stageCharts, style }) {
           Chart.js tweens (animateChart) — the radar points ease to their new spots while the base
           geometry and labels stay put. No stacked canvases; the role label below swaps instantly.
           Reduced-motion users get an instant value swap (no tween). */}
-      <div className="space-y-1.5">
+      <div className="flex flex-col gap-2">
         <FoundationStageBody chart={activeChart} style={style} centerRole animateChart={!prefersReducedMotion} />
       </div>
     </div>
@@ -189,30 +189,26 @@ function FoundationalPhase() {
 
   return (
     <article className={cn(cardClass, "overflow-hidden border-l-[3px] p-3")} style={{ borderLeftColor: style.accent, backgroundColor: style.chipBg }}>
-      <div className="space-y-2.5">
+      {/* `gap`, not `space-y`: gap only applies BETWEEN rendered flex items, so the breakpoint-hidden
+          chart branch below contributes nothing. `space-y-*` sets margins by DOM position, which is
+          why these two charts used to need a wrapper element to avoid a phantom gap. */}
+      <div className="flex flex-col gap-2">
         <h3 className={cn(DOC_TEXT.cardTitlePlain, "font-bold")}>{FOUNDATIONAL_PHASE.title}</h3>
 
-        <div className="space-y-2">
+        <div className="flex flex-col gap-2">
           <p className={DOC_TEXT.bodyMedium}>{FOUNDATIONAL_PHASE.intro}</p>
 
           <KeyPillarChips pillars={FOUNDATIONAL_PHASE.technicalPillars} ringColor={style.ringColor} textColor={style.textColor} />
         </div>
 
-        {/* Carousel (mobile) and 3-up grid (sm+) are wrapped together. `space-y-2.5` on the parent
-            applies `margin-bottom` to every child *except the DOM `:last-child`* — and `:last-child`
-            ignores `display:none`, so toggling the two with `hidden` would leave whichever comes
-            first with a phantom bottom margin against its hidden sibling. Wrapping them in a single
-            child avoids that: the wrapper is the last child, so no stray gap below it. */}
-        <div>
-          <FoundationCarousel stageCharts={FOUNDATIONAL_PHASE.stageCharts} style={style} />
+        <FoundationCarousel stageCharts={FOUNDATIONAL_PHASE.stageCharts} style={style} />
 
-          <div className="-mx-2 hidden grid-cols-3 divide-x divide-slate-300/70 sm:grid">
-            {FOUNDATIONAL_PHASE.stageCharts.map((chart) => (
-              <div key={chart.id} className="space-y-1.5 px-2">
-                <FoundationStageBody chart={chart} style={style} />
-              </div>
-            ))}
-          </div>
+        <div className="-mx-2 hidden grid-cols-3 divide-x divide-slate-300/70 sm:grid">
+          {FOUNDATIONAL_PHASE.stageCharts.map((chart) => (
+            <div key={chart.id} className="flex flex-col gap-2 px-2">
+              <FoundationStageBody chart={chart} style={style} />
+            </div>
+          ))}
         </div>
       </div>
     </article>
@@ -224,7 +220,7 @@ function CareerTrackCard({ track, number }) {
 
   return (
     <article
-      className={cn(cardClass, "flex flex-col gap-2.5 overflow-hidden border-l-[3px] p-3 sm:row-span-5 sm:grid sm:grid-rows-subgrid")}
+      className={cn(cardClass, "flex flex-col gap-3 overflow-hidden border-l-[3px] p-3 sm:row-span-5 sm:grid sm:grid-rows-subgrid")}
       style={{ borderLeftColor: style.accent, backgroundColor: style.chipBg }}
     >
       <h3 className={cn(DOC_TEXT.cardTitlePlain, "font-bold")} style={{ color: style.accent }}>
@@ -249,16 +245,16 @@ function CareerTrackCard({ track, number }) {
 
 export function CareerTracks() {
   return (
-    <div className="space-y-3">
-      <div className="space-y-1 pt-1">
-        <h3 className={cn(DOC_TEXT.cardTitlePlain, "font-bold")}>{JUNIOR_TO_SENIOR.title}</h3>
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-1 pt-1">
+        <h3 className={cn(DOC_TEXT.subsectionTitle, "font-bold")}>{JUNIOR_TO_SENIOR.title}</h3>
         <p className={DOC_TEXT.bodyMedium}>{JUNIOR_TO_SENIOR.intro}</p>
       </div>
 
       <FoundationalPhase />
 
-      <div className="space-y-1 pt-1">
-        <h3 className={cn(DOC_TEXT.cardTitlePlain, "font-bold")}>{SENIOR_FORK.title}</h3>
+      <div className="flex flex-col gap-1 pt-1">
+        <h3 className={cn(DOC_TEXT.subsectionTitle, "font-bold")}>{SENIOR_FORK.title}</h3>
         <p className={DOC_TEXT.bodyMedium}>{SENIOR_FORK.intro}</p>
       </div>
 

@@ -13,6 +13,13 @@ export const DOC_TEXT = {
   cardTitle: "text-[13px] sm:text-[14px] md:text-[15px] font-semibold leading-snug text-slate-900",
   cardTitlePlain: "text-[13px] sm:text-[14px] md:text-[15px] font-semibold text-slate-900",
 
+  /**
+   * Sub-heading that divides a section but is not the section heading itself (e.g. "From Junior to
+   * Senior", "The Senior Fork"). Sits between DOC_SECTION.title and cardTitle so a heading that owns
+   * several cards still outranks the titles inside them.
+   */
+  subsectionTitle: "text-[14px] sm:text-[15px] md:text-[16px] font-semibold leading-snug tracking-tight text-slate-900",
+
   meta: "text-[11px] sm:text-[12px] md:text-[13px] font-medium uppercase tracking-wide text-slate-700 text-right",
   metaBody: "text-[11px] sm:text-[12px] md:text-[13px] leading-snug text-slate-500",
 

@@ -95,9 +95,9 @@ const TRACKS = CAREER_TRACK_PROFILES.map((t) => ({
   keyPillars: (t.id === "product-focused" ? ["Domain Logic", "Product Sense", "UI/UX", "Communication"] : t.keyFocusPillars)
     .map((nm) => PILLAR_BY_NAME[nm])
     .filter(Boolean),
-  // Poster-only title tweaks for the People & Delivery track; theory keeps the originals.
-  // - L3 "Senior Fork (Any Domain)" reads as a glitch next to the other tracks' real titles.
-  // - L7 drops the "(CTO)" bracket — too tight for the poster rung.
+  // Poster-only guard on the People & Delivery L3 rung, which must stay ONE line on the poster.
+  // Theory currently supplies this exact string, so the map is a no-op today; it stays as a pin so a
+  // longer theory title (e.g. "Senior Engineer (via Track 1/2)") can't silently wrap the rung here.
   roleLevels: t.roleLevels.map((r) => {
     if (t.id !== "people-delivery") {
       return r;

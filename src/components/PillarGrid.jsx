@@ -16,7 +16,7 @@ function PillarCard({ pillar, clusterLabel, color, textColor, showLatestChanges 
   const { emoji, name } = splitEmoji(pillar.pillar);
   return (
     <article
-      className="rounded-xl border border-white/70 p-3 shadow-sm shadow-slate-200/40 xs:row-span-4 xs:grid xs:grid-rows-subgrid gap-2.5"
+      className="rounded-xl border border-white/70 p-3 shadow-sm shadow-slate-200/40 xs:row-span-4 xs:grid xs:grid-rows-subgrid gap-2"
       style={{ backgroundColor: getClusterSurfaceBg(color) }}
     >
       {/* single-col: title left + cluster label right; col: title only */}
@@ -29,6 +29,9 @@ function PillarCard({ pillar, clusterLabel, color, textColor, showLatestChanges 
           <span className="min-w-0">{name}</span>
         </p>
       </div>
+      {/* `mt-2` below `xs` / `gap-2` from `xs` up: the card is display:block on the narrowest layout,
+          where `gap` does nothing, so margins carry the rhythm there and are zeroed once it becomes a
+          subgrid. Both express the same 8px step. */}
       <p className={cn("mt-2 xs:mt-0", DOC_TEXT.body)}>
         <EmphasizedText text={pillar.focusSummary} boldClassName={WHATS_NEW_HIGHLIGHT_CLASS} plain={!showLatestChanges} />
       </p>
