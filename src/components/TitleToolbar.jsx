@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import { CircleCheck, Copy, FilePlus, Keyboard, MoreVertical, Pencil, Save, Undo2 } from "lucide-react";
+import { Calculator, CircleCheck, Copy, FilePlus, MoreVertical, Pencil, Save, Undo2 } from "lucide-react";
 
 import { ProfileActionsMenu } from "@/components/ProfileActionsMenu";
 import { ProfileCombobox } from "@/components/ProfileCombobox";
@@ -374,7 +374,7 @@ export function TitleToolbar() {
             onClick={toggleLevelKeyboardInputEnabled}
             className="group inline-flex h-[26.5px] shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-slate-300 bg-white px-1.5 text-xs font-semibold tracking-wide text-slate-600 hover:bg-slate-50 hover:text-slate-800"
           >
-            <Keyboard className="size-3.5 shrink-0" aria-hidden />
+            <Calculator className="size-3.5 shrink-0" aria-hidden />
             {/* Mini switch: black track when on, slate when off; knob slides right when on. */}
             <span
               aria-hidden
