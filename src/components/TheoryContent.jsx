@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import { ScrollText } from "lucide-react";
+import { Image, ScrollText, Share2 } from "lucide-react";
 
 import { CareerTracks } from "@/components/CareerTracks";
 import { ChangelogModal } from "@/components/ChangelogModal";
@@ -13,7 +13,7 @@ import { UnseenDot } from "@/components/UnseenDot";
 
 import { getSectionSentinelId, useSectionSeenObserver } from "@/hooks/useSectionSeenObserver";
 
-import { FRAMEWORK_VERSION } from "@/constants";
+import { FRAMEWORK_VERSION, IS_ADMIN } from "@/constants";
 import {
   CAREER_TRACKS_SECTION_INTRO,
   getSkillTierBands,
@@ -24,10 +24,19 @@ import {
 } from "@/constants/theory-data";
 import { DOC_SECTION, DOC_TEXT } from "@/styles/doc-typography";
 import { cn } from "@/utils";
+import { hrefForRoute } from "@/utils/route";
 import { scrollBelowStickyHeaderUntilSettled } from "@/utils/scroll";
 import { getPersistedExpandedPillar, getPillarCardElementId, persistExpandedPillar, THEORY_SECTION_IDS, THEORY_SECTIONS } from "@/utils/theory-url";
 
 const cardClass = "rounded-xl border border-slate-300 bg-white shadow-md shadow-slate-200/40";
+
+// Admin-only shortcuts to the standalone Poster/Social pages. These navigate away (full page load),
+// not in-app tabs. They live in this tab's toolbar rather than the app header so the header layout is
+// identical for admin and non-admin users. Gated by IS_ADMIN (?admin=1).
+const ADMIN_LINKS = [
+  { route: "poster", label: "Poster", icon: Image },
+  { route: "social", label: "Social", icon: Share2 },
+];
 
 // Stable fallback for the unseen-sections prop, so a caller that omits it doesn't hand the observer
 // a fresh Set identity on every render.
@@ -426,7 +435,26 @@ function TheoryContent({
   return (
     <div className="flex flex-col gap-6 print:max-w-none">
       <div className="flex flex-col gap-2">
-        <div className="flex justify-end print:hidden">
+        {/* Toolbar row: admin page links left, changelog right. The admin shortcuts used to float at
+            the right edge of the sticky tab bar, which forced an admin-only mobile layout up there;
+            moving them here keeps the app header identical for every user. `justify-between` with an
+            empty left side still parks the changelog button on the right for non-admins. */}
+        <div className="flex items-center justify-between gap-2 print:hidden">
+          <div className="flex items-center gap-1.5">
+            {IS_ADMIN
+              ? ADMIN_LINKS.map(({ route, label, icon: Icon }) => (
+                  <a
+                    key={route}
+                    href={hrefForRoute(route)}
+                    title={label}
+                    aria-label={label}
+                    className="inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-slate-100/80 text-slate-600 transition-colors hover:bg-slate-200/80 hover:text-slate-900"
+                  >
+                    <Icon className="size-4" aria-hidden />
+                  </a>
+                ))
+              : null}
+          </div>
           <Button type="button" variant="outline" size="sm" shape="pill" onClick={() => setChangelogOpen(true)} className="gap-1">
             <ScrollText className="size-3.5 shrink-0" aria-hidden />
             Show Changelog

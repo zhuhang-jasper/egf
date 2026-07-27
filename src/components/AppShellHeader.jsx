@@ -1,14 +1,13 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
-import { FileText, Image, Radar, Share2 } from "lucide-react";
+import { ChevronUp, FileText, Radar } from "lucide-react";
 
 import { Tooltip } from "@/components/ui/Tooltip";
 import { UnseenDot } from "@/components/UnseenDot";
 
-import { FRAMEWORK_VERSION, IS_ADMIN, SITE_COPY } from "@/constants";
+import { FRAMEWORK_VERSION, SITE_COPY } from "@/constants";
 import { cn } from "@/utils";
-import { hrefForRoute } from "@/utils/route";
-import { clearStickyScrollOffset, getTabBarPinnedScrollY, getWindowScrollY, setStickyScrollOffset } from "@/utils/scroll";
+import { clearStickyScrollOffset, getTabBarPinnedScrollY, getWindowScrollY, scrollWindowTo, setStickyScrollOffset } from "@/utils/scroll";
 
 const TABS = [
   { id: "tool", label: "Tool", icon: Radar },
@@ -17,13 +16,9 @@ const TABS = [
   { id: "theory", label: "Theory", icon: FileText, version: `v${FRAMEWORK_VERSION}` },
 ];
 
-// Admin-only shortcuts to the standalone Poster/Social pages. These navigate away (full page load),
-// not in-app tabs, so they render as a separate link row below the tablist — never mixed into the
-// Tool/Theory sliding pill. Gated by IS_ADMIN (?admin=1).
-const ADMIN_LINKS = [
-  { route: "poster", label: "Poster", icon: Image },
-  { route: "social", label: "Social", icon: Share2 },
-];
+// Slack when deciding the bar has reached its pinned position. A smooth scroll lands ON the anchor
+// rather than past it, so an exact test would keep the collapse caret visible after its own click.
+const PIN_EPSILON_PX = 2;
 
 function AppShellIntro() {
   return (
@@ -41,6 +36,9 @@ function AppShellTabBar({ activeTab, onTabChange, theoryHasUnseenUpdates = false
   // Whether scrolling up is possible — i.e. we're scrolled past the point where the bar pins.
   // Gates the active tab's "click to scroll to top" tooltip so it only shows when it'd do something.
   const [canScrollUp, setCanScrollUp] = useState(false);
+  // Whether the bar has reached its pinned position — hides the collapse caret, whose action is then
+  // already satisfied. Separate from `canScrollUp` because the two need different thresholds (below).
+  const [isPinned, setIsPinned] = useState(false);
   const selectedIndex = Math.max(
     0,
     TABS.findIndex((tab) => tab.id === activeTab),
@@ -66,9 +64,21 @@ function AppShellTabBar({ activeTab, onTabChange, theoryHasUnseenUpdates = false
     };
   }, []);
 
-  // Track whether there's room to scroll up so the tooltip can hide when there isn't.
+  // Track whether we're scrolled past the pin point. Drives two opposite affordances: the active tab's
+  // "scroll to top" tooltip (only useful when there IS room to scroll up), and the collapse caret
+  // below (only offered when there isn't — i.e. the intro is still fully shown).
+  //
+  // The caret uses a >= test with a small tolerance rather than the tooltip's strict >. Clicking the
+  // caret scrolls to exactly `pinnedY`, where `scrollY > pinnedY` is false — so a strict test would
+  // leave the caret on screen after its own click, waiting on smooth-scroll rounding to flip it. The
+  // tolerance also absorbs sub-pixel landings and elastic overscroll settling back to the anchor.
   useEffect(() => {
-    const sync = () => setCanScrollUp(getWindowScrollY() > getTabBarPinnedScrollY());
+    const sync = () => {
+      const pinnedY = getTabBarPinnedScrollY();
+      const y = getWindowScrollY();
+      setCanScrollUp(y > pinnedY);
+      setIsPinned(y >= pinnedY - PIN_EPSILON_PX);
+    };
     sync();
     window.addEventListener("scroll", sync, { passive: true });
     window.addEventListener("resize", sync);
@@ -80,11 +90,11 @@ function AppShellTabBar({ activeTab, onTabChange, theoryHasUnseenUpdates = false
 
   return (
     <div ref={barRef} id="app-shell-tab-bar" className="sticky top-0 z-40 -mx-3 mt-0 bg-white px-3 py-2 shadow-sm print:static print:shadow-none">
-      {/* ≥xs (470px): tabs centered (justify-center), admin icons absolute-floated right so they don't
-          shift the tabs off-center. <xs + admin: justify-between — tabs to the left edge, icons
-          to the right (absolute positioning drops so the flow spacing applies). Non-admin stays
-          centered at every width (only the tablist is present). */}
-      <div className={cn("relative flex items-center xs:justify-center", IS_ADMIN ? "justify-between" : "justify-center")}>
+      {/* The tablist is centered at every width for every user. The admin Poster/Social shortcuts used
+          to float at the right edge here, which forced an admin-only `justify-between` on mobile; they
+          now live in the Theory tab's toolbar instead, so this row is identical for admin and non-admin
+          and the collapse caret can own the left edge unconditionally. */}
+      <div className="relative flex items-center justify-center">
         <div
           className="relative grid w-62 max-w-full grid-cols-2 rounded-lg border border-slate-200 bg-slate-100/80 p-0.5"
           role="tablist"
@@ -136,23 +146,29 @@ function AppShellTabBar({ activeTab, onTabChange, theoryHasUnseenUpdates = false
           })}
         </div>
 
-        {/* Admin-only page-nav: compact icon buttons. Icon-only (labelled via title/aria-label);
-            distinct icon per destination. ≥xs (470px): absolute right edge (keeps tabs centered).
-            <xs: static, so justify-between on the row pushes it to the right edge. */}
-        {IS_ADMIN ? (
-          <div className="flex items-center gap-1.5 xs:absolute xs:right-0 xs:top-1/2 xs:-translate-y-1/2">
-            {ADMIN_LINKS.map(({ route, label, icon: Icon }) => (
-              <a
-                key={route}
-                href={hrefForRoute(route)}
-                title={label}
-                aria-label={label}
-                className="inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-slate-100/80 text-slate-600 transition-colors hover:bg-slate-200/80 hover:text-slate-900"
-              >
-                <Icon className="size-4" aria-hidden />
-              </a>
-            ))}
-          </div>
+        {/* Collapse caret: scrolls down to exactly the point where this bar pins, so the intro header
+            slides away and the bar goes sticky — the same end state as scrolling there by hand, minus
+            the scrolling. It is NOT a toggle: there is no collapsed state to store, since scroll
+            position already is the state (and scrolling back up restores the intro).
+
+            Shown only while the bar has NOT reached its pinned position, which is precisely when the
+            action would do something — clicking it scrolls to that position, so it removes itself. Once
+            pinned, the active tab's "click to scroll to top" tooltip takes over as the way back.
+
+            Absolutely positioned at every width. Being out of flow is what keeps it from decentering
+            the tablist — the row is `justify-center`, so an in-flow caret would shove the tabs right by
+            its own width. Nothing else occupies this row now that the admin links moved to the Theory
+            toolbar, so the left edge is free at every width for every user. */}
+        {!isPinned ? (
+          <button
+            type="button"
+            onClick={() => scrollWindowTo(getTabBarPinnedScrollY(), { behavior: "smooth" })}
+            title="Collapse header"
+            aria-label="Collapse header"
+            className="absolute left-0 top-1/2 inline-flex size-8 shrink-0 -translate-y-1/2 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-slate-100/80 text-slate-500 transition-colors hover:bg-slate-200/80 hover:text-slate-900"
+          >
+            <ChevronUp className="size-4" aria-hidden />
+          </button>
         ) : null}
       </div>
     </div>
