@@ -84,14 +84,17 @@ function SeniorityPhaseTitle({ phase, className, breakAfterSlash = false }) {
  * rather than degrading to a stacked list on mobile, which would flatten the idea into three
  * unrelated rows.
  *
- * ONE layout at all sizes. The narrowest band (Foundational, 34% of the track) is the binding
+ * ONE layout at all sizes. The narrowest band (Foundational, 35% of the track) is the binding
  * constraint: it carries the LONGEST label, so it is the only band whose text can outgrow its box.
- * At a 320px viewport that is ~109px against a ~12px-padded 12px label, and the margin stays
- * positive up through the 14px step. Widen the band in `SKILL_TIERS` before shrinking the type if a
- * label ever stops fitting — the percentages are approximate, the ruler alignment is not.
- * An L1-L5 ruler sits above the bands to anchor what the horizontal axis means —
- * on mobile that ruler is the only thing naming the axis, since the level cards are stacked by then
- * and no longer form visual columns above it.
+ * `minWidth: max-content` on each band is what guarantees the fit — widen the band in `SKILL_TIERS`
+ * rather than shrinking the type if a label ever looks cramped, since the percentages are
+ * approximate by intent (see `SKILL_TIERS`) but a clipped word is just a bug.
+ *
+ * An L1-L5 ruler sits above the bands to anchor what the horizontal axis means. On mobile that ruler
+ * is the only thing naming the axis, since the level cards are stacked by then and no longer form
+ * visual columns above it; on desktop the ruler is aligned to those columns (see below) so the two
+ * read as one scale. Only the ruler registers with the cards — the bands stay on plain percentages,
+ * because their edges are meant to land mid-column.
  */
 function SkillTierBands() {
   return (
@@ -99,8 +102,29 @@ function SkillTierBands() {
       <h3 className={cn(DOC_TEXT.cardTitlePlain, "font-bold")}>Skill Tiers</h3>
 
       <div>
-        {/* Ruler: five equal cells naming the axis the bands are measured against. */}
-        <div className="grid grid-cols-5 border-b border-slate-200 pb-1">
+        {/* Ruler: five equal cells naming the axis the bands are measured against.
+
+            From `sm:` up it also has to REGISTER with the seniority cards above, which are a
+            `grid-cols-5 gap-2` sibling in the same column — so each code sits centred over its own
+            card. Two things have to match for that:
+
+              1. the 8px gutter (`sm:gap-2`) — otherwise the cells are 20% of a gapless track and
+                 each one drifts left of its card, worsening toward L5;
+              2. the outer width. This card adds `p-3` (12px) and a 1px border that the card grid's
+                 container does not have, so the ruler is inset ~13px per side and its cells come out
+                 narrower than the columns. That error is symmetric about the centre: L3 looks right
+                 while L1/L2 sit left and L4/L5 sit right of their cards.
+
+            `-mx-[13px]` fixes (2) by pulling the track back out to the card's outer edge. Do NOT add
+            matching `px` here to keep the end labels inboard — it restores the exact width just
+            removed and silently makes this a no-op. The labels are centred in their cells and the
+            cells now match the columns, so the end codes land over their cards, not off the card.
+
+            Mobile stacks the cards, so there is nothing to register against and both are dropped.
+
+            The BANDS below deliberately stay on plain percentages of the padded track: their edges
+            land mid-column by design, so they are not trying to register with anything. */}
+        <div className="grid grid-cols-5 border-b border-slate-200 pb-1 sm:-mx-[calc(0.75rem+1px)] sm:gap-2">
           {SENIORITY_LEVEL_DEFINITIONS.map(({ code }) => (
             <span key={code} className={cn("text-center", DOC_TEXT.badgeMicro, "text-slate-400")}>
               {code}
