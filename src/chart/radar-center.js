@@ -6,8 +6,9 @@ import { getPillarOrder } from "@/constants";
  * Per-pillar pixel nudges for the chart axis labels, applied after the radar's automatic
  * placement. Keyed by pillar id: `{ x, y }` shifts the label right/down.
  *
- * Tuned for the interactive tool chart. The theory career-track charts are sized differently, so
- * they have their own {@link THEORY_PILLAR_LABEL_NUDGE}.
+ * Tuned for the interactive tool chart, and shared by the theory hero radar (same render size). The
+ * small career-track charts are sized differently, so they have their own
+ * {@link CAREER_TRACK_PILLAR_LABEL_NUDGE}.
  */
 const PILLAR_LABEL_NUDGE = {
   // coding: { x: -5, y: 0 },
@@ -33,17 +34,11 @@ const CAREER_TRACK_PILLAR_LABEL_NUDGE = {
 };
 
 /**
- * Nudges for the theory hero radar (the large empty chart at the top of the theory tab). Tuned
- * independently of {@link CAREER_TRACK_PILLAR_LABEL_NUDGE} since it renders much larger.
+ * The theory hero radar renders at essentially the same size as the tool chart, so it shares that
+ * chart's nudges rather than carrying a near-duplicate map that has to be kept in sync. (The small
+ * career-track profiles still need their own — see {@link CAREER_TRACK_PILLAR_LABEL_NUDGE}.)
  */
-const HERO_PILLAR_LABEL_NUDGE = {
-  domainLogic: { x: -10, y: 20 },
-  architecture: { x: 10, y: 20 },
-  uiUx: { x: -3, y: 15 },
-  ai: { x: 3, y: 15 },
-  productSense: { x: -3, y: -10 },
-  process: { x: 3, y: -10 },
-};
+const HERO_PILLAR_LABEL_NUDGE = PILLAR_LABEL_NUDGE;
 
 function getPillarLabelNudge(nudgeMap, pillarId) {
   return nudgeMap[pillarId] ?? { x: 0, y: 0 };
