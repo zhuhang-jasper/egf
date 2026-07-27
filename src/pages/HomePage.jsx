@@ -54,10 +54,18 @@ export default function HomePage() {
   // repeated clicks on the same pillar re-trigger the expand + scroll even when the tab is already open.
   const [matrixNav, setMatrixNav] = useState(null);
 
-  // Theory tab's version-bump indicator. The dot shows when the stored seen-version is behind the
-  // current framework version, and opening the Theory tab dismisses it (stamps seen = current).
-  // Passing `activeTab === "theory"` lets the hook do that on-open stamp.
-  const { hasUnseenUpdates: theoryHasUnseenUpdates } = useTheoryUpdates(activeTab === "theory");
+  // Theory tab's version-bump indicators. `unseenSections` drives a dot on each changed section's
+  // heading; `theoryHasUnseenUpdates` is their aggregate and drives the dot on the Theory tab label.
+  // Dismissal is per-section and requires BOTH the section's head and tail to have been in view
+  // (TheoryContent observes edge sentinels) — NOT tab open, so the tab dot survives a drive-by visit.
+  // Half-read progress is persisted, so the two edges can be reached in separate sessions.
+  const {
+    hasUnseenUpdates: theoryHasUnseenUpdates,
+    unseenSections,
+    markSectionEdgeSeen,
+    isSectionEdgePairComplete,
+    markSectionSeen,
+  } = useTheoryUpdates();
 
   const handleTabChange = (nextTab) => {
     if (nextTab === activeTab) {
@@ -124,6 +132,11 @@ export default function HomePage() {
             }}
             matrixNav={matrixNav}
             cancelRestoreRef={cancelRestoreRef}
+            isVisible={activeTab === "theory"}
+            unseenSections={unseenSections}
+            markSectionEdgeSeen={markSectionEdgeSeen}
+            isSectionEdgePairComplete={isSectionEdgePairComplete}
+            markSectionSeen={markSectionSeen}
           />
         </div>
       </main>

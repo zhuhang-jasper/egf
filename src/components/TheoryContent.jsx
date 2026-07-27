@@ -9,7 +9,11 @@ import { PillarGrid } from "@/components/PillarGrid";
 import { ShareLinkButton } from "@/components/ShareLinkButton";
 import { StaticCompetencyChart } from "@/components/StaticCompetencyChart";
 import { Button } from "@/components/ui/button";
+import { UnseenDot } from "@/components/UnseenDot";
 
+import { getSectionSentinelId, useSectionSeenObserver } from "@/hooks/useSectionSeenObserver";
+
+import { FRAMEWORK_VERSION } from "@/constants";
 import {
   CAREER_TRACKS_SECTION_INTRO,
   getSkillTierBands,
@@ -24,6 +28,12 @@ import { scrollBelowStickyHeaderUntilSettled } from "@/utils/scroll";
 import { getPersistedExpandedPillar, getPillarCardElementId, persistExpandedPillar, THEORY_SECTION_IDS, THEORY_SECTIONS } from "@/utils/theory-url";
 
 const cardClass = "rounded-xl border border-slate-300 bg-white shadow-md shadow-slate-200/40";
+
+// Stable fallback for the unseen-sections prop, so a caller that omits it doesn't hand the observer
+// a fresh Set identity on every render.
+const NO_UNSEEN_SECTIONS = new Set();
+const noop = () => {};
+const returnsFalse = () => false;
 
 // Skill-tier band geometry is static — resolve the chained start/width percentages once.
 const SKILL_TIER_BANDS = getSkillTierBands();
@@ -41,11 +51,38 @@ const DEEPLINK_RESTORE_SETTLE_MS = 350;
 // to the deep-link pillar we wait this out so the card has stopped moving before we measure & glide.
 const DEEPLINK_EXPAND_ANIM_MS = 300;
 
-function SectionHeading({ title, subtitle, section }) {
+/**
+ * Zero-height marker bracketing a section's content, used by `useSectionSeenObserver` to detect that
+ * the head/tail of the section has been in view.
+ *
+ * MUST stay IN FLOW. An earlier version used `absolute` to dodge the flex gap (below) and that broke
+ * the whole mechanism: `top: auto` on an abs-positioned child means "its static position", but a flex
+ * container never gives an abs-positioned child a static position, so BOTH sentinels collapsed onto the
+ * section's top-left origin. Head and tail sat at the same point, the pair armed the instant a
+ * section's top appeared, and dots cleared long before the user reached the bottom.
+ *
+ * In flow, the sentinel lands where it is written — which is the whole point, since its document
+ * position IS the signal. The cost is that a flex `gap` is charged for every child including a
+ * zero-height one, so each sentinel would add its parent's gap (12px at `gap-3`, 4px at `gap-1`) of
+ * dead space. `-mt-[gap]` on the tail and `-mb-[gap]` on the head cancel exactly that, keeping section
+ * spacing byte-identical to before these existed. The gap value is passed in per section because the
+ * four parents don't all use `gap-3`.
+ */
+function SectionSentinel({ section, edge, gapClass }) {
+  return <span id={getSectionSentinelId(section, edge)} aria-hidden className={cn("block h-0 w-full shrink-0", gapClass)} />;
+}
+
+function SectionHeading({ title, subtitle, section, hasUnseenUpdates = false }) {
   return (
     <header className="flex flex-col gap-1">
       <div className="flex items-center gap-2">
-        <h2 className={DOC_SECTION.title}>{title}</h2>
+        {/* The dot rides the title text as a superscript rather than sitting after the share button,
+            so it reads as belonging to the heading. `self-start` + `mt-1` place it near the cap
+            height of the first line instead of centring it against a wrapped two-line title. */}
+        <h2 className={cn(DOC_SECTION.title, "flex items-start gap-1")}>
+          {title}
+          {hasUnseenUpdates ? <UnseenDot label={`Updated in v${FRAMEWORK_VERSION}`} className="mt-1 size-2 self-start" /> : null}
+        </h2>
         <ShareLinkButton section={section} ariaLabel="Copy link to this content" />
       </div>
       {subtitle ? <p className={DOC_SECTION.intro}>{subtitle}</p> : null}
@@ -265,8 +302,22 @@ function SeniorityStepper() {
   );
 }
 
-function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreRef }) {
+function TheoryContent({
+  deepLink,
+  onDeepLinkConsumed,
+  matrixNav,
+  cancelRestoreRef,
+  isVisible = true,
+  unseenSections = NO_UNSEEN_SECTIONS,
+  markSectionEdgeSeen = noop,
+  isSectionEdgePairComplete = returnsFalse,
+  markSectionSeen = noop,
+}) {
   const consumedRef = useRef(false);
+
+  // Clears a section's dot once both its head and tail have been in view AND the section has settled
+  // on screen. Observes only the still-unseen sections, so this is inert for a caught-up user.
+  useSectionSeenObserver(isVisible, unseenSections, markSectionEdgeSeen, isSectionEdgePairComplete, markSectionSeen);
 
   // Expanded pillar state lives here so the matrix share button can read it. On a deep-link boot we
   // intentionally start from the *persisted* pillar, NOT the deep-link's — so the page first restores
@@ -399,21 +450,38 @@ function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreR
         </div>
 
         <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.pillars]} className="flex flex-col gap-3">
-          <SectionHeading title="I. The 9 Pillars" subtitle={PILLARS_SECTION_INTRO} section={THEORY_SECTIONS.pillars} />
+          {/* Head sentinel sits ABOVE the heading so it is reached before the dot it clears. */}
+          <SectionSentinel section={THEORY_SECTIONS.pillars} edge="head" gapClass="-mb-3" />
+          <SectionHeading
+            title="I. The 9 Pillars"
+            subtitle={PILLARS_SECTION_INTRO}
+            section={THEORY_SECTIONS.pillars}
+            hasUnseenUpdates={unseenSections.has(THEORY_SECTIONS.pillars)}
+          />
           <PillarGrid showLatestChanges={false} />
+          <SectionSentinel section={THEORY_SECTIONS.pillars} edge="tail" gapClass="-mt-3" />
         </section>
       </div>
 
       <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.seniority]} className="flex flex-col gap-3">
-        <SectionHeading title="II. The 5 Proficiency Levels (L1–L5)" subtitle={SENIORITY_SECTION_INTRO} section={THEORY_SECTIONS.seniority} />
+        <SectionSentinel section={THEORY_SECTIONS.seniority} edge="head" gapClass="-mb-3" />
+        <SectionHeading
+          title="II. The 5 Proficiency Levels (L1–L5)"
+          subtitle={SENIORITY_SECTION_INTRO}
+          section={THEORY_SECTIONS.seniority}
+          hasUnseenUpdates={unseenSections.has(THEORY_SECTIONS.seniority)}
+        />
         <SeniorityStepper />
+        <SectionSentinel section={THEORY_SECTIONS.seniority} edge="tail" gapClass="-mt-3" />
       </section>
 
       <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.matrix]} className="flex flex-col gap-3">
+        <SectionSentinel section={THEORY_SECTIONS.matrix} edge="head" gapClass="-mb-3" />
         <SectionHeading
           title="III. The 45-Point Competency Matrix"
           subtitle="The full behavioral matrix: 9 pillars across 5 levels. For each pillar, the focus areas are grouped into 3 skill tiers. Expand a pillar to reveal the 5 cells, each describing the observable behaviors expected at that level."
           section={THEORY_SECTIONS.matrix}
+          hasUnseenUpdates={unseenSections.has(THEORY_SECTIONS.matrix)}
         />
         <CompetencyMatrix
           expandedPillar={expandedPillar}
@@ -421,13 +489,21 @@ function TheoryContent({ deepLink, onDeepLinkConsumed, matrixNav, cancelRestoreR
           scrollNav={matrixNav}
           showLatestChanges={false}
         />
+        <SectionSentinel section={THEORY_SECTIONS.matrix} edge="tail" gapClass="-mt-3" />
       </section>
 
       {/* gap-1 (not the other sections' gap-3): this section's intro is empty, so the heading is a
           bare title line and needs to hug the first track card rather than sit above a full gap. */}
       <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.tracks]} className="flex flex-col gap-1">
-        <SectionHeading title="IV. Career Growth Paths" subtitle={CAREER_TRACKS_SECTION_INTRO} section={THEORY_SECTIONS.tracks} />
+        <SectionSentinel section={THEORY_SECTIONS.tracks} edge="head" gapClass="-mb-1" />
+        <SectionHeading
+          title="IV. Career Growth Paths"
+          subtitle={CAREER_TRACKS_SECTION_INTRO}
+          section={THEORY_SECTIONS.tracks}
+          hasUnseenUpdates={unseenSections.has(THEORY_SECTIONS.tracks)}
+        />
         <CareerTracks />
+        <SectionSentinel section={THEORY_SECTIONS.tracks} edge="tail" gapClass="-mt-1" />
       </section>
     </div>
   );

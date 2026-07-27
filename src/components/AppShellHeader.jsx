@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { FileText, Image, Radar, Share2 } from "lucide-react";
 
 import { Tooltip } from "@/components/ui/Tooltip";
+import { UnseenDot } from "@/components/UnseenDot";
 
 import { FRAMEWORK_VERSION, IS_ADMIN, SITE_COPY } from "@/constants";
 import { cn } from "@/utils";
@@ -99,8 +100,9 @@ function AppShellTabBar({ activeTab, onTabChange, theoryHasUnseenUpdates = false
           />
           {TABS.map(({ id, label, icon: Icon, version }) => {
             const selected = activeTab === id;
-            // Shown on the Theory tab whether or not it's active — opening the tab no longer clears
-            // the dot (only turning "What's New" off does), so a user viewing Theory should see it.
+            // Shown on the Theory tab whether or not it's active: opening the tab doesn't clear this
+            // dot. It's the aggregate of the per-section dots and stays lit until every changed
+            // section has actually been scrolled to (see useTheoryUpdates).
             const showUnseenDot = id === "theory" && theoryHasUnseenUpdates;
             return (
               <button
@@ -123,12 +125,9 @@ function AppShellTabBar({ activeTab, onTabChange, theoryHasUnseenUpdates = false
                     className={cn("inline-flex items-start text-[11px] font-semibold leading-none", selected ? "text-white/70" : "text-slate-400")}
                   >
                     {version}
-                    {/* Unseen-updates dot: the user last caught up to an older framework version and
-                        hasn't dismissed this one yet. `-translate-y` lifts it to superscript height. */}
-                    {showUnseenDot ? (
-                      // iOS notification badge red (systemRed, #FF3B30).
-                      <span className="ml-0.5 size-1.5 -translate-y-0.5 rounded-full bg-[#FF3B30]" aria-label="New framework updates" />
-                    ) : null}
+                    {/* Unseen-updates dot: at least one changed Theory section hasn't been read yet.
+                        `-translate-y` lifts it to superscript height. */}
+                    {showUnseenDot ? <UnseenDot label="New framework updates" className="ml-0.5 size-1.5 -translate-y-0.5" /> : null}
                   </span>
                 ) : null}
                 {selected && canScrollUp ? <Tooltip text="Click to scroll to top" placement="bottom" /> : null}
