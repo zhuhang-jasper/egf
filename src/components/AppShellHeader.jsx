@@ -1,13 +1,13 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
-import { ChevronUp, FileText, Radar } from "lucide-react";
+import { ChevronDown, ChevronsUp, ChevronUp, FileText, Radar } from "lucide-react";
 
 import { Tooltip } from "@/components/ui/Tooltip";
 import { UnseenDot } from "@/components/UnseenDot";
 
 import { FRAMEWORK_VERSION, SITE_COPY } from "@/constants";
 import { cn } from "@/utils";
-import { clearStickyScrollOffset, getTabBarPinnedScrollY, getWindowScrollY, scrollWindowTo, setStickyScrollOffset } from "@/utils/scroll";
+import { clearStickyScrollOffset, getWindowScrollY, scrollWindowToTop, setStickyScrollOffset } from "@/utils/scroll";
 
 const TABS = [
   { id: "tool", label: "Tool", icon: Radar },
@@ -16,29 +16,68 @@ const TABS = [
   { id: "theory", label: "Theory", icon: FileText, version: `v${FRAMEWORK_VERSION}` },
 ];
 
-// Slack when deciding the bar has reached its pinned position. A smooth scroll lands ON the anchor
-// rather than past it, so an exact test would keep the collapse caret visible after its own click.
-const PIN_EPSILON_PX = 2;
+// The caret's three modes. Each does exactly ONE thing — scrolling and header state are never bundled.
+//
+// `jump` used to scroll to the top AND reveal, which forced the title on a user who only wanted to get back
+// to the top: the very complaint this whole affordance exists to answer. Splitting them means getting the
+// title from deep in the page is two clicks (top, then reveal), but the far more common "just take me up"
+// is one click with no side effect. At the top, a pull reveals too, so the second click isn't the only route.
+const CARET_MODES = {
+  collapse: { icon: ChevronUp, label: "Hide title" },
+  reveal: { icon: ChevronDown, label: "Show title" },
+  backToTop: { icon: ChevronsUp, label: "Back to top" },
+};
 
-function AppShellIntro() {
+
+/**
+ * The framework title block. Collapses to zero height rather than being scrolled away, so the document's
+ * top becomes the tab bar itself — see `useHeaderCollapse` for why that matters.
+ *
+ * `grid-rows-[1fr]` → `grid-rows-[0fr]` is how the height collapses: a grid row can go from a content-sized
+ * track to a zero track, which plain `height: auto` cannot express. Switched, not transitioned — see below.
+ *
+ * The inner item MUST carry `min-h-0` as well as `overflow-hidden`. A grid item's automatic minimum size is
+ * its min-content height, which overrides a `0fr` track — so without it the collapsed row keeps a residual
+ * band of the title's height. That residual is not just cosmetic: it stays scrollable, so `scrollY > 0` is
+ * reachable while the header still looks collapsed, which puts a dead gap between "collapsed" and "at the
+ * top" and breaks the pull gesture's only precondition.
+ *
+ * `print:grid-rows-[1fr]` forces it open on paper, where there is no scrolling and the title should always
+ * appear. Kept out of the `hidden` treatment for the same reason.
+ */
+function AppShellIntro({ collapsed = false }) {
   return (
-    <header id="app-shell-intro" className="space-y-2 pt-0 text-center sm:pt-2">
-      <h1 className="text-balance text-xl sm:text-2xl font-bold leading-tight tracking-tight text-slate-900 mb-1">{SITE_COPY.title}</h1>
-      <p className="text-pretty text-xs sm:text-sm leading-tight text-slate-700 sm:mb-1">
-        {SITE_COPY.tagline} {SITE_COPY.detail} <span className="whitespace-nowrap text-slate-500">{SITE_COPY.byline}</span>
-      </p>
-    </header>
+    <div
+      id="app-shell-intro"
+      aria-hidden={collapsed}
+      className={cn(
+        // NOT animated. `grid-template-rows` is not compositable, so transitioning it forces a full layout +
+        // paint every frame — on a container wrapping the entire page, radar chart included. Because collapsing
+        // is triggered BY scrolling, those ~18 layout passes land exactly while the user is scrolling, which is
+        // what the stutter was. A trace confirmed no scroll writer was involved: the cost was rendering, not a
+        // fight over scroll position. Snapping is also more honest here — the header is off-screen when this
+        // fires, so there was never any animation to see.
+        "grid print:grid-rows-[1fr]",
+        collapsed ? "grid-rows-[0fr]" : "grid-rows-[1fr]",
+      )}
+    >
+      <header className="min-h-0 overflow-hidden text-center">
+        <h1 className="text-balance text-xl sm:text-2xl font-bold leading-tight tracking-tight text-slate-900 mb-1 pt-0 sm:pt-2">
+          {SITE_COPY.title}
+        </h1>
+        <p className="text-pretty text-xs sm:text-sm leading-tight text-slate-700 pb-2 sm:pb-3">
+          {SITE_COPY.tagline} {SITE_COPY.detail} <span className="whitespace-nowrap text-slate-500">{SITE_COPY.byline}</span>
+        </p>
+      </header>
+    </div>
   );
 }
 
-function AppShellTabBar({ activeTab, onTabChange, theoryHasUnseenUpdates = false }) {
+function AppShellTabBar({ activeTab, onTabChange, theoryHasUnseenUpdates = false, collapsed = false, onCollapsedChange }) {
   const barRef = useRef(null);
   // Whether scrolling up is possible — i.e. we're scrolled past the point where the bar pins.
   // Gates the active tab's "click to scroll to top" tooltip so it only shows when it'd do something.
   const [canScrollUp, setCanScrollUp] = useState(false);
-  // Whether the bar has reached its pinned position — hides the collapse caret, whose action is then
-  // already satisfied. Separate from `canScrollUp` because the two need different thresholds (below).
-  const [isPinned, setIsPinned] = useState(false);
   const selectedIndex = Math.max(
     0,
     TABS.findIndex((tab) => tab.id === activeTab),
@@ -64,21 +103,11 @@ function AppShellTabBar({ activeTab, onTabChange, theoryHasUnseenUpdates = false
     };
   }, []);
 
-  // Track whether we're scrolled past the pin point. Drives two opposite affordances: the active tab's
-  // "scroll to top" tooltip (only useful when there IS room to scroll up), and the collapse caret
-  // below (only offered when there isn't — i.e. the intro is still fully shown).
-  //
-  // The caret uses a >= test with a small tolerance rather than the tooltip's strict >. Clicking the
-  // caret scrolls to exactly `pinnedY`, where `scrollY > pinnedY` is false — so a strict test would
-  // leave the caret on screen after its own click, waiting on smooth-scroll rounding to flip it. The
-  // tolerance also absorbs sub-pixel landings and elastic overscroll settling back to the anchor.
+  // Whether there's anywhere to scroll up to, gating the active tab's "click to scroll to top" tooltip so
+  // it only appears when it would do something. Header collapse is no longer inferred from scroll position
+  // — it's an explicit boolean prop — so this is the only thing scroll position still decides here.
   useEffect(() => {
-    const sync = () => {
-      const pinnedY = getTabBarPinnedScrollY();
-      const y = getWindowScrollY();
-      setCanScrollUp(y > pinnedY);
-      setIsPinned(y >= pinnedY - PIN_EPSILON_PX);
-    };
+    const sync = () => setCanScrollUp(getWindowScrollY() > 0);
     sync();
     window.addEventListener("scroll", sync, { passive: true });
     window.addEventListener("resize", sync);
@@ -87,6 +116,16 @@ function AppShellTabBar({ activeTab, onTabChange, theoryHasUnseenUpdates = false
       window.removeEventListener("resize", sync);
     };
   }, [activeTab]);
+
+  // Scroll position takes precedence over header state. Scrolled away from the top, the header is off-screen
+  // either way, so toggling it would be an invisible no-op — "back to top" is the only action with a visible
+  // effect there, and it's what a control in the top-left corner is expected to do. Only once at the top does
+  // the caret become the header toggle.
+  let caretMode = "backToTop";
+  if (!canScrollUp) {
+    caretMode = collapsed ? "reveal" : "collapse";
+  }
+  const { icon: CaretIcon, label: caretLabel } = CARET_MODES[caretMode];
 
   return (
     <div ref={barRef} id="app-shell-tab-bar" className="sticky top-0 z-40 -mx-3 mt-0 bg-white px-3 py-2 shadow-sm print:static print:shadow-none">
@@ -146,30 +185,55 @@ function AppShellTabBar({ activeTab, onTabChange, theoryHasUnseenUpdates = false
           })}
         </div>
 
-        {/* Collapse caret: scrolls down to exactly the point where this bar pins, so the intro header
-            slides away and the bar goes sticky — the same end state as scrolling there by hand, minus
-            the scrolling. It is NOT a toggle: there is no collapsed state to store, since scroll
-            position already is the state (and scrolling back up restores the intro).
+        {/* Corner caret — at the top it toggles the title (the discoverable equivalent of the pull gesture in
+            useHeaderCollapse, which is natural on touch but undiscoverable with a mouse); scrolled away from
+            the top it is a plain "back to top".
 
-            Shown only while the bar has NOT reached its pinned position, which is precisely when the
-            action would do something — clicking it scrolls to that position, so it removes itself. Once
-            pinned, the active tab's "click to scroll to top" tooltip takes over as the way back.
+            ONE ACTION PER CLICK. It previously combined the two — expanding from a scrolled position also
+            jumped to the top — which meant a user who only wanted to return to the top had the title forced
+            on them. Since the header is off-screen while scrolled anyway, toggling it there would be an
+            invisible no-op, so the split costs nothing and removes the surprise. Getting the title from deep
+            is now two clicks, but "just take me up" is one with no side effect.
 
-            Absolutely positioned at every width. Being out of flow is what keeps it from decentering
-            the tablist — the row is `justify-center`, so an in-flow caret would shove the tabs right by
-            its own width. Nothing else occupies this row now that the admin links moved to the Theory
+            This also sidesteps the layout hazard that made the combined version fragile: the intro and the
+            paddings above the tab bar all live above the scroll position, so revealing them while scrolled
+            grows the document upward and pushes content down ~120px. Revealing now only ever happens AT the
+            top, exactly like the pull gesture, where that growth is invisible.
+
+            Always rendered, never hidden by scroll position: a control that vanishes reads as flakiness, and
+            it is the only visible route back to the title (the pull gesture requires already being at the
+            top, which is the hard part).
+
+            THE ICON DISTINGUISHES THREE ACTIONS, not two. Expanding from a scrolled position also jumps to
+            the top, and a plain "show title" chevron hid that — the jump was the dominant effect and came as
+            a surprise. A DOUBLE chevron is the established "go to the end" idiom, so it advertises the jump
+            instead. At the top there is nothing to jump to, so the single chevron is honest there:
+
+              expanded            → ChevronUp     collapse, no scrolling
+              collapsed, at top   → ChevronDown   reveal in place
+              collapsed, scrolled → ChevronsUp    jump to top, then reveal
+
+            Absolutely positioned at every width. Being out of flow is what keeps it from decentering the
+            tablist — the row is `justify-center`, so an in-flow caret would shove the tabs right by its
+            own width. Nothing else occupies this row now that the admin links moved to the Theory
             toolbar, so the left edge is free at every width for every user. */}
-        {!isPinned ? (
-          <button
-            type="button"
-            onClick={() => scrollWindowTo(getTabBarPinnedScrollY(), { behavior: "smooth" })}
-            title="Collapse header"
-            aria-label="Collapse header"
-            className="absolute left-0 top-1/2 inline-flex size-8 shrink-0 -translate-y-1/2 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-slate-100/80 text-slate-500 transition-colors hover:bg-slate-200/80 hover:text-slate-900"
-          >
-            <ChevronUp className="size-4" aria-hidden />
-          </button>
-        ) : null}
+        <button
+          type="button"
+          onClick={() => {
+            if (caretMode === "backToTop") {
+              scrollWindowToTop({ behavior: "smooth" });
+              return;
+            }
+            onCollapsedChange?.(caretMode === "collapse");
+          }}
+          title={caretLabel}
+          aria-label={caretLabel}
+          // Only a header toggle has an expanded/collapsed state to report; as "back to top" it's a plain button.
+          aria-expanded={caretMode === "backToTop" ? undefined : !collapsed}
+          className="absolute left-0 top-1/2 inline-flex size-8 shrink-0 -translate-y-1/2 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-slate-100/80 text-slate-500 transition-colors hover:bg-slate-200/80 hover:text-slate-900 print:hidden"
+        >
+          <CaretIcon className="size-4" aria-hidden />
+        </button>
       </div>
     </div>
   );

@@ -12,7 +12,34 @@ export function getWindowScrollY() {
   return window.scrollY;
 }
 
+/**
+ * When the last app-initiated scroll was issued, plus how long its resulting scroll events may keep
+ * arriving. Scroll events carry no origin, so anything that reacts to scrolling as *user intent* has to be
+ * able to exclude the app's own scrolls: the per-tab restore, deep-link glides, the matrix pillar jump.
+ *
+ * Timing alone can't do it from the listener side — a tab switch right after a wheel gesture puts a
+ * programmatic scroll a few milliseconds after real input, which is indistinguishable from that input
+ * having caused it. So the scroll helpers mark their own calls here instead, and listeners consult
+ * {@link isProgrammaticScroll}.
+ */
+let programmaticScrollUntil = 0;
+// A smooth scroll keeps emitting events for as long as the browser's animation runs, so the window has to
+// outlast that; an instant jump only needs a frame or two. Both are covered by the longer bound.
+const PROGRAMMATIC_SCROLL_WINDOW_MS = 900;
+
+/** Whether scroll events arriving now are still plausibly from an app-initiated scroll. */
+export function isProgrammaticScroll() {
+  return performance.now() < programmaticScrollUntil;
+}
+
+/** Mark app-initiated scrolling as in progress — for callers that move the window without these helpers. */
+export function markProgrammaticScroll(durationMs = PROGRAMMATIC_SCROLL_WINDOW_MS) {
+  programmaticScrollUntil = Math.max(programmaticScrollUntil, performance.now() + durationMs);
+}
+
+
 export function scrollWindowTo(y, { behavior = "auto" } = {}) {
+  markProgrammaticScroll();
   window.scrollTo({ top: Math.max(0, y), left: 0, behavior });
 }
 
@@ -35,30 +62,31 @@ export function clearStickyScrollOffset() {
   document.documentElement.style.removeProperty(STICKY_OFFSET_CSS_VAR);
 }
 
-const TAB_BAR_ID = "app-shell-tab-bar";
+// `isTabBarStuck()` and `getTabBarPinnedScrollY()` lived here until the intro became a CSS-collapsed block
+// (see useHeaderCollapse). Both described a world where the header's state was a scroll position — "is the
+// bar pinned yet", "what scrollY pins it" — and neither has a meaning now: when collapsed the intro is out
+// of the layout, so the bar's anchor is simply 0 and it is always pinned.
 
 /**
- * Whether the sticky tab bar is currently pinned to the top, read from its live rect (its top is
- * clamped to ~0 once stuck). Reliable only when layout is settled (e.g. at a tab switch) — not on a
- * fresh page where the rect may not be final yet.
+ * How much document sits above the sticky tab bar right now — the intro block plus the page paddings that
+ * collapse with it. Exactly 0 when the header is collapsed, since collapsing takes all of it out of the
+ * layout (see HomePage).
+ *
+ * This is the unit that makes a remembered scroll offset portable. A raw `window.scrollY` is measured in a
+ * coordinate space whose origin moves: expanding the header inserts this much document ABOVE every existing
+ * position, so the same content is suddenly at a different `y`. Storing `y - anchor` instead measures from
+ * the tab bar, which is the one landmark the collapse cannot move.
+ *
+ * Measured off the intro rather than the bar itself because the bar is `position: sticky` — once stuck its
+ * rect reports the viewport top, not its place in the document. The intro is static, so its bottom edge is
+ * honest at any scroll position, and the bar follows it immediately (`mt-0`).
  */
-export function isTabBarStuck() {
-  const bar = document.getElementById(TAB_BAR_ID);
-  return bar ? bar.getBoundingClientRect().top <= 1 : false;
-}
-
-/**
- * The window scrollY at which the tab bar becomes pinned — i.e. the document Y of the bar's anchor,
- * which equals the bottom of the (never-sticky) intro header above it. Derived from the intro
- * header's live rect, which always reflects true layout position (unlike the pinned sticky bar,
- * whose rect top clamps to 0 and would collapse to the current scroll). Returns 0 if not found.
- */
-export function getTabBarPinnedScrollY() {
+export function getHeaderAnchorPx() {
   const intro = document.getElementById("app-shell-intro");
   if (!intro) {
     return 0;
   }
-  return Math.max(0, Math.round(intro.getBoundingClientRect().bottom + window.scrollY));
+  return Math.max(0, intro.getBoundingClientRect().bottom + window.scrollY);
 }
 
 /** Scroll so `element` sits just below the sticky app tab bar. */

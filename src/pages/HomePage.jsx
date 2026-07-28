@@ -5,12 +5,14 @@ import { TheoryContent } from "@/components/TheoryContent";
 import { ToolContent } from "@/components/ToolContent";
 import { Toaster } from "@/components/ui/Toaster";
 
+import { useHeaderCollapse } from "@/hooks/useHeaderCollapse";
 import { getPersistedActiveTab, useTabScrollMemory } from "@/hooks/useTabScrollMemory";
 import { useTheoryUpdates } from "@/hooks/useTheoryUpdates";
 
 import { FE_UI } from "@/constants";
+import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
-import { getTabBarPinnedScrollY, getWindowScrollY, isTabBarStuck, scrollWindowTo } from "@/utils/scroll";
+import { getWindowScrollY, scrollWindowTo } from "@/utils/scroll";
 import { cleanTheoryDeepLinkParams, getTabFromUrl, parseTheoryDeepLink, syncTabInUrl } from "@/utils/theory-url";
 
 const appVersion = import.meta.env.VITE_APP_VERSION;
@@ -35,9 +37,6 @@ export default function HomePage() {
   // subsequent tab switches don't re-trigger the scroll/expand.
   const deepLinkRef = useRef(BOOT_DEEP_LINK);
 
-  // Consumed-once: the bar's pinned anchor captured at switch time when it was stuck, so the new
-  // tab keeps it pinned. Null when the bar wasn't stuck (normal scroll restore on the new tab).
-  const keepStuckAnchorRef = useRef(null);
 
   // Flipped by an in-tab scroll the instant it runs (cross-tab matrix jump, or a deep-link's scroll
   // to its target), so the restore loop yields to it: restore still runs first — landing at the
@@ -48,7 +47,13 @@ export default function HomePage() {
   // Restore runs even on a deep-link boot now: it lands at the remembered scroll (bar stuck) and the
   // deep-link's own scroll-to-target then takes over via cancelRestoreRef — so a shared link restores
   // the previous position before gliding to the target, instead of starting from the top.
-  const { saveActiveTabScroll } = useTabScrollMemory(activeTab, keepStuckAnchorRef, cancelRestoreRef);
+  const { saveActiveTabScroll } = useTabScrollMemory(activeTab, cancelRestoreRef);
+
+  // The intro's collapsed state is CSS, not a scroll position. Stored per tab, but the directions differ:
+  // collapsing anywhere collapses everywhere ("give me content space" is about the chrome), while revealing
+  // stays on the tab that earned the pull. Takes `activeTab` so the switch lands in the same commit as the
+  // scroll restore above, which measures the header to resolve its target. See useHeaderCollapse.
+  const { collapsed: headerCollapsed, setCollapsed: setHeaderCollapsed } = useHeaderCollapse(activeTab);
 
   // Cross-tab jump from a tool-form pillar's help icon into the theory matrix. The `seq` bump makes
   // repeated clicks on the same pillar re-trigger the expand + scroll even when the tab is already open.
@@ -69,16 +74,14 @@ export default function HomePage() {
 
   const handleTabChange = (nextTab) => {
     if (nextTab === activeTab) {
-      // Clicking the already-active tab scrolls back up — but only as far as the point where the tab
-      // bar pins, so the sticky header stays put rather than jumping to an absolute 0.
-      const pinnedY = getTabBarPinnedScrollY();
-      if (getWindowScrollY() > pinnedY) {
-        scrollWindowTo(pinnedY, { behavior: "smooth" });
+      // Clicking the already-active tab scrolls to the top and leaves the header exactly as it is.
+      // Collapse is the user's choice, expressed elsewhere (the caret, or a pull at the top) — a scroll
+      // shortcut has no business changing it.
+      if (getWindowScrollY() > 0) {
+        scrollWindowTo(0, { behavior: "smooth" });
       }
       return;
     }
-    // If the bar is pinned now, capture its anchor so the new tab restores at least that far down.
-    keepStuckAnchorRef.current = isTabBarStuck() ? getTabBarPinnedScrollY() : null;
     saveActiveTabScroll();
     track("tab_view", { tab: nextTab });
     setActiveTab(nextTab);
@@ -90,9 +93,8 @@ export default function HomePage() {
       return;
     }
     if (activeTab !== "theory") {
-      // Keep the bar pinned across the switch if it's currently stuck, then let the theory tab restore
-      // its remembered scroll. The matrix jump (below) takes over once it scrolls to the pillar card.
-      keepStuckAnchorRef.current = isTabBarStuck() ? getTabBarPinnedScrollY() : null;
+      // Let the theory tab restore its remembered scroll; the matrix jump (below) takes over once it
+      // scrolls to the pillar card. No header anchor to carry — collapse is a shared boolean now.
       saveActiveTabScroll();
       setActiveTab("theory");
       syncTabInUrl("theory");
@@ -111,14 +113,39 @@ export default function HomePage() {
   // instead of the window and the sticky tab bar never pinned. `clip` suppresses the horizontal
   // overflow without establishing a scroll container, so the window scrolls and `sticky top-0` on
   // the tab bar works again.
+  // When the header is collapsed, EVERYTHING above the tab bar collapses with it — the intro, the black
+  // wrapper's top padding, and the card's own top padding — so the tab bar becomes the true top of the
+  // scrollable document. Leaving that ~18-24px of padding in place would keep a scrollable strip above the
+  // bar: a band where the page is "not quite at the top", which is the same dead gap the intro used to
+  // create, just relocated. Zeroing it makes `scrollY === 0` mean exactly "the bar is at the viewport top",
+  // which is what the pull gesture keys on. Revealing restores the padding, and only then is there anything
+  // above the bar to scroll to.
   return (
-    <div className="flex min-h-dvh flex-col items-center gap-2 overflow-x-clip bg-black p-1.5 sm:p-3 print:bg-white print:p-0">
+    <div
+      className={cn(
+        "flex min-h-dvh flex-col items-center gap-2 overflow-x-clip bg-black px-1.5 pb-1.5 sm:px-3 sm:pb-3 print:bg-white print:p-0",
+        // Unanimated, like the intro's own height: these paddings sit on the page's outermost containers, so
+        // transitioning them relayouts everything each frame — and it happens while the user scrolls.
+        headerCollapsed ? "pt-0" : "pt-1.5 sm:pt-3",
+      )}
+    >
       <main
-        className="flex w-full flex-col rounded-[14px] bg-white shadow-sm p-3 print:max-w-none print:rounded-none print:p-0 print:shadow-none"
+        className={cn(
+          "flex w-full flex-col bg-white shadow-sm px-3 pb-3 print:max-w-none print:rounded-none print:p-0 print:shadow-none",
+          // The top corners round only when there is black padding above to round against; flush to the
+          // viewport edge they would clip the tab bar's own corners against nothing.
+          headerCollapsed ? "rounded-b-[14px] pt-0" : "rounded-[14px] pt-3",
+        )}
         style={pageWidthStyle}
       >
-        <AppShellIntro />
-        <AppShellTabBar activeTab={activeTab} onTabChange={handleTabChange} theoryHasUnseenUpdates={theoryHasUnseenUpdates} />
+        <AppShellIntro collapsed={headerCollapsed} />
+        <AppShellTabBar
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          theoryHasUnseenUpdates={theoryHasUnseenUpdates}
+          collapsed={headerCollapsed}
+          onCollapsedChange={setHeaderCollapsed}
+        />
 
         <div className="mt-3" role="tabpanel" hidden={activeTab !== "tool"} aria-hidden={activeTab !== "tool"} aria-label="Tool">
           <ToolContent isVisible={activeTab === "tool"} onOpenPillarInMatrix={handleOpenPillarInMatrix} />
