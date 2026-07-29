@@ -26,7 +26,7 @@ export function scrollWindowToTop({ behavior = "auto" } = {}) {
   scrollWindowTo(0, { behavior });
 }
 
-/** Measured sticky tab bar inset (set by AppShellTabBar). */
+/** Measured sticky header inset (set by AppShellHeaderStack). */
 export function getStickyScrollOffsetPx() {
   const offsetValue = getComputedStyle(document.documentElement).getPropertyValue(STICKY_OFFSET_CSS_VAR);
   return Number.parseFloat(offsetValue) || 0;
@@ -51,26 +51,79 @@ export function clearStickyScrollOffset() {
 // `useTabScrollMemory` stores a plain `scrollY` again.
 
 /**
- * The intro block's settled height — what the sticky header grows by when expanded.
+ * How much the sticky header's height CHANGES when the intro is toggled — the distance the page has to be
+ * shifted so content appears to stay still.
  *
- * A HEIGHT, NOT A POSITION, which is what makes it safe to read off an element inside a sticky wrapper. The
- * position of a stuck element's rect tracks the viewport rather than the document; its height does not.
+ * NOT THE INTRO'S OWN HEIGHT, which is what this used to return and is subtly wrong. The header stack has a
+ * `min-h-14` floor (56px) that reserves the corner row for the absolutely-positioned brand mark and caret, since
+ * neither contributes any height of its own. So the stack does not shrink to zero when the intro does — it stops
+ * at that floor:
  *
- * Reports the TARGET height, not the in-flight one: the intro animates, so callers reacting to a toggle
- * would otherwise read a value part-way through the transition. `scrollHeight` on the inner content ignores
- * the animating `grid-template-rows` track and gives the height the row is heading for, which is what a
- * one-shot scroll adjustment needs. Returns 0 when collapsed, since the caller wants "how much room does
- * the header take" and the answer is then none.
+ *   collapsed   max(56, 24 padding + 0)            = 56px
+ *   expanded    24 padding + intro (~120px)        = ~144px
+ *   the delta   ~88px, NOT the intro's ~120px
+ *
+ * Compensating by the intro's height over-scrolled by the difference (~32px), which is exactly the "content did
+ * not stay still" symptom. The floor is a `min-height`, so the error is not even a constant — it is however much
+ * of the floor the padding does not already fill.
+ *
+ * MEASURED, NOT DERIVED, for that reason: taking the stack's real height and subtracting what it will collapse to
+ * keeps this correct if the padding, the floor, or the controls' size ever change, none of which this file should
+ * have to know about.
+ *
+ * A HEIGHT, NOT A POSITION, which is what makes it safe to read off a sticky element. The position of a stuck
+ * element's rect tracks the viewport rather than the document; its height does not.
+ *
+ * Reports the SETTLED delta, not an in-flight one: the intro animates, so a caller reacting to the toggle would
+ * otherwise read a value part-way through the transition. The intro's `scrollHeight` ignores the animating
+ * `grid-template-rows` track and gives the height it is heading for, and the floor is a static style value, so
+ * both terms are already settled whichever direction the toggle is going.
  */
-export function getIntroHeightPx(introEl = document.getElementById("app-shell-intro")) {
+export function getHeaderToggleDeltaPx(stackEl = document.getElementById("app-shell-header-stack")) {
+  const introEl = document.getElementById("app-shell-intro");
   const content = introEl?.firstElementChild;
-  if (!content) {
+  if (!stackEl || !content) {
     return 0;
   }
-  return content.scrollHeight;
+
+  // The stack's height with the intro fully open: its own vertical padding plus the intro's target height. Read
+  // the padding off the computed style rather than hardcoding `p-3`, so this cannot drift from the class.
+  const styles = getComputedStyle(stackEl);
+  const verticalPadding = Number.parseFloat(styles.paddingTop) + Number.parseFloat(styles.paddingBottom);
+  const floor = Number.parseFloat(styles.minHeight) || 0;
+  const expanded = verticalPadding + content.scrollHeight;
+
+  // Collapsed, the intro contributes nothing, so the stack rests at whichever is larger: its padding, or the
+  // floor that holds the corner row. `max(0, …)` because a floor taller than the expanded height would otherwise
+  // yield a negative shift.
+  const collapsed = Math.max(verticalPadding, floor);
+  return Math.max(0, expanded - collapsed);
 }
 
-/** Scroll so `element` sits just below the sticky app tab bar. */
+/**
+ * The vertical band a popover may occupy, in viewport coordinates: `{ top, bottom }`.
+ *
+ * Both edges are pinned app chrome, and a dropdown that ignores either reads as broken — it would be painted
+ * over the title, or underneath the navigation bar. Neither is a stacking problem (popovers are `z-50` and both
+ * bars are `z-40`, so the popover wins) which is exactly why it has to be handled geometrically instead.
+ *
+ * Shared rather than duplicated in each popover because the answer stopped being a one-liner: it used to be the
+ * header's `bottom` alone, and the bottom edge was simply `window.innerHeight`. Navigation moving to a fixed
+ * bottom bar (see AppBottomNav) added a second term that every consumer would otherwise have to remember.
+ *
+ * Missing elements fall back to the full viewport, so this stays correct on the standalone pages (Poster/Social)
+ * that render neither bar.
+ */
+export function getPopoverViewportBounds() {
+  const header = document.getElementById("app-shell-header-stack");
+  const bottomNav = document.getElementById("app-bottom-nav");
+  return {
+    top: header ? Math.max(0, header.getBoundingClientRect().bottom) : 0,
+    bottom: bottomNav ? Math.min(window.innerHeight, bottomNav.getBoundingClientRect().top) : window.innerHeight,
+  };
+}
+
+/** Scroll so `element` sits just below the sticky app header. */
 export function scrollBelowStickyHeader(element, { behavior = "smooth" } = {}) {
   if (!element) {
     return;

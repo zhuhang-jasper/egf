@@ -14,6 +14,7 @@ import { useAppStore } from "@/store/useAppStore";
 import { MAX_PROFILE_NAME_LENGTH, normalizeAttachedBadge, TRACK_BADGE_OPTIONS, TRACK_BADGE_UI } from "@/constants";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
+import { getPopoverViewportBounds } from "@/utils/scroll";
 
 // Badge group order: the real badges (fe, be) in badge-dropdown order first, then "no badge" last.
 const BADGE_SORT_ORDER = TRACK_BADGE_OPTIONS.filter((b) => b !== "none").concat("none");
@@ -234,16 +235,12 @@ export function ProfileCombobox({ titleError = false }) {
       const rootRect = root.getBoundingClientRect();
       // Natural (uncapped) menu height, so the flip decision isn't skewed by a prior cap.
       const naturalHeight = menu.scrollHeight;
-      // When opening upward the menu must not rise past the sticky header. Not a stacking issue — the menu
-      // is z-50 and the header stack z-40, so it would paint OVER it — but covering the title and tabs with
-      // a dropdown reads as broken either way.
-      //
-      // The tab bar is the bottom of the sticky stack (the intro sits above it inside the same sticky box),
-      // so its rect is the right boundary whether or not the header is expanded, and it tracks the intro's
-      // expand/collapse animation for free.
-      const tabBar = document.getElementById("app-shell-tab-bar");
-      const topBoundary = tabBar ? Math.max(0, tabBar.getBoundingClientRect().bottom) : 0;
-      const spaceBelow = window.innerHeight - rootRect.bottom - gap - margin;
+      // The menu must clear the pinned chrome at BOTH ends — the sticky header above, the fixed bottom nav
+      // below. Not a stacking issue (the menu is z-50 and both bars z-40, so it paints over them) but covering
+      // the title, or disappearing behind the navigation, reads as broken either way. The header boundary also
+      // tracks the intro's expand/collapse animation for free, since it is measured live.
+      const { top: topBoundary, bottom: bottomBoundary } = getPopoverViewportBounds();
+      const spaceBelow = bottomBoundary - rootRect.bottom - gap - margin;
       const spaceAbove = rootRect.top - topBoundary - gap - margin;
       // Prefer down; flip up only when it won't fit below but there's more room above.
       const up = naturalHeight > spaceBelow && spaceAbove > spaceBelow;

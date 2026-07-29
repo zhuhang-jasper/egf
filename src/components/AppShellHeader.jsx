@@ -1,20 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
-import { ChevronDown, ChevronUp, FileText, Radar } from "lucide-react";
+import { ChevronDown, ChevronsUp, ChevronUp } from "lucide-react";
 
-import { Tooltip } from "@/components/ui/Tooltip";
-import { UnseenDot } from "@/components/UnseenDot";
-
-import { FE_UI, FRAMEWORK_VERSION, SITE_COPY } from "@/constants";
+import { FE_UI, SITE_COPY } from "@/constants";
 import { cn } from "@/utils";
-import { clearStickyScrollOffset, getWindowScrollY, setStickyScrollOffset } from "@/utils/scroll";
-
-const TABS = [
-  { id: "tool", label: "Tool", icon: Radar },
-  // `version` derives from the single FRAMEWORK_VERSION source so the label and the "unseen" dot
-  // (see useTheoryUpdates) always agree — bumping that one constant updates both.
-  { id: "theory", label: "Theory", icon: FileText, version: `v${FRAMEWORK_VERSION}` },
-];
+import { clearStickyScrollOffset, getWindowScrollY, scrollWindowToTop, setStickyScrollOffset } from "@/utils/scroll";
 
 /**
  * Caps the title and tagline to the Theory tab's content width.
@@ -116,9 +106,9 @@ function AppShellIntro({ collapsed = false }) {
         collapsed ? "grid-rows-[0fr]" : "grid-rows-[1fr]",
       )}
     >
-      {/* No padding here either — the stack's `pt-3` supplies the gap above the title, and it has to come from
-          there rather than from inside this collapsing box so that the corner controls (whose `top-3` resolves
-          against that same padding) stay level with the title's first line. */}
+      {/* No padding here — the stack's `p-3` supplies the gap on every side, and the vertical half of it has to
+          come from there rather than from inside this collapsing box so that the corner controls (whose `top-3`
+          resolves against that same padding) stay level with the title's first line. */}
       <header className="min-h-0 overflow-hidden text-center">
         {/* `min-h-8` MATCHES THE CORNER ROW. The brand mark and caret are both 32px tall and pinned at the top
             of this stack; the tagline below is full-width, so unless the title's box reaches past them its
@@ -129,20 +119,26 @@ function AppShellIntro({ collapsed = false }) {
             `mb-1` is enough on top of that. It was briefly `mb-2` to buy the same clearance with a margin,
             which was the wrong lever: it also pushed a two-line title further from the tagline.
 
-            `px-12` keeps the text clear of those same corner items — they are absolutely positioned, so
-            centred text has no idea they exist and the title ran straight underneath both. 48px is the caret's
-            32px plus its 12px inset, rounded up; the caret is wider than the logo, so clearing it clears both.
-            Symmetric even though only the right needs it geometrically: the text is centred, so padding one
-            side would drag the optical centre off the card's.
+            `px-20` keeps the text clear of those same corner items — they are absolutely positioned, so centred
+            text has no idea they exist and the title ran straight underneath them. 80px covers the WIDER of the
+            two corners: the right now holds two 32px buttons (scroll-to-top and the caret) with a 4px gap, so
+            `12 + 32 + 4 + 32` = 80. It was 48px when the caret was alone there.
+
+            Symmetric even though only the right needs it geometrically: the text is centred, so padding one side
+            would drag the optical centre off the card's.
+
+            UNCONDITIONAL, even though the scroll-to-top button only exists while the page is scrolled. Making the
+            padding track that would reflow — and re-centre — the title on the first pixel of scroll, which is far
+            more noticeable than 32px of unused measure on a title that is capped at 900px and centred anyway.
 
             The tagline is deliberately left full-width — it sits below the corner row, so it cannot collide,
             and indenting the longest text by 96px would cost real height in a header that is now pinned on
             screen permanently.
 
-            No top padding at any width: the `<header>`'s own `pt-3` sets the gap above, and the `sm:pt-2` that
-            used to sit here pushed the title out of line with the corner controls from `sm:` up. */}
+            No top padding at any width: the stack's `p-3` sets the gap above, and the `sm:pt-2` that used to sit
+            here pushed the title out of line with the corner controls from `sm:` up. */}
         <h1
-          className="text-balance mx-auto flex min-h-8 w-full items-center justify-center text-xl sm:text-2xl font-bold leading-tight tracking-tight text-slate-900 mb-1 px-12"
+          className="text-balance mx-auto flex min-h-8 w-full items-center justify-center text-xl sm:text-2xl font-extrabold leading-tight tracking-tight text-slate-900 mb-1 px-20"
           style={HEADER_TEXT_WIDTH_STYLE}
         >
           {SITE_COPY.title}
@@ -150,12 +146,9 @@ function AppShellIntro({ collapsed = false }) {
         {/* Width capped by HEADER_TEXT_WIDTH_STYLE — see that constant for why it reuses the Theory tab's
             measure. `mx-auto` centres the capped block under the title.
 
-            `pb-2` is the whole gap between the byline and the tablist. It was a hair (`pb-0.5 sm:pb-1`) back
-            when the tab bar had its own `py-2` above; the bar has no top padding now — its inset comes from the
-            stack, which the corner controls' `top-3` is measured against — so anything short here reads as the
-            tagline running into the tabs. On the tagline rather than the bar deliberately: inside the
-            collapsing grid item it eases away with the intro, whereas on the bar it would survive the collapse
-            as a permanent strip.
+            NO BOTTOM PADDING. This carried `pb-2` to hold the byline off the tablist that used to sit below it;
+            with navigation gone (see AppBottomNav) the next thing down is the stack's own `p-3`, which already
+            supplies that gap. Adding to it here would just make the expanded header taller than it needs to be.
 
             THE SECOND SENTENCE BREAKS ONLY IF THE FIRST FITS ON ONE LINE (see `useFitsOneLine`). When the first
             sentence already has to wrap, forcing a break too leaves an orphaned word with the next sentence
@@ -169,7 +162,7 @@ function AppShellIntro({ collapsed = false }) {
             space at both ends — the text read as padded even though nothing here has horizontal padding. The
             byline keeps its `nowrap` (a name should not split); it just must not meet an algorithm that reacts
             to it. */}
-        <p className="relative mx-auto w-full text-xs sm:text-sm leading-tight text-slate-700 pb-2" style={HEADER_TEXT_WIDTH_STYLE}>
+        <p className="relative mx-auto w-full text-xs sm:text-sm leading-tight text-slate-700" style={HEADER_TEXT_WIDTH_STYLE}>
           {/* The measurement PROBE, not the visible text. It is always `block`, so its height answers "would
               this sentence fit on one line here?" independently of what the visible copy is currently doing —
               measuring the real span would be circular, since switching it between `block` and `inline` changes
@@ -209,75 +202,42 @@ function AppShellIntro({ collapsed = false }) {
  * `-mx-3 px-3` bleeds to the card's edges past `main`'s own `px-3`. `bg-white` is required, not cosmetic:
  * once this overlaps content it must be opaque, whereas in flow it merely inherited the card's white.
  *
- * THE TOP PADDING IS NOT HERE, and deliberately. It used to live on `main` as `pt-3`, which was wrong for a
- * sticky header — padding on `main` sits above this box, so it scrolled away and left the title flush against
- * the viewport once pinned. Moving it here fixed that but created two new problems: it survived the collapse
- * as a permanent strip above the tab bar, and it shifted the corner items, whose absolute offsets measure from
- * this element's padding box. So it now lives on the intro's own inner `<header>`, where it is clipped by the
- * collapsing row and eases away with it. This box has no vertical padding at all; each child brings its own.
+ * `p-3` — ONE 12px INSET ON ALL FOUR SIDES, declared once here. Both vertical halves used to live on children
+ * (the intro's `pt-3`, then a `mb-3` on a spacer element below it), which meant the header's inset was assembled
+ * from three files and none of them owned it. It is this element's padding, so it belongs on this element.
+ *
+ * It is also what the corner controls' `top-3` resolves against, since absolute offsets are measured from the
+ * padding box: `top-3` lands them at the top of the padding box identically whether the intro is expanded or
+ * collapsed, which is what stops them moving when clicked.
+ *
+ * `min-h-14` RESERVES THE CORNER ROW, and is what makes the collapsed header hold its own contents. The brand
+ * mark and the caret are both ABSOLUTELY POSITIONED, so they contribute NO height; the intro is the only child
+ * that does, and collapsing takes it to zero. Without a floor the collapsed box would shrink to its 24px of
+ * padding while the 32px controls inside overflowed it — painting over the content below, with the shadow cutting
+ * across them. 56px is `12 + 32 + 12`: the controls' height inside the padding they sit in.
+ *
+ * Expanded, the intro is taller than that floor, so `min-h-14` is inert — it only binds at the collapsed end,
+ * which is why it can be unconditional. That is the whole reason this is a `min-height` and not a fixed one, and
+ * why an earlier attempt with a conditionally-sized spacer child was the wrong shape: a spacer is an in-flow
+ * sibling, so its height ADDED to the expanded intro rather than being absorbed by it, leaving a permanent band
+ * of blank white under the tagline.
  *
  * NO CORNER RADIUS, for the same reason the page has no vertical black padding any more (see HomePage):
  * rounded top corners are only on screen at `scrollY 0`, so they made the pinned header change shape the
  * moment the user reached the top. A sticky bar has to look identical at every scroll position.
  */
 function AppShellHeaderStack({ collapsed, onCollapsedChange, children }) {
-  return (
-    <div
-      id="app-shell-header-stack"
-      className={cn(
-        // `shadow-sm` sits on THIS box, not on the tab bar. The bar used to be the bottom of the sticky
-        // region so its own shadow correctly fell on the content scrolling under it; now it is an in-flow
-        // child, so that shadow landed inside this box — cast onto its white background and inset from the
-        // card's edges by `px-3`, which drew a visible line partway across the header. The boundary between
-        // pinned chrome and scrolling content is this element's bottom edge, so the shadow belongs here.
-        // No `relative` needed for the caret to anchor here: `position: sticky` already establishes a
-        // containing block for absolutely-positioned children, and adding `relative` would just conflict
-        // over the same `position` property.
-        // ONE 12px INSET, declared once here rather than on each child: `px-3` and `pt-3`. No `-mx-3` any more
-        // — `main` carries no horizontal padding of its own (the tab panels do), so this box already spans the
-        // full width and has nothing to cancel.
-        //
-        // `pt-3` only — NOT `py-3`. Bottom padding would sit between the tab bar and the content below it, and
-        // since this box is the boundary the shadow is drawn on, that gap would be permanently visible under the
-        // pinned header. The tab bar's own bottom edge is where the chrome should stop.
-        //
-        // This padding is also what the corner controls' `top-3` resolves against, since absolute offsets are
-        // measured from the padding box: `top-3` lands them level with the `h-8` tab-bar row inside the same
-        // inset, identically whether the intro is expanded or collapsed — which is what stops them moving when
-        // clicked. An earlier version had a conditional `pt-3`/`pt-0` here PLUS `py-3` on the bar, which
-        // double-counted and pushed the tablist out of line.
-        "sticky top-0 z-40 bg-white px-3 pt-3 shadow-sm print:static print:shadow-none",
-      )}
-    >
-      {children}
-      <AppShellBrandMark collapsed={collapsed} />
-      <AppShellCaret collapsed={collapsed} onCollapsedChange={onCollapsedChange} />
-    </div>
-  );
-}
+  const stackRef = useRef(null);
 
-// No `collapsed`/`onCollapsedChange` here — the caret owns both and now lives in AppShellHeaderStack.
-function AppShellTabBar({ activeTab, onTabChange, theoryHasUnseenUpdates = false }) {
-  const barRef = useRef(null);
-  // Whether scrolling up is possible — i.e. we're scrolled past the point where the bar pins.
-  // Gates the active tab's "click to scroll to top" tooltip so it only shows when it'd do something.
-  const [canScrollUp, setCanScrollUp] = useState(false);
-  const selectedIndex = Math.max(
-    0,
-    TABS.findIndex((tab) => tab.id === activeTab),
-  );
-
-  // Publish how much sticky chrome a scroll target has to clear.
+  // Publish how much pinned chrome a scroll target has to clear, so deep links and pillar jumps land BELOW the
+  // header rather than underneath it. This is measured on the sticky element itself — it used to be read off a
+  // child's `parentElement`, which meant the value depended on that child staying a direct descendant.
   //
-  // Measures the WHOLE STACK (intro + this bar), not just this bar, because both are pinned now — a deep
-  // link or pillar jump that only cleared the tab bar would land underneath the title. The stack is the
-  // sticky element, so its height is the full inset.
-  //
-  // Observing it also means the value tracks the intro's expand/collapse animation frame by frame. That is
-  // wanted rather than merely tolerated: `scrollBelowStickyHeaderUntilSettled` re-aims each frame while
-  // layout moves, so it needs the live inset, not the settled one.
+  // Observing it means the value tracks the intro's expand/collapse animation frame by frame. That is wanted
+  // rather than merely tolerated: `scrollBelowStickyHeaderUntilSettled` re-aims each frame while layout moves,
+  // so it needs the live inset, not the settled one.
   useLayoutEffect(() => {
-    const stack = barRef.current?.parentElement;
+    const stack = stackRef.current;
     if (!stack) {
       return undefined;
     }
@@ -296,93 +256,32 @@ function AppShellTabBar({ activeTab, onTabChange, theoryHasUnseenUpdates = false
     };
   }, []);
 
-  // Whether there's anywhere to scroll up to, gating the active tab's "click to scroll to top" tooltip so
-  // it only appears when it would do something. Now that the caret is a plain toggle at every depth, this
-  // is the ONLY thing scroll position decides in the header.
-  useEffect(() => {
-    const sync = () => setCanScrollUp(getWindowScrollY() > 0);
-    sync();
-    window.addEventListener("scroll", sync, { passive: true });
-    window.addEventListener("resize", sync);
-    return () => {
-      window.removeEventListener("scroll", sync);
-      window.removeEventListener("resize", sync);
-    };
-  }, [activeTab]);
-
   return (
-    /* No `sticky`/`z-40`/`-mx-3` here any more — AppShellHeaderStack owns all three, for the intro and this
-       bar together. This is a plain in-flow child of it. The caret also moved up to the stack, so that
-       expanding does not shift it out from under the pointer that just clicked it. */
-    /* `pb-3` ONLY — no top padding. The stack's `pt-3` already insets this from above, and the row below is a
-       fixed `h-8`, so adding `pt`/`py` here would double-count that inset and drop the tablist below the corner
-       controls (which is exactly the bug this arrangement replaced). The bottom 12px is real spacing though: it
-       separates the tabs from the content scrolling underneath, and since the stack draws the shadow at its own
-       bottom edge, this is what keeps that shadow off the tablist. */
-    <div ref={barRef} id="app-shell-tab-bar" className="mt-0 bg-white pb-3">
-      {/* The tablist is centered at every width for every user. The brand mark and the caret both live in
-          AppShellHeaderStack now, pinned to its corners, so nothing in this row competes with the tablist for
-          horizontal space. The admin Poster/Social shortcuts used to float at the right edge here, which
-          forced an admin-only `justify-between` on mobile; they now live in the Theory tab's toolbar.
-
-          `h-8` MAKES THIS ROW THE SAME HEIGHT AS THE CORNER CONTROLS, which is what aligns them. The tablist
-          is only ~30px tall (`py-1.5` + a `text-xs` line box + its `p-0.5` frame) while the logo and caret are
-          exactly 32px, so no amount of matched PADDING lines them up — the boxes are different sizes, and
-          earlier attempts to equalise `py` against `top` left them 1-4px out. Pinning the row to 32px and
-          letting `items-center` centre a shorter tablist inside it means all three share one centre line by
-          construction, whatever the tablist's contents measure. */}
-      <div className="relative flex h-8 items-center justify-center">
-        <div
-          className="relative grid w-62 max-w-full grid-cols-2 rounded-lg border border-slate-200 bg-slate-100/80 p-0.5"
-          role="tablist"
-          aria-label="App sections"
-        >
-          <div
-            aria-hidden
-            className="pointer-events-none absolute top-0.5 bottom-0.5 left-0.5 rounded-md bg-slate-900 shadow-sm transition-transform duration-150 ease-out"
-            style={{
-              width: "calc(50% - 0.125rem)",
-              transform: `translateX(calc(${selectedIndex} * 100%))`,
-            }}
-          />
-          {TABS.map(({ id, label, icon: Icon, version }) => {
-            const selected = activeTab === id;
-            // Shown on the Theory tab whether or not it's active: opening the tab doesn't clear this
-            // dot. It's the aggregate of the per-section dots and stays lit until every changed
-            // section has actually been scrolled to (see useTheoryUpdates).
-            const showUnseenDot = id === "theory" && theoryHasUnseenUpdates;
-            return (
-              <button
-                key={id}
-                type="button"
-                role="tab"
-                aria-selected={selected}
-                onClick={() => onTabChange(id)}
-                className={cn(
-                  "group relative z-10 flex cursor-pointer select-none items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold",
-                  selected ? "text-white" : "text-slate-600 hover:text-slate-800",
-                )}
-              >
-                <Icon className="size-3.5 shrink-0" aria-hidden />
-                {label}
-                {version ? (
-                  // Version tag sits inline (baseline) with "Theory"; only the unseen-updates dot
-                  // floats up as a superscript badge on the version text.
-                  <span
-                    className={cn("inline-flex items-start text-[11px] font-semibold leading-none", selected ? "text-white/70" : "text-slate-400")}
-                  >
-                    {version}
-                    {/* Unseen-updates dot: at least one changed Theory section hasn't been read yet.
-                        `-translate-y` lifts it to superscript height. */}
-                    {showUnseenDot ? <UnseenDot label="New framework updates" className="ml-0.5 size-1.5 -translate-y-0.5" /> : null}
-                  </span>
-                ) : null}
-                {selected && canScrollUp ? <Tooltip text="Click to scroll to top" placement="bottom" /> : null}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+    <div
+      ref={stackRef}
+      id="app-shell-header-stack"
+      className={cn(
+        // `shadow-sm` sits on THIS box, not on the tab bar. The bar used to be the bottom of the sticky
+        // region so its own shadow correctly fell on the content scrolling under it; now it is an in-flow
+        // child, so that shadow landed inside this box — cast onto its white background and inset from the
+        // card's edges by `px-3`, which drew a visible line partway across the header. The boundary between
+        // pinned chrome and scrolling content is this element's bottom edge, so the shadow belongs here.
+        // No `relative` needed for the caret to anchor here: `position: sticky` already establishes a
+        // containing block for absolutely-positioned children, and adding `relative` would just conflict
+        // over the same `position` property.
+        //
+        // No `-mx-3`: `main` carries no horizontal padding of its own (the tab panels do), so this box already
+        // spans the full width and has nothing to cancel.
+        //
+        // See the docblock for `p-3` and `min-h-14` — between them they are the entire vertical geometry of the
+        // header, and neither belongs on a child.
+        "sticky top-0 z-40 min-h-14 bg-white p-3 shadow-sm print:static print:shadow-none",
+      )}
+    >
+      {children}
+      <AppShellBrandMark collapsed={collapsed} />
+      <AppShellScrollTopButton />
+      <AppShellCaret collapsed={collapsed} onCollapsedChange={onCollapsedChange} />
     </div>
   );
 }
@@ -410,7 +309,7 @@ function AppShellTabBar({ activeTab, onTabChange, theoryHasUnseenUpdates = false
  * `items-start` so both lines set flush left against the numeral, as in the full-size mark. `flex-col` is here
  * but `flex`/`hidden` is not — that is what each variant supplies to select itself.
  */
-const WORDS_CLASS = "translate-y-px flex-col items-start text-[14px] font-black leading-[1.1] tracking-tight";
+const WORDS_CLASS = "flex-col items-start text-[14px] font-black leading-[1.1] tracking-tight";
 
 /**
  * The framework's identity mark, pinned to the header stack's top-LEFT as the mirror of {@link AppShellCaret}
@@ -423,7 +322,8 @@ const WORDS_CLASS = "translate-y-px flex-col items-start text-[14px] font-black 
  * automatically any more (see `useHeaderCollapse`), so "collapsed" has to be a space decision rather than the
  * framework going unbranded, and this is what makes that true.
  *
- * A WORDMARK JOINS IT, BUT ONLY WHILE COLLAPSED, AND ONLY FROM `sm:` UP.
+ * A WORDMARK JOINS IT WHILE COLLAPSED, AT EVERY WIDTH. Collapse is the only condition — there is no longer a
+ * lower width gate (it used to hide below 510px; see the breakpoint note further down for what changed).
  *
  * An unconditional wordmark was tried here first and dropped, for a reason that still holds: while the intro is
  * expanded the <h1> is already on screen, so a second label beside the mark just competes with the centred
@@ -441,9 +341,9 @@ const WORDS_CLASS = "translate-y-px flex-col items-start text-[14px] font-black 
  * being recognisable, which a single run of same-size text could not.
  *
  * TWO LINES, BECAUSE THE ROW IS 32px. The full-size lockup breaks into three ("Pillar Engineer / Growth /
- * Framework"), but the collapsed row is pinned to `h-8` to share a centre line with the tablist and the caret
- * (see AppShellTabBar), and three lines inside 32px lands at ~8.5px type. Two lines is the same shape at a
- * legible size; the reflow lives in `SITE_COPY.shortLockup`.
+ * Framework"), but this mark is a 32px box sharing a centre line with the caret opposite, and three lines inside
+ * 32px lands at ~8.5px type. Two lines is the same shape at a legible size; the reflow lives in
+ * `SITE_COPY.shortLockup`.
  *
  * SIZED TO THE LOGO, NOT TO THE ROW: the numeral fills ~86% of the mark's 32px beside it, and the two rows come
  * to just under that and sit centred against it, so the three parts read as one lockup.
@@ -458,27 +358,24 @@ const WORDS_CLASS = "translate-y-px flex-col items-start text-[14px] font-black 
  * the smaller size landed where screens are narrowest, i.e. where legibility matters most, and a wordmark that
  * changes size across a breakpoint reads as two marks.
  *
- * IT ABBREVIATES BEFORE IT DISAPPEARS, across two arbitrary breakpoints. What the lockup has to clear is the
- * centred tablist, a fixed `w-62` (248px) inside the stack's `px-3`, so its left edge is at
- * `12 + ((100vw - 24) - 248) / 2`. The widths that matter come out of that sum and land between Tailwind's steps:
+ * NO BREAKPOINTS AT ALL — the wide form shows at every width, and the abbreviated one is dead code kept only
+ * because `SITE_COPY.shortLockup.compactLines` still describes it.
  *
- *   >= 700px   "Pillar Engineer / Growth Framework"   ends ~209px from the left, ~17px clear of the tabs
- *   >= 510px   "Pillar / EGF"                         ends ~128px, ~3px clear at the bottom of the range
- *   <  510px   hidden
+ * This used to be the most fiddly geometry in the file. The lockup shared its row with a centred segmented
+ * control, so what it could show depended on a sum of that control's width, the caret's inset and the row's
+ * padding — `12 + ((100vw - 24) - 248) / 2` at one point — and the answer was two hand-measured thresholds
+ * (hidden below 510px, abbreviated below 700px, later 470px) that went stale whenever any term moved. Adding a
+ * third tab would have moved a term.
  *
- * The middle band is why the abbreviation exists: the wide form runs out of room at 700px, and hiding the mark
- * outright there costs it every laptop-narrow and landscape-tablet width down to 510px. `sm:`/`md:` are no use
- * as thresholds — `md:` (768px) waits for ~51px of slack the design does not need, and `sm:` (640px) overlaps.
+ * Moving navigation to the viewport bottom (see AppBottomNav) removed every term. The row now holds the lockup
+ * and the caret, nothing else, so the space available is `100vw - 12 - 32 (caret) - 12` minus the lockup's own
+ * `12 + 32 (logo) + 8 (gap)` — about `100vw - 108`. The wide form's words run ~145px, so it fits from ~253px,
+ * comfortably below the app's 350px floor (`FE_UI.page.minWidthPx`, enforced on `main` in HomePage). There is no
+ * width the app supports at which the full lockup does not fit, so there is nothing to switch on.
  *
- * THE 510px FIGURE IS THE THIN ONE, and deliberately so — it was chosen for reach, not for margin. ~3px is not
- * really clearance: it is zero plus estimation error, since these widths assume a ~0.58em average glyph advance
- * and the platform's `system-ui` bold may set wider. If "Pillar" and the tabs look like they touch just above
- * 510px, the fix is the words at 13px (~7px clear) or 12px (~10px), NOT moving the breakpoint back up — the
- * whole point of the compact form is how low it reaches. The wide form has the same exposure: its ~17px at
- * 700px closes to ~7px if the glyphs set ~8% wider.
- *
- * Both halves of the sum can move — the lockup grows with its type sizes or longer `shortLockup` lines, and the
- * tabs' edge moves with `w-62` — so these numbers are only right for the current pair.
+ * KEEP IT THAT WAY. If something is ever added back to this row, the honest move is to put it on its own line or
+ * at the bottom rather than to reintroduce a measured threshold here — that is the trade this change was made to
+ * escape.
  *
  * CROSS-FADED RATHER THAN SWAPPED, so it arrives with the intro's own 200ms collapse instead of popping in a
  * frame ahead of it. It stays mounted at `opacity-0` when expanded, which is free here: the whole box is already
@@ -488,7 +385,7 @@ const WORDS_CLASS = "translate-y-px flex-col items-start text-[14px] font-black 
  * `BASE_URL`, not a bare "/", because the Pages build serves from /egf/.
  */
 function AppShellBrandMark({ collapsed = false }) {
-  const { numeral, lines, compactLines } = SITE_COPY.shortLockup;
+  const { numeral, lines } = SITE_COPY.shortLockup;
 
   return (
     <div aria-hidden className="pointer-events-none absolute left-3 top-3 z-10 flex h-8 items-center gap-2 print:hidden">
@@ -496,9 +393,15 @@ function AppShellBrandMark({ collapsed = false }) {
           lopsided against the caret's 32px button. Intrinsic size stays 96px so it stays sharp on
           retina; `rounded-lg` matches the caret's corner radius rather than the mark's own 4px. */}
       <img src={`${import.meta.env.BASE_URL}favicon-96x96.png`} alt="" width={96} height={96} className="size-8 shrink-0 rounded-lg" />
+      {/* NO WIDTH GATE — a plain `flex`, with no `hidden` plus a min-width variant to switch it on. (Written out
+          rather than shown as a class, because Tailwind scans comments too and would generate a broken rule from
+          a placeholder breakpoint.) The wordmark used to hide below 510px because a
+          centred 248px tablist left the corner ~39px; right-aligned and content-sized it leaves enough for the
+          compact form at the app's narrowest supported layout, so there is no width at which hiding it is the
+          right answer. Only `collapsed` decides whether it shows. */}
       <span
         className={cn(
-          "hidden min-[510px]:flex h-8 items-center gap-1 text-slate-900",
+          "flex h-8 items-center gap-1 text-slate-900",
           "transition-opacity duration-200 ease-out motion-reduce:transition-none",
           collapsed ? "opacity-100" : "opacity-0",
         )}
@@ -509,20 +412,14 @@ function AppShellBrandMark({ collapsed = false }) {
             box does not blow out the 32px row and drag the logo off the shared centre line. Cap height varies
             a little by platform font, so treat the ratio as approximate. */}
         <span className="text-[38px] font-black leading-[0.72] tracking-tighter">{numeral}</span>
-        {/* BOTH VARIANTS ARE RENDERED, and CSS picks one — no media-query listener, so there is no width to
-            measure, nothing to re-measure on resize, and no first-paint flash of the wrong one. Whichever is
-            `hidden` is out of flow entirely, so it costs no width.
-            Both take `WORDS_CLASS` (see it for the sizing and the 1px nudge) and add only their own
-            `flex`/`hidden`, so the two can differ in nothing but their copy. */}
-        <span className={cn(WORDS_CLASS, "hidden min-[700px]:flex")}>
+        {/* ONE VARIANT NOW. `compactLines` is no longer rendered anywhere: with navigation out of this row the
+            wide form fits at every supported width (see the docblock), so switching between them would be a
+            threshold with nothing to protect against. The copy stays in SITE_COPY.shortLockup in case a future
+            layout needs it again.
+
+            `WORDS_CLASS` carries the sizing and the 1px optical nudge. */}
+        <span className={cn(WORDS_CLASS, "flex")}>
           {lines.map((line) => (
-            <span key={line} className="whitespace-nowrap">
-              {line}
-            </span>
-          ))}
-        </span>
-        <span className={cn(WORDS_CLASS, "flex min-[700px]:hidden")}>
-          {compactLines.map((line) => (
             <span key={line} className="whitespace-nowrap">
               {line}
             </span>
@@ -549,18 +446,16 @@ function AppShellBrandMark({ collapsed = false }) {
  *   expanded  → ChevronUp    hide the title
  *   collapsed → ChevronDown  show the title
  *
- * Absolutely positioned so it cannot decentre the tablist below it, which is `justify-center` and would be
- * shoved sideways by an in-flow control.
+ * Absolutely positioned, which is now about this button alone: there is no longer a tablist in the row for an
+ * in-flow control to shove sideways, but the reason above still stands on its own.
+ *
+ * IT STAYS ABSOLUTE RATHER THAN IN FLOW. An in-flow button at the end of the header's bottom strip would read the
+ * same and be less machinery — but that strip sits BELOW the collapsing intro, so expanding would carry the
+ * button down by the intro's full height and hand back exactly the bug described above.
  *
  * `top-3` UNCONDITIONALLY — the same value expanded or collapsed, which is what keeps this control from moving
- * when clicked. It works out because the tab bar's row is pinned to `h-8`, the same 32px as this button, inside
- * the bar's `py-3`: collapsed, this sits exactly on that row; expanded, the intro's matching `pt-3` puts the
- * title's first line on the same top edge.
- *
- * The failed approach is worth recording, since it looks correct on paper. Matching PADDING (`top-3` against a
- * `py-3` bar) does not align boxes of DIFFERENT heights — the tablist is only ~30px, so equal padding left its
- * centre 1px off and a `py-3` bar pushed it 4px below this button. Fixing the row's height instead makes the
- * alignment structural, so all three share a centre line whatever the tablist's contents measure.
+ * when clicked. Collapsed, the stack's `p-3` puts this at the top of a header whose intro has gone to zero
+ * height; expanded, that same padding puts the title's first line on the same top edge.
  */
 function AppShellCaret({ collapsed, onCollapsedChange }) {
   const { icon: CaretIcon, label: caretLabel } = CARET_MODES[collapsed ? "reveal" : "collapse"];
@@ -580,4 +475,68 @@ function AppShellCaret({ collapsed, onCollapsedChange }) {
   );
 }
 
-export { AppShellHeaderStack, AppShellIntro, AppShellTabBar };
+/**
+ * Scroll to the top of the page. Sits immediately left of {@link AppShellCaret}, in the same 32px corner row.
+ *
+ * IT ONLY EXISTS WHILE THERE IS SOMEWHERE TO GO. Gated on `scrollY > 0`, so at the top of the page the corner
+ * holds the caret alone. A control that is always present but does nothing for the whole first screenful is worse
+ * than no control: it teaches that pressing it has no effect, which is the lesson that then applies when it would
+ * have worked.
+ *
+ * THIS REPLACES A HIDDEN GESTURE. Scroll-to-top used to be "tap the tab you are already on", announced by a
+ * tooltip on hover. That was defensible while navigation was a segmented control beside the title — the tabs and
+ * the title were the same piece of chrome — but navigation moved to a bottom bar (see AppBottomNav), where the
+ * active item is the easiest thing on screen to hit by accident and there is no hover to advertise anything. So
+ * the behaviour was removed from the tap and given its own button here, where it is visible rather than secret.
+ *
+ * LEFT OF THE CARET, NOT RIGHT. The caret keeps the true corner and therefore its exact position, which is what
+ * its own docblock is about: it must not move when clicked. Taking the corner for this button would shift the
+ * caret 36px inboard and break that for a control users have already learned.
+ *
+ * A DOUBLE CHEVRON, deliberately distinct from the caret's single one. The two sit 4px apart doing different
+ * things — one moves the page, one folds the header — and at 16px a repeated glyph reads as "further, all the
+ * way" against the single glyph's "one step". Same size, border and hover treatment otherwise, because they are
+ * peers in the same row.
+ *
+ * `smooth`, unlike the instant scrolls elsewhere in the app: those are restores and jumps that should feel like
+ * the page was always there, whereas this is a journey the user asked for and the motion is the feedback that it
+ * happened. `motion-reduce` is honoured by the browser's own `scroll-behavior` handling of `smooth`.
+ */
+function AppShellScrollTopButton() {
+  // Whether there is anywhere to scroll up to. The listener is `passive` because this never calls
+  // `preventDefault` — a non-passive scroll listener would let this block the scroll it is only observing.
+  const [canScrollUp, setCanScrollUp] = useState(false);
+
+  useEffect(() => {
+    const sync = () => setCanScrollUp(getWindowScrollY() > 0);
+    sync();
+    window.addEventListener("scroll", sync, { passive: true });
+    window.addEventListener("resize", sync);
+    return () => {
+      window.removeEventListener("scroll", sync);
+      window.removeEventListener("resize", sync);
+    };
+  }, []);
+
+  // Unmounted rather than hidden: there is nothing to animate to or from, and an invisible button in the corner
+  // would still be in the tab order.
+  if (!canScrollUp) {
+    return null;
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => scrollWindowToTop({ behavior: "smooth" })}
+      title="Scroll to top"
+      aria-label="Scroll to top"
+      // `right-12` = 48px: the caret's own 12px inset plus its 32px width, plus a 4px gap. So this sits directly
+      // inboard of it in the same row, sharing `top-3` so the two are on one centre line.
+      className="absolute right-12 top-3 z-10 inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-slate-100/80 text-slate-500 transition-colors hover:bg-slate-200/80 hover:text-slate-900 print:hidden"
+    >
+      <ChevronsUp className="size-4" aria-hidden />
+    </button>
+  );
+}
+
+export { AppShellHeaderStack, AppShellIntro };

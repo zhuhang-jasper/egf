@@ -12,6 +12,7 @@ import { UNDO_TOAST_KEY, useAppStore } from "@/store/useAppStore";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
 import { readFileAsText } from "@/utils/profile-transfer";
+import { getPopoverViewportBounds } from "@/utils/scroll";
 
 /**
  * Overflow menu (kebab) sitting next to the Profiles picker. Holds list-level actions —
@@ -129,9 +130,10 @@ export function ProfileActionsMenu() {
     const naturalHeight = menu.scrollHeight;
     const gap = 4;
     const margin = 8;
-    const tabBar = document.getElementById("app-shell-tab-bar");
-    const topBoundary = tabBar ? Math.max(0, tabBar.getBoundingClientRect().bottom) : 0;
-    const spaceBelow = window.innerHeight - buttonRect.bottom - gap - margin;
+    // Clear the pinned chrome at both ends — sticky header above, fixed bottom nav below. See
+    // getPopoverViewportBounds for why this is shared rather than measured here.
+    const { top: topBoundary, bottom: bottomBoundary } = getPopoverViewportBounds();
+    const spaceBelow = bottomBoundary - buttonRect.bottom - gap - margin;
     const spaceAbove = buttonRect.top - topBoundary - gap - margin;
     setOpenUp(naturalHeight > spaceBelow && spaceAbove > spaceBelow);
   }, [open]);

@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 
-import { AppShellHeaderStack, AppShellIntro, AppShellTabBar } from "@/components/AppShellHeader";
+import { AppBottomNav } from "@/components/AppBottomNav";
+import { AppShellHeaderStack, AppShellIntro } from "@/components/AppShellHeader";
 import { TheoryContent } from "@/components/TheoryContent";
 import { ToolContent } from "@/components/ToolContent";
 import { Toaster } from "@/components/ui/Toaster";
@@ -10,8 +11,8 @@ import { getPersistedActiveTab, useTabScrollMemory } from "@/hooks/useTabScrollM
 import { useTheoryUpdates } from "@/hooks/useTheoryUpdates";
 
 import { FE_UI } from "@/constants";
+import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
-import { getWindowScrollY, scrollWindowTo } from "@/utils/scroll";
 import { cleanTheoryDeepLinkParams, getTabFromUrl, parseTheoryDeepLink, syncTabInUrl } from "@/utils/theory-url";
 
 const appVersion = import.meta.env.VITE_APP_VERSION;
@@ -26,13 +27,30 @@ const VALID_TABS = ["tool", "theory"];
  * header spans the viewport and does not change width when the tab changes. `self-center` centres the capped
  * box inside that full-width column.
  *
- * `mb-6` is the white gap above the black footer. It lives out here rather than on the footer because the gap
- * has to sit OUTSIDE the black — padding there would only make the band taller — and the footer's own top
- * margin is already spoken for by `mt-auto`.
+ * The bottom margin is the gap above the footer. It lives out here rather than on the footer because padding
+ * there would only make that strip taller, and the footer's own top margin is already spoken for by `mt-auto`.
+ *
+ * `overflow-x-clip` WHILE INACTIVE, to stop a one-frame horizontal scrollbar on tab switch. Both panels share one
+ * `widthStyle` derived from the ACTIVE tab, so on the frame a switch commits, the outgoing panel is momentarily
+ * still laid out with content sized for the old (wider) measure inside the new (narrower) one. That overflowed the
+ * document horizontally for a frame, the browser showed a scrollbar, and the visual viewport shrank — which the
+ * `fixed` bottom nav is positioned against, so it visibly jumped ~15px.
+ *
+ * Clipping only the INACTIVE panel is what makes this safe: the visible panel keeps `visible` overflow, so nothing
+ * that should be able to escape its box (tooltips, dropdowns) is affected, and a hidden panel has nothing to show
+ * anyway. Fixing it here rather than by clipping `body` matters — `body` must keep `overflow-x: auto` so the 350px
+ * min-width floor stays reachable at narrow viewports (see index.css).
  */
 function TabPanel({ label, active, widthStyle, children }) {
   return (
-    <div className="mt-3 mb-3 w-full self-center px-3" style={widthStyle} role="tabpanel" hidden={!active} aria-hidden={!active} aria-label={label}>
+    <div
+      className={cn("mt-3 mb-0 w-full self-center px-3", !active && "overflow-x-clip")}
+      style={widthStyle}
+      role="tabpanel"
+      hidden={!active}
+      aria-hidden={!active}
+      aria-label={label}
+    >
       {children}
     </div>
   );
@@ -93,12 +111,13 @@ export default function HomePage() {
 
   const handleTabChange = (nextTab) => {
     if (nextTab === activeTab) {
-      // Clicking the already-active tab scrolls to the top and leaves the header exactly as it is.
-      // Collapse is the user's choice, expressed elsewhere (the caret, or a pull at the top) — a scroll
-      // shortcut has no business changing it.
-      if (getWindowScrollY() > 0) {
-        scrollWindowTo(0, { behavior: "smooth" });
-      }
+      // Re-tapping the active tab does NOTHING. It used to scroll to the top, which made sense while navigation
+      // was a segmented control in the header: the control was next to the title, so "go back to the top" read
+      // as part of the same gesture, and the affordance was announced by a tooltip on hover.
+      //
+      // From a bottom bar it reads as a mis-tap instead. The bar is under the thumb, so the active item is the
+      // easiest thing on screen to hit by accident, and a hidden action that throws away your scroll position is
+      // the wrong thing to put there — on touch there is no hover, so nothing advertises it either.
       return;
     }
     saveActiveTabScroll();
@@ -161,22 +180,54 @@ export default function HomePage() {
   // It DOES have a min width — the app's usability floor, covering header, body and footer alike since all
   // three are its children. See the note above the return for why the floor lives here and not on the panels.
   //
-  // `main` also carries `min-h-dvh` and no horizontal padding of its own. The height is what lets the footer's
-  // `mt-auto` push to the viewport bottom when a tab's content is short; the absent padding is what lets the
-  // footer and the sticky header both bleed to the real edges. The 12px inset those two would have inherited
-  // now lives on the pieces that actually want it — `px-3` on each tab panel, and the header's own `px-3`.
+  // `main` carries `flex-1` (filling the `min-h-dvh` wrapper) rather than a viewport height of its own, and no
+  // horizontal padding. The height is what lets the footer's `mt-auto` push to the bottom when a tab's content is
+  // short; doing it with `flex-1` instead of `min-h-dvh` keeps every viewport unit out of this box, which is what
+  // stops the fixed bottom nav jumping on tab switch (see the padding note below the return). The absent padding
+  // is what lets the footer and the sticky header both bleed to the real edges — the 12px inset they would have
+  // inherited lives on the pieces that want it: `px-3` on each tab panel, and the header's own `p-3`.
   return (
-    <div className="bg-black print:bg-white print:p-0">
+    /* `flex min-h-dvh flex-col` so `main` below can fill it with `flex-1` — which is what gives the footer's
+       `mt-auto` a floor to push against without `main` itself doing viewport arithmetic (see the note on its
+       padding for why any `calc()` on a viewport unit there made the fixed nav jump). `min-h-dvh` as a bare unit
+       is fine; it is the arithmetic that was the problem. */
+    <div className="flex min-h-dvh flex-col bg-black print:block print:min-h-0 print:bg-white print:p-0">
+      {/* THE BOTTOM NAV'S HEIGHT IS RESERVED WITH PADDING ALONE — `pb-[…]`, and deliberately NOT paired with a
+          `min-h-[calc(100dvh - …)]` to match.
+
+          That calc is what made the fixed nav jump upward for a frame on every tab switch. `dvh` resolves against
+          the viewport, and the browser re-resolves it when the layout viewport changes — which a tab switch does,
+          because the two tabs' content measures differ enough to add or drop the vertical scrollbar. For the frame
+          in which that is being recomputed, `main`'s height and the nav's `bottom: 0` anchor disagree, and the bar
+          paints high before settling. Any viewport unit here reintroduces it.
+
+          `min-h-dvh` on its own is safe and is what `html`/`body`/`#root` already use (see index.css) — the
+          hazard was specifically doing ARITHMETIC on a viewport unit in the same box whose height the fixed
+          element's anchor is compared against.
+
+          The padding alone is enough for what this actually has to do: keep the footer and the end of a tab's
+          content out from under the bar. It does mean the shortest possible page is the bar's height taller than
+          the viewport, so a very short tab can scroll by ~48px — a far smaller cost than a visible jump on every
+          switch, and `min-h-dvh` is left off `main` entirely so the footer's `mt-auto` still has a floor to push
+          against via `#root`.
+
+          The `env(safe-area-inset-bottom)` term matches the bar's own — see AppBottomNav — so the reservation
+          tracks the real painted height on a notched iPhone rather than assuming zero.
+
+          `print:pb-0`: the bar is `print:hidden`, so on paper there is nothing to reserve for. */}
       <main
-        className="flex min-h-dvh w-full flex-col bg-white print:max-w-none print:p-0 print:shadow-none"
+        className="flex w-full flex-1 flex-col bg-white pb-[calc(3rem+env(safe-area-inset-bottom))] print:max-w-none print:p-0 print:pb-0 print:shadow-none"
         style={{ minWidth: FE_UI.page.minWidthPx }}
       >
-        {/* Intro and tab bar pin together as one sticky unit — see AppShellHeaderStack for why they share a
-            single sticky box rather than being two independently-sticky elements. Full-width, so it spans the
-            viewport regardless of which tab's measure is active below it. */}
+        {/* The sticky app header: the collapsing title block, plus the brand mark and caret that the stack
+            positions in its own corners. Full-width, so it spans the viewport regardless of which tab's measure
+            is active below it.
+
+            NAVIGATION IS NOT IN HERE. It was a segmented control in a second row of this stack; it now sits at the
+            viewport bottom (AppBottomNav, rendered after the footer below), which is what lets the header be
+            brand + caret and nothing else — and is why the stack has a single child again. */}
         <AppShellHeaderStack collapsed={headerCollapsed} onCollapsedChange={setHeaderCollapsed}>
           <AppShellIntro collapsed={headerCollapsed} />
-          <AppShellTabBar activeTab={activeTab} onTabChange={handleTabChange} theoryHasUnseenUpdates={theoryHasUnseenUpdates} />
         </AppShellHeaderStack>
 
         <TabPanel label="Tool" active={activeTab === "tool"} widthStyle={contentWidthStyle}>
@@ -199,24 +250,49 @@ export default function HomePage() {
           />
         </TabPanel>
 
-        {/* Inside `main` and full-bleed, so it reads as the page's own footer rather than a strip of the black
-            page behind it — which is what it looked like once `main` went full-width and the black stopped
-            showing down the sides.
+        {/* Inside `main` and full-bleed, so it reads as the page's own footer rather than a strip of the page
+            behind it.
 
-            `mt-auto` against `main`'s `min-h-dvh` is what pins it to the viewport bottom when a tab's content
-            is short, while letting it sit after the content on a long page. Deliberately NOT sticky: it is
-            passive text, so pinning it would spend permanent viewport height on something nobody needs
-            mid-scroll.
+            `mt-auto` against `main`'s `min-h` is what pins it to the bottom of the content area when a tab's
+            content is short, while letting it sit after the content on a long page. Deliberately NOT fixed: it
+            is passive text, so pinning it would spend permanent viewport height on something nobody needs
+            mid-scroll — which is a live distinction now that AppBottomNav sits fixed below it and does earn that
+            height.
 
             Rendered once outside both tabpanels, so it survives tab switches untouched. */}
-        {/* The gap above this footer is WHITE and comes from each tab panel's `mb-6`, not from here.
-            Deliberately: the gap separates content from the black band, so it has to be outside the black.
-            Padding on this element would only make the band taller, and `mt-*` is unavailable because
-            `mt-auto` already owns this margin to push the footer down when a tab's content is short. */}
-        <footer className="mt-auto bg-black px-3 py-2 text-center text-[11px] text-white/60 print:bg-transparent print:text-slate-500">
+        {/* WHITE, NOT BLACK, AND THAT IS ABOUT THE BOTTOM NAV. This was a black band, which read as the page's
+            own base while it was the last thing on screen. It is not the last thing any more — AppBottomNav is
+            fixed directly beneath it — and a black strip meeting a white bar looked like two unrelated pieces of
+            chrome stacked by accident. Matching the nav (and the header above it) makes the shell one surface,
+            with the `border-t` hairlines doing the separating instead of a colour change.
+
+            The black survives where it still means something: the page wrapper outside `main`, which shows down
+            both sides once the viewport is wider than the content measure.
+
+            `text-slate-500` rather than `text-white/60` follows from the background; it is the same muted weight
+            against light that the old value was against dark.
+
+            NO BORDER of its own. This briefly had a `border-t` to replace the boundary the colour change used to
+            provide, but the bottom nav casts an upward shadow onto this strip (see AppBottomNav), so a hairline
+            here as well reads as two separators 40px apart. The footer is passive text at the end of the content;
+            it does not need to announce its own edge.
+
+            The tab panels' own bottom margin supplies the gap above — padding here would only make the strip
+            taller, and `mt-*` is unavailable because `mt-auto` owns that margin to push the footer down on short
+            pages. */}
+        <footer className="mt-auto bg-white px-3 py-2 text-center text-[11px] text-slate-500 print:bg-transparent">
           © 2026 Jasper Loo Zhu Hang · All rights reserved · <span className="tabular-nums">v{appVersion}</span>
         </footer>
       </main>
+
+      {/* PRIMARY NAVIGATION, pinned to the viewport bottom rather than sitting in the header — see AppBottomNav
+          for why it moved. Rendered outside `main` because it is `fixed`: its position comes from the viewport,
+          not from this flow, and keeping it out of `main` means it is not caught by that element's `min-w` floor
+          or its print overrides.
+
+          `main` carries the matching bottom padding (see its className) so the footer and the end of a tab's
+          content are not hidden underneath this bar. */}
+      <AppBottomNav activeTab={activeTab} onTabChange={handleTabChange} theoryHasUnseenUpdates={theoryHasUnseenUpdates} />
 
       <Toaster />
     </div>

@@ -92,7 +92,17 @@
        Fixed at the source: Tooltip now clamps in a `useLayoutEffect` (before first paint) and re-clamps via a
        ResizeObserver, so its RESTING position is in bounds without needing a hover. See `clampToPage` in
        components/ui/Tooltip.jsx. Do not put `hidden` back — it would only re-hide that class of bug while
-       also making the min-width floor unreachable. */
+       also making the min-width floor unreachable.
+
+       THIS AXIS MUST SCROLL RATHER THAN CLIP, AND THAT COST A ROUND TO RELEARN. A `clip` here (with the scrollport
+       moved to `html`) was tried to stop a one-frame horizontal scrollbar during tab switches, which was shrinking
+       the visual viewport and making the fixed bottom nav jump. It did stop that — but `clip` on `body` means the
+       min-width overflow never reaches `html` to be scrolled, so below ~350px the right edge became unreachable:
+       precisely the failure this comment already warned about.
+
+       The transient scrollbar is fixed where it comes from instead — the inactive tab panel, which is still laid
+       out at its own (wider) measure for the frame after a switch. See `overflow-x: clip` on the hidden panel in
+       HomePage. Fix the thing that overflows, not the thing that scrolls. */
     overflow-x: auto;
   }
 }

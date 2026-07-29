@@ -1,6 +1,6 @@
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 
-import { getIntroHeightPx, scrollWindowTo } from "@/utils/scroll";
+import { getHeaderToggleDeltaPx, scrollWindowTo } from "@/utils/scroll";
 
 // `:v3` is a single shared boolean. v2 was briefly per-tab and v1 was a differently-shaped shared value;
 // orphaning either costs one stale header state for the rest of a session.
@@ -23,7 +23,8 @@ const HEADER_COLLAPSED_SESSION_KEY = "app:headerCollapsed:v3";
  * answers, because they are all the same conflict. One writer and they stop being questions.
  *
  * The header no longer hides itself, which is only acceptable because the tab bar carries a permanent brand
- * mark (see AppShellTabBar) — "collapsed" is a space decision, not the framework going unbranded.
+ * mark (see AppShellBrandMark) — "collapsed" is a space decision, not the framework going unbranded. Collapsed
+ * now shows the FULL wordmark rather than an abbreviation, since navigation left that row.
  *
  * ONE BOOLEAN, SHARED BY BOTH TABS. With scrolling out of the picture this is not contentious: the only way
  * it changes is a deliberate act, and a deliberate act about the app's chrome is not tab-specific.
@@ -76,7 +77,7 @@ export function useHeaderCollapse() {
    * and pushes content down — the one case where the movement is the point.
    *
    * ONE INSTANT SCROLL AGAINST THE FINAL HEIGHT, not a per-frame chase. The intro animates, so its live
-   * height here is still mid-transition; `getIntroHeightPx()` reports the settled target instead. Following
+   * height here is still mid-transition; `getHeaderToggleDeltaPx()` reports the settled delta instead. Following
    * the animation frame by frame would mean a full page relayout every frame — with the radar chart inside
    * it — which is the stutter the intro's old "not animated" comment used to warn about. The scroll lands
    * instantly while the height eases, so content settles slightly ahead of the chrome; that reads as the
@@ -92,13 +93,16 @@ export function useHeaderCollapse() {
       return;
     }
 
-    const introHeight = getIntroHeightPx();
-    if (introHeight === 0) {
+    // HOW MUCH THE HEADER'S HEIGHT CHANGES, not how tall the intro is. The two differ: the stack has a
+    // `min-h-14` floor holding the corner row, so it does not collapse all the way to its padding, and shifting
+    // by the intro's full height therefore overshot by whatever the floor adds (see getHeaderToggleDeltaPx).
+    const delta = getHeaderToggleDeltaPx();
+    if (delta === 0) {
       return;
     }
-    // Expanding hides `introHeight` more of the viewport, so scroll UP by that much to push content back
-    // into view; collapsing frees it again, so scroll down to take up the slack.
-    scrollWindowTo(collapsed ? scrollYBefore + introHeight : scrollYBefore - introHeight);
+    // Expanding hides `delta` more of the viewport, so scroll UP by that much to push content back into view;
+    // collapsing frees it again, so scroll down to take up the slack.
+    scrollWindowTo(collapsed ? scrollYBefore + delta : scrollYBefore - delta);
   }, [collapsed]);
 
   return { collapsed, setCollapsed: setCollapsedPersisted };

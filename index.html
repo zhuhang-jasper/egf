@@ -21,6 +21,25 @@
     <meta name="application-name" content="9-Pillar EGF" />
     <meta name="apple-mobile-web-app-title" content="9-Pillar EGF" />
 
+    <!-- LAUNCH FULLSCREEN FROM THE iOS HOME SCREEN, the counterpart to `display: standalone` in manifest.json
+         (which only Android reads). Without this iOS opens the app inside Safari's chrome, and the consequence is
+         not just cosmetic: `env(safe-area-inset-*)` reports 0 whenever browser UI is present, because Safari's own
+         bottom bar is already clearing the home indicator. So the bottom nav's `pb-[env(safe-area-inset-bottom)]`
+         (see AppBottomNav) silently resolves to nothing and only starts doing its job once this tag exists.
+
+         Trade-off, deliberately accepted: standalone mode has no Safari back/forward or share button, so in-app
+         navigation is whatever the app provides. This app is two tabs and a footer, so there is nothing to go
+         "back" to.
+
+         ONLY AFFECTS ICONS ADDED AFTER THIS SHIPS. iOS bakes the launch mode into the home-screen shortcut at the
+         moment it is created, so an existing icon keeps opening in Safari until it is removed and re-added. Worth
+         knowing before concluding the tag did not work. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <!-- `black-translucent` would extend the page under the status bar and require a top safe-area inset on the
+         header to compensate; `default` keeps the status bar as its own opaque band, so the header needs no
+         `env(safe-area-inset-top)` handling. -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
     <link rel="canonical" href="https://zhuhang-jasper.github.io/egf/" />
 
     <!-- Open Graph (LinkedIn, Facebook, WhatsApp, etc.) -->
