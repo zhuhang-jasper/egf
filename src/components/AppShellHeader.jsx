@@ -388,6 +388,31 @@ function AppShellTabBar({ activeTab, onTabChange, theoryHasUnseenUpdates = false
 }
 
 /**
+ * The stacked words of the brand lockup, shared by its wide and abbreviated variants (see AppShellBrandMark) so
+ * the two can only differ in their copy.
+ *
+ * CENTRED ON THE NUMERAL, not matched to its full height. A two-line block's drawn height is
+ * `ascender + lineHeight` — top of line 1's ascenders down to line 2's baseline, neither line having a descender
+ * — so 14px at `leading-[1.1]` inks ~25.9px against the digit's ~27.4px: a touch shorter, hence centred rather
+ * than flush top and bottom. That is INK, not line boxes: the boxes total 30.8px, about 20% more, and sizing
+ * THOSE to the digit is what once left the stack sitting visibly short of it.
+ *
+ * The parent's `items-center` does the centring, and it lands because each block's ink sits within ~0.4px of its
+ * own box's centre (checked for both), so centring the boxes centres the ink.
+ *
+ * `translate-y-px` IS AN OPTICAL CORRECTION ON TOP OF THAT, not a fix for the arithmetic — and a transform
+ * rather than a margin, so it moves the painted result without changing the box the centring is computed from.
+ * Geometric centring aligns bounding boxes, but the eye weights where the ink actually is: the digit is one
+ * solid mass filling its height, while the stack is two lighter rows with a gap through the middle, and against
+ * that the stack reads a shade high even when its box is centred. Trust the eye over the numbers here; if the
+ * type sizes change, re-judge the nudge rather than recomputing it.
+ *
+ * `items-start` so both lines set flush left against the numeral, as in the full-size mark. `flex-col` is here
+ * but `flex`/`hidden` is not — that is what each variant supplies to select itself.
+ */
+const WORDS_CLASS = "translate-y-px flex-col items-start text-[14px] font-black leading-[1.1] tracking-tight";
+
+/**
  * The framework's identity mark, pinned to the header stack's top-LEFT as the mirror of {@link AppShellCaret}
  * opposite. Same placement argument: anchored inside the tab bar it rode down with the bar when the intro
  * expanded, so it drifted around the header instead of being a fixed landmark. On the stack's top edge — the
@@ -433,19 +458,27 @@ function AppShellTabBar({ activeTab, onTabChange, theoryHasUnseenUpdates = false
  * the smaller size landed where screens are narrowest, i.e. where legibility matters most, and a wordmark that
  * changes size across a breakpoint reads as two marks.
  *
- * HIDDEN BELOW 700px, AN ARBITRARY BREAKPOINT ON PURPOSE. What the threshold has to clear is the centred
- * tablist (`w-62`, 248px), and the width where that stops being a problem falls between Tailwind's steps: the
- * lockup ends ~209px from the left and the tabs begin at `(100vw - 248) / 2`, so `sm:` (640px) overlaps them
- * outright, while `md:` (768px) waits for ~51px of slack — more than the design needs, and it costs the whole
- * 640-767px band the wordmark. 700px leaves ~17px.
+ * IT ABBREVIATES BEFORE IT DISAPPEARS, across two arbitrary breakpoints. What the lockup has to clear is the
+ * centred tablist, a fixed `w-62` (248px) inside the stack's `px-3`, so its left edge is at
+ * `12 + ((100vw - 24) - 248) / 2`. The widths that matter come out of that sum and land between Tailwind's steps:
  *
- * THAT 17px IS AN ESTIMATE, and the tightest thing in this header. It comes from an assumed average glyph
- * advance of ~0.58em; if the platform's `system-ui` bold sets ~8% wider, the gap closes to ~7px. Dropping the
- * words to 13px restores it to ~17px worst-case, and is the first lever to reach for if the wordmark ever looks
- * crowded against the tabs just above 700px.
+ *   >= 700px   "Pillar Engineer / Growth Framework"   ends ~209px from the left, ~17px clear of the tabs
+ *   >= 510px   "Pillar / EGF"                         ends ~128px, ~3px clear at the bottom of the range
+ *   <  510px   hidden
  *
- * Both halves of the sum can move — the lockup grows with its type sizes or a longer `shortLockup.lines`, and
- * the tabs' edge moves with `w-62` — so this number is only right for the current pair.
+ * The middle band is why the abbreviation exists: the wide form runs out of room at 700px, and hiding the mark
+ * outright there costs it every laptop-narrow and landscape-tablet width down to 510px. `sm:`/`md:` are no use
+ * as thresholds — `md:` (768px) waits for ~51px of slack the design does not need, and `sm:` (640px) overlaps.
+ *
+ * THE 510px FIGURE IS THE THIN ONE, and deliberately so — it was chosen for reach, not for margin. ~3px is not
+ * really clearance: it is zero plus estimation error, since these widths assume a ~0.58em average glyph advance
+ * and the platform's `system-ui` bold may set wider. If "Pillar" and the tabs look like they touch just above
+ * 510px, the fix is the words at 13px (~7px clear) or 12px (~10px), NOT moving the breakpoint back up — the
+ * whole point of the compact form is how low it reaches. The wide form has the same exposure: its ~17px at
+ * 700px closes to ~7px if the glyphs set ~8% wider.
+ *
+ * Both halves of the sum can move — the lockup grows with its type sizes or longer `shortLockup` lines, and the
+ * tabs' edge moves with `w-62` — so these numbers are only right for the current pair.
  *
  * CROSS-FADED RATHER THAN SWAPPED, so it arrives with the intro's own 200ms collapse instead of popping in a
  * frame ahead of it. It stays mounted at `opacity-0` when expanded, which is free here: the whole box is already
@@ -455,7 +488,7 @@ function AppShellTabBar({ activeTab, onTabChange, theoryHasUnseenUpdates = false
  * `BASE_URL`, not a bare "/", because the Pages build serves from /egf/.
  */
 function AppShellBrandMark({ collapsed = false }) {
-  const { numeral, lines } = SITE_COPY.shortLockup;
+  const { numeral, lines, compactLines } = SITE_COPY.shortLockup;
 
   return (
     <div aria-hidden className="pointer-events-none absolute left-3 top-3 z-10 flex h-8 items-center gap-2 print:hidden">
@@ -465,7 +498,7 @@ function AppShellBrandMark({ collapsed = false }) {
       <img src={`${import.meta.env.BASE_URL}favicon-96x96.png`} alt="" width={96} height={96} className="size-8 shrink-0 rounded-lg" />
       <span
         className={cn(
-          "hidden min-[700px]:flex h-8 items-center gap-1 text-slate-900",
+          "hidden min-[510px]:flex h-8 items-center gap-1 text-slate-900",
           "transition-opacity duration-200 ease-out motion-reduce:transition-none",
           collapsed ? "opacity-100" : "opacity-0",
         )}
@@ -476,23 +509,20 @@ function AppShellBrandMark({ collapsed = false }) {
             box does not blow out the 32px row and drag the logo off the shared centre line. Cap height varies
             a little by platform font, so treat the ratio as approximate. */}
         <span className="text-[38px] font-black leading-[0.72] tracking-tighter">{numeral}</span>
-        {/* CENTRED ON THE NUMERAL, not matched to its full height. A two-line block's drawn height is
-            `ascender + lineHeight` (top of line 1's ascenders down to line 2's baseline — neither line has a
-            descender), so 14px at `leading-[1.1]` inks ~25.9px against the digit's ~27.4px: a touch shorter, so
-            the pair is centred rather than flush top and bottom. Note this is INK, not line boxes — the boxes
-            here total 30.8px, about 20% more, and sizing those to the digit instead is what once left the stack
-            sitting visibly short of it.
-            The parent's `items-center` does the centring, and it lands because each block's ink sits within
-            ~0.4px of its own box's centre (checked for both), so centring the boxes centres the ink.
-            `translate-y-px` IS AN OPTICAL CORRECTION ON TOP OF THAT, not a fix for the arithmetic. Geometric
-            centring measures the ink's bounding box, but the eye weights where the ink actually IS: the digit
-            is one solid mass filling its full height, while the stack is two lighter rows with a gap through
-            the middle, and against that the two-row block reads a shade high even when its box is centred.
-            1px down is the nudge that settles it. Ignore what the numbers say here and trust the eye — if the
-            type sizes change, re-judge it rather than recomputing it.
-            `items-start` so both lines set flush left against the numeral, as in the full-size mark. */}
-        <span className="flex translate-y-px flex-col items-start text-[14px] font-black leading-[1.1] tracking-tight">
+        {/* BOTH VARIANTS ARE RENDERED, and CSS picks one — no media-query listener, so there is no width to
+            measure, nothing to re-measure on resize, and no first-paint flash of the wrong one. Whichever is
+            `hidden` is out of flow entirely, so it costs no width.
+            Both take `WORDS_CLASS` (see it for the sizing and the 1px nudge) and add only their own
+            `flex`/`hidden`, so the two can differ in nothing but their copy. */}
+        <span className={cn(WORDS_CLASS, "hidden min-[700px]:flex")}>
           {lines.map((line) => (
+            <span key={line} className="whitespace-nowrap">
+              {line}
+            </span>
+          ))}
+        </span>
+        <span className={cn(WORDS_CLASS, "flex min-[700px]:hidden")}>
+          {compactLines.map((line) => (
             <span key={line} className="whitespace-nowrap">
               {line}
             </span>
