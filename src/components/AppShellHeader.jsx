@@ -250,7 +250,7 @@ function AppShellHeaderStack({ collapsed, onCollapsedChange, children }) {
       )}
     >
       {children}
-      <AppShellBrandMark />
+      <AppShellBrandMark collapsed={collapsed} />
       <AppShellCaret collapsed={collapsed} onCollapsedChange={onCollapsedChange} />
     </div>
   );
@@ -398,20 +398,107 @@ function AppShellTabBar({ activeTab, onTabChange, theoryHasUnseenUpdates = false
  * automatically any more (see `useHeaderCollapse`), so "collapsed" has to be a space decision rather than the
  * framework going unbranded, and this is what makes that true.
  *
- * THE MARK ALONE, at every width — no wordmark beside it. A responsive `SITE_COPY.shortName` was tried here
- * and dropped: the icon is the identity users already associate with the app from the browser tab, and a
- * second label competing with the centred tablist bought nothing the mark was not already carrying.
+ * A WORDMARK JOINS IT, BUT ONLY WHILE COLLAPSED, AND ONLY FROM `sm:` UP.
  *
- * `aria-hidden`: purely decorative. The real, announceable name is the <h1> in AppShellIntro.
+ * An unconditional wordmark was tried here first and dropped, for a reason that still holds: while the intro is
+ * expanded the <h1> is already on screen, so a second label beside the mark just competes with the centred
+ * tablist for horizontal space and repeats what the title is saying two lines below.
+ *
+ * That argument evaporates when the intro is collapsed. There is no <h1> on screen then — the mark was carrying
+ * the app's identity alone, which is what made "collapsed" defensible in the first place (see
+ * `useHeaderCollapse`) but also left the pinned bar with no name on it. `SITE_COPY.shortName` is the name at the
+ * size the corner can afford, and it costs nothing when it matters least: it appears exactly when the space it
+ * would have competed for has been freed by the collapse.
+ *
+ * THE LOCKUP, NOT A PLAIN LABEL: an oversized `9` with the rest of the name stacked tight beside it, which is
+ * the framework's own mark scaled down rather than a second, unrelated piece of typography. It survives the
+ * shrink because the numeral does the identifying — the stacked words can go small without the mark stopping
+ * being recognisable, which a single run of same-size text could not.
+ *
+ * TWO LINES, BECAUSE THE ROW IS 32px. The full-size lockup breaks into three ("Pillar Engineer / Growth /
+ * Framework"), but the collapsed row is pinned to `h-8` to share a centre line with the tablist and the caret
+ * (see AppShellTabBar), and three lines inside 32px lands at ~8.5px type. Two lines is the same shape at a
+ * legible size; the reflow lives in `SITE_COPY.shortLockup`.
+ *
+ * SIZED TO THE LOGO, NOT TO THE ROW: the numeral fills ~86% of the mark's 32px beside it, and the two rows come
+ * to just under that and sit centred against it, so the three parts read as one lockup.
+ *
+ * THE TWO SIZES ARE COUPLED, AND THE COMPARISON IS INK, NOT BOXES. Change one and the other has to follow, in
+ * DRAWN height — a digit's ink is ~0.72 of its font size, and a two-line block's ink is `ascender + lineHeight`
+ * (~1.85em here) rather than its two line boxes (2.2em), a ~20% difference. Matching the boxes instead is what
+ * once left the stack sitting visibly short of the numeral. Both sizes are in `px` with explicit line heights;
+ * the inline notes carry the arithmetic.
+ *
+ * ONE TYPE SIZE AT EVERY WIDTH. This briefly stepped `10px` → `md:11px` on the words, which was not worth it:
+ * the smaller size landed where screens are narrowest, i.e. where legibility matters most, and a wordmark that
+ * changes size across a breakpoint reads as two marks.
+ *
+ * HIDDEN BELOW 700px, AN ARBITRARY BREAKPOINT ON PURPOSE. What the threshold has to clear is the centred
+ * tablist (`w-62`, 248px), and the width where that stops being a problem falls between Tailwind's steps: the
+ * lockup ends ~209px from the left and the tabs begin at `(100vw - 248) / 2`, so `sm:` (640px) overlaps them
+ * outright, while `md:` (768px) waits for ~51px of slack — more than the design needs, and it costs the whole
+ * 640-767px band the wordmark. 700px leaves ~17px.
+ *
+ * THAT 17px IS AN ESTIMATE, and the tightest thing in this header. It comes from an assumed average glyph
+ * advance of ~0.58em; if the platform's `system-ui` bold sets ~8% wider, the gap closes to ~7px. Dropping the
+ * words to 13px restores it to ~17px worst-case, and is the first lever to reach for if the wordmark ever looks
+ * crowded against the tabs just above 700px.
+ *
+ * Both halves of the sum can move — the lockup grows with its type sizes or a longer `shortLockup.lines`, and
+ * the tabs' edge moves with `w-62` — so this number is only right for the current pair.
+ *
+ * CROSS-FADED RATHER THAN SWAPPED, so it arrives with the intro's own 200ms collapse instead of popping in a
+ * frame ahead of it. It stays mounted at `opacity-0` when expanded, which is free here: the whole box is already
+ * `pointer-events-none` and `aria-hidden`, so an invisible label cannot be clicked, focused, or announced.
+ *
+ * `aria-hidden`: purely decorative, lockup included. The real, announceable name is the <h1> in AppShellIntro.
  * `BASE_URL`, not a bare "/", because the Pages build serves from /egf/.
  */
-function AppShellBrandMark() {
+function AppShellBrandMark({ collapsed = false }) {
+  const { numeral, lines } = SITE_COPY.shortLockup;
+
   return (
-    <div aria-hidden className="pointer-events-none absolute left-3 top-3 z-10 flex h-8 items-center print:hidden">
+    <div aria-hidden className="pointer-events-none absolute left-3 top-3 z-10 flex h-8 items-center gap-2 print:hidden">
       {/* `size-8` to match the caret opposite. The two bracket the title, so a smaller mark read as
           lopsided against the caret's 32px button. Intrinsic size stays 96px so it stays sharp on
           retina; `rounded-lg` matches the caret's corner radius rather than the mark's own 4px. */}
       <img src={`${import.meta.env.BASE_URL}favicon-96x96.png`} alt="" width={96} height={96} className="size-8 shrink-0 rounded-lg" />
+      <span
+        className={cn(
+          "hidden min-[700px]:flex h-8 items-center gap-1 text-slate-900",
+          "transition-opacity duration-200 ease-out motion-reduce:transition-none",
+          collapsed ? "opacity-100" : "opacity-0",
+        )}
+      >
+        {/* 38px CARRIES A ~27px DIGIT — the type size is not the glyph height. Lining figures stand to the cap
+            height, ~0.72em, so this fills about 86% of the logo's 32px; 42px took it to ~95%, which read too
+            heavy next to the mark. `leading-[0.72]` pulls the line box back down to the glyph so a 38px line
+            box does not blow out the 32px row and drag the logo off the shared centre line. Cap height varies
+            a little by platform font, so treat the ratio as approximate. */}
+        <span className="text-[38px] font-black leading-[0.72] tracking-tighter">{numeral}</span>
+        {/* CENTRED ON THE NUMERAL, not matched to its full height. A two-line block's drawn height is
+            `ascender + lineHeight` (top of line 1's ascenders down to line 2's baseline — neither line has a
+            descender), so 14px at `leading-[1.1]` inks ~25.9px against the digit's ~27.4px: a touch shorter, so
+            the pair is centred rather than flush top and bottom. Note this is INK, not line boxes — the boxes
+            here total 30.8px, about 20% more, and sizing those to the digit instead is what once left the stack
+            sitting visibly short of it.
+            The parent's `items-center` does the centring, and it lands because each block's ink sits within
+            ~0.4px of its own box's centre (checked for both), so centring the boxes centres the ink.
+            `translate-y-px` IS AN OPTICAL CORRECTION ON TOP OF THAT, not a fix for the arithmetic. Geometric
+            centring measures the ink's bounding box, but the eye weights where the ink actually IS: the digit
+            is one solid mass filling its full height, while the stack is two lighter rows with a gap through
+            the middle, and against that the two-row block reads a shade high even when its box is centred.
+            1px down is the nudge that settles it. Ignore what the numbers say here and trust the eye — if the
+            type sizes change, re-judge it rather than recomputing it.
+            `items-start` so both lines set flush left against the numeral, as in the full-size mark. */}
+        <span className="flex translate-y-px flex-col items-start text-[14px] font-black leading-[1.1] tracking-tight">
+          {lines.map((line) => (
+            <span key={line} className="whitespace-nowrap">
+              {line}
+            </span>
+          ))}
+        </span>
+      </span>
     </div>
   );
 }
