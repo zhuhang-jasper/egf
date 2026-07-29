@@ -446,7 +446,7 @@ export function ProfileCombobox({ titleError = false }) {
                       // rather than a dead click.
                       disabled={isActive}
                       className={cn(
-                        "flex min-w-0 flex-1 items-center py-2 pl-0 pr-3 text-left text-sm",
+                        "flex min-w-0 flex-1 select-none items-center py-2 pl-0 pr-3 text-left text-sm",
                         isActive ? "cursor-default" : "cursor-pointer",
                       )}
                       onMouseEnter={() => setHighlight(i)}

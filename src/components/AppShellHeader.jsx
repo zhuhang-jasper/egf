@@ -359,7 +359,7 @@ function AppShellTabBar({ activeTab, onTabChange, theoryHasUnseenUpdates = false
                 aria-selected={selected}
                 onClick={() => onTabChange(id)}
                 className={cn(
-                  "group relative z-10 flex cursor-pointer items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold",
+                  "group relative z-10 flex cursor-pointer select-none items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold",
                   selected ? "text-white" : "text-slate-600 hover:text-slate-800",
                 )}
               >

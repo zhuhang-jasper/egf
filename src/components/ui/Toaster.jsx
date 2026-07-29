@@ -106,7 +106,7 @@ export function Toaster() {
             {t.action ? (
               <button
                 type="button"
-                className={cn("ml-1 shrink-0 rounded-sm px-1.5 py-0.5 text-sm font-semibold underline-offset-2 hover:underline", meta.dismissClass)}
+                className={cn("ml-1 shrink-0 select-none rounded-sm px-1.5 py-0.5 text-sm font-semibold underline-offset-2 hover:underline", meta.dismissClass)}
                 onClick={() => {
                   t.action.onAction();
                   dismissToast(t.id);

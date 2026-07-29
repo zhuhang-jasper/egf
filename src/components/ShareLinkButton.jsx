@@ -91,7 +91,7 @@ export function ShareLinkButton({ section, pillar = null, label = null, ariaLabe
       type="button"
       aria-label={ariaLabel}
       onClick={handleShare}
-      className={cn("group relative inline-flex cursor-pointer items-center rounded-md transition-colors", variantClass, className)}
+      className={cn("group relative inline-flex cursor-pointer select-none items-center rounded-md transition-colors", variantClass, className)}
     >
       {copied ? <CheckIcon /> : <LinkIcon />}
       {labeled ? <span>{copied ? "Copied!" : label}</span> : <Tooltip text={copied ? "Copied" : "Copy link"} visible={copied} />}

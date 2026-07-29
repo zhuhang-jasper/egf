@@ -4,6 +4,7 @@ import { Download, Trash2, Upload, Wrench } from "lucide-react";
 
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/button";
+import { MenuItem } from "@/components/ui/menu-item";
 import { Tooltip } from "@/components/ui/Tooltip";
 
 import { UNDO_TOAST_KEY, useAppStore } from "@/store/useAppStore";
@@ -160,35 +161,16 @@ export function ProfileActionsMenu() {
             openUp ? "bottom-[calc(100%+4px)]" : "top-[calc(100%+4px)]",
           )}
         >
-          <button
-            type="button"
-            role="menuitem"
-            disabled={!hasProfiles}
-            className="flex cursor-pointer items-center gap-2 px-3 py-2 text-left text-xs text-foreground hover:bg-muted/60 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
-            onClick={handleExport}
-          >
-            <Upload className="h-4 w-4 shrink-0" aria-hidden />
+          <MenuItem icon={Upload} disabled={!hasProfiles} onClick={handleExport}>
             Export profiles
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            className="flex cursor-pointer items-center gap-2 border-t border-border px-3 py-2 text-left text-xs text-foreground hover:bg-muted/60"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <Download className="h-4 w-4 shrink-0" aria-hidden />
+          </MenuItem>
+          <MenuItem icon={Download} divided onClick={() => fileInputRef.current?.click()}>
             Import profiles
-          </button>
+          </MenuItem>
           {hasProfiles && (
-            <button
-              type="button"
-              role="menuitem"
-              className="flex cursor-pointer items-center gap-2 border-t border-border px-3 py-2 text-left text-xs text-foreground hover:bg-destructive/10"
-              onClick={handleDeleteAll}
-            >
-              <Trash2 className="h-4 w-4 shrink-0" aria-hidden />
+            <MenuItem icon={Trash2} divided destructive onClick={handleDeleteAll}>
               Delete all profiles
-            </button>
+            </MenuItem>
           )}
           <input ref={fileInputRef} type="file" accept="application/json,.json" className="hidden" onChange={handleImportFile} />
         </div>

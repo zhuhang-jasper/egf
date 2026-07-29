@@ -164,7 +164,7 @@ function FoundationCarousel({ stageCharts, style }) {
               aria-selected={isActive}
               aria-label={`${chart.role.level} ${chart.role.title}`}
               onClick={() => selectStage(index)}
-              className={cn(levelBadgeClass, "cursor-pointer px-2 py-1 transition-opacity", !isActive && "opacity-35")}
+              className={cn(levelBadgeClass, "cursor-pointer select-none px-2 py-1 transition-opacity", !isActive && "opacity-35")}
               style={{ backgroundColor: style.levelBadgeBg, color: style.levelBadgeText }}
             >
               {chart.role.level}

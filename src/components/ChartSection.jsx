@@ -18,9 +18,11 @@ import { FE_UI, FEATURE_SCORES_SETTINGS, SITE_COPY } from "@/constants";
 import { track } from "@/utils/analytics";
 import { copyChartAsImageToClipboard, shareChartAsImage } from "@/utils/copy-chart-image";
 
+// select-none: these rows get clicked repeatedly to flip a setting, and a double-click would
+// otherwise select the label text.
 function DisplayCheckbox({ label, checked, onChange }) {
   return (
-    <label className="flex cursor-pointer items-center gap-2.5 rounded-md px-3 py-1.5 text-xs hover:bg-muted/60">
+    <label className="flex cursor-pointer select-none items-center gap-2.5 rounded-md px-3 py-1.5 text-xs hover:bg-muted/60">
       <input
         type="checkbox"
         checked={checked}

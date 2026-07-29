@@ -104,7 +104,7 @@ export function BadgePicker() {
                 aria-checked={attachedBadge === id}
                 onClick={() => select(id)}
                 className={cn(
-                  "flex cursor-pointer items-center gap-3 px-3 py-1.5 text-left text-xs hover:bg-muted/60",
+                  "flex cursor-pointer select-none items-center gap-3 px-3 py-1.5 text-left text-xs hover:bg-muted/60",
                   attachedBadge === id && "font-semibold",
                 )}
               >

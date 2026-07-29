@@ -440,7 +440,7 @@ export default function PosterPage() {
                 type="button"
                 onClick={handleCopy}
                 disabled={Boolean(busy)}
-                className="cursor-pointer rounded-lg bg-slate-400/60 px-4 py-2 text-[18px] font-semibold text-white hover:bg-slate-400 disabled:cursor-wait disabled:opacity-60"
+                className="cursor-pointer select-none rounded-lg bg-slate-400/60 px-4 py-2 text-[18px] font-semibold text-white hover:bg-slate-400 disabled:cursor-wait disabled:opacity-60"
               >
                 {copyLabel}
               </button>
@@ -448,7 +448,7 @@ export default function PosterPage() {
                 type="button"
                 onClick={handleDownload}
                 disabled={Boolean(busy)}
-                className="cursor-pointer rounded-lg bg-slate-400/60 px-4 py-2 text-[18px] font-semibold text-white hover:bg-slate-400 disabled:cursor-wait disabled:opacity-60"
+                className="cursor-pointer select-none rounded-lg bg-slate-400/60 px-4 py-2 text-[18px] font-semibold text-white hover:bg-slate-400 disabled:cursor-wait disabled:opacity-60"
               >
                 {downloadLabel}
               </button>

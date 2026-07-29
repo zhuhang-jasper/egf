@@ -6,6 +6,7 @@ import { ProfileActionsMenu } from "@/components/ProfileActionsMenu";
 import { ProfileCombobox } from "@/components/ProfileCombobox";
 import { SaveCollisionDialog } from "@/components/SaveCollisionDialog";
 import { Button } from "@/components/ui/button";
+import { MenuItem } from "@/components/ui/menu-item";
 
 import { useTouchPrimary } from "@/hooks/useTouchPrimary";
 
@@ -149,33 +150,28 @@ function SaveButton({ statusMeta, showMenu, onSave, copyAction, undoAction }) {
           aria-label="Save options"
           className="absolute right-0 top-[calc(100%+4px)] z-30 flex w-max min-w-[100px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border border-border bg-card shadow-md"
         >
-          <button
-            type="button"
-            role="menuitem"
-            className="flex cursor-pointer items-center gap-2 px-3 py-2 text-left text-xs text-foreground hover:bg-muted/60"
+          <MenuItem
+            icon={Copy}
             onClick={() => {
               setMenuOpen(false);
               copyAction.onSelect();
             }}
           >
-            <Copy className="h-4 w-4 shrink-0" aria-hidden />
             {copyAction.label}
-          </button>
+          </MenuItem>
           {/* Reverts the draft to the linked profile — "Undo rename" (renaming) or "Undo changes"
               (modified). Absent when there's nothing to revert (e.g. "saved"). */}
           {undoAction ? (
-            <button
-              type="button"
-              role="menuitem"
-              className="flex cursor-pointer items-center gap-2 border-t border-border px-3 py-2 text-left text-xs text-foreground hover:bg-muted/60"
+            <MenuItem
+              icon={Undo2}
+              divided
               onClick={() => {
                 setMenuOpen(false);
                 undoAction.onSelect();
               }}
             >
-              <Undo2 className="h-4 w-4 shrink-0" aria-hidden />
               {undoAction.label}
-            </button>
+            </MenuItem>
           ) : null}
         </div>
       )}
