@@ -3,15 +3,9 @@ import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import { applyChartFrameLayout, getChartFrameEstimatedHeightPx } from "@/chart/fonts";
 import { applyChartState, createCompetencyChart, refreshChart } from "@/chart/instance";
 import { getRadarContentHeightPx } from "@/chart/radar-center";
+import { getChartLayoutLabelsForChart, getDisplayLabelsForChart, isHeroChart } from "@/chart/theory-profile";
 
-function fitFrameToChart(frameRef, chart, maxHeightPx) {
-  const frame = frameRef.current;
-  if (!frame?.offsetWidth || !chart) {
-    return;
-  }
-
-  const w = frame.offsetWidth;
-
+function measureAndFit(frameRef, frame, chart, w, maxHeightPx) {
   let prevContentH = null;
   for (let pass = 0; pass < 3; pass++) {
     // If the label extents can't be measured (e.g. the center-fit early-returned on a transient
@@ -27,6 +21,40 @@ function fitFrameToChart(frameRef, chart, maxHeightPx) {
     prevContentH = contentH;
     applyChartFrameLayout(frame, w, contentH);
     chart.resize();
+  }
+}
+
+function fitFrameToChart(frameRef, chart, maxHeightPx) {
+  const frame = frameRef.current;
+  if (!frame?.offsetWidth || !chart) {
+    return;
+  }
+
+  const w = frame.offsetWidth;
+
+  // The hero radar measures against the LAYOUT labels, the same as the tool chart's fit
+  // (useCompetencyChart): they substitute the longest pillar name onto the last spoke as a width
+  // spacer, which makes the measured label span — and hence the frame height and radar radius —
+  // larger than the displayed labels alone would give. Measuring displayed labels here instead made
+  // the hero settle shorter than the tool chart at the same width, so the two came out different
+  // sizes.
+  //
+  // Scoped to the hero: the small career-track charts pass a hard maxHeightPx (180), so the taller
+  // layout-label span would push them into that clamp and shrink their radars instead.
+  if (!isHeroChart(chart)) {
+    measureAndFit(frameRef, frame, chart, w, maxHeightPx);
+    return;
+  }
+
+  // The spacer must never survive the fit, or the last pillar paints under another pillar's name —
+  // restore the display labels on every exit path.
+  chart.data.labels = getChartLayoutLabelsForChart(chart);
+  chart.update("none");
+  try {
+    measureAndFit(frameRef, frame, chart, w, maxHeightPx);
+  } finally {
+    chart.data.labels = getDisplayLabelsForChart(chart);
+    chart.update("none");
   }
 }
 

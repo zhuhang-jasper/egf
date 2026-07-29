@@ -11,19 +11,29 @@ import { FE_UI } from "@/constants";
 function convergeContentHeight(frame, chart) {
   const w = frame.offsetWidth;
   let prev = null;
+  let applied = null;
   for (let pass = 0; pass < 3; pass++) {
     const h = getRadarContentHeightPx(chart);
     if (!h) {
-      return null;
+      // Nothing measurable yet: keep whatever we last applied rather than reporting failure, so the
+      // caller doesn't discard a good height from an earlier pass.
+      return applied;
     }
     if (h === prev) {
       break;
     }
     prev = h;
+    applied = h;
     applyChartFrameLayout(frame, w, h);
     chart.resize();
   }
-  return prev;
+  // Return the height actually APPLIED last, not `prev`. When the loop exits by exhausting its 3
+  // passes (rather than converging), the final resize() has already been applied to the frame; the
+  // caller re-applies whatever we return, so returning a stale earlier value would shrink the frame
+  // back and leave the radar smaller than it measured. This only bit at narrow widths (~375px),
+  // where the labels wrap more and the fit needs all 3 passes — wide layouts converge in 2 and hit
+  // the `h === prev` break, where applied and prev are the same value.
+  return applied;
 }
 
 function fitFrameToChart(frameRef, chart) {
@@ -46,13 +56,18 @@ function fitFrameToChart(frameRef, chart) {
   chart.data.labels = getChartLayoutLabelsForChart(chart);
   chart.update("none");
   try {
-    const rawH = convergeContentHeight(frame, chart);
-    if (!rawH) {
+    const finalH = convergeContentHeight(frame, chart);
+    if (!finalH) {
       return;
     }
 
-    const minRatioH = Math.round(w * (FE_UI.chartFrame.heightWidthRatio ?? 0));
-    const finalH = Math.max(rawH, minRatioH);
+    // Height is the measured axis-label span (plus contentPadPx), with no width-ratio floor — the
+    // same rule the theory hero radar uses, so the two charts render the same size radar at a given
+    // width. The floor used to be max(measured, width * heightWidthRatio); at desktop that 289px
+    // frame was SHORTER than the hero's measured span, and since Chart.js fits the radar into the
+    // smaller dimension (the radius here is height-limited, not width-limited), it made the tool
+    // chart's radar visibly smaller than the hero's. heightWidthRatio still seeds the
+    // pre-measurement estimate in getChartFrameEstimatedHeightPx.
     if (finalH > 0) {
       applyChartFrameLayout(frame, w, finalH);
       chart.resize();
@@ -66,10 +81,13 @@ function fitFrameToChart(frameRef, chart) {
 /**
  * Store state → chart state. The chart's option is `plainLabels` ("strip the emoji"), which is the
  * negation of what the UI toggle stores, so map it here rather than at each call site.
+ *
+ * `pointLabelPxRange` puts the tool chart on the same axis-label ramp as the theory hero radar
+ * (see FE_UI.chart.pointLabelPxRange) instead of the rounded pointLabelPx × width scaling.
  */
 function chartState() {
   const state = useAppStore.getState();
-  return { ...state, plainLabels: state.pillarEmojiHidden === true };
+  return { ...state, plainLabels: state.pillarEmojiHidden === true, pointLabelPxRange: FE_UI.chart.pointLabelPxRange };
 }
 
 /**

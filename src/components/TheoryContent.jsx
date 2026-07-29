@@ -13,7 +13,7 @@ import { UnseenDot } from "@/components/UnseenDot";
 
 import { getSectionSentinelId, useSectionSeenObserver } from "@/hooks/useSectionSeenObserver";
 
-import { FRAMEWORK_VERSION, IS_ADMIN } from "@/constants";
+import { FE_UI, FRAMEWORK_VERSION, IS_ADMIN } from "@/constants";
 import {
   CAREER_TRACKS_SECTION_INTRO,
   getSkillTierBands,
@@ -47,10 +47,11 @@ const returnsFalse = () => false;
 // Skill-tier band geometry is static — resolve the chained start/width percentages once.
 const SKILL_TIER_BANDS = getSkillTierBands();
 
-// Hero radar pillar-label sizing: scale linearly with the chart, from 12px at its small-mobile width
-// up to 14px at its desktop max width (the wrapper's max-w-[520px]). Module-level constant so its
-// identity is stable across renders (StaticCompetencyChart memoizes on this object).
-const HERO_POINT_LABEL_PX_RANGE = { minPx: 12, maxPx: 15, minWidthPx: 300, maxWidthPx: 520 };
+// Hero radar pillar-label sizing: scales linearly with the chart, 12px at its small-mobile width up
+// to 15px at FE_UI.page.chartMaxWidthPx (the wrapper cap below). Shared with the tool chart so the
+// two stay identical — see FE_UI.chart.pointLabelPxRange. Its stable module-level identity also
+// satisfies StaticCompetencyChart, which memoizes on this object.
+const HERO_POINT_LABEL_PX_RANGE = FE_UI.chart.pointLabelPxRange;
 
 // On a deep-link boot, how long to let the scroll-restore loop settle at the remembered position
 // before we switch the expanded pillar. Long enough to clear restore's initial frames; short enough
@@ -463,7 +464,7 @@ function TheoryContent({
 
         <ChangelogModal open={changelogOpen} onClose={() => setChangelogOpen(false)} />
 
-        <div className="mx-auto w-full max-w-[520px] mb-4">
+        <div className="mx-auto w-full mb-4" style={{ maxWidth: FE_UI.page.chartMaxWidthPx }}>
           <StaticCompetencyChart
             levels={[]}
             plainLabels={false}

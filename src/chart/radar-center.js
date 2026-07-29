@@ -1,6 +1,6 @@
 import { getChartWidthUnit } from "@/chart/fonts";
 import { getChartLayoutLabelsForChart, isHeroChart, isTheoryChart, resolveChartUi } from "@/chart/theory-profile";
-import { getPillarOrder } from "@/constants";
+import { FE_UI, getPillarOrder } from "@/constants";
 
 /**
  * Per-pillar pixel nudges for the chart axis labels, applied after the radar's automatic
@@ -228,7 +228,11 @@ export function getRadarContentHeightPx(chart) {
   }
 
   const ui = resolveChartUi(chart);
-  const pad = ui.chartFrame.contentPadPx ?? 6;
+  // The hero radar takes the tool chart's pad rather than its own preset's: it is sized to match the
+  // tool chart, and pad is added twice (top + bottom), so the theory preset's larger value left the
+  // hero's frame 4px taller. The small career-track charts keep the theory preset's pad — they clamp
+  // at maxHeightPx, so changing it there risks shrinking their radars.
+  const pad = (isHeroChart(chart) ? FE_UI.chartFrame.contentPadPx : ui.chartFrame.contentPadPx) ?? 6;
   return Math.ceil(extents.maxY - extents.minY + pad * 2);
 }
 

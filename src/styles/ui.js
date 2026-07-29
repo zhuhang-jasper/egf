@@ -1,7 +1,23 @@
 export const FE_UI = {
-  page: { maxWidthPx: 550, minWidthPx: 350, theoryMaxWidthPx: 900 },
+  page: {
+    maxWidthPx: 550,
+    minWidthPx: 350,
+    theoryMaxWidthPx: 900,
+    /**
+     * Desktop width ceiling for the radar canvas itself. The tool chart reaches this implicitly:
+     * `maxWidthPx` (550) minus the tab panel's px-3 gutters (12 each side) = 526. The theory hero
+     * radar's tab is 900 wide, so it caps its own wrapper at this value to land on the same canvas
+     * width and therefore the same rendered size.
+     */
+    chartMaxWidthPx: 526,
+  },
   chartFrame: {
-    /** Height/width ratio (radar fits a wide rect, not a square). Serves as both the pre-measurement estimate seed and the post-convergence floor — measured content converges below this, so the floor sets the final height. */
+    /**
+     * Height/width ratio (radar fits a wide rect, not a square). Seeds the PRE-measurement frame
+     * estimate only (getChartFrameEstimatedHeightPx). It is no longer a post-convergence floor:
+     * final height is the measured axis-label span, matching the theory hero radar so both charts
+     * render the same size radar. Raising this no longer enlarges the chart.
+     */
     heightWidthRatio: 0.55,
     /** Safety pad around measured axis-label span — just enough to keep labels off the canvas edge; chrome spacing lives in CSS margins. */
     contentPadPx: 2,
@@ -9,9 +25,21 @@ export const FE_UI = {
   },
   chart: {
     title: { labelMultiplier: 1.4, minPx: 14, maxPx: 22 },
-    layoutPaddingHorizontal: { minPx: 8, maxPx: 16 },
+    layoutPaddingHorizontal: { minPx: 2, maxPx: 5 },
     radarCenterFix: true,
-    radarLabelReserved: { minPx: 38, maxPx: 54 },
+    /**
+     * Horizontal space held back from the radar radius for the axis labels — applyRadarCenterFit
+     * subtracts it from the half-width to get a maxR cap.
+     *
+     * Matched to THEORY_CHART_UI (with layoutPaddingHorizontal above) so the tool chart and the
+     * theory hero radar compute the same maxR and therefore draw the same size radar.
+     *
+     * This DOES bind at narrow widths. Since the frame height is fit to the measured label span
+     * (~330px at a 375px viewport, so half ≈ 165), the old 38→54px reserve capped maxR at ~129
+     * while the hero's 10→18px gave ~163 — a visibly smaller radar on mobile even though both
+     * charts were otherwise identical. At desktop, height is the binding constraint instead.
+     */
+    radarLabelReserved: { minPx: 10, maxPx: 18 },
     /** Track badge + cluster legend — slightly below axis pillar labels, same width scaling. */
     secondaryLabelMultiplier: 0.9,
     /** Floor for track + cluster legend labels (mobile). */
@@ -23,6 +51,16 @@ export const FE_UI = {
     pointLabelPaddingRange: { minPx: 4, maxPx: 8 },
     pointLabelPx: 11,
     pointLabelScaleWithChart: true,
+    /**
+     * Axis-label size ramp, shared by the tool chart and the theory hero radar so the two render at
+     * identical label sizes for a given chart width. Linearly interpolated (unrounded) by
+     * getPointLabelSizePxFromRange: minPx at/below minWidthPx, maxPx at/above maxWidthPx.
+     *
+     * Takes precedence over the pointLabelPx × width-scaling path below, which is what the small
+     * theory career-track charts still use. Kept here rather than at the call sites so the two
+     * charts can't drift apart.
+     */
+    pointLabelPxRange: { minPx: 12, maxPx: 15, minWidthPx: 300, maxWidthPx: 526 },
     pointLabelWeight: "bold",
     pointLabelColor: "#1e293b",
     pointLabelDimColor: "#1e293b60",

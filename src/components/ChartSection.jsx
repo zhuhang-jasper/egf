@@ -261,7 +261,9 @@ export function ChartSection({ isVisible }) {
 
   return (
     <div className="flex w-full min-w-0 flex-col items-center">
-      <div className="relative z-[2] flex w-full min-w-0 items-center justify-end gap-2 mb-3">
+      {/* mb-2 (8px), not mb-3: matches the `gap-2` the theory tab puts above its hero radar, so the
+          two charts sit at the same offset below their respective toolbars. */}
+      <div className="relative z-[2] flex w-full min-w-0 items-center justify-end gap-2 mb-2">
         <div className="flex shrink-0 items-center gap-2">
           <ExportMenu onCopy={handleCopy} onShare={handleShare} />
           <ChartDisplayMenu />
