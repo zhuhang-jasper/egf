@@ -1,13 +1,13 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
-import { ChevronDown, ChevronsUp, ChevronUp, FileText, Radar } from "lucide-react";
+import { ChevronDown, ChevronUp, FileText, Radar } from "lucide-react";
 
 import { Tooltip } from "@/components/ui/Tooltip";
 import { UnseenDot } from "@/components/UnseenDot";
 
 import { FRAMEWORK_VERSION, SITE_COPY } from "@/constants";
 import { cn } from "@/utils";
-import { clearStickyScrollOffset, getWindowScrollY, scrollWindowToTop, setStickyScrollOffset } from "@/utils/scroll";
+import { clearStickyScrollOffset, getWindowScrollY, setStickyScrollOffset } from "@/utils/scroll";
 
 const TABS = [
   { id: "tool", label: "Tool", icon: Radar },
@@ -16,34 +16,38 @@ const TABS = [
   { id: "theory", label: "Theory", icon: FileText, version: `v${FRAMEWORK_VERSION}` },
 ];
 
-// The caret's three modes. Each does exactly ONE thing — scrolling and header state are never bundled.
+// Two modes, because the caret now does exactly one thing: toggle the header, wherever you are.
 //
-// `jump` used to scroll to the top AND reveal, which forced the title on a user who only wanted to get back
-// to the top: the very complaint this whole affordance exists to answer. Splitting them means getting the
-// title from deep in the page is two clicks (top, then reveal), but the far more common "just take me up"
-// is one click with no side effect. At the top, a pull reveals too, so the second click isn't the only route.
+// There used to be a third, "back to top", which took over whenever the page was scrolled — a workaround
+// for the fact that revealing the header at depth shoved all visible content down by its height. That is
+// handled in `useHeaderCollapse` now (the scroll position is compensated so nothing moves), and the
+// workaround had become the only thing stopping the header from being reachable while scrolled.
+//
+// Back to top is not lost: clicking the already-active tab does it, and says so in a tooltip.
 const CARET_MODES = {
   collapse: { icon: ChevronUp, label: "Hide title" },
   reveal: { icon: ChevronDown, label: "Show title" },
-  backToTop: { icon: ChevronsUp, label: "Back to top" },
 };
 
-
 /**
- * The framework title block. Collapses to zero height rather than being scrolled away, so the document's
- * top becomes the tab bar itself — see `useHeaderCollapse` for why that matters.
+ * The framework title block. Collapses to zero height rather than being scrolled away.
  *
  * `grid-rows-[1fr]` → `grid-rows-[0fr]` is how the height collapses: a grid row can go from a content-sized
- * track to a zero track, which plain `height: auto` cannot express. Switched, not transitioned — see below.
+ * track to a zero track, which plain `height: auto` cannot express — and unlike `height: auto`, both ends of
+ * that range are interpolatable, so it can be transitioned.
  *
  * The inner item MUST carry `min-h-0` as well as `overflow-hidden`. A grid item's automatic minimum size is
  * its min-content height, which overrides a `0fr` track — so without it the collapsed row keeps a residual
- * band of the title's height. That residual is not just cosmetic: it stays scrollable, so `scrollY > 0` is
- * reachable while the header still looks collapsed, which puts a dead gap between "collapsed" and "at the
- * top" and breaks the pull gesture's only precondition.
+ * band of the title's height.
  *
- * `print:grid-rows-[1fr]` forces it open on paper, where there is no scrolling and the title should always
- * appear. Kept out of the `hidden` treatment for the same reason.
+ * ANIMATED, which it deliberately was not before. The old reasoning was sound for the old design: collapsing
+ * was TRIGGERED BY SCROLLING, so transitioning a non-compositable property meant ~18 full-page layout passes
+ * (radar chart included) landing precisely while the user was scrolling — a measured stutter. Both premises
+ * are gone. Scrolling no longer touches the header, so the only trigger is a caret click: an isolated moment
+ * with no competing scroll work, which is exactly when the animation is affordable. And the header is sticky
+ * now, so it is on screen when this fires — there IS something to see, where before it was always off-screen.
+ *
+ * `print:grid-rows-[1fr]` forces it open on paper, and `print:static` keeps it from pinning there.
  */
 function AppShellIntro({ collapsed = false }) {
   return (
@@ -51,21 +55,48 @@ function AppShellIntro({ collapsed = false }) {
       id="app-shell-intro"
       aria-hidden={collapsed}
       className={cn(
-        // NOT animated. `grid-template-rows` is not compositable, so transitioning it forces a full layout +
-        // paint every frame — on a container wrapping the entire page, radar chart included. Because collapsing
-        // is triggered BY scrolling, those ~18 layout passes land exactly while the user is scrolling, which is
-        // what the stutter was. A trace confirmed no scroll writer was involved: the cost was rendering, not a
-        // fight over scroll position. Snapping is also more honest here — the header is off-screen when this
-        // fires, so there was never any animation to see.
-        "grid print:grid-rows-[1fr]",
+        "grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none print:grid-rows-[1fr]",
         collapsed ? "grid-rows-[0fr]" : "grid-rows-[1fr]",
       )}
     >
+      {/* No padding here either — the stack's `pt-3` supplies the gap above the title, and it has to come from
+          there rather than from inside this collapsing box so that the corner controls (whose `top-3` resolves
+          against that same padding) stay level with the title's first line. */}
       <header className="min-h-0 overflow-hidden text-center">
-        <h1 className="text-balance text-xl sm:text-2xl font-bold leading-tight tracking-tight text-slate-900 mb-1 pt-0 sm:pt-2">
+        {/* `min-h-8` MATCHES THE CORNER ROW. The brand mark and caret are both 32px tall and pinned at the top
+            of this stack; the tagline below is full-width, so unless the title's box reaches past them its
+            first line runs up alongside the caret. Giving the title at least their height means the tagline
+            always starts below the corner row — the clearance is structural rather than a margin tuned by eye,
+            so it holds when the title wraps to two lines on narrow screens or the copy changes.
+
+            `mb-1` is enough on top of that. It was briefly `mb-2` to buy the same clearance with a margin,
+            which was the wrong lever: it also pushed a two-line title further from the tagline.
+
+            `px-12` keeps the text clear of those same corner items — they are absolutely positioned, so
+            centred text has no idea they exist and the title ran straight underneath both. 48px is the caret's
+            32px plus its 12px inset, rounded up; the caret is wider than the logo, so clearing it clears both.
+            Symmetric even though only the right needs it geometrically: the text is centred, so padding one
+            side would drag the optical centre off the card's.
+
+            The tagline is deliberately left full-width — it sits below the corner row, so it cannot collide,
+            and indenting the longest text by 96px would cost real height in a header that is now pinned on
+            screen permanently.
+
+            No top padding at any width: the `<header>`'s own `pt-3` sets the gap above, and the `sm:pt-2` that
+            used to sit here pushed the title out of line with the corner controls from `sm:` up. */}
+        <h1 className="text-balance flex min-h-8 items-center justify-center text-xl sm:text-2xl font-bold leading-tight tracking-tight text-slate-900 mb-1 px-12">
           {SITE_COPY.title}
         </h1>
-        <p className="text-pretty text-xs sm:text-sm leading-tight text-slate-700 pb-2 sm:pb-3">
+        {/* `pb-3` is the ENTIRE gap between the byline and the tablist, so it carries the full 12px rather than
+            the hair it used to. It was `pb-0.5 sm:pb-1` back when the tab bar had its own `py-2` supplying most
+            of that space; the bar now has no top padding at all (its inset comes from the stack, which the
+            corner controls' `top-3` is measured against), so anything short here reads as the tagline running
+            into the tabs.
+
+            On the tagline rather than the tab bar deliberately: inside the collapsing grid item it eases away
+            with the intro, so the collapsed header keeps the tablist tight against the stack's own `pt-3`. Put
+            on the bar it would survive the collapse as a permanent strip. */}
+        <p className="text-pretty text-xs sm:text-sm leading-tight text-slate-700 pb-2">
           {SITE_COPY.tagline} {SITE_COPY.detail} <span className="whitespace-nowrap text-slate-500">{SITE_COPY.byline}</span>
         </p>
       </header>
@@ -73,7 +104,73 @@ function AppShellIntro({ collapsed = false }) {
   );
 }
 
-function AppShellTabBar({ activeTab, onTabChange, theoryHasUnseenUpdates = false, collapsed = false, onCollapsedChange }) {
+/**
+ * Intro + tab bar as ONE sticky unit, pinned at the viewport top at every scroll depth.
+ *
+ * WHY ONE WRAPPER RATHER THAN TWO STICKIES. Making both sticky independently would put the intro at `top: 0`
+ * and the tab bar at `top: <intro height>` — a value that changes across every frame of the intro's
+ * animation, so it would have to be written to a CSS var per frame. That is the per-frame layout thrash the
+ * intro's old "not animated" comment existed to avoid. Stacking them in normal flow inside a single sticky
+ * box means one `top: 0`, no dynamic offset, and one element to measure for `--app-sticky-offset`.
+ *
+ * WHY STICKY AT ALL. The header used to sit in document flow at position 0, which made its height part of
+ * every scroll coordinate on the page: expanding it inserted ~120px above every existing position, so
+ * remembered scroll offsets silently meant different content afterwards. A long series of rules tried to
+ * correct for that after the fact. Sticky removes the cause — the header occupies viewport space, not
+ * document space above the scroll position — which is what lets `useTabScrollMemory` store a plain `scrollY`
+ * and lets the toggle animate without fighting anything.
+ *
+ * `-mx-3 px-3` bleeds to the card's edges past `main`'s own `px-3`. `bg-white` is required, not cosmetic:
+ * once this overlaps content it must be opaque, whereas in flow it merely inherited the card's white.
+ *
+ * THE TOP PADDING IS NOT HERE, and deliberately. It used to live on `main` as `pt-3`, which was wrong for a
+ * sticky header — padding on `main` sits above this box, so it scrolled away and left the title flush against
+ * the viewport once pinned. Moving it here fixed that but created two new problems: it survived the collapse
+ * as a permanent strip above the tab bar, and it shifted the corner items, whose absolute offsets measure from
+ * this element's padding box. So it now lives on the intro's own inner `<header>`, where it is clipped by the
+ * collapsing row and eases away with it. This box has no vertical padding at all; each child brings its own.
+ *
+ * NO CORNER RADIUS, for the same reason the page has no vertical black padding any more (see HomePage):
+ * rounded top corners are only on screen at `scrollY 0`, so they made the pinned header change shape the
+ * moment the user reached the top. A sticky bar has to look identical at every scroll position.
+ */
+function AppShellHeaderStack({ collapsed, onCollapsedChange, children }) {
+  return (
+    <div
+      id="app-shell-header-stack"
+      className={cn(
+        // `shadow-sm` sits on THIS box, not on the tab bar. The bar used to be the bottom of the sticky
+        // region so its own shadow correctly fell on the content scrolling under it; now it is an in-flow
+        // child, so that shadow landed inside this box — cast onto its white background and inset from the
+        // card's edges by `px-3`, which drew a visible line partway across the header. The boundary between
+        // pinned chrome and scrolling content is this element's bottom edge, so the shadow belongs here.
+        // No `relative` needed for the caret to anchor here: `position: sticky` already establishes a
+        // containing block for absolutely-positioned children, and adding `relative` would just conflict
+        // over the same `position` property.
+        // ONE 12px INSET, declared once here rather than on each child: `px-3` and `pt-3`. `-mx-3` cancels
+        // `main`'s own `px-3` so the box still bleeds to the card's edges.
+        //
+        // `pt-3` only — NOT `py-3`. Bottom padding would sit between the tab bar and the content below it, and
+        // since this box is the boundary the shadow is drawn on, that gap would be permanently visible under the
+        // pinned header. The tab bar's own bottom edge is where the chrome should stop.
+        //
+        // This padding is also what the corner controls' `top-3` resolves against, since absolute offsets are
+        // measured from the padding box: `top-3` lands them level with the `h-8` tab-bar row inside the same
+        // inset, identically whether the intro is expanded or collapsed — which is what stops them moving when
+        // clicked. An earlier version had a conditional `pt-3`/`pt-0` here PLUS `py-3` on the bar, which
+        // double-counted and pushed the tablist out of line.
+        "sticky top-0 z-40 -mx-3 bg-white px-3 pt-3 shadow-sm print:static print:shadow-none",
+      )}
+    >
+      {children}
+      <AppShellBrandMark />
+      <AppShellCaret collapsed={collapsed} onCollapsedChange={onCollapsedChange} />
+    </div>
+  );
+}
+
+// No `collapsed`/`onCollapsedChange` here — the caret owns both and now lives in AppShellHeaderStack.
+function AppShellTabBar({ activeTab, onTabChange, theoryHasUnseenUpdates = false }) {
   const barRef = useRef(null);
   // Whether scrolling up is possible — i.e. we're scrolled past the point where the bar pins.
   // Gates the active tab's "click to scroll to top" tooltip so it only shows when it'd do something.
@@ -83,19 +180,28 @@ function AppShellTabBar({ activeTab, onTabChange, theoryHasUnseenUpdates = false
     TABS.findIndex((tab) => tab.id === activeTab),
   );
 
+  // Publish how much sticky chrome a scroll target has to clear.
+  //
+  // Measures the WHOLE STACK (intro + this bar), not just this bar, because both are pinned now — a deep
+  // link or pillar jump that only cleared the tab bar would land underneath the title. The stack is the
+  // sticky element, so its height is the full inset.
+  //
+  // Observing it also means the value tracks the intro's expand/collapse animation frame by frame. That is
+  // wanted rather than merely tolerated: `scrollBelowStickyHeaderUntilSettled` re-aims each frame while
+  // layout moves, so it needs the live inset, not the settled one.
   useLayoutEffect(() => {
-    const bar = barRef.current;
-    if (!bar) {
+    const stack = barRef.current?.parentElement;
+    if (!stack) {
       return undefined;
     }
 
     const syncStickyOffset = () => {
-      setStickyScrollOffset(bar.getBoundingClientRect().height);
+      setStickyScrollOffset(stack.getBoundingClientRect().height);
     };
 
     syncStickyOffset();
     const observer = new ResizeObserver(syncStickyOffset);
-    observer.observe(bar);
+    observer.observe(stack);
 
     return () => {
       observer.disconnect();
@@ -104,8 +210,8 @@ function AppShellTabBar({ activeTab, onTabChange, theoryHasUnseenUpdates = false
   }, []);
 
   // Whether there's anywhere to scroll up to, gating the active tab's "click to scroll to top" tooltip so
-  // it only appears when it would do something. Header collapse is no longer inferred from scroll position
-  // — it's an explicit boolean prop — so this is the only thing scroll position still decides here.
+  // it only appears when it would do something. Now that the caret is a plain toggle at every depth, this
+  // is the ONLY thing scroll position decides in the header.
   useEffect(() => {
     const sync = () => setCanScrollUp(getWindowScrollY() > 0);
     sync();
@@ -117,23 +223,28 @@ function AppShellTabBar({ activeTab, onTabChange, theoryHasUnseenUpdates = false
     };
   }, [activeTab]);
 
-  // Scroll position takes precedence over header state. Scrolled away from the top, the header is off-screen
-  // either way, so toggling it would be an invisible no-op — "back to top" is the only action with a visible
-  // effect there, and it's what a control in the top-left corner is expected to do. Only once at the top does
-  // the caret become the header toggle.
-  let caretMode = "backToTop";
-  if (!canScrollUp) {
-    caretMode = collapsed ? "reveal" : "collapse";
-  }
-  const { icon: CaretIcon, label: caretLabel } = CARET_MODES[caretMode];
-
   return (
-    <div ref={barRef} id="app-shell-tab-bar" className="sticky top-0 z-40 -mx-3 mt-0 bg-white px-3 py-2 shadow-sm print:static print:shadow-none">
-      {/* The tablist is centered at every width for every user. The admin Poster/Social shortcuts used
-          to float at the right edge here, which forced an admin-only `justify-between` on mobile; they
-          now live in the Theory tab's toolbar instead, so this row is identical for admin and non-admin
-          and the collapse caret can own the left edge unconditionally. */}
-      <div className="relative flex items-center justify-center">
+    /* No `sticky`/`z-40`/`-mx-3` here any more — AppShellHeaderStack owns all three, for the intro and this
+       bar together. This is a plain in-flow child of it. The caret also moved up to the stack, so that
+       expanding does not shift it out from under the pointer that just clicked it. */
+    /* `pb-3` ONLY — no top padding. The stack's `pt-3` already insets this from above, and the row below is a
+       fixed `h-8`, so adding `pt`/`py` here would double-count that inset and drop the tablist below the corner
+       controls (which is exactly the bug this arrangement replaced). The bottom 12px is real spacing though: it
+       separates the tabs from the content scrolling underneath, and since the stack draws the shadow at its own
+       bottom edge, this is what keeps that shadow off the tablist. */
+    <div ref={barRef} id="app-shell-tab-bar" className="mt-0 bg-white pb-3">
+      {/* The tablist is centered at every width for every user. The brand mark and the caret both live in
+          AppShellHeaderStack now, pinned to its corners, so nothing in this row competes with the tablist for
+          horizontal space. The admin Poster/Social shortcuts used to float at the right edge here, which
+          forced an admin-only `justify-between` on mobile; they now live in the Theory tab's toolbar.
+
+          `h-8` MAKES THIS ROW THE SAME HEIGHT AS THE CORNER CONTROLS, which is what aligns them. The tablist
+          is only ~30px tall (`py-1.5` + a `text-xs` line box + its `p-0.5` frame) while the logo and caret are
+          exactly 32px, so no amount of matched PADDING lines them up — the boxes are different sizes, and
+          earlier attempts to equalise `py` against `top` left them 1-4px out. Pinning the row to 32px and
+          letting `items-center` centre a shorter tablist inside it means all three share one centre line by
+          construction, whatever the tablist's contents measure. */}
+      <div className="relative flex h-8 items-center justify-center">
         <div
           className="relative grid w-62 max-w-full grid-cols-2 rounded-lg border border-slate-200 bg-slate-100/80 p-0.5"
           role="tablist"
@@ -184,59 +295,85 @@ function AppShellTabBar({ activeTab, onTabChange, theoryHasUnseenUpdates = false
             );
           })}
         </div>
-
-        {/* Corner caret — at the top it toggles the title (the discoverable equivalent of the pull gesture in
-            useHeaderCollapse, which is natural on touch but undiscoverable with a mouse); scrolled away from
-            the top it is a plain "back to top".
-
-            ONE ACTION PER CLICK. It previously combined the two — expanding from a scrolled position also
-            jumped to the top — which meant a user who only wanted to return to the top had the title forced
-            on them. Since the header is off-screen while scrolled anyway, toggling it there would be an
-            invisible no-op, so the split costs nothing and removes the surprise. Getting the title from deep
-            is now two clicks, but "just take me up" is one with no side effect.
-
-            This also sidesteps the layout hazard that made the combined version fragile: the intro and the
-            paddings above the tab bar all live above the scroll position, so revealing them while scrolled
-            grows the document upward and pushes content down ~120px. Revealing now only ever happens AT the
-            top, exactly like the pull gesture, where that growth is invisible.
-
-            Always rendered, never hidden by scroll position: a control that vanishes reads as flakiness, and
-            it is the only visible route back to the title (the pull gesture requires already being at the
-            top, which is the hard part).
-
-            THE ICON DISTINGUISHES THREE ACTIONS, not two. Expanding from a scrolled position also jumps to
-            the top, and a plain "show title" chevron hid that — the jump was the dominant effect and came as
-            a surprise. A DOUBLE chevron is the established "go to the end" idiom, so it advertises the jump
-            instead. At the top there is nothing to jump to, so the single chevron is honest there:
-
-              expanded            → ChevronUp     collapse, no scrolling
-              collapsed, at top   → ChevronDown   reveal in place
-              collapsed, scrolled → ChevronsUp    jump to top, then reveal
-
-            Absolutely positioned at every width. Being out of flow is what keeps it from decentering the
-            tablist — the row is `justify-center`, so an in-flow caret would shove the tabs right by its
-            own width. Nothing else occupies this row now that the admin links moved to the Theory
-            toolbar, so the left edge is free at every width for every user. */}
-        <button
-          type="button"
-          onClick={() => {
-            if (caretMode === "backToTop") {
-              scrollWindowToTop({ behavior: "smooth" });
-              return;
-            }
-            onCollapsedChange?.(caretMode === "collapse");
-          }}
-          title={caretLabel}
-          aria-label={caretLabel}
-          // Only a header toggle has an expanded/collapsed state to report; as "back to top" it's a plain button.
-          aria-expanded={caretMode === "backToTop" ? undefined : !collapsed}
-          className="absolute left-0 top-1/2 inline-flex size-8 shrink-0 -translate-y-1/2 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-slate-100/80 text-slate-500 transition-colors hover:bg-slate-200/80 hover:text-slate-900 print:hidden"
-        >
-          <CaretIcon className="size-4" aria-hidden />
-        </button>
       </div>
     </div>
   );
 }
 
-export { AppShellIntro, AppShellTabBar };
+/**
+ * The framework's identity mark, pinned to the header stack's top-LEFT as the mirror of {@link AppShellCaret}
+ * opposite. Same placement argument: anchored inside the tab bar it rode down with the bar when the intro
+ * expanded, so it drifted around the header instead of being a fixed landmark. On the stack's top edge — the
+ * one edge `sticky top-0` never lets move — it holds the corner in both header states and at every scroll
+ * depth.
+ *
+ * That permanence is what earns the header the right to stay collapsed indefinitely: nothing expands it
+ * automatically any more (see `useHeaderCollapse`), so "collapsed" has to be a space decision rather than the
+ * framework going unbranded, and this is what makes that true.
+ *
+ * THE MARK ALONE, at every width — no wordmark beside it. A responsive `SITE_COPY.shortName` was tried here
+ * and dropped: the icon is the identity users already associate with the app from the browser tab, and a
+ * second label competing with the centred tablist bought nothing the mark was not already carrying.
+ *
+ * `aria-hidden`: purely decorative. The real, announceable name is the <h1> in AppShellIntro.
+ * `BASE_URL`, not a bare "/", because the Pages build serves from /egf/.
+ */
+function AppShellBrandMark() {
+  return (
+    <div aria-hidden className="pointer-events-none absolute left-3 top-3 z-10 flex h-8 items-center print:hidden">
+      {/* `size-8` to match the caret opposite. The two bracket the title, so a smaller mark read as
+          lopsided against the caret's 32px button. Intrinsic size stays 96px so it stays sharp on
+          retina; `rounded-lg` matches the caret's corner radius rather than the mark's own 4px. */}
+      <img src={`${import.meta.env.BASE_URL}favicon-96x96.png`} alt="" width={96} height={96} className="size-8 shrink-0 rounded-lg" />
+    </div>
+  );
+}
+
+/**
+ * The header toggle. Lives in {@link AppShellHeaderStack} rather than inside the tab bar, and that placement
+ * is the whole point.
+ *
+ * IT MUST NOT MOVE WHEN CLICKED. Anchored inside the tab bar it was `top-1/2` of that bar — so expanding
+ * pushed it down by the intro's full height and it slid out from under the pointer that had just clicked it,
+ * which makes double-toggling a game of chase. Anchored to the stack's top-right it is fixed relative to the
+ * one edge that never moves: the stack is `sticky top-0`, so its top is pinned to the viewport top at every
+ * scroll position and in both header states. The button stays exactly where the cursor already is.
+ *
+ * This is also the discoverable equivalent of nothing else — there is no gesture alternative any more, so it
+ * is the only route to the header at any scroll depth.
+ *
+ *   expanded  → ChevronUp    hide the title
+ *   collapsed → ChevronDown  show the title
+ *
+ * Absolutely positioned so it cannot decentre the tablist below it, which is `justify-center` and would be
+ * shoved sideways by an in-flow control.
+ *
+ * `top-3` UNCONDITIONALLY — the same value expanded or collapsed, which is what keeps this control from moving
+ * when clicked. It works out because the tab bar's row is pinned to `h-8`, the same 32px as this button, inside
+ * the bar's `py-3`: collapsed, this sits exactly on that row; expanded, the intro's matching `pt-3` puts the
+ * title's first line on the same top edge.
+ *
+ * The failed approach is worth recording, since it looks correct on paper. Matching PADDING (`top-3` against a
+ * `py-3` bar) does not align boxes of DIFFERENT heights — the tablist is only ~30px, so equal padding left its
+ * centre 1px off and a `py-3` bar pushed it 4px below this button. Fixing the row's height instead makes the
+ * alignment structural, so all three share a centre line whatever the tablist's contents measure.
+ */
+function AppShellCaret({ collapsed, onCollapsedChange }) {
+  const { icon: CaretIcon, label: caretLabel } = CARET_MODES[collapsed ? "reveal" : "collapse"];
+
+  return (
+    <button
+      type="button"
+      onClick={() => onCollapsedChange?.(!collapsed)}
+      title={caretLabel}
+      aria-label={caretLabel}
+      aria-expanded={!collapsed}
+      aria-controls="app-shell-intro"
+      className="absolute right-3 top-3 z-10 inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-slate-100/80 text-slate-500 transition-colors hover:bg-slate-200/80 hover:text-slate-900 print:hidden"
+    >
+      <CaretIcon className="size-4" aria-hidden />
+    </button>
+  );
+}
+
+export { AppShellHeaderStack, AppShellIntro, AppShellTabBar };

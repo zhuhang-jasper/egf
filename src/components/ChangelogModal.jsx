@@ -71,14 +71,14 @@ export function ChangelogModal({ open, onClose }) {
         </header>
 
         <div className="overflow-y-auto px-5 py-4">
-          <ol className="space-y-5">
+          <ol className="flex flex-col gap-5">
             {CHANGELOG.map((entry) => (
-              <li key={entry.version} className="space-y-2">
+              <li key={entry.version} className="flex flex-col gap-2">
                 <div className="flex items-baseline gap-2">
                   <span className="text-sm font-bold text-slate-900">v{entry.version}</span>
                   <span className="text-xs font-medium text-slate-400">{entry.date}</span>
                 </div>
-                <ul className="space-y-1.5">
+                <ul className="flex flex-col gap-1.5">
                   {entry.changes.map((change, index) => (
                     <li key={index} className={cn("flex gap-2 text-[13px] leading-snug text-slate-700")}>
                       <span aria-hidden className="mt-1.5 size-1 shrink-0 rounded-full bg-slate-400" />

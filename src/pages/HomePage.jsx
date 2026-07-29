@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 
-import { AppShellIntro, AppShellTabBar } from "@/components/AppShellHeader";
+import { AppShellHeaderStack, AppShellIntro, AppShellTabBar } from "@/components/AppShellHeader";
 import { TheoryContent } from "@/components/TheoryContent";
 import { ToolContent } from "@/components/ToolContent";
 import { Toaster } from "@/components/ui/Toaster";
@@ -49,11 +49,11 @@ export default function HomePage() {
   // the previous position before gliding to the target, instead of starting from the top.
   const { saveActiveTabScroll } = useTabScrollMemory(activeTab, cancelRestoreRef);
 
-  // The intro's collapsed state is CSS, not a scroll position. Stored per tab, but the directions differ:
-  // collapsing anywhere collapses everywhere ("give me content space" is about the chrome), while revealing
-  // stays on the tab that earned the pull. Takes `activeTab` so the switch lands in the same commit as the
-  // scroll restore above, which measures the header to resolve its target. See useHeaderCollapse.
-  const { collapsed: headerCollapsed, setCollapsed: setHeaderCollapsed } = useHeaderCollapse(activeTab);
+  // The intro's collapsed state is CSS, not a scroll position — one boolean shared by both tabs, changed
+  // ONLY by the user (the caret, or a pull at the top). Scrolling no longer touches it in either direction;
+  // see useHeaderCollapse for why having two writers for this one bit was the source of the whole class of
+  // bugs here.
+  const { collapsed: headerCollapsed, setCollapsed: setHeaderCollapsed } = useHeaderCollapse();
 
   // Cross-tab jump from a tool-form pillar's help icon into the theory matrix. The `seq` bump makes
   // repeated clicks on the same pillar re-trigger the expand + scroll even when the tab is already open.
@@ -112,40 +112,31 @@ export default function HomePage() {
   // which turned this min-h-dvh container into an (unbounded) scroll container — the body scrolled
   // instead of the window and the sticky tab bar never pinned. `clip` suppresses the horizontal
   // overflow without establishing a scroll container, so the window scrolls and `sticky top-0` on
-  // the tab bar works again.
-  // When the header is collapsed, EVERYTHING above the tab bar collapses with it — the intro, the black
-  // wrapper's top padding, and the card's own top padding — so the tab bar becomes the true top of the
-  // scrollable document. Leaving that ~18-24px of padding in place would keep a scrollable strip above the
-  // bar: a band where the page is "not quite at the top", which is the same dead gap the intro used to
-  // create, just relocated. Zeroing it makes `scrollY === 0` mean exactly "the bar is at the viewport top",
-  // which is what the pull gesture keys on. Revealing restores the padding, and only then is there anything
-  // above the bar to scroll to.
+  // the header stack works again.
+  //
+  // NO VERTICAL PADDING above or below the card, and no corner radius, because the header is sticky.
+  //
+  // Black padding above the card is only ever visible at the very top of the page: once the header pins, that
+  // padding has scrolled away. So the header sat that much lower at `scrollY 0` than it did anywhere else, and
+  // scrolling to the top made it visibly shift down by the padding's height — when a sticky bar is meant to be
+  // the one thing that never moves. The corner radius had the same problem: rounded top corners are only on
+  // screen at `scrollY 0`, so the header changed shape on arrival at the top.
+  //
+  // No horizontal gutters either. Once `main` reaches its max width the black is already visible down both
+  // sides, so the gutters add nothing there — and below that width they are pure waste, narrowing the content
+  // on exactly the screens with the least room to give.
   return (
-    <div
-      className={cn(
-        "flex min-h-dvh flex-col items-center gap-2 overflow-x-clip bg-black px-1.5 pb-1.5 sm:px-3 sm:pb-3 print:bg-white print:p-0",
-        // Unanimated, like the intro's own height: these paddings sit on the page's outermost containers, so
-        // transitioning them relayouts everything each frame — and it happens while the user scrolls.
-        headerCollapsed ? "pt-0" : "pt-1.5 sm:pt-3",
-      )}
-    >
+    <div className="flex min-h-dvh flex-col items-center gap-2 overflow-x-clip bg-black print:bg-white print:p-0">
       <main
-        className={cn(
-          "flex w-full flex-col bg-white shadow-sm px-3 pb-3 print:max-w-none print:rounded-none print:p-0 print:shadow-none",
-          // The top corners round only when there is black padding above to round against; flush to the
-          // viewport edge they would clip the tab bar's own corners against nothing.
-          headerCollapsed ? "rounded-b-[14px] pt-0" : "rounded-[14px] pt-3",
-        )}
+        className="flex w-full flex-col bg-white px-3 pb-3 shadow-sm print:max-w-none print:p-0 print:shadow-none"
         style={pageWidthStyle}
       >
-        <AppShellIntro collapsed={headerCollapsed} />
-        <AppShellTabBar
-          activeTab={activeTab}
-          onTabChange={handleTabChange}
-          theoryHasUnseenUpdates={theoryHasUnseenUpdates}
-          collapsed={headerCollapsed}
-          onCollapsedChange={setHeaderCollapsed}
-        />
+        {/* Intro and tab bar pin together as one sticky unit — see AppShellHeaderStack for why they share a
+            single sticky box rather than being two independently-sticky elements. */}
+        <AppShellHeaderStack collapsed={headerCollapsed} onCollapsedChange={setHeaderCollapsed}>
+          <AppShellIntro collapsed={headerCollapsed} />
+          <AppShellTabBar activeTab={activeTab} onTabChange={handleTabChange} theoryHasUnseenUpdates={theoryHasUnseenUpdates} />
+        </AppShellHeaderStack>
 
         <div className="mt-3" role="tabpanel" hidden={activeTab !== "tool"} aria-hidden={activeTab !== "tool"} aria-label="Tool">
           <ToolContent isVisible={activeTab === "tool"} onOpenPillarInMatrix={handleOpenPillarInMatrix} />

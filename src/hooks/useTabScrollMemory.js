@@ -1,14 +1,12 @@
 import { useLayoutEffect } from "react";
 
-import { getHeaderAnchorPx, getWindowScrollY, scrollWindowTo } from "@/utils/scroll";
+import { getWindowScrollY, scrollWindowTo } from "@/utils/scroll";
 
 const SESSION_TAB_KEY = "app:activeTab";
 // Each bump abandons the previous values, which is cheap — they only live for a session, so orphaning them
-// costs one stale restore instead of a silent offset. `:v2` dropped v1's values because those were recorded
-// while the intro was always in the layout. `:v3` changes the unit itself: these are no longer `window.scrollY`
-// but scroll measured from the tab bar (see `getHeaderAnchorPx`), so a v2 value read as v3 would be off by the
-// header's height.
-const SESSION_SCROLL_PREFIX = "app:tabScroll:v3:";
+// costs one stale restore instead of a silent offset. `:v4` returns the unit to a plain `window.scrollY`;
+// `:v3` held scroll measured from the tab bar, so a v3 value read as v4 would be off by the header's height.
+const SESSION_SCROLL_PREFIX = "app:tabScroll:v4:";
 
 export function getPersistedActiveTab(validTabs) {
   try {
@@ -26,68 +24,42 @@ function persistActiveTab(tab) {
   } catch {}
 }
 
-/**
- * The remembered offset for `tab`, or `null` when the tab has never been left. `null` is NOT 0: an offset of
- * 0 means "the tab bar is at the viewport top" (which with the header expanded is ~120px down the page),
- * whereas a tab with no memory should open at the actual top.
- *
- * Negative values are legitimate and must survive — they mean the header was visible above the bar.
- */
-function getPersistedOffset(tab) {
+/** The remembered `window.scrollY` for `tab`, or `null` when the tab has never been left. */
+function getPersistedScroll(tab) {
   try {
     const raw = sessionStorage.getItem(`${SESSION_SCROLL_PREFIX}${tab}`);
     if (raw !== null) {
-      const offset = Number(raw);
-      if (Number.isFinite(offset)) {
-        return offset;
+      const y = Number(raw);
+      if (Number.isFinite(y)) {
+        return y;
       }
     }
   } catch {}
   return null;
 }
 
-/**
- * Whether `tab` would open at or above the tab bar rather than scrolled past it.
- *
- * `useHeaderCollapse` consults this to decide whether a reveal earned on one tab should carry into another:
- * only worth adopting where the header will actually be on screen. Because offsets are measured FROM the
- * bar, `<= 0` reads directly as "has not scrolled past it" — no knowledge of the header's height required,
- * which is what makes it safe to ask while deciding what the header's height should be.
- *
- * A tab with no memory opens at the true top, so it counts.
- */
-export function isTabParkedAtTop(tab) {
-  const offset = getPersistedOffset(tab);
-  return offset === null || offset <= 0;
-}
-
-function persistOffset(tab, offset) {
+function persistScroll(tab, y) {
   try {
-    sessionStorage.setItem(`${SESSION_SCROLL_PREFIX}${tab}`, String(offset));
+    sessionStorage.setItem(`${SESSION_SCROLL_PREFIX}${tab}`, String(y));
   } catch {}
-}
-
-/** Current scroll in the storable, header-independent unit. */
-function captureOffset() {
-  return getWindowScrollY() - getHeaderAnchorPx();
 }
 
 /**
  * Remember per-tab window scroll in sessionStorage; persists across page refresh.
  *
- * VALUES ARE STORED RELATIVE TO THE TAB BAR, not as raw `window.scrollY` — `offset = scrollY - anchor`, with
- * the anchor being however much document currently sits above the bar (see `getHeaderAnchorPx`).
+ * Values are a plain `window.scrollY`, which is only safe because THE HEADER IS STICKY. Worth spelling out,
+ * because it was not always true and the trap is easy to walk back into.
  *
- * That indirection exists because the header's collapsed state is a single boolean SHARED by both tabs, and
- * it can be toggled while a tab is inactive. Expanding it inserts ~120px of document above every position in
- * both tabs at once, so a raw `scrollY` recorded before the toggle names different content after it. Storing
- * raw offsets meant: scroll the tool tab to the bottom (which collapses the header), switch to theory, expand
- * the header there, come back — and the tool tab restored to its old number, now 120px short of the bottom,
- * with the title scrolled off-screen so it still looked collapsed. Collapsing the header again on theory
- * "fixed" it, because that put the coordinate space back the way it was.
+ * The header state is one boolean shared by both tabs and can be toggled while a tab is inactive. While the
+ * header sat in document flow at position 0, expanding it inserted ~120px of document above every position
+ * in both tabs at once, so a raw `scrollY` recorded before the toggle named different content afterwards:
+ * scroll Tool to the bottom, switch to Theory, expand the header there, come back — and Tool restored to its
+ * old number, now 120px short of the bottom. That bug was worked around by storing `scrollY - anchor`
+ * instead, measuring from the tab bar.
  *
- * Measuring from the bar removes the header from the number entirely. The anchor is re-read at save AND at
- * every re-assert, so whatever the header did in between simply cancels out.
+ * A sticky header occupies viewport space rather than document space above the scroll position, so its height
+ * is no longer part of any scroll coordinate and a toggle cannot move a sleeping tab's numbers at all. The
+ * cause is gone rather than corrected for, which is why the plain unit is correct again.
  *
  * `cancelRestoreRef` lets a later in-tab scroll take over from the restore loop. The restore always runs
  * (so the tab lands at its remembered position), but a scroll that owns its own target — a cross-tab matrix
@@ -98,7 +70,7 @@ function captureOffset() {
  */
 export function useTabScrollMemory(activeTab, cancelRestoreRef = null) {
   const saveActiveTabScroll = () => {
-    persistOffset(activeTab, captureOffset());
+    persistScroll(activeTab, getWindowScrollY());
   };
 
   useLayoutEffect(() => {
@@ -110,30 +82,14 @@ export function useTabScrollMemory(activeTab, cancelRestoreRef = null) {
       cancelRestoreRef.current = false;
     }
 
-    const offset = getPersistedOffset(activeTab);
-
-    // Resolved fresh on every call rather than computed once, so the header's height is taken from the
-    // layout as it stands AT THAT MOMENT. The burst below spans a couple of seconds; if the header changes
-    // inside that window the target follows it instead of stranding the page in the old coordinate space.
-    //
-    // An offset at or above the bar restores to the TRUE top, not to `offset + anchor`. Within that band
-    // the exact value only encodes how much of the header was showing, which is meaningless once the header
-    // has changed size — and it actively misfires when `useHeaderCollapse` adopts a reveal into this tab: a
-    // tab left at offset 0 (bar at the viewport top, header collapsed) would otherwise reopen at `anchor`,
-    // i.e. with the freshly revealed header scrolled off the top of the screen. Being at the top means
-    // being at the top.
-    const targetY = () => {
-      if (offset === null || offset <= 0) {
-        return 0;
-      }
-      return offset + getHeaderAnchorPx();
-    };
+    // A tab with no memory opens at the true top.
+    const y = getPersistedScroll(activeTab) ?? 0;
 
     // Apply the remembered position SYNCHRONOUSLY, before the browser paints. The burst below re-asserts
-    // it from inside a rAF, which runs after the first paint — so on a reload whose remembered state is
-    // "header collapsed", the full header would paint for one frame and then jump away. Being in a layout
-    // effect is not enough on its own; the scroll has to happen here, not a frame later.
-    scrollWindowTo(targetY());
+    // it from inside a rAF, which runs after the first paint — so the page would visibly land somewhere
+    // else for one frame and then jump. Being in a layout effect is not enough on its own; the scroll has
+    // to happen here, not a frame later.
+    scrollWindowTo(y);
 
     // Content keeps growing/reflowing after mount — notably the radar chart, which sizes its frame
     // across several ResizeObserver-driven passes that can land well after the first frames. Until it
@@ -159,7 +115,7 @@ export function useTabScrollMemory(activeTab, cancelRestoreRef = null) {
         stop(); // an in-tab scroll (matrix jump) has taken over — stop re-asserting
         return;
       }
-      scrollWindowTo(targetY()); // re-assert when the page height changes (chart settles)
+      scrollWindowTo(y); // re-assert when the page height changes (chart settles)
     };
 
     // Re-assert the saved position every frame until the page height is stable. We deliberately do
@@ -175,7 +131,7 @@ export function useTabScrollMemory(activeTab, cancelRestoreRef = null) {
         stop(); // an in-tab scroll (matrix jump) has taken over — stop re-asserting
         return;
       }
-      scrollWindowTo(targetY());
+      scrollWindowTo(y);
       const h = docHeight();
       stableCount = h === lastHeight ? stableCount + 1 : 0;
       lastHeight = h;
@@ -206,7 +162,7 @@ export function useTabScrollMemory(activeTab, cancelRestoreRef = null) {
     // Hard stop after the max window even if nothing else fires.
     const stopTimer = setTimeout(stop, MAX_SETTLE_MS);
 
-    const onBeforeUnload = () => persistOffset(activeTab, captureOffset());
+    const onBeforeUnload = () => persistScroll(activeTab, getWindowScrollY());
     window.addEventListener("beforeunload", onBeforeUnload);
 
     return () => {

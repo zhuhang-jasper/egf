@@ -12,34 +12,13 @@ export function getWindowScrollY() {
   return window.scrollY;
 }
 
-/**
- * When the last app-initiated scroll was issued, plus how long its resulting scroll events may keep
- * arriving. Scroll events carry no origin, so anything that reacts to scrolling as *user intent* has to be
- * able to exclude the app's own scrolls: the per-tab restore, deep-link glides, the matrix pillar jump.
- *
- * Timing alone can't do it from the listener side — a tab switch right after a wheel gesture puts a
- * programmatic scroll a few milliseconds after real input, which is indistinguishable from that input
- * having caused it. So the scroll helpers mark their own calls here instead, and listeners consult
- * {@link isProgrammaticScroll}.
- */
-let programmaticScrollUntil = 0;
-// A smooth scroll keeps emitting events for as long as the browser's animation runs, so the window has to
-// outlast that; an instant jump only needs a frame or two. Both are covered by the longer bound.
-const PROGRAMMATIC_SCROLL_WINDOW_MS = 900;
-
-/** Whether scroll events arriving now are still plausibly from an app-initiated scroll. */
-export function isProgrammaticScroll() {
-  return performance.now() < programmaticScrollUntil;
-}
-
-/** Mark app-initiated scrolling as in progress — for callers that move the window without these helpers. */
-export function markProgrammaticScroll(durationMs = PROGRAMMATIC_SCROLL_WINDOW_MS) {
-  programmaticScrollUntil = Math.max(programmaticScrollUntil, performance.now() + durationMs);
-}
-
+// `isProgrammaticScroll()` / `markProgrammaticScroll()` lived here, tracking a window during which scroll
+// events were known to come from the app rather than the user. Their only consumer was the header's
+// auto-collapse, which had to tell a real downward gesture from the per-tab restore, a deep-link glide, or
+// the matrix jump. Nothing reacts to scrolling as *intent* any more — the header is user-driven only (see
+// useHeaderCollapse) — so there is no longer anything to discriminate for.
 
 export function scrollWindowTo(y, { behavior = "auto" } = {}) {
-  markProgrammaticScroll();
   window.scrollTo({ top: Math.max(0, y), left: 0, behavior });
 }
 
@@ -62,31 +41,33 @@ export function clearStickyScrollOffset() {
   document.documentElement.style.removeProperty(STICKY_OFFSET_CSS_VAR);
 }
 
-// `isTabBarStuck()` and `getTabBarPinnedScrollY()` lived here until the intro became a CSS-collapsed block
-// (see useHeaderCollapse). Both described a world where the header's state was a scroll position — "is the
-// bar pinned yet", "what scrollY pins it" — and neither has a meaning now: when collapsed the intro is out
-// of the layout, so the bar's anchor is simply 0 and it is always pinned.
+// `isTabBarStuck()`, `getTabBarPinnedScrollY()` and `getHeaderAnchorPx()` all lived here, and all three
+// described a world where the header sat in document flow at position 0 — "is the bar pinned yet", "what
+// scrollY pins it", "how much document is above the bar". The header is sticky now, so it occupies viewport
+// space instead: there is never any document above the bar, the bar is always pinned, and the anchor is
+// permanently 0. `getHeaderAnchorPx` in particular was load-bearing for per-tab scroll offsets, and its own
+// docstring noted it only worked because the intro was static — a sticky element's rect reports the viewport
+// top once stuck, not its document position. Rather than being fixed, it stopped being needed:
+// `useTabScrollMemory` stores a plain `scrollY` again.
 
 /**
- * How much document sits above the sticky tab bar right now — the intro block plus the page paddings that
- * collapse with it. Exactly 0 when the header is collapsed, since collapsing takes all of it out of the
- * layout (see HomePage).
+ * The intro block's settled height — what the sticky header grows by when expanded.
  *
- * This is the unit that makes a remembered scroll offset portable. A raw `window.scrollY` is measured in a
- * coordinate space whose origin moves: expanding the header inserts this much document ABOVE every existing
- * position, so the same content is suddenly at a different `y`. Storing `y - anchor` instead measures from
- * the tab bar, which is the one landmark the collapse cannot move.
+ * A HEIGHT, NOT A POSITION, which is what makes it safe to read off an element inside a sticky wrapper. The
+ * position of a stuck element's rect tracks the viewport rather than the document; its height does not.
  *
- * Measured off the intro rather than the bar itself because the bar is `position: sticky` — once stuck its
- * rect reports the viewport top, not its place in the document. The intro is static, so its bottom edge is
- * honest at any scroll position, and the bar follows it immediately (`mt-0`).
+ * Reports the TARGET height, not the in-flight one: the intro animates, so callers reacting to a toggle
+ * would otherwise read a value part-way through the transition. `scrollHeight` on the inner content ignores
+ * the animating `grid-template-rows` track and gives the height the row is heading for, which is what a
+ * one-shot scroll adjustment needs. Returns 0 when collapsed, since the caller wants "how much room does
+ * the header take" and the answer is then none.
  */
-export function getHeaderAnchorPx() {
-  const intro = document.getElementById("app-shell-intro");
-  if (!intro) {
+export function getIntroHeightPx(introEl = document.getElementById("app-shell-intro")) {
+  const content = introEl?.firstElementChild;
+  if (!content) {
     return 0;
   }
-  return Math.max(0, intro.getBoundingClientRect().bottom + window.scrollY);
+  return content.scrollHeight;
 }
 
 /** Scroll so `element` sits just below the sticky app tab bar. */
