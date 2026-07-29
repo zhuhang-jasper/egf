@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { cn } from "@/utils";
 
@@ -49,7 +49,24 @@ export function Tooltip({ text, className, visible = false, placement = "top" })
     setShiftX(Math.round(shift));
   }, []);
 
+  // CLAMPED BEFORE FIRST PAINT, not only on hover — and that is the point of the layout effect.
+  //
+  // `shiftX` starts at 0, so an unclamped tooltip is centred on its trigger. For a trigger near the
+  // right edge (the chart's settings gear, the profile actions menu) half of it hangs past `main`,
+  // and since it is `absolute` inside a box nothing clips, the DOCUMENT grows to contain it — a
+  // permanent horizontal scrollbar on `body` (which is `overflow-x: auto` on purpose; see index.css).
+  //
+  // Hover was never going to fix that: the overhang exists while nobody is pointing at anything, so
+  // the one event that recomputed the clamp is the one event that had not happened. `useLayoutEffect`
+  // runs after layout and before the browser paints, so the tooltip is already shifted on the frame
+  // it first appears — the scrollbar never flashes rather than merely going away on mouseenter.
+  useLayoutEffect(clampToPage, [clampToPage, text, className, placement]);
+
   // Recompute whenever the tooltip is (re)shown so the clamp reflects the current page width.
+  //
+  // Still needed on top of the initial pass: `main`'s width changes with the active tab (Theory's
+  // measure is wider), and a trigger can move without this component re-rendering — the header's
+  // collapse animation and the chart's fit passes both shift things underneath it.
   useEffect(() => {
     const tip = ref.current;
     const parent = tip?.parentElement;
@@ -59,10 +76,16 @@ export function Tooltip({ text, className, visible = false, placement = "top" })
     parent.addEventListener("mouseenter", clampToPage);
     parent.addEventListener("focusin", clampToPage);
     window.addEventListener("resize", clampToPage);
+    // Catches the moves no event reports: the trigger being laid out at a different x after the
+    // chart's converge loop settles, or its own width changing (e.g. "Copy link" → "Copied").
+    const observer = new ResizeObserver(clampToPage);
+    observer.observe(parent);
+    observer.observe(tip);
     return () => {
       parent.removeEventListener("mouseenter", clampToPage);
       parent.removeEventListener("focusin", clampToPage);
       window.removeEventListener("resize", clampToPage);
+      observer.disconnect();
     };
   }, [clampToPage]);
 

@@ -83,12 +83,16 @@
        the right edge — part of the tab bar and the caret among it — could not be got to at all. A min-width
        whose overflow is clipped is a min-width that does nothing.
 
-       This was `hidden` to stop a horizontal scrollbar flashing when a Tooltip near the right edge renders
-       before its clamp runs. Note the tooltip DOES bound itself to `main` (see `clampToPage` in
-       components/ui/Tooltip.jsx) — the gap is purely timing: `shiftX` starts at 0 and is only recomputed on
-       mouseenter/focusin, so the very first paint is unclamped. One frame of cosmetic overhang is a much
-       smaller problem than unreachable chrome, and the proper fix is clamping the tooltip before first paint
-       rather than clipping the whole document. */
+       This was `hidden` to hide a horizontal scrollbar caused by Tooltips near the right edge (the chart's
+       settings gear, the profile actions menu) overhanging `main`. That was NOT a flash: a tooltip is
+       `opacity-0` when idle, not `display: none`, so it is still laid out — and its clamp only ran on
+       mouseenter/focusin, an event that by definition had not happened yet. The idle, invisible tooltip grew
+       the document permanently and nothing would ever shift it back.
+
+       Fixed at the source: Tooltip now clamps in a `useLayoutEffect` (before first paint) and re-clamps via a
+       ResizeObserver, so its RESTING position is in bounds without needing a hover. See `clampToPage` in
+       components/ui/Tooltip.jsx. Do not put `hidden` back — it would only re-hide that class of bug while
+       also making the min-width floor unreachable. */
     overflow-x: auto;
   }
 }
