@@ -5,7 +5,7 @@ import { ChevronDown, ChevronUp, FileText, Radar } from "lucide-react";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { UnseenDot } from "@/components/UnseenDot";
 
-import { FRAMEWORK_VERSION, SITE_COPY } from "@/constants";
+import { FE_UI, FRAMEWORK_VERSION, SITE_COPY } from "@/constants";
 import { cn } from "@/utils";
 import { clearStickyScrollOffset, getWindowScrollY, setStickyScrollOffset } from "@/utils/scroll";
 
@@ -15,6 +15,19 @@ const TABS = [
   // (see useTheoryUpdates) always agree — bumping that one constant updates both.
   { id: "theory", label: "Theory", icon: FileText, version: `v${FRAMEWORK_VERSION}` },
 ];
+
+/**
+ * Caps the title and tagline to the Theory tab's content width.
+ *
+ * The header spans the full viewport, so unbounded text sets as one very long line on a wide screen — the eye
+ * loses its place travelling back to the start, and `text-balance` on the title never engages because balancing
+ * only applies once the text actually wraps.
+ *
+ * Reusing `theoryMaxWidthPx` rather than picking a Tailwind cap means the header lines up with the widest
+ * content the app ever shows, so the two stay in step if that number changes. The cap lives on the text and not
+ * on the header itself, because the brand mark and caret need the full width to sit in the real corners.
+ */
+const HEADER_TEXT_WIDTH_STYLE = { maxWidth: FE_UI.page.theoryMaxWidthPx };
 
 // Two modes, because the caret now does exactly one thing: toggle the header, wherever you are.
 //
@@ -28,6 +41,47 @@ const CARET_MODES = {
   collapse: { icon: ChevronUp, label: "Hide title" },
   reveal: { icon: ChevronDown, label: "Show title" },
 };
+
+/**
+ * Whether the tagline's first sentence fits on a single line at the current width.
+ *
+ * Drives where the second sentence goes, per the rule: if the first sentence fits on one line the second starts
+ * a new one; if the first has to wrap, the second continues inline instead. Forcing a break in the wrapped case
+ * is what produced an orphaned word on its own line with the next sentence stranded below it.
+ *
+ * NOT EXPRESSIBLE IN CSS, which is why this measures. The condition depends on whether the RENDERED text fits,
+ * a fact only available after layout — a media query would instead have to hardcode "the width at which ~104
+ * characters of `text-sm` fit", which is a number that goes stale silently the moment the copy or the type scale
+ * changes. `scrollHeight` against a single line's height is the direct question.
+ */
+function useFitsOneLine(ref) {
+  const [fits, setFits] = useState(true);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) {
+      return undefined;
+    }
+
+    // Compare the rendered height against one line's worth. Line height comes from the computed style rather
+    // than a constant so it tracks the responsive `text-xs sm:text-sm` step without being told about it.
+    const measure = () => {
+      const lineHeight = Number.parseFloat(getComputedStyle(el).lineHeight);
+      if (!Number.isFinite(lineHeight) || lineHeight <= 0) {
+        return;
+      }
+      // 1.5 lines as the threshold: comfortably above rounding noise on a single line, comfortably below two.
+      setFits(el.scrollHeight < lineHeight * 1.5);
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [ref]);
+
+  return fits;
+}
 
 /**
  * The framework title block. Collapses to zero height rather than being scrolled away.
@@ -50,6 +104,9 @@ const CARET_MODES = {
  * `print:grid-rows-[1fr]` forces it open on paper, and `print:static` keeps it from pinning there.
  */
 function AppShellIntro({ collapsed = false }) {
+  const taglineProbeRef = useRef(null);
+  const taglineFitsOneLine = useFitsOneLine(taglineProbeRef);
+
   return (
     <div
       id="app-shell-intro"
@@ -84,20 +141,49 @@ function AppShellIntro({ collapsed = false }) {
 
             No top padding at any width: the `<header>`'s own `pt-3` sets the gap above, and the `sm:pt-2` that
             used to sit here pushed the title out of line with the corner controls from `sm:` up. */}
-        <h1 className="text-balance flex min-h-8 items-center justify-center text-xl sm:text-2xl font-bold leading-tight tracking-tight text-slate-900 mb-1 px-12">
+        <h1
+          className="text-balance mx-auto flex min-h-8 w-full items-center justify-center text-xl sm:text-2xl font-bold leading-tight tracking-tight text-slate-900 mb-1 px-12"
+          style={HEADER_TEXT_WIDTH_STYLE}
+        >
           {SITE_COPY.title}
         </h1>
-        {/* `pb-3` is the ENTIRE gap between the byline and the tablist, so it carries the full 12px rather than
-            the hair it used to. It was `pb-0.5 sm:pb-1` back when the tab bar had its own `py-2` supplying most
-            of that space; the bar now has no top padding at all (its inset comes from the stack, which the
-            corner controls' `top-3` is measured against), so anything short here reads as the tagline running
-            into the tabs.
+        {/* Width capped by HEADER_TEXT_WIDTH_STYLE — see that constant for why it reuses the Theory tab's
+            measure. `mx-auto` centres the capped block under the title.
 
-            On the tagline rather than the tab bar deliberately: inside the collapsing grid item it eases away
-            with the intro, so the collapsed header keeps the tablist tight against the stack's own `pt-3`. Put
-            on the bar it would survive the collapse as a permanent strip. */}
-        <p className="text-pretty text-xs sm:text-sm leading-tight text-slate-700 pb-2">
-          {SITE_COPY.tagline} {SITE_COPY.detail} <span className="whitespace-nowrap text-slate-500">{SITE_COPY.byline}</span>
+            `pb-2` is the whole gap between the byline and the tablist. It was a hair (`pb-0.5 sm:pb-1`) back
+            when the tab bar had its own `py-2` above; the bar has no top padding now — its inset comes from the
+            stack, which the corner controls' `top-3` is measured against — so anything short here reads as the
+            tagline running into the tabs. On the tagline rather than the bar deliberately: inside the
+            collapsing grid item it eases away with the intro, whereas on the bar it would survive the collapse
+            as a permanent strip.
+
+            THE SECOND SENTENCE BREAKS ONLY IF THE FIRST FITS ON ONE LINE (see `useFitsOneLine`). When the first
+            sentence already has to wrap, forcing a break too leaves an orphaned word with the next sentence
+            stranded below it; letting it run on instead fills the lines. So the layout is:
+
+              first fits    → `block`, second sentence starts its own line
+              first wraps   → `inline`, second sentence continues the flow
+
+            NOT `text-pretty` on the paragraph. That algorithm shortens earlier lines to avoid a short final
+            one, and against the byline's unbreakable `whitespace-nowrap` run it produced ragged lines with dead
+            space at both ends — the text read as padded even though nothing here has horizontal padding. The
+            byline keeps its `nowrap` (a name should not split); it just must not meet an algorithm that reacts
+            to it. */}
+        <p className="relative mx-auto w-full text-xs sm:text-sm leading-tight text-slate-700 pb-2" style={HEADER_TEXT_WIDTH_STYLE}>
+          {/* The measurement PROBE, not the visible text. It is always `block`, so its height answers "would
+              this sentence fit on one line here?" independently of what the visible copy is currently doing —
+              measuring the real span would be circular, since switching it between `block` and `inline` changes
+              the very height the decision is read from, and the two states could oscillate.
+
+              `invisible` rather than `hidden`: it must still be laid out to have a height. Absolutely positioned
+              and `aria-hidden` so it costs no space and is not announced twice. */}
+          <span ref={taglineProbeRef} aria-hidden className="invisible pointer-events-none absolute inset-x-0 top-0 block">
+            {SITE_COPY.tagline}
+          </span>
+          <span className={cn(taglineFitsOneLine && "block")}>{SITE_COPY.tagline}</span>{" "}
+          <span className={cn(taglineFitsOneLine && "block")}>
+            {SITE_COPY.detail} <span className="whitespace-nowrap text-slate-500">{SITE_COPY.byline}</span>
+          </span>
         </p>
       </header>
     </div>
@@ -147,8 +233,9 @@ function AppShellHeaderStack({ collapsed, onCollapsedChange, children }) {
         // No `relative` needed for the caret to anchor here: `position: sticky` already establishes a
         // containing block for absolutely-positioned children, and adding `relative` would just conflict
         // over the same `position` property.
-        // ONE 12px INSET, declared once here rather than on each child: `px-3` and `pt-3`. `-mx-3` cancels
-        // `main`'s own `px-3` so the box still bleeds to the card's edges.
+        // ONE 12px INSET, declared once here rather than on each child: `px-3` and `pt-3`. No `-mx-3` any more
+        // — `main` carries no horizontal padding of its own (the tab panels do), so this box already spans the
+        // full width and has nothing to cancel.
         //
         // `pt-3` only — NOT `py-3`. Bottom padding would sit between the tab bar and the content below it, and
         // since this box is the boundary the shadow is drawn on, that gap would be permanently visible under the
@@ -159,7 +246,7 @@ function AppShellHeaderStack({ collapsed, onCollapsedChange, children }) {
         // inset, identically whether the intro is expanded or collapsed — which is what stops them moving when
         // clicked. An earlier version had a conditional `pt-3`/`pt-0` here PLUS `py-3` on the bar, which
         // double-counted and pushed the tablist out of line.
-        "sticky top-0 z-40 -mx-3 bg-white px-3 pt-3 shadow-sm print:static print:shadow-none",
+        "sticky top-0 z-40 bg-white px-3 pt-3 shadow-sm print:static print:shadow-none",
       )}
     >
       {children}

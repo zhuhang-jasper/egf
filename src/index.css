@@ -77,10 +77,19 @@
        handles most browsers; this covers iOS Safari which ignores user-scalable=no. */
     touch-action: pan-x pan-y;
     -webkit-text-size-adjust: 100%;
-    /* Off-viewport decorative elements (e.g. an un-clamped Tooltip centered on a
-       right-edge score card, before its hover-time clamp runs) must never give the
-       page a horizontal scrollbar. The clamp still corrects position on show. */
-    overflow-x: hidden;
+    /* `auto`, not `hidden`, so the app stays REACHABLE when the viewport is narrower than the layout's
+       min-width (`FE_UI.page.minWidthPx`, set on `main`). That floor deliberately makes the document wider
+       than a small viewport; `hidden` would clip the difference instead of scrolling it, so on a ~320px screen
+       the right edge — part of the tab bar and the caret among it — could not be got to at all. A min-width
+       whose overflow is clipped is a min-width that does nothing.
+
+       This was `hidden` to stop a horizontal scrollbar flashing when a Tooltip near the right edge renders
+       before its clamp runs. Note the tooltip DOES bound itself to `main` (see `clampToPage` in
+       components/ui/Tooltip.jsx) — the gap is purely timing: `shiftX` starts at 0 and is only recomputed on
+       mouseenter/focusin, so the very first paint is unclamped. One frame of cosmetic overhang is a much
+       smaller problem than unreachable chrome, and the proper fix is clamping the tooltip before first paint
+       rather than clipping the whole document. */
+    overflow-x: auto;
   }
 }
 

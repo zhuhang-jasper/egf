@@ -10,13 +10,33 @@ import { getPersistedActiveTab, useTabScrollMemory } from "@/hooks/useTabScrollM
 import { useTheoryUpdates } from "@/hooks/useTheoryUpdates";
 
 import { FE_UI } from "@/constants";
-import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
 import { getWindowScrollY, scrollWindowTo } from "@/utils/scroll";
 import { cleanTheoryDeepLinkParams, getTabFromUrl, parseTheoryDeepLink, syncTabInUrl } from "@/utils/theory-url";
 
 const appVersion = import.meta.env.VITE_APP_VERSION;
 const VALID_TABS = ["tool", "theory"];
+
+/**
+ * A tab's content region. Both panels stay MOUNTED at all times and are toggled with `hidden` rather than
+ * conditionally rendered — the radar chart's sizing passes and each tab's scroll position are expensive to
+ * rebuild, and `isVisible` is what the children use to skip work while off screen.
+ *
+ * `widthStyle` caps the measure per tab (Theory is wider) while `main` itself stays full-width, so the sticky
+ * header spans the viewport and does not change width when the tab changes. `self-center` centres the capped
+ * box inside that full-width column.
+ *
+ * `mb-6` is the white gap above the black footer. It lives out here rather than on the footer because the gap
+ * has to sit OUTSIDE the black — padding there would only make the band taller — and the footer's own top
+ * margin is already spoken for by `mt-auto`.
+ */
+function TabPanel({ label, active, widthStyle, children }) {
+  return (
+    <div className="mt-3 mb-3 w-full self-center px-3" style={widthStyle} role="tabpanel" hidden={!active} aria-hidden={!active} aria-label={label}>
+      {children}
+    </div>
+  );
+}
 
 // Parse once at module evaluation time so the URL is read before React renders.
 const BOOT_DEEP_LINK = parseTheoryDeepLink();
@@ -36,7 +56,6 @@ export default function HomePage() {
   // Consumed-once ref: passed to TheoryContent on first render, then nulled so
   // subsequent tab switches don't re-trigger the scroll/expand.
   const deepLinkRef = useRef(BOOT_DEEP_LINK);
-
 
   // Flipped by an in-tab scroll the instant it runs (cross-tab matrix jump, or a deep-link's scroll
   // to its target), so the restore loop yields to it: restore still runs first — landing at the
@@ -102,17 +121,25 @@ export default function HomePage() {
     setMatrixNav((prev) => ({ pillarId, seq: (prev?.seq ?? 0) + 1, cancelRestoreRef }));
   };
 
-  const isTheory = activeTab === "theory";
-  const pageWidthStyle = {
-    maxWidth: isTheory ? FE_UI.page.theoryMaxWidthPx : FE_UI.page.maxWidthPx,
-    minWidth: FE_UI.page.minWidthPx,
+  // Applied to each TAB PANEL, not to `main`. The sticky header spans the full viewport while the content it
+  // sits above stays bound to a readable measure — and since the two tabs want different measures (Theory is
+  // 900 vs the tool's 550), constraining `main` meant the pinned header physically changed width when you
+  // switched tabs, which is not something a fixed bar should do.
+  const contentWidthStyle = {
+    maxWidth: activeTab === "theory" ? FE_UI.page.theoryMaxWidthPx : FE_UI.page.maxWidthPx,
   };
 
-  // overflow-x-clip (not -hidden): `hidden` on one axis forces `overflow-y` to compute to `auto`,
-  // which turned this min-h-dvh container into an (unbounded) scroll container — the body scrolled
-  // instead of the window and the sticky tab bar never pinned. `clip` suppresses the horizontal
-  // overflow without establishing a scroll container, so the window scrolls and `sticky top-0` on
-  // the header stack works again.
+  // `min-w` ON `main` IS THE APP'S USABILITY FLOOR — below it the radar chart and the form's label/stepper rows
+  // stop being usable rather than merely cramped. It sits on `main` and so is measured against the VIEWPORT,
+  // which is the only place the number means what it says; on a tab panel (nested inside padding) the same 350
+  // would silently become a larger effective floor.
+  //
+  // Nothing in this shell may CLIP that overflow, or the floor would make the app's right edge unreachable
+  // instead of scrollable. So the outer div sets no `overflow-x` at all, and `body` is `overflow-x: auto`
+  // (see index.css). The document simply grows wider than the viewport and the window scrolls it, which is
+  // also why the floor must not be enforced by an inner scroll container: `overflow-x` on an ancestor of the
+  // header would make it a scroll container, and `sticky top-0` would then pin to that box rather than the
+  // viewport — on a container only as tall as its content, meaning it would never pin at all.
   //
   // NO VERTICAL PADDING above or below the card, and no corner radius, because the header is sticky.
   //
@@ -122,26 +149,40 @@ export default function HomePage() {
   // the one thing that never moves. The corner radius had the same problem: rounded top corners are only on
   // screen at `scrollY 0`, so the header changed shape on arrival at the top.
   //
-  // No horizontal gutters either. Once `main` reaches its max width the black is already visible down both
-  // sides, so the gutters add nothing there — and below that width they are pure waste, narrowing the content
-  // on exactly the screens with the least room to give.
+  // No horizontal gutters either. The black is already visible down both sides wherever the content stops
+  // short of the viewport, so gutters add nothing there — and on narrow screens they are pure waste, taking
+  // width from exactly the sizes with the least to give.
+  //
+  // `main` HAS NO MAX WIDTH; the per-tab measure lives on the tab panels. That is what lets the sticky header
+  // and footer span the viewport while the content between them keeps a readable measure, and it stops the
+  // pinned header changing width when you switch tabs (Theory's measure is 900 vs the tool's 550).
+  // `self-center` on each panel centres the constrained content.
+  //
+  // It DOES have a min width — the app's usability floor, covering header, body and footer alike since all
+  // three are its children. See the note above the return for why the floor lives here and not on the panels.
+  //
+  // `main` also carries `min-h-dvh` and no horizontal padding of its own. The height is what lets the footer's
+  // `mt-auto` push to the viewport bottom when a tab's content is short; the absent padding is what lets the
+  // footer and the sticky header both bleed to the real edges. The 12px inset those two would have inherited
+  // now lives on the pieces that actually want it — `px-3` on each tab panel, and the header's own `px-3`.
   return (
-    <div className="flex min-h-dvh flex-col items-center gap-2 overflow-x-clip bg-black print:bg-white print:p-0">
+    <div className="bg-black print:bg-white print:p-0">
       <main
-        className="flex w-full flex-col bg-white px-3 pb-3 shadow-sm print:max-w-none print:p-0 print:shadow-none"
-        style={pageWidthStyle}
+        className="flex min-h-dvh w-full flex-col bg-white print:max-w-none print:p-0 print:shadow-none"
+        style={{ minWidth: FE_UI.page.minWidthPx }}
       >
         {/* Intro and tab bar pin together as one sticky unit — see AppShellHeaderStack for why they share a
-            single sticky box rather than being two independently-sticky elements. */}
+            single sticky box rather than being two independently-sticky elements. Full-width, so it spans the
+            viewport regardless of which tab's measure is active below it. */}
         <AppShellHeaderStack collapsed={headerCollapsed} onCollapsedChange={setHeaderCollapsed}>
           <AppShellIntro collapsed={headerCollapsed} />
           <AppShellTabBar activeTab={activeTab} onTabChange={handleTabChange} theoryHasUnseenUpdates={theoryHasUnseenUpdates} />
         </AppShellHeaderStack>
 
-        <div className="mt-3" role="tabpanel" hidden={activeTab !== "tool"} aria-hidden={activeTab !== "tool"} aria-label="Tool">
+        <TabPanel label="Tool" active={activeTab === "tool"} widthStyle={contentWidthStyle}>
           <ToolContent isVisible={activeTab === "tool"} onOpenPillarInMatrix={handleOpenPillarInMatrix} />
-        </div>
-        <div className="mt-3" role="tabpanel" hidden={activeTab !== "theory"} aria-hidden={activeTab !== "theory"} aria-label="Theory">
+        </TabPanel>
+        <TabPanel label="Theory" active={activeTab === "theory"} widthStyle={contentWidthStyle}>
           <TheoryContent
             deepLink={deepLinkRef.current}
             onDeepLinkConsumed={() => {
@@ -156,12 +197,26 @@ export default function HomePage() {
             isSectionEdgePairComplete={isSectionEdgePairComplete}
             markSectionSeen={markSectionSeen}
           />
-        </div>
-      </main>
+        </TabPanel>
 
-      <p className="mt-auto mb-1 text-center text-[11px] text-white/60 print:mb-0 print:text-slate-500">
-        © 2026 Jasper Loo Zhu Hang · All rights reserved · <span className="tabular-nums">v{appVersion}</span>
-      </p>
+        {/* Inside `main` and full-bleed, so it reads as the page's own footer rather than a strip of the black
+            page behind it — which is what it looked like once `main` went full-width and the black stopped
+            showing down the sides.
+
+            `mt-auto` against `main`'s `min-h-dvh` is what pins it to the viewport bottom when a tab's content
+            is short, while letting it sit after the content on a long page. Deliberately NOT sticky: it is
+            passive text, so pinning it would spend permanent viewport height on something nobody needs
+            mid-scroll.
+
+            Rendered once outside both tabpanels, so it survives tab switches untouched. */}
+        {/* The gap above this footer is WHITE and comes from each tab panel's `mb-6`, not from here.
+            Deliberately: the gap separates content from the black band, so it has to be outside the black.
+            Padding on this element would only make the band taller, and `mt-*` is unavailable because
+            `mt-auto` already owns this margin to push the footer down when a tab's content is short. */}
+        <footer className="mt-auto bg-black px-3 py-2 text-center text-[11px] text-white/60 print:bg-transparent print:text-slate-500">
+          © 2026 Jasper Loo Zhu Hang · All rights reserved · <span className="tabular-nums">v{appVersion}</span>
+        </footer>
+      </main>
 
       <Toaster />
     </div>
