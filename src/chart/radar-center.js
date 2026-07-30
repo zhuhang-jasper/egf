@@ -237,10 +237,11 @@ export function getRadarContentHeightPx(chart) {
 }
 
 /**
- * Linearly interpolate a point-label size (px) across chart width for a per-chart
+ * Linearly interpolate a point-label size (px) across chart width for a
  * `pointLabelPxRange = { minPx, maxPx, minWidthPx, maxWidthPx }`. Below minWidthPx the size is
  * minPx, above maxWidthPx it is maxPx, and it ramps linearly between — so the labels scale with the
- * chart the same way its overall size does. Used by the theory hero radar.
+ * chart the same way its overall size does. This is how EVERY radar sizes its axis labels: the tool
+ * chart and hero off FE_UI's ramp, the career-track charts off THEORY_CHART_UI's.
  *
  * The result is intentionally NOT rounded: an integer font size can only reach the max via the
  * intermediate integers (12→13→14), and each crossing is a visible 1px pop as the chart scales.
@@ -253,21 +254,6 @@ function getPointLabelSizePxFromRange(chartWidthPx, range) {
   }
   const t = Math.max(0, Math.min(1, (chartWidthPx - minWidthPx) / (maxWidthPx - minWidthPx)));
   return minPx + t * (maxPx - minPx);
-}
-
-function getChartPointLabelSizePxForUi(chartWidthPx, ui) {
-  const cf = ui.chartFonts;
-  const ch = ui.chart;
-  let labelSize = ch.pointLabelPx;
-  if (ch.pointLabelScaleWithChart) {
-    const ref = cf.pointLabelRefWidthPx || 380;
-    labelSize = Math.round((ch.pointLabelPx * chartWidthPx) / ref);
-    labelSize = Math.max(cf.pointLabelMinPx, labelSize);
-    if (cf.pointLabelMaxPx != null) {
-      labelSize = Math.min(cf.pointLabelMaxPx, labelSize);
-    }
-  }
-  return labelSize;
 }
 
 function getPointLabelPaddingPxForUi(chartWidthPx, ui) {
@@ -299,17 +285,21 @@ export function syncFontsForChart(chart) {
   const tickSize = Math.max(cf.tickMinPx, Math.round(w / cf.tickWidthDivisor));
   const cc = chart?.options?.plugins?.competencyChart;
   // Label-size precedence, most specific first:
-  //   1. pointLabelPxRange — linearly interpolate minPx→maxPx across chart width (theory hero radar,
-  //      so its labels scale fluidly with the chart between two chosen sizes).
-  //   2. pointLabelPx — a fixed px that pins the label regardless of chart width.
-  //   3. preset width-scaling (× optional pointLabelScale) — every other chart.
+  //   1. a per-chart pointLabelPxRange — used by the theory HERO radar to borrow the tool chart's
+  //      ramp instead of its own preset's much smaller one.
+  //   2. a per-chart pointLabelPx — a fixed px that pins the label regardless of chart width.
+  //   3. the preset's own pointLabelPxRange — the normal path for every chart (FE_UI's for the tool
+  //      chart, THEORY_CHART_UI's for the career-track radars).
+  //
+  // All three end up fractional. There is deliberately no rounded/stepped fallback any more: the
+  // preset ramp is the floor of this chain, and both presets define one.
   let labelSize;
   if (cc?.pointLabelPxRange) {
     labelSize = getPointLabelSizePxFromRange(w, cc.pointLabelPxRange);
   } else if (cc?.pointLabelPx != null) {
     labelSize = cc.pointLabelPx;
   } else {
-    labelSize = Math.round(getChartPointLabelSizePxForUi(w, ui) * (cc?.pointLabelScale ?? 1));
+    labelSize = getPointLabelSizePxFromRange(w, ch.pointLabelPxRange);
   }
   const labelPadding = getPointLabelPaddingPxForUi(w, ui);
   const padding = getChartLayoutPaddingForUi(w, ui);

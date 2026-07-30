@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/Tooltip";
 
 import { useCompetencyChart } from "@/hooks/useCompetencyChart";
-import { useElementWidth } from "@/hooks/useElementWidth";
 
 import { useAppStore } from "@/store/useAppStore";
 
@@ -189,8 +188,11 @@ export function ChartSection({ isVisible }) {
   const chartTitleHidden = useAppStore((s) => s.chartTitleHidden);
   const footerScoresHidden = useAppStore((s) => s.footerScoresHidden);
 
-  const { chartRef, relayout } = useCompetencyChart(canvasRef, frameRef);
-  const chartWidth = useElementWidth(frameRef, isVisible);
+  // ONE observer on the frame, not two. The chart hook already watches this element to drive its fit,
+  // and it publishes the width it measured — so the chrome that scales with the chart (title size,
+  // track badge, cluster legend) reads that instead of adding a second ResizeObserver to the same box
+  // and a second `offsetWidth` read per frame.
+  const { chartRef, relayout, frameWidth: chartWidth } = useCompetencyChart(canvasRef, frameRef);
 
   const trimmedTitle = String(title).trim();
   // When the title is enabled but blank, show a muted placeholder on the chart (it also bakes into

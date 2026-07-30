@@ -531,7 +531,7 @@ function TheoryContent({
           section={THEORY_SECTIONS.tracks}
           hasUnseenUpdates={unseenSections.has(THEORY_SECTIONS.tracks)}
         />
-        <CareerTracks />
+        <CareerTracks isVisible={isVisible} />
         <SectionSentinel section={THEORY_SECTIONS.tracks} edge="tail" gapClass="-mt-1" />
       </section>
     </div>

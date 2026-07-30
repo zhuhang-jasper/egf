@@ -158,28 +158,6 @@ function syncEmojiOnlyLabelsOption(chart, emojiOnlyLabels) {
   }
 }
 
-/**
- * Width threshold for responsive emoji↔text labels (see isEmojiMode): at/below this chart width the
- * spokes are emoji-only, above it they show full text. Overrides the emojiOnlyLabels boolean.
- */
-function syncEmojiMaxWidthPxOption(chart, emojiMaxWidthPx) {
-  const cc = chart.options.plugins.competencyChart;
-  if (cc.emojiMaxWidthPx !== (emojiMaxWidthPx ?? undefined)) {
-    cc.emojiMaxWidthPx = emojiMaxWidthPx ?? undefined;
-  }
-}
-
-/** Per-chart point-label size multiplier (see syncFontsForChart) — lets one chart run larger labels. */
-function syncPointLabelScaleOption(chart, pointLabelScale) {
-  if (pointLabelScale == null) {
-    return;
-  }
-  const cc = chart.options.plugins.competencyChart;
-  if (cc.pointLabelScale !== pointLabelScale) {
-    cc.pointLabelScale = pointLabelScale;
-  }
-}
-
 /** Fixed point-label px (see syncFontsForChart) — pins label size independent of chart width. */
 function syncPointLabelPxOption(chart, pointLabelPx) {
   const cc = chart.options.plugins.competencyChart;
@@ -251,9 +229,7 @@ export function applyChartState(chart, state) {
   const orderLen = getPillarOrder().length;
   syncPlainLabelsOption(chart, state.plainLabels);
   syncEmojiOnlyLabelsOption(chart, state.emojiOnlyLabels);
-  syncEmojiMaxWidthPxOption(chart, state.emojiMaxWidthPx);
   syncHeroLabelNudgeOption(chart, state.heroLabelNudge);
-  syncPointLabelScaleOption(chart, state.pointLabelScale);
   syncPointLabelPxOption(chart, state.pointLabelPx);
   syncPointLabelPxRangeOption(chart, state.pointLabelPxRange);
   syncChartLabels(chart);
@@ -353,7 +329,7 @@ export function createCompetencyChart(canvas, { purpose = "tool" } = {}) {
       plugins: {
         legend: { display: false },
         tooltip: { enabled: false },
-        competencyChart: { purpose, plainLabels: isTheory, emojiOnlyLabels: false, emojiMaxWidthPx: undefined, heroLabelNudge: false },
+        competencyChart: { purpose, plainLabels: isTheory, emojiOnlyLabels: false, heroLabelNudge: false },
       },
     },
     plugins: [createClusterBackgroundPlugin()],

@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
+
+import { useChartFrameFit } from "@/hooks/useChartFrameFit";
 
 import { useAppStore } from "@/store/useAppStore";
 
@@ -8,8 +10,7 @@ import { getRadarContentHeightPx } from "@/chart/radar-center";
 import { getChartLayoutLabelsForChart, getDisplayLabelsForChart } from "@/chart/theory-profile";
 import { FE_UI } from "@/constants";
 
-function convergeContentHeight(frame, chart) {
-  const w = frame.offsetWidth;
+function convergeContentHeight(frame, chart, w) {
   let prev = null;
   let applied = null;
   for (let pass = 0; pass < 3; pass++) {
@@ -36,14 +37,8 @@ function convergeContentHeight(frame, chart) {
   return applied;
 }
 
-function fitFrameToChart(frameRef, chart) {
-  const frame = frameRef.current;
-  if (!frame?.offsetWidth || !chart) {
-    return;
-  }
-
-  const w = frame.offsetWidth;
-
+/** Converge the frame height to the radar's measured label span. Returns the height it applied. */
+function fitFrameToChart(frame, chart, w) {
   // There is a single pillar layout now (the FE/BE distinction is a cosmetic badge, not a different
   // axis set), so the chart labels are the same regardless of badge. Set them once, converge the
   // frame height once, then lock that height so display-toggle changes never shift the UI below.
@@ -56,9 +51,9 @@ function fitFrameToChart(frameRef, chart) {
   chart.data.labels = getChartLayoutLabelsForChart(chart);
   chart.update("none");
   try {
-    const finalH = convergeContentHeight(frame, chart);
+    const finalH = convergeContentHeight(frame, chart, w);
     if (!finalH) {
-      return;
+      return null;
     }
 
     // Height is the measured axis-label span (plus contentPadPx), with no width-ratio floor — the
@@ -68,10 +63,9 @@ function fitFrameToChart(frameRef, chart) {
     // smaller dimension (the radius here is height-limited, not width-limited), it made the tool
     // chart's radar visibly smaller than the hero's. heightWidthRatio still seeds the
     // pre-measurement estimate in getChartFrameEstimatedHeightPx.
-    if (finalH > 0) {
-      applyChartFrameLayout(frame, w, finalH);
-      chart.resize();
-    }
+    applyChartFrameLayout(frame, w, finalH);
+    chart.resize();
+    return finalH;
   } finally {
     chart.data.labels = getDisplayLabelsForChart(chart);
     chart.update("none");
@@ -91,7 +85,11 @@ function chartState() {
 }
 
 /**
- * Frame margins (layout) + Chart.js lifecycle (effect after paint).
+ * Frame layout + Chart.js lifecycle for the interactive tool chart.
+ *
+ * Returns the frame's measured width alongside the chart, so the surrounding chrome (title size,
+ * track badge, cluster legend) can scale with the chart off ONE ResizeObserver rather than adding a
+ * second one to the same element.
  */
 export function useCompetencyChart(canvasRef, frameRef) {
   const chartRef = useRef(null);
@@ -103,38 +101,30 @@ export function useCompetencyChart(canvasRef, frameRef) {
   const clusterLabelColors = useAppStore((s) => s.clusterLabelColors);
   const pillarEmojiHidden = useAppStore((s) => s.pillarEmojiHidden);
 
-  const relayout = useCallback(() => {
+  const fit = useCallback((frame, width, cachedHeight) => {
     const chart = chartRef.current;
-    const frame = frameRef.current;
-    if (!frame?.offsetWidth) {
-      return;
+    if (cachedHeight != null) {
+      // This width has already been converged for, and nothing that feeds the fit has changed since.
+      // Re-apply the height and let the chart pick up the canvas size in one render. Applied even with
+      // no chart in hand, so the frame never falls back to the pre-measurement estimate once we know
+      // the real height.
+      applyChartFrameLayout(frame, width, cachedHeight);
+      chart?.resize();
+      return cachedHeight;
     }
 
-    applyChartFrameLayout(frame, frame.offsetWidth, null);
+    applyChartFrameLayout(frame, width, null);
     if (!chart) {
-      return;
+      return null;
     }
-
     refreshChart(chart, chartState());
-    fitFrameToChart(frameRef, chart);
-  }, [frameRef]);
+    return fitFrameToChart(frame, chart, width);
+  }, []);
+
+  const { relayout, frameWidth } = useChartFrameFit(frameRef, fit);
 
   const relayoutRef = useRef(relayout);
   relayoutRef.current = relayout;
-
-  useLayoutEffect(() => {
-    const run = () => relayoutRef.current();
-    run();
-    const ro = new ResizeObserver(run);
-    if (frameRef.current) {
-      ro.observe(frameRef.current);
-    }
-    window.addEventListener("resize", run);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", run);
-    };
-  }, [frameRef]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -173,11 +163,13 @@ export function useCompetencyChart(canvasRef, frameRef) {
 
   // Dropping the emoji changes the spoke metrics (label widths, and thus wrapping), so the radar has
   // to be re-fitted to the frame — unlike the other display toggles, which leave the layout alone.
+  // FORCED, because the frame width has not changed: this is exactly the case the fit memo would
+  // otherwise serve from cache.
   useEffect(() => {
     if (chartRef.current) {
-      relayout();
+      relayout({ force: true });
     }
   }, [pillarEmojiHidden, relayout]);
 
-  return { chartRef, relayout };
+  return { chartRef, relayout, frameWidth };
 }

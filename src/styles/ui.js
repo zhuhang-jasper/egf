@@ -49,6 +49,12 @@ export const FE_UI = {
     /** Swatch edge length vs legend label font size — just taller than text cap height. */
     legendSwatchLabelMultiplier: 1.2,
     pointLabelPaddingRange: { minPx: 4, maxPx: 8 },
+    /**
+     * These two no longer size the radar's own axis labels — `pointLabelPxRange` below does, for
+     * every chart. They survive as the basis of the DOM chrome that scales WITH the chart: the track
+     * badge, cluster legend and chart title, via getChartPointLabelSizePx in chart/fonts.js. Tuning
+     * them moves that chrome, not the labels on the canvas.
+     */
     pointLabelPx: 11,
     pointLabelScaleWithChart: true,
     /**
@@ -56,9 +62,10 @@ export const FE_UI = {
      * identical label sizes for a given chart width. Linearly interpolated (unrounded) by
      * getPointLabelSizePxFromRange: minPx at/below minWidthPx, maxPx at/above maxWidthPx.
      *
-     * Takes precedence over the pointLabelPx × width-scaling path below, which is what the small
-     * theory career-track charts still use. Kept here rather than at the call sites so the two
-     * charts can't drift apart.
+     * Kept here rather than at the call sites so the two charts can't drift apart — the hero is a
+     * theory-preset chart and passes this range explicitly to override THEORY_CHART_UI's own
+     * (smaller) ramp. Every radar sizes its labels this way now; the small career-track charts have
+     * their own ramp on the theory preset.
      */
     pointLabelPxRange: { minPx: 12, maxPx: 15, minWidthPx: 300, maxWidthPx: 526 },
     pointLabelWeight: "bold",

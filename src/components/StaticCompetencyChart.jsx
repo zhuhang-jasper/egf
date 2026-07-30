@@ -35,15 +35,13 @@ export function StaticCompetencyChart({
   // Override the preset's default label style: false forces emoji pillar labels on the theory
   // preset. Leave undefined to keep the preset default (theory = plain, tool = emoji).
   plainLabels,
-  // Multiplier applied to the preset's computed point-label size, for a single chart that needs
-  // larger labels than its preset (e.g. the theory hero radar). Leave undefined for 1×.
-  pointLabelScale,
   // Fixed point-label size in px. When set, pins the label size regardless of chart width (so the
-  // labels can track a fixed page font). Overrides pointLabelScale. Leave undefined for width-scaled.
+  // labels can track a fixed page font). Leave undefined to use the preset's own width ramp.
   pointLabelPx,
-  // Point-label size range { minPx, maxPx, minWidthPx, maxWidthPx }. When set, the label size ramps
-  // linearly from minPx→maxPx as the chart width goes minWidthPx→maxWidthPx (clamped at the ends),
-  // so labels scale fluidly with the chart. Takes precedence over pointLabelPx/pointLabelScale.
+  // Point-label size range { minPx, maxPx, minWidthPx, maxWidthPx }, overriding the preset's own.
+  // The label size ramps linearly from minPx→maxPx as the chart width goes minWidthPx→maxWidthPx
+  // (clamped at the ends). Takes precedence over pointLabelPx — the hero radar sets this to borrow
+  // the tool chart's ramp rather than the theory preset's smaller one.
   pointLabelPxRange,
   // Use the theory hero radar's label-nudge map instead of the career-track charts' map. Only the
   // large empty hero radar at the top of the theory tab sets this.
@@ -51,12 +49,10 @@ export function StaticCompetencyChart({
   // Animate the radar points tweening from their old values to the new ones when only `levels`
   // changes (base geometry/labels stay put). Off by default — most charts swap data instantly.
   animateDataChanges = false,
-  // Render pillar spokes as emoji only (no text). Takes precedence over plainLabels.
+  // Render pillar spokes as emoji only (no text), and drop the focus-dimming of non-key pillars along
+  // with them. Takes precedence over plainLabels. The caller owns the decision — charts that share a
+  // layout should share one source for it so they all swap at once (see CareerTracks).
   emojiOnlyLabels = false,
-  // Width-responsive emoji↔text: at/below this chart width, spokes are emoji-only; above it, full
-  // text (and focus-dimming). Overrides emojiOnlyLabels. Use for charts that go full-width in a row
-  // layout (text) but shrink to a narrow column (emoji).
-  emojiMaxWidthPx,
   "aria-label": ariaLabel,
 }) {
   const canvasRef = useRef(null);
@@ -69,8 +65,6 @@ export function StaticCompetencyChart({
       purpose,
       plainLabels,
       emojiOnlyLabels,
-      emojiMaxWidthPx,
-      pointLabelScale,
       pointLabelPx,
       pointLabelPxRange,
       levelsPolygonHidden: hidePolygon,
@@ -88,8 +82,6 @@ export function StaticCompetencyChart({
       purpose,
       plainLabels,
       emojiOnlyLabels,
-      emojiMaxWidthPx,
-      pointLabelScale,
       pointLabelPx,
       pointLabelPxRange,
       hidePolygon,

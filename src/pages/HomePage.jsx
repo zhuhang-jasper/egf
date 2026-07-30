@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { AppBottomNav } from "@/components/AppBottomNav";
 import { AppShellHeaderStack, AppShellIntro } from "@/components/AppShellHeader";
@@ -19,36 +19,55 @@ const appVersion = import.meta.env.VITE_APP_VERSION;
 const VALID_TABS = ["tool", "theory"];
 
 /**
- * A tab's content region. Both panels stay MOUNTED at all times and are toggled with `hidden` rather than
+ * A tab's content region. Once rendered, both panels stay MOUNTED and are toggled with `hidden` rather than
  * conditionally rendered — the radar chart's sizing passes and each tab's scroll position are expensive to
- * rebuild, and `isVisible` is what the children use to skip work while off screen.
+ * rebuild, and `isVisible` is what the children use to skip work while off screen. (First render is the one
+ * exception: the inactive panel is skipped there and mounted on the next idle callback — see `inactivePhase`
+ * in HomePage.)
  *
- * `widthStyle` caps the measure per tab (Theory is wider) while `main` itself stays full-width, so the sticky
- * header spans the viewport and does not change width when the tab changes. `self-center` centres the capped
- * box inside that full-width column.
+ * `widthStyle` caps the measure per tab (Theory's is 900 vs the tool's 550) while `main` itself stays
+ * full-width, so the sticky header spans the viewport and does not change width when the tab changes.
+ * `self-center` centres the capped box inside that full-width column. EACH PANEL CARRIES ITS OWN measure
+ * rather than both taking the active tab's: a hidden panel then lays out at the width it will actually be
+ * shown at, which is what lets its charts be pre-fitted (see `prefit`) and reused on the switch instead of
+ * re-converging at a width that was never theirs.
  *
  * The bottom margin is the gap above the footer. It lives out here rather than on the footer because padding
  * there would only make that strip taller, and the footer's own top margin is already spoken for by `mt-auto`.
  *
- * `overflow-x-clip` WHILE INACTIVE, to stop a one-frame horizontal scrollbar on tab switch. Both panels share one
- * `widthStyle` derived from the ACTIVE tab, so on the frame a switch commits, the outgoing panel is momentarily
- * still laid out with content sized for the old (wider) measure inside the new (narrower) one. That overflowed the
- * document horizontally for a frame, the browser showed a scrollbar, and the visual viewport shrank — which the
- * `fixed` bottom nav is positioned against, so it visibly jumped ~15px.
+ * `prefit` IS THE FIRST-PAINT PRELOAD. A `display: none` panel has no width, so a chart inside it cannot
+ * measure its frame and cannot converge — which is why the first switch to Theory used to fit all eight of its
+ * radars at once and flash. In this mode the panel is laid out for real (so every frame has its true width and
+ * every fit converges and memoises), but `h-0 overflow-hidden` clips it to nothing and contributes no document
+ * height, and `inert` keeps focus and pointers out. It is invisible and costs no layout above it, yet the
+ * charts inside come out fitted. HomePage holds it for a short window after mounting the inactive panel, then
+ * drops back to `hidden`.
+ *
+ * `overflow-x-clip` WHILE INACTIVE, to stop a one-frame horizontal scrollbar on tab switch: on the frame a
+ * switch commits, the outgoing panel can still be laid out with content sized for the wider measure. That
+ * overflowed the document horizontally for a frame, the browser showed a scrollbar, and the visual viewport
+ * shrank — which the `fixed` bottom nav is positioned against, so it visibly jumped ~15px.
  *
  * Clipping only the INACTIVE panel is what makes this safe: the visible panel keeps `visible` overflow, so nothing
  * that should be able to escape its box (tooltips, dropdowns) is affected, and a hidden panel has nothing to show
  * anyway. Fixing it here rather than by clipping `body` matters — `body` must keep `overflow-x: auto` so the 350px
  * min-width floor stays reachable at narrow viewports (see index.css).
  */
-function TabPanel({ label, active, widthStyle, children }) {
+function TabPanel({ label, active, prefit = false, widthStyle, children }) {
   return (
     <div
-      className={cn("mt-3 mb-0 w-full self-center px-3", !active && "overflow-x-clip")}
+      className={cn(
+        "w-full self-center px-3",
+        // `h-0` instead of the margins during a prefit pass: `hidden` contributes no height, and this mode
+        // must not either, or the document would grow by the margins alone while it lasts.
+        prefit ? "h-0 overflow-hidden" : "mt-3 mb-0",
+        !active && "overflow-x-clip",
+      )}
       style={widthStyle}
       role="tabpanel"
-      hidden={!active}
+      hidden={!active && !prefit}
       aria-hidden={!active}
+      inert={!active}
       aria-label={label}
     >
       {children}
@@ -58,6 +77,28 @@ function TabPanel({ label, active, widthStyle, children }) {
 
 // Parse once at module evaluation time so the URL is read before React renders.
 const BOOT_DEEP_LINK = parseTheoryDeepLink();
+
+/** Per-tab content measure. Constant per tab — see the note on TabPanel's `widthStyle`. */
+const TAB_WIDTH_STYLE = {
+  tool: { maxWidth: FE_UI.page.maxWidthPx },
+  theory: { maxWidth: FE_UI.page.theoryMaxWidthPx },
+};
+
+/**
+ * How long the inactive panel stays in `prefit` before going back to `hidden`. It only has to outlast the
+ * charts' own startup (each waits two rAFs after construction before its first fit), and the panel is
+ * invisible and zero-height throughout, so this is deliberately generous rather than tight.
+ */
+const PREFIT_WINDOW_MS = 300;
+
+function scheduleIdle(callback) {
+  if (typeof requestIdleCallback === "function") {
+    const id = requestIdleCallback(callback, { timeout: 1000 });
+    return () => cancelIdleCallback(id);
+  }
+  const id = setTimeout(callback, 200);
+  return () => clearTimeout(id);
+}
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState(() => {
@@ -95,6 +136,38 @@ export default function HomePage() {
   // Cross-tab jump from a tool-form pillar's help icon into the theory matrix. The `seq` bump makes
   // repeated clicks on the same pillar re-trigger the expand + scroll even when the tab is already open.
   const [matrixNav, setMatrixNav] = useState(null);
+
+  // THE INACTIVE TAB'S CONTENT IS NOT ON THE FIRST-PAINT PATH. The theory tab holds eight radar charts
+  // (a hero, three career tracks, and the foundational phase's carousel plus its desktop 3-up grid), and
+  // building all of them plus that tab's document was work the boot render did before showing the user the
+  // one tab they asked for. Three phases, in order:
+  //
+  //   deferred — first render, active panel only.
+  //   prefit   — on the next idle callback: mount the inactive panel LAID OUT BUT CLIPPED, so its charts
+  //              measure their real frame widths and converge once (see TabPanel's `prefit`, and the fit
+  //              memo in useChartFrameFit that makes the result survive to the switch).
+  //   mounted  — the panel goes back to `hidden`, its charts already fitted.
+  //
+  // The point of the middle phase is that the width a chart pre-fits at is the width it is shown at, so the
+  // switch is a memo hit — one `chart.resize()` per chart instead of eight converge loops at once, which is
+  // what the flash on the first switch to Theory was.
+  const [inactivePhase, setInactivePhase] = useState("deferred");
+  const inactiveMounted = inactivePhase !== "deferred";
+
+  useEffect(() => {
+    if (inactivePhase !== "deferred") {
+      return undefined;
+    }
+    return scheduleIdle(() => setInactivePhase("prefit"));
+  }, [inactivePhase]);
+
+  useEffect(() => {
+    if (inactivePhase !== "prefit") {
+      return undefined;
+    }
+    const timer = setTimeout(() => setInactivePhase("mounted"), PREFIT_WINDOW_MS);
+    return () => clearTimeout(timer);
+  }, [inactivePhase]);
 
   // Theory tab's version-bump indicators. `unseenSections` drives a dot on each changed section's
   // heading; `theoryHasUnseenUpdates` is their aggregate and drives the dot on the Theory tab label.
@@ -138,14 +211,6 @@ export default function HomePage() {
       syncTabInUrl("theory");
     }
     setMatrixNav((prev) => ({ pillarId, seq: (prev?.seq ?? 0) + 1, cancelRestoreRef }));
-  };
-
-  // Applied to each TAB PANEL, not to `main`. The sticky header spans the full viewport while the content it
-  // sits above stays bound to a readable measure — and since the two tabs want different measures (Theory is
-  // 900 vs the tool's 550), constraining `main` meant the pinned header physically changed width when you
-  // switched tabs, which is not something a fixed bar should do.
-  const contentWidthStyle = {
-    maxWidth: activeTab === "theory" ? FE_UI.page.theoryMaxWidthPx : FE_UI.page.maxWidthPx,
   };
 
   // `min-w` ON `main` IS THE APP'S USABILITY FLOOR — below it the radar chart and the form's label/stepper rows
@@ -230,24 +295,41 @@ export default function HomePage() {
           <AppShellIntro collapsed={headerCollapsed} />
         </AppShellHeaderStack>
 
-        <TabPanel label="Tool" active={activeTab === "tool"} widthStyle={contentWidthStyle}>
-          <ToolContent isVisible={activeTab === "tool"} onOpenPillarInMatrix={handleOpenPillarInMatrix} />
+        {/* `active || inactiveMounted` rather than `active`: a panel is mounted for good once it has been
+            rendered even once, so switching away never tears down a chart or a scroll position. Only the very
+            first render can skip a panel — see `inactivePhase`. */}
+        <TabPanel
+          label="Tool"
+          active={activeTab === "tool"}
+          prefit={inactivePhase === "prefit" && activeTab !== "tool"}
+          widthStyle={TAB_WIDTH_STYLE.tool}
+        >
+          {activeTab === "tool" || inactiveMounted ? (
+            <ToolContent isVisible={activeTab === "tool"} onOpenPillarInMatrix={handleOpenPillarInMatrix} />
+          ) : null}
         </TabPanel>
-        <TabPanel label="Theory" active={activeTab === "theory"} widthStyle={contentWidthStyle}>
-          <TheoryContent
-            deepLink={deepLinkRef.current}
-            onDeepLinkConsumed={() => {
-              deepLinkRef.current = null;
-              cleanTheoryDeepLinkParams();
-            }}
-            matrixNav={matrixNav}
-            cancelRestoreRef={cancelRestoreRef}
-            isVisible={activeTab === "theory"}
-            unseenSections={unseenSections}
-            markSectionEdgeSeen={markSectionEdgeSeen}
-            isSectionEdgePairComplete={isSectionEdgePairComplete}
-            markSectionSeen={markSectionSeen}
-          />
+        <TabPanel
+          label="Theory"
+          active={activeTab === "theory"}
+          prefit={inactivePhase === "prefit" && activeTab !== "theory"}
+          widthStyle={TAB_WIDTH_STYLE.theory}
+        >
+          {activeTab === "theory" || inactiveMounted ? (
+            <TheoryContent
+              deepLink={deepLinkRef.current}
+              onDeepLinkConsumed={() => {
+                deepLinkRef.current = null;
+                cleanTheoryDeepLinkParams();
+              }}
+              matrixNav={matrixNav}
+              cancelRestoreRef={cancelRestoreRef}
+              isVisible={activeTab === "theory"}
+              unseenSections={unseenSections}
+              markSectionEdgeSeen={markSectionEdgeSeen}
+              isSectionEdgePairComplete={isSectionEdgePairComplete}
+              markSectionSeen={markSectionSeen}
+            />
+          ) : null}
         </TabPanel>
 
         {/* Inside `main` and full-bleed, so it reads as the page's own footer rather than a strip of the page

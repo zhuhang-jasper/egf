@@ -9,11 +9,32 @@ import { CAREER_TRACK_PROFILES, FOUNDATIONAL_PHASE, JUNIOR_TO_SENIOR, SENIOR_FOR
 import { DOC_TEXT } from "@/styles/doc-typography";
 import { cn } from "@/utils";
 
-// Career-track chart spokes are width-responsive: emoji icons while the chart is narrow (the 3-up
-// columned view), full text pillar names once it goes full-width in the stacked/row view. The chart
-// also drops the focus-dimming of non-key pillars whenever it's in emoji mode. This px threshold
-// sits between the ~1/3-width columned charts and the full-width row charts.
-const TRACK_CHART_EMOJI_MAX_WIDTH_PX = 220;
+/**
+ * The 640–819px band, and the only place the six columned radars decide between emoji-only spokes and
+ * full text pillar names. Inside it they show emoji; outside it, text.
+ *
+ * ALL SIX SWAP TOGETHER because this is a property of the PAGE's width — the same fact that decides the
+ * layout regime — evaluated once. They used to carry a px threshold that each chart compared against its
+ * OWN canvas width (`emojiMaxWidthPx = 220`), and the six frames are not the same width: a career-track
+ * card's chart runs 176→263px across the columned range while a foundational cell's runs 170→257px (it
+ * carries the divided grid's extra `px-2` plus ChartPanel's `p-2`). So the two groups crossed 220 about
+ * 20 viewport px apart — at ~772 the track cards went to text while the foundation row was still emoji —
+ * and scrollbar width shifted both.
+ *
+ * Written out as numbers because matchMedia takes a string and the theme is `@theme inline` (see
+ * index.css), which substitutes values into the generated utilities instead of emitting
+ * `--breakpoint-*` on `:root` — so there is nothing to read Tailwind's scale from at runtime.
+ *
+ *   640 — the lower bound, Tailwind's `sm`, and it MUST stay in step with `sm:grid-cols-3` below. Under
+ *     it the cards stack and every chart is full-width (286–591px), which fits text comfortably, so
+ *     emoji is confined to the columned view and never reaches mobile.
+ *   820 — the upper bound, and the one value here tuned to a device rather than a breakpoint: it is the
+ *     iPad Air's portrait width, the narrowest screen we want reading full pillar names. So the query
+ *     caps at 819 and text starts exactly at 820, where the columns are ~230–236px wide. Raise it to
+ *     hold emoji further up; drop it to 640 for text everywhere, at the cost of 9 pillar names at the
+ *     8px floor around a 170px chart in the narrowest column.
+ */
+const TRACK_CHART_EMOJI_QUERY = "(min-width: 640px) and (max-width: 819px)";
 
 const cardClass = "rounded-xl border border-white/70 shadow-md shadow-slate-200/40";
 const levelBadgeClass = cn(
@@ -65,7 +86,7 @@ function TrackRoleSequence({ roleLevels, badgeBg, badgeColor }) {
   );
 }
 
-function ChartPanel({ levels, title, focusedPillars, className, animateDataChanges = false }) {
+function ChartPanel({ levels, title, focusedPillars, className, animateDataChanges = false, emojiSpokes = false }) {
   return (
     <div className={className}>
       <StaticCompetencyChart
@@ -73,7 +94,7 @@ function ChartPanel({ levels, title, focusedPillars, className, animateDataChang
         title={title}
         // Focus-dimming applies only in text mode; the chart auto-disables it in emoji mode.
         focusedPillars={undefined}
-        emojiMaxWidthPx={TRACK_CHART_EMOJI_MAX_WIDTH_PX}
+        emojiOnlyLabels={emojiSpokes}
         maxHeightPx={180}
         animateDataChanges={animateDataChanges}
         aria-label={`${title} competency profile`}
@@ -100,10 +121,10 @@ function KeyPillarChips({ pillars, ringColor, textColor, flexRowMd = false }) {
 
 /** The chart + role-label body for one foundational stage. Shared by the desktop 3-up grid
  *  (left-aligned role row) and the mobile carousel (centered under the centered chart). */
-function FoundationStageBody({ chart, style, centerRole = false, animateChart = false }) {
+function FoundationStageBody({ chart, style, centerRole = false, animateChart = false, emojiSpokes = false }) {
   return (
     <>
-      <ChartPanel levels={chart.levels} title={chart.title} className="p-2" animateDataChanges={animateChart} />
+      <ChartPanel levels={chart.levels} title={chart.title} className="p-2" animateDataChanges={animateChart} emojiSpokes={emojiSpokes} />
       <div className={cn("flex items-center gap-2", centerRole ? "justify-center" : "justify-start")}>
         <LevelBadge level={chart.role.level} backgroundColor={style.levelBadgeBg} color={style.levelBadgeText} />
         <p className={cn("min-w-0", DOC_TEXT.bodyDimMedium, "font-semibold", !centerRole && "flex-1")}>{chart.role.title}</p>
@@ -121,7 +142,7 @@ const FOUNDATION_AUTOPLAY_MS = 1400;
 // yank them off their choice, but the loop still comes back on its own).
 const FOUNDATION_RESUME_MS = 7000;
 
-function FoundationCarousel({ stageCharts, style }) {
+function FoundationCarousel({ stageCharts, style, isVisible = true, emojiSpokes = false }) {
   const [activeIndex, setActiveIndex] = useState(0);
   // Autoplay pauses when the user taps a stage, then resumes after FOUNDATION_RESUME_MS of no taps.
   const [paused, setPaused] = useState(false);
@@ -130,13 +151,17 @@ function FoundationCarousel({ stageCharts, style }) {
   const resumeTimerRef = useRef(null);
   const activeChart = stageCharts[activeIndex];
 
+  // `isVisible` GATES THE LOOP, and it is the reason this is not just a nicety. The theory tab stays
+  // mounted while the tool tab is on screen, so without it this kept advancing forever — a 500ms
+  // Chart.js data tween every 1.4s, on a canvas nobody was looking at, for as long as the page was
+  // open. It is also off during the boot prefit pass, since that runs with the tab still inactive.
   useEffect(() => {
-    if (paused || prefersReducedMotion) {
+    if (!isVisible || paused || prefersReducedMotion) {
       return undefined;
     }
     const id = setInterval(() => setActiveIndex((prev) => (prev + 1) % stageCharts.length), FOUNDATION_AUTOPLAY_MS);
     return () => clearInterval(id);
-  }, [paused, prefersReducedMotion, stageCharts.length]);
+  }, [isVisible, paused, prefersReducedMotion, stageCharts.length]);
 
   // Clear the pending resume timer on unmount.
   useEffect(() => () => clearTimeout(resumeTimerRef.current), []);
@@ -178,13 +203,13 @@ function FoundationCarousel({ stageCharts, style }) {
           geometry and labels stay put. No stacked canvases; the role label below swaps instantly.
           Reduced-motion users get an instant value swap (no tween). */}
       <div className="flex flex-col gap-2">
-        <FoundationStageBody chart={activeChart} style={style} centerRole animateChart={!prefersReducedMotion} />
+        <FoundationStageBody chart={activeChart} style={style} centerRole animateChart={!prefersReducedMotion} emojiSpokes={emojiSpokes} />
       </div>
     </div>
   );
 }
 
-function FoundationalPhase() {
+function FoundationalPhase({ isVisible, emojiSpokes }) {
   const style = TRACK_STYLE.foundation;
 
   return (
@@ -201,12 +226,12 @@ function FoundationalPhase() {
           <KeyPillarChips pillars={FOUNDATIONAL_PHASE.technicalPillars} ringColor={style.ringColor} textColor={style.textColor} />
         </div>
 
-        <FoundationCarousel stageCharts={FOUNDATIONAL_PHASE.stageCharts} style={style} />
+        <FoundationCarousel stageCharts={FOUNDATIONAL_PHASE.stageCharts} style={style} isVisible={isVisible} emojiSpokes={emojiSpokes} />
 
         <div className="-mx-2 hidden grid-cols-3 divide-x divide-slate-300/70 sm:grid">
           {FOUNDATIONAL_PHASE.stageCharts.map((chart) => (
             <div key={chart.id} className="flex flex-col gap-2 px-2">
-              <FoundationStageBody chart={chart} style={style} />
+              <FoundationStageBody chart={chart} style={style} emojiSpokes={emojiSpokes} />
             </div>
           ))}
         </div>
@@ -215,7 +240,7 @@ function FoundationalPhase() {
   );
 }
 
-function CareerTrackCard({ track, number }) {
+function CareerTrackCard({ track, number, emojiSpokes }) {
   const style = TRACK_STYLE[track.id] ?? TRACK_STYLE["deep-technical"];
 
   return (
@@ -227,7 +252,7 @@ function CareerTrackCard({ track, number }) {
         Track {number}: {track.name}
       </h3>
 
-      <ChartPanel levels={track.levels} title={track.chartTitle ?? track.name} focusedPillars={track.keyFocusPillars} />
+      <ChartPanel levels={track.levels} title={track.chartTitle ?? track.name} focusedPillars={track.keyFocusPillars} emojiSpokes={emojiSpokes} />
 
       <p className={DOC_TEXT.bodyMedium}>{track.summary}</p>
 
@@ -243,7 +268,11 @@ function CareerTrackCard({ track, number }) {
   );
 }
 
-export function CareerTracks() {
+export function CareerTracks({ isVisible = true }) {
+  // Evaluated ONCE here and handed to all six charts, which is what makes them swap on the same pixel
+  // instead of each deciding from its own width — see TRACK_CHART_EMOJI_QUERY.
+  const emojiSpokes = useMediaQuery(TRACK_CHART_EMOJI_QUERY);
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-1 pt-1">
@@ -251,7 +280,7 @@ export function CareerTracks() {
         <p className={DOC_TEXT.bodyMedium}>{JUNIOR_TO_SENIOR.intro}</p>
       </div>
 
-      <FoundationalPhase />
+      <FoundationalPhase isVisible={isVisible} emojiSpokes={emojiSpokes} />
 
       <div className="flex flex-col gap-1 pt-1">
         <h3 className={cn(DOC_TEXT.subsectionTitle, "font-bold")}>{SENIOR_FORK.title}</h3>
@@ -260,7 +289,7 @@ export function CareerTracks() {
 
       <div className="grid grid-cols-1 items-start gap-2 sm:grid-cols-3 sm:grid-rows-[auto_auto_auto_auto_auto]">
         {CAREER_TRACK_PROFILES.map((track, index) => (
-          <CareerTrackCard key={track.id} track={track} number={index + 1} />
+          <CareerTrackCard key={track.id} track={track} number={index + 1} emojiSpokes={emojiSpokes} />
         ))}
       </div>
     </div>
