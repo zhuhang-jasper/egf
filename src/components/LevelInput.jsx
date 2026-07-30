@@ -42,12 +42,15 @@ export function LevelInput({ value, onChange, ariaLabel, ariaLabelUp, ariaLabelD
 
   return (
     <span className="group/level inline-flex items-stretch shrink-0 w-fit max-w-full overflow-hidden rounded-lg border border-[#ccc] bg-white focus-within:border-[#888]">
+      {/* `print:hidden` on both steppers, not on the whole control: on paper the level is a VALUE to
+          read, so the number stays and only the two things you would have clicked go. The input keeps
+          its `border-x`, which reads as the cell edge once the buttons either side are gone. */}
       <button
         type="button"
         tabIndex={-1}
         aria-label={ariaLabelDown}
         onClick={() => bump(-1)}
-        className="inline-flex items-center justify-center w-7 shrink-0 bg-[#f7f7f7] text-base font-medium leading-none text-[#444] cursor-pointer select-none hover:bg-[#efefef] hover:text-[#111] active:bg-[#e4e4e4]"
+        className="inline-flex items-center justify-center w-7 shrink-0 bg-[#f7f7f7] text-base font-medium leading-none text-[#444] cursor-pointer select-none hover:bg-[#efefef] hover:text-[#111] active:bg-[#e4e4e4] print:hidden"
       >
         −
       </button>
@@ -108,7 +111,7 @@ export function LevelInput({ value, onChange, ariaLabel, ariaLabelUp, ariaLabelD
         tabIndex={-1}
         aria-label={ariaLabelUp}
         onClick={() => bump(1)}
-        className="inline-flex items-center justify-center w-7 shrink-0 bg-[#f7f7f7] text-base font-medium leading-none text-[#444] cursor-pointer select-none hover:bg-[#efefef] hover:text-[#111] active:bg-[#e4e4e4]"
+        className="inline-flex items-center justify-center w-7 shrink-0 bg-[#f7f7f7] text-base font-medium leading-none text-[#444] cursor-pointer select-none hover:bg-[#efefef] hover:text-[#111] active:bg-[#e4e4e4] print:hidden"
       >
         +
       </button>

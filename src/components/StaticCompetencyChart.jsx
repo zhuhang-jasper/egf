@@ -109,7 +109,7 @@ export function StaticCompetencyChart({
       )}
     >
       <div className="absolute inset-0 min-h-0 min-w-0">
-        <canvas ref={canvasRef} aria-label={ariaLabel ?? title} />
+        <canvas ref={canvasRef} data-radar-canvas aria-label={ariaLabel ?? title} />
       </div>
     </div>
   );

@@ -115,6 +115,7 @@ function PillarMatrixCard({
   onToggle,
   cardRef,
   showLatestChanges,
+  printBreakBefore = true,
 }) {
   const panelId = `competency-matrix-${pillarId}`;
 
@@ -122,7 +123,24 @@ function PillarMatrixCard({
     <article
       ref={cardRef}
       id={getPillarCardElementId(pillarId)}
-      className="overflow-hidden rounded-xl border border-white/70 border-l-[3px] shadow-md shadow-slate-200/40"
+      /* `print:break-before-page` gives every pillar its own sheet, so the printed matrix reads as one
+         page per pillar — except the first, which shares its page with the section heading rather than
+         leaving that heading stranded alone (see `printBreakBefore` at the call site).
+         Deliberately NOT paired with `break-inside-avoid`: a pillar card is about a page tall and some
+         run over, and telling an over-tall box not to break is what makes it overlap the next one.
+         `print:overflow-visible` — A CLIPPED BOX CANNOT BE SPLIT ACROSS A PAGE. `overflow: hidden` makes
+         a box monolithic in paged media, so at a page break the browser has to move the whole thing to
+         the next sheet — leaving the space it had already been allocated behind as a blank gap — or, when
+         the box is taller than a sheet, let it run over whatever follows. With nine pillars expanded
+         these cards are far taller than a page, so they MUST be allowed to fragment.
+         The clip is only ever a screen concern: it keeps child backgrounds inside the rounded corners and
+         the coloured left edge. Nothing here actually overflows, so dropping it on paper costs nothing.
+         Every card in the theory and tool tabs has the same clip and the same need — see PillarCluster
+         and CareerTracks. */
+      className={cn(
+        "overflow-hidden rounded-xl border border-white/70 border-l-[3px] shadow-md shadow-slate-200/40 print:overflow-visible",
+        printBreakBefore && "print:break-before-page",
+      )}
       style={{ backgroundColor: getClusterSurfaceBg(color), borderLeftColor: textColor }}
     >
       <button
@@ -134,6 +152,9 @@ function PillarMatrixCard({
         className={cn(
           "flex w-full cursor-pointer select-none items-center gap-2 px-3 pt-2.5 text-left transition-colors hover:bg-black/[0.04]",
           expanded ? "pb-1.5 border-b border-slate-300/60" : "pb-2.5",
+          // Every pillar prints expanded (see the panel below), so every header prints with its
+          // expanded treatment — the rule that separates a heading from the grid underneath it.
+          "print:pb-1.5 print:border-b print:border-slate-300/60",
         )}
       >
         <div className="flex min-w-0 flex-1 flex-col gap-2">
@@ -143,21 +164,39 @@ function PillarMatrixCard({
           <FocusTierList focusTiers={focusTiers} />
           {note ? <p className={cn("min-w-0", DOC_TEXT.bodyItalic, "opacity-90")}>{note}</p> : null}
         </div>
-        <ChevronDown className={cn("size-4 shrink-0 text-slate-800 transition-transform", expanded && "rotate-180")} aria-hidden />
+        {/* `print:hidden` — the caret is the affordance for a control that cannot be operated on paper,
+            and on paper every pillar is already open, so it would also be pointing the wrong way. */}
+        <ChevronDown className={cn("size-4 shrink-0 text-slate-800 transition-transform print:hidden", expanded && "rotate-180")} aria-hidden />
       </button>
 
-      {/* CSS grid-rows 0fr→1fr animates the panel height open/closed without measuring pixels. */}
+      {/* CSS grid-rows 0fr→1fr animates the panel height open/closed without measuring pixels.
+
+          `print:grid-rows-[1fr]` FORCES EVERY PILLAR OPEN ON PAPER, regardless of what is expanded on
+          screen: a printed matrix is a reference document, and one where 8 of 9 pillars are missing
+          because of how someone happened to leave the page is not one.
+          It also removes a clipping bug rather than working around it. A collapsed panel is still fully
+          laid out — squeezed to a 0fr track with its content clipped by the `overflow-hidden` below — and
+          paged media does not honour that clip: printing fragments the page, a fragmented
+          `overflow: hidden` box spills, and every collapsed pillar painted its whole L1–L5 grid over the
+          cards after it. Fully open, there is no clip in play at all, so nothing can escape it.
+          (The same trick the header intro uses to print open — see AppShellHeader.) */}
       <section
         id={panelId}
         aria-labelledby={`${panelId}-trigger`}
         className={cn(
-          "grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none",
+          "grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none print:grid-rows-[1fr]",
           expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
         )}
       >
-        <div className="overflow-hidden">
+        {/* This clip is what squeezes the panel shut while the track above is 0fr. On paper the track is
+            always 1fr (see above), so there is nothing left to clip — and keeping it would make the
+            panel unsplittable across a page break. See the article's `print:overflow-visible`. */}
+        <div className="overflow-hidden print:overflow-visible">
           <PillarMatrixLevels levels={levels} showLatestChanges={showLatestChanges} />
-          <div className="flex justify-center border-t border-slate-300/60 py-2">
+          {/* `print:hidden` on the STRIP, not just the button inside it (which carries its own): this
+              row exists only to hold that button, so hiding the button alone would leave an empty
+              bordered band under every pillar — and on paper there are now nine of them. */}
+          <div className="flex justify-center border-t border-slate-300/60 py-2 print:hidden">
             <ShareLinkButton
               section={THEORY_SECTIONS.matrix}
               pillar={pillarId}
@@ -272,10 +311,13 @@ function CompetencyMatrix({ expandedPillar, onExpandedPillarChange, scrollNav, s
 
   return (
     <div className="flex flex-col gap-3">
-      {COMPETENCY_MATRIX.map((pillar) => (
+      {COMPETENCY_MATRIX.map((pillar, index) => (
         <PillarMatrixCard
           key={pillar.pillarId}
           {...pillar}
+          // One printed sheet per pillar, EXCEPT the first: breaking before it too would strand the
+          // section heading on a page of its own. The heading shares page one with pillar 1 instead.
+          printBreakBefore={index > 0}
           expanded={expandedPillar === pillar.pillarId}
           onToggle={() => handleToggle(pillar.pillarId)}
           showLatestChanges={showLatestChanges}

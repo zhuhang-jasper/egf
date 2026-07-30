@@ -88,7 +88,10 @@ export function Toaster() {
     <div
       aria-live="polite"
       aria-atomic="false"
-      className="pointer-events-none fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-[100] flex flex-col-reverse items-center gap-2 px-4"
+      // `print:hidden` — a toast is transient feedback about something the user just did. It is only in
+      // the DOM while it is on screen, so printing during that window would otherwise stamp it onto the
+      // page, `fixed` over whatever is underneath.
+      className="pointer-events-none fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-[100] flex flex-col-reverse items-center gap-2 px-4 print:hidden"
     >
       {toasts.map((t) => {
         const meta = VARIANT_META[t.variant] ?? VARIANT_META.default;

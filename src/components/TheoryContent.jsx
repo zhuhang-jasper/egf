@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { Image, ScrollText, Share2 } from "lucide-react";
 
+import { AppShellPrintTagline } from "@/components/AppShellHeader";
 import { CareerTracks } from "@/components/CareerTracks";
 import { ChangelogModal } from "@/components/ChangelogModal";
 import { CompetencyMatrix } from "@/components/CompetencyMatrix";
@@ -439,8 +440,13 @@ function TheoryContent({
         {/* Toolbar row: admin page links left, changelog right. The admin shortcuts used to float at
             the right edge of the sticky tab bar, which forced an admin-only mobile layout up there;
             moving them here keeps the app header identical for every user. `justify-between` with an
-            empty left side still parks the changelog button on the right for non-admins. */}
-        <div className="flex items-center justify-between gap-2 print:hidden">
+            empty left side still parks the changelog button on the right for non-admins.
+
+            `mb-2` STACKS ON THIS COLUMN'S `gap-2` for 16px above the hero radar. The tool tab's toolbar
+            row is spaced with the identical pair (see ChartSection) — keep them in step, or the page
+            appears to shift when you switch tabs. The bare `gap-2` read as no gap at all here, since the
+            radar begins straight after this row rather than after a title row like the tool tab's. */}
+        <div className="mb-2 flex items-center justify-between gap-2 print:hidden">
           <div className="flex items-center gap-1.5">
             {IS_ADMIN
               ? ADMIN_LINKS.map(({ route, label, icon: Icon }) => (
@@ -464,6 +470,10 @@ function TheoryContent({
 
         <ChangelogModal open={changelogOpen} onClose={() => setChangelogOpen(false)} />
 
+        {/* ON PAPER THIS IS THE COVER PAGE: section I forces a page break, so the first sheet carries the
+            header's h1, this radar, and the tagline below it — nothing else. The centring is applied to the
+            HEADER rather than here (see `printCoverOffset` in HomePage/AppShellHeader), because it is the
+            whole group that has to sit mid-sheet; this simply follows the header as it does on screen. */}
         <div className="mx-auto w-full mb-4" style={{ maxWidth: FE_UI.page.chartMaxWidthPx }}>
           <StaticCompetencyChart
             levels={[]}
@@ -478,7 +488,12 @@ function TheoryContent({
           />
         </div>
 
-        <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.pillars]} className="flex flex-col gap-3">
+        {/* Print only: the intro's tagline + byline, which on paper belong UNDER the radar while the h1 stays
+            above it. The header hides its own copy in print — see AppShellIntro. */}
+        <AppShellPrintTagline />
+
+
+        <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.pillars]} className="flex flex-col gap-3 print:break-before-page">
           {/* Head sentinel sits ABOVE the heading so it is reached before the dot it clears. */}
           <SectionSentinel section={THEORY_SECTIONS.pillars} edge="head" gapClass="-mb-3" />
           <SectionHeading
@@ -492,7 +507,7 @@ function TheoryContent({
         </section>
       </div>
 
-      <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.seniority]} className="flex flex-col gap-3">
+      <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.seniority]} className="flex flex-col gap-3 print:break-before-page">
         <SectionSentinel section={THEORY_SECTIONS.seniority} edge="head" gapClass="-mb-3" />
         <SectionHeading
           title="II. The 5 Proficiency Levels (L1–L5)"
@@ -504,7 +519,7 @@ function TheoryContent({
         <SectionSentinel section={THEORY_SECTIONS.seniority} edge="tail" gapClass="-mt-3" />
       </section>
 
-      <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.matrix]} className="flex flex-col gap-3">
+      <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.matrix]} className="flex flex-col gap-3 print:break-before-page">
         <SectionSentinel section={THEORY_SECTIONS.matrix} edge="head" gapClass="-mb-3" />
         <SectionHeading
           title="III. The 45-Point Competency Matrix"
@@ -523,7 +538,7 @@ function TheoryContent({
 
       {/* gap-1 (not the other sections' gap-3): this section's intro is empty, so the heading is a
           bare title line and needs to hug the first track card rather than sit above a full gap. */}
-      <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.tracks]} className="flex flex-col gap-1">
+      <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.tracks]} className="flex flex-col gap-1 print:break-before-page">
         <SectionSentinel section={THEORY_SECTIONS.tracks} edge="head" gapClass="-mb-1" />
         <SectionHeading
           title="IV. Career Growth Paths"

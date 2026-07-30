@@ -44,7 +44,7 @@ export function ChangelogModal({ open, onClose }) {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 print:hidden"
       // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role
       role="dialog"
       aria-modal="true"

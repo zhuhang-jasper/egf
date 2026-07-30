@@ -263,11 +263,21 @@ export function ChartSection({ isVisible }) {
     }
   };
 
+  /* `gap-2` on the column below, rather than a margin on the toolbar alone, so the space under the
+     toolbar is expressed exactly as the theory tab expresses its own — a column `gap-2` plus the row's
+     `mb-2` (see TheoryContent). Same classes, same total, nothing to convert when comparing the two.
+     The column has only two children (the toolbar and the export block), so the gap applies at exactly
+     one boundary: the one being spaced. It also sits OUTSIDE `exportRef`, so it cannot reach the image. */
   return (
-    <div className="flex w-full min-w-0 flex-col items-center">
-      {/* mb-2 (8px), not mb-3: matches the `gap-2` the theory tab puts above its hero radar, so the
-          two charts sit at the same offset below their respective toolbars. */}
-      <div className="relative z-[2] flex w-full min-w-0 items-center justify-end gap-2 mb-2">
+    <div className="flex w-full min-w-0 flex-col items-center gap-2">
+      {/* Its own `mb-2` on top of the column's `gap-2` puts 16px below this toolbar. Theory's changelog
+          row is the same row at the same position in the other tab, spaced identically — keep the two in
+          step, or the page appears to shift when you switch tabs. (The `gap-2` in this row's own class
+          list is unrelated: that one spaces its buttons horizontally.)
+
+          `print:hidden` for the same reason theory's row carries it: these buttons only exist to be
+          clicked, and "Copy image" on paper is nonsense. The chart below is the thing being printed. */}
+      <div className="relative z-[2] flex w-full min-w-0 items-center justify-end gap-2 mb-2 print:hidden">
         <div className="flex shrink-0 items-center gap-2">
           <ExportMenu onCopy={handleCopy} onShare={handleShare} />
           <ChartDisplayMenu />
@@ -300,7 +310,7 @@ export function ChartSection({ isVisible }) {
 
         <div ref={frameRef} className="relative z-0 mx-auto w-full max-w-full box-border" style={{ minHeight: FE_UI.chartFrame.minChartHeightPx }}>
           <div className="absolute inset-0 min-h-0 min-w-0">
-            <canvas ref={canvasRef} id="competencyChart" aria-labelledby="competency-chart-heading" />
+            <canvas ref={canvasRef} id="competencyChart" data-radar-canvas aria-labelledby="competency-chart-heading" />
           </div>
         </div>
 

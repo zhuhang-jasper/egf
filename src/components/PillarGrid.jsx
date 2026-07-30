@@ -48,7 +48,19 @@ function PillarCard({ pillar, clusterLabel, color, textColor, showLatestChanges 
 
 export function PillarGrid({ showLatestChanges = false }) {
   return (
-    <div className="grid grid-cols-1 gap-2 xs:grid-cols-2 xs:grid-rows-[repeat(20,auto)] md:grid-cols-3 md:grid-rows-[repeat(12,auto)]">
+    /* THE COLUMN COUNT AND THE ROW TEMPLATE MOVE TOGETHER, because each card is a 4-row subgrid (see
+       PillarCard's `xs:row-span-4 … xs:grid-rows-subgrid`): 9 cards over 2 columns is 5 card-rows × 4 = 20,
+       over 3 columns 3 × 4 = 12. Never change one without the other.
+
+       `data-print-pillar-grid` is the hook for the print override in index.css. These `xs:`/`md:` queries are
+       plain `min-width`, so in paged media they resolve against the PAGE BOX — the printed grid is already
+       paper-size responsive, it just reached 3 columns too late (at `md`, 768px, which most portrait paper
+       falls under). The override lowers that one threshold; the 2-column and 1-column steps here still do the
+       work for smaller paper. */
+    <div
+      data-print-pillar-grid
+      className="grid grid-cols-1 gap-2 xs:grid-cols-2 xs:grid-rows-[repeat(20,auto)] md:grid-cols-3 md:grid-rows-[repeat(12,auto)]"
+    >
       {PILLAR_CLUSTER_GROUPS.flatMap((group) =>
         group.pillars.map((pillar) => (
           <PillarCard

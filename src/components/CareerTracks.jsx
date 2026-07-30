@@ -104,8 +104,13 @@ function ChartPanel({ levels, title, focusedPillars, className, animateDataChang
 }
 
 function KeyPillarChips({ pillars, ringColor, textColor, flexRowMd = false }) {
+  /* `data-print-chip-row` forces the wrapping row on paper — see index.css.
+     `sm:flex-col md:flex-row` puts a ONE-PILL-PER-LINE column in the 640–767px band, which is a sensible
+     screen rule (that is the width where a track card is a narrow column) and a trap in print: the page box
+     is what those queries measure there, so a couple of millimetres of margin decides whether a track's
+     chips set as 2 lines or 4. Paper has no reason to consult a viewport breakpoint. */
   return (
-    <div className={cn("flex flex-wrap content-start gap-1", flexRowMd && "flex-row sm:flex-col md:flex-row")}>
+    <div data-print-chip-row className={cn("flex flex-wrap content-start gap-1", flexRowMd && "flex-row sm:flex-col md:flex-row")}>
       {pillars.map((pillar) => (
         <span
           key={pillar}
@@ -213,7 +218,13 @@ function FoundationalPhase({ isVisible, emojiSpokes }) {
   const style = TRACK_STYLE.foundation;
 
   return (
-    <article className={cn(cardClass, "overflow-hidden border-l-[3px] p-3")} style={{ borderLeftColor: style.accent, backgroundColor: style.chipBg }}>
+    <article
+      // `print:overflow-visible` so this card can be split across a page break — a clipped box is
+      // monolithic in paged media and gets shunted whole to the next sheet (leaving a blank gap behind)
+      // or allowed to overlap what follows. See the fuller note in CompetencyMatrix.
+      className={cn(cardClass, "overflow-hidden border-l-[3px] p-3 print:overflow-visible")}
+      style={{ borderLeftColor: style.accent, backgroundColor: style.chipBg }}
+    >
       {/* `gap`, not `space-y`: gap only applies BETWEEN rendered flex items, so the breakpoint-hidden
           chart branch below contributes nothing. `space-y-*` sets margins by DOM position, which is
           why these two charts used to need a wrapper element to avoid a phantom gap. */}
@@ -228,7 +239,9 @@ function FoundationalPhase({ isVisible, emojiSpokes }) {
 
         <FoundationCarousel stageCharts={FOUNDATIONAL_PHASE.stageCharts} style={style} isVisible={isVisible} emojiSpokes={emojiSpokes} />
 
-        <div className="-mx-2 hidden grid-cols-3 divide-x divide-slate-300/70 sm:grid">
+        {/* `print:break-inside-avoid` — this row is three radars plus their role labels, ~250px, so it
+            either fits or moves as a unit. Without it a page break lands mid-radar. */}
+        <div className="-mx-2 hidden grid-cols-3 divide-x divide-slate-300/70 sm:grid print:break-inside-avoid">
           {FOUNDATIONAL_PHASE.stageCharts.map((chart) => (
             <div key={chart.id} className="flex flex-col gap-2 px-2">
               <FoundationStageBody chart={chart} style={style} emojiSpokes={emojiSpokes} />
@@ -245,7 +258,13 @@ function CareerTrackCard({ track, number, emojiSpokes }) {
 
   return (
     <article
-      className={cn(cardClass, "flex flex-col gap-3 overflow-hidden border-l-[3px] p-3 sm:row-span-5 sm:grid sm:grid-rows-subgrid")}
+      // `print:break-inside-avoid` because a track card is well under a page: splitting one would put its
+      // radar on one sheet and the roles it belongs to on the next. `print:overflow-visible` for the
+      // paged-media clipping reason documented in CompetencyMatrix.
+      className={cn(
+        cardClass,
+        "flex flex-col gap-3 overflow-hidden border-l-[3px] p-3 sm:row-span-5 sm:grid sm:grid-rows-subgrid print:overflow-visible print:break-inside-avoid",
+      )}
       style={{ borderLeftColor: style.accent, backgroundColor: style.chipBg }}
     >
       <h3 className={cn(DOC_TEXT.cardTitlePlain, "font-bold")} style={{ color: style.accent }}>

@@ -15,7 +15,10 @@ export function PillarCluster({ group, onOpenPillarInMatrix }) {
 
   return (
     <div
-      className="relative w-full overflow-hidden rounded-xl border border-white/70 border-l-[3px] px-4 py-3 shadow-sm shadow-slate-200/40"
+      // `print:break-inside-avoid` keeps a cluster's pillars together on one sheet — a cluster is at most
+      // four rows, so it either fits or moves whole. `print:overflow-visible` for the paged-media
+      // clipping reason documented in CompetencyMatrix.
+      className="relative w-full overflow-hidden rounded-xl border border-white/70 border-l-[3px] px-4 py-3 shadow-sm shadow-slate-200/40 print:overflow-visible print:break-inside-avoid"
       data-cluster={group.id}
       style={{
         backgroundColor: getClusterSurfaceBg(cluster.color),
@@ -43,7 +46,9 @@ export function PillarCluster({ group, onOpenPillarInMatrix }) {
                   onOpenPillarInMatrix(pillar.id);
                 }}
                 aria-label={`View ${pillar.label} in the competency matrix`}
-                className="group relative inline-flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full text-slate-600 transition-colors hover:text-slate-800 active:text-slate-800"
+                // `print:hidden` — a cross-tab jump into the matrix is an action, and the matrix it
+                // jumps to isn't on this printed page anyway.
+                className="group relative inline-flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full text-slate-600 transition-colors hover:text-slate-800 active:text-slate-800 print:hidden"
               >
                 <HelpCircle className="size-3.5" aria-hidden />
                 <Tooltip text="View in matrix" />

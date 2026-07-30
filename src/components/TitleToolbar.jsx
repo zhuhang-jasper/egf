@@ -91,6 +91,8 @@ function SaveButton({ statusMeta, showMenu, onSave, copyAction, undoAction }) {
   // control stays as narrow as possible, leaving more room for the title input.
   const primaryLabel = <span className="whitespace-nowrap">{statusMeta.label}</span>;
 
+  // `print:hidden` on both branches below — saving is an action, and the status it reports ("Saved",
+  // "Modified") describes the draft's relationship to localStorage, which means nothing on paper.
   // Plain single button — an unlinked draft has nothing to duplicate or rename.
   if (!showMenu) {
     return (
@@ -100,7 +102,7 @@ function SaveButton({ statusMeta, showMenu, onSave, copyAction, undoAction }) {
         size="sm"
         shape="pill"
         disabled={statusMeta.disabled}
-        className={cn("shrink-0 gap-1 px-2.5", statusMeta.className)}
+        className={cn("shrink-0 gap-1 px-2.5 print:hidden", statusMeta.className)}
         onClick={onSave}
         aria-label={statusMeta.title}
         title={statusMeta.title}
@@ -112,7 +114,7 @@ function SaveButton({ statusMeta, showMenu, onSave, copyAction, undoAction }) {
   }
 
   return (
-    <div ref={rootRef} className="relative flex shrink-0">
+    <div ref={rootRef} className="relative flex shrink-0 print:hidden">
       {/* Primary Save/Update — pill flattened on its right edge to butt against the caret. Tighter
           right padding since the divider (not empty space) closes off this side. */}
       <Button
@@ -342,8 +344,11 @@ export function TitleToolbar() {
       {/* Row 2 — New profile + keypad toggle (touch only) on the left, the "Manage" profile-actions
           menu (import / export / delete all) on the right.
           "New profile" starts a fresh blank draft: it clears the title, the badge, resets every
-          pillar to the default, and unlinks any loaded profile. */}
-      <div className="flex w-full items-center gap-2">
+          pillar to the default, and unlinks any loaded profile.
+
+          `print:hidden` on THE WHOLE ROW rather than per control, because every single thing in it is
+          an action — there is no content here to keep in a read-only render. */}
+      <div className="flex w-full items-center gap-2 print:hidden">
         <Button
           type="button"
           variant="outline"

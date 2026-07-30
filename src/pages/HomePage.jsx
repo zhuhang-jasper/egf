@@ -291,7 +291,11 @@ export default function HomePage() {
             NAVIGATION IS NOT IN HERE. It was a segmented control in a second row of this stack; it now sits at the
             viewport bottom (AppBottomNav, rendered after the footer below), which is what lets the header be
             brand + caret and nothing else — and is why the stack has a single child again. */}
-        <AppShellHeaderStack collapsed={headerCollapsed} onCollapsedChange={setHeaderCollapsed}>
+        {/* `printCoverOffset` only on the theory tab: printing it produces a multi-page reference document,
+            whose first sheet is the header plus the hero radar and nothing else (section I forces a break),
+            so that pair is centred as a cover. The tool tab prints as one compact chart-plus-form sheet and
+            wants no cover page, hence the tab-dependent flag rather than a rule inside the header. */}
+        <AppShellHeaderStack collapsed={headerCollapsed} onCollapsedChange={setHeaderCollapsed} printCoverOffset={activeTab === "theory"}>
           <AppShellIntro collapsed={headerCollapsed} />
         </AppShellHeaderStack>
 
@@ -362,7 +366,13 @@ export default function HomePage() {
             The tab panels' own bottom margin supplies the gap above — padding here would only make the strip
             taller, and `mt-*` is unavailable because `mt-auto` owns that margin to push the footer down on short
             pages. */}
-        <footer className="mt-auto bg-white px-3 py-2 text-center text-[11px] text-slate-500 print:bg-transparent">
+        {/* `data-print-running` opts this into being a RUNNING FOOTER on paper — repeated at the foot of
+            every sheet rather than appearing once at the end. See the `@page`/fixed-position rules in
+            index.css for how that works and why page numbers are not part of it. */}
+        <footer
+          data-print-running
+          className="mt-auto bg-white px-3 py-2 text-center text-[11px] text-slate-500 print:bg-transparent"
+        >
           © 2026 Jasper Loo Zhu Hang · All rights reserved · <span className="tabular-nums">v{appVersion}</span>
         </footer>
       </main>

@@ -178,3 +178,168 @@
     animation: none;
   }
 }
+
+/* PRINT: let each radar scale to its frame instead of trusting the px size JS gave it.
+   
+   Every radar is sized imperatively. Chart.js writes explicit `width`/`height` px onto the canvas from
+   a ResizeObserver callback that is deliberately deferred to a rAF (see useChartFrameFit — running it
+   synchronously inside the observer forms an observe→resize→observe loop that can leave a chart at zero
+   height). Printing lays the document out at the PAPER width and rasterises it without waiting for that
+   rAF, so every canvas keeps whatever px size the SCREEN layout gave it while the frame around it has
+   already been re-measured for paper. The radar ends up adrift in an over-sized box, or spilling out of
+   an under-sized one.
+   
+   Scaling the bitmap is the fix rather than trying to re-fit in time: `height: auto` keeps the radar
+   undistorted (the canvas element's width/height attributes already carry its aspect ratio) and
+   `max-height: 100%` stops a tall one from running past its frame. Quality is unaffected — the bitmap is
+   already devicePixelRatio-scaled, so it has pixels to spare when it shrinks.
+   
+   Scoped to `[data-radar-canvas]`, so the poster and social pages' export canvases — which are sized
+   for a fixed output and must not be touched — are left alone. */
+@media print {
+  canvas[data-radar-canvas] {
+    width: 100% !important;
+    height: auto !important;
+    max-height: 100%;
+  }
+
+  /* The page itself is WHITE on paper. `body` is `bg-black` (see @layer base) because on screen that
+     black is the surround the app's white card sits on, visible down both sides once the viewport is
+     wider than the content measure. On paper there is no surround to show — but the black was still
+     being painted, and it filled whatever was left of the final sheet below the footer, because
+     HomePage's wrapper carries `print:min-h-0` and so stops at its content.
+     `html` too: only `body` was ever painted, so past the end of body's box the sheet fell back to the
+     default white and printed as a stray pale strip under the black. Setting both makes the whole sheet
+     one surface regardless of where the content happens to end. */
+  html,
+  body {
+    background: #fff !important;
+  }
+
+  /* A MINIMUM VIEWPORT HEIGHT IS MEANINGLESS ON PAPER, and it is a live cause of a trailing blank sheet.
+     `html`, `body` and `#root` all carry `min-h-dvh` (see @layer base) so the app fills the window on
+     screen. In print `dvh` resolves against the page box, so each of these asks to be at least one full
+     sheet tall — and once the content ends just past a page boundary, that minimum is enough to demand
+     one more sheet with nothing on it. HomePage's own wrapper already opts out with `print:min-h-0`;
+     these three are the ones it could not reach. */
+  html,
+  body,
+  #root {
+    min-height: 0 !important;
+  }
+
+  /* NOTHING SCROLLS ON PAPER, and a scrollport is a plausible source of a phantom trailing sheet. `body`
+     is `overflow-x: auto` on screen so the min-width floor stays reachable (see @layer base) — and since
+     the other axis is `visible`, CSS computes BOTH to `auto`, making the box a scroll container whose
+     extent the print layout then has to account for. Neither axis means anything once the content is
+     being paginated. */
+  html,
+  body {
+    overflow: visible !important;
+  }
+
+  /* THE TRAILING BLANK SHEET IS TRAILING HEIGHT, not a stray page break — choosing "Margins: None" in the
+     print dialog makes it disappear, which is what an overflow-by-a-little looks like: give the content
+     area more room and the overrun fits. `main` reserves the bottom nav's height with
+     `pb-[calc(3rem+env(safe-area-inset-bottom))]` and cancels it with `print:pb-0`, but that relies on
+     Tailwind's utility ordering to beat an arbitrary-value utility. Stated outright here so it cannot
+     depend on that: 48px of padding hanging off the end of the last page is exactly enough to demand
+     another sheet. */
+  main {
+    padding-bottom: 0 !important;
+  }
+
+  /* RUNNING FOOTER — the copyright line repeated at the foot of every sheet.
+     `position: fixed` is the only mechanism a browser offers: per CSS Paged Media a fixed box is repeated
+     on every page, and Chromium implements that. It also takes the footer OUT OF FLOW, so it stops
+     contributing to the last page's height — which is the other half of the trailing-sheet fix above.
+
+     NO PAGE NUMBERS, and not for want of trying: a counter would need `@page { @bottom-center { content:
+     counter(page) } }`, and CSS Paged Media MARGIN BOXES are unimplemented in Chrome, Safari and Firefox
+     alike — they support only `size` and `margin` on `@page`. The print dialog's own "Headers and footers"
+     option is where page numbers come from.
+
+     `bottom: 0` — INSIDE the page area, and it must stay there. A negative offset looks tempting, since it
+     would drop the line into the page's bottom margin and guarantee it never meets body text; what it
+     actually does is put the box outside the page area, and Chromium renders that overrun at the START OF
+     THE NEXT PAGE. The footer appeared at the top of every sheet from the second onwards. The margin band
+     is unreachable without `@page` margin boxes, so `bottom: 0` is the only correct place.
+
+     That does mean this shares the last few millimetres of the content area with the text above it, and
+     nothing enforces a gap. It is safe HERE because of how this document paginates — every section and
+     every matrix pillar starts its own sheet (see the `print:break-before-page` rules), so pages end well
+     short of the bottom. If that ever stops being true, the fix is bottom padding on the content, NOT a
+     negative offset here. */
+  /* Career-track key-pillar chips always wrap as a ROW on paper. Their screen rule
+     (`flex-row sm:flex-col md:flex-row`) turns them into a one-per-line column between 640px and 767px,
+     which is right on screen — that is the width where a track card is a narrow column — but in print those
+     queries measure the PAGE BOX, so a couple of millimetres of margin flipped a track's chips between 2
+     lines and 4. Raw CSS rather than a `print:flex-row` class so it beats `sm:flex-col` outright: unlayered
+     rules win over Tailwind's `@layer utilities` regardless of variant sort order. */
+  [data-print-chip-row] {
+    flex-direction: row;
+  }
+
+  footer[data-print-running] {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    margin: 0;
+    /* `padding-block: 0` SO THE TWO EDGES MATCH. Content on every sheet starts flush against the top of the
+       page area — a section or matrix card that forced a break begins right at it — whereas this element
+       carries `py-2` for screen, which is 8px of padding holding its text up off the bottom. The page margin
+       is already the intended breathing room at both edges; the extra 8px only at the foot read as the
+       footer being further from the paper edge than the content was from the top. Horizontal padding is
+       kept: it is the only inset this has if the dialog's margins are set to None. */
+    padding-block: 0;
+  }
+}
+
+/* Page margins. Top level rather than inside `@media print` — `@page` only ever applies to paged media.
+
+   THE TARGET IS "Default margins + Headers and footers unchecked, printing like Minimum would". Only the
+   dialog's "Default" setting resolves to this value; "None", "Minimum" and "Custom" all override it. So this
+   number is what someone who never opens that dropdown gets, and it is deliberately near the floor.
+
+   It was briefly 10mm, to hold the browser's OWN header and footer clear of the content — Chrome draws that
+   chrome inside this margin box rather than reserving extra space for it. With the checkbox off there is
+   nothing to clear, so the reasoning inverts and the margin should be as small as paper allows.
+
+   ASYMMETRIC ON PURPOSE — `5mm 0`, so the sides go to nothing while the top and bottom keep a band.
+
+   Sides at 0 spend the whole sheet on measure, and they are not bare: every tab panel carries `px-3`, so
+   content still sits ~3mm off the paper edge. That is thin for hardware (most laser and inkjet printers
+   cannot print within ~4–5mm of an edge) but it only risks the outer card borders, and it is exact for PDF.
+
+   Top and bottom stay at 5mm because that edge has something at it. The running footer is
+   `position: fixed; bottom: 0` of the page AREA, so it lands exactly this margin above the paper edge — with
+   0 it would be the first thing a printer clipped, and it is the one element with nothing else beneath it.
+   Keeping both vertical values equal also preserves the matched head/foot gap (see the footer rule above). */
+@page {
+  margin: 5mm 0;
+}
+
+/* PRINTED PILLAR GRID — reach 3 columns on normal portrait paper.
+
+   Not a fix for a print-only bug: `xs:`/`md:` on the grid are plain `min-width` queries, and in paged media
+   those resolve against the PAGE BOX, so the printed grid already tracks paper size. The problem was only
+   WHERE the 3-column step sat — `md`, 768px, which most portrait paper falls under once margins are taken
+   off. Hence Letter dropping to 2 columns.
+
+   Page widths at the zero side margins above: A4 portrait 794px, Letter 816px, A5 559px, A6 397px. 640px is chosen
+   to have headroom in BOTH directions rather than to fit one paper size: it clears A4 even if the margin is
+   widened back out (A4 at 15mm is still 680px), and stays above A5 so A5 keeps 2 columns. Below the
+   threshold the component's own `xs` (2 col) and base (1 col) steps take over untouched — that is what
+   covers small paper, so it is deliberately not restated here.
+
+   COLUMNS AND ROWS TOGETHER: each card is a 4-row subgrid, so 9 cards over 3 columns needs
+   `repeat(12, auto)`. Kept as one rule so the arithmetic reads in one place — the reason this is raw CSS on
+   a data attribute rather than two stacked Tailwind variants. Unlayered CSS also beats Tailwind's
+   `@layer utilities`, so it wins over `md:grid-cols-3` without specificity games. */
+@media print and (min-width: 640px) {
+  [data-print-pillar-grid] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: repeat(12, auto);
+  }
+}

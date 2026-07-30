@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { ChevronDown, ChevronsUp, ChevronUp } from "lucide-react";
 
-import { FE_UI, SITE_COPY } from "@/constants";
+import { FE_UI, FRAMEWORK_VERSION, SITE_COPY } from "@/constants";
 import { cn } from "@/utils";
 import { clearStickyScrollOffset, getWindowScrollY, scrollWindowToTop, setStickyScrollOffset } from "@/utils/scroll";
 
@@ -137,11 +137,17 @@ function AppShellIntro({ collapsed = false }) {
 
             No top padding at any width: the stack's `p-3` sets the gap above, and the `sm:pt-2` that used to sit
             here pushed the title out of line with the corner controls from `sm:` up. */}
+        {/* `print:mb-[5vh]` opens the cover page up. On screen this sits 4px above the tagline in a header
+            that is permanently pinned, where every pixel of height is spent all the time; on the printed
+            cover the next thing down is the hero radar with a whole sheet to itself, so the pair reads as a
+            title and a plate rather than a heading jammed against a chart. Paired with the matching space
+            above the tagline below the radar — see AppShellPrintTagline. */}
         <h1
-          className="text-balance mx-auto flex min-h-8 w-full items-center justify-center text-xl sm:text-2xl font-extrabold leading-tight tracking-tight text-slate-900 mb-1 px-20"
+          className="text-balance mx-auto flex min-h-8 w-full flex-col items-center justify-center text-xl sm:text-2xl font-extrabold leading-tight tracking-tight text-slate-900 mb-1 px-20 print:mb-[5vh]"
           style={HEADER_TEXT_WIDTH_STYLE}
         >
-          {SITE_COPY.title}
+          <span>{SITE_COPY.title}</span>
+          <span className="hidden text-xl font-extrabold leading-tight tracking-tight text-slate-900 print:block">v{FRAMEWORK_VERSION}</span>
         </h1>
         {/* Width capped by HEADER_TEXT_WIDTH_STYLE — see that constant for why it reuses the Theory tab's
             measure. `mx-auto` centres the capped block under the title.
@@ -162,7 +168,11 @@ function AppShellIntro({ collapsed = false }) {
             space at both ends — the text read as padded even though nothing here has horizontal padding. The
             byline keeps its `nowrap` (a name should not split); it just must not meet an algorithm that reacts
             to it. */}
-        <p className="relative mx-auto w-full text-xs sm:text-sm leading-tight text-slate-700" style={HEADER_TEXT_WIDTH_STYLE}>
+        {/* `print:hidden` — ON PAPER THIS PARAGRAPH MOVES BELOW THE HERO RADAR. The printed cover reads
+            title → chart → tagline/byline, so the h1 above stays put and this half is re-rendered under the
+            chart by AppShellPrintTagline. Only the layout is duplicated, never the copy: both read the same
+            SITE_COPY. */}
+        <p className="relative mx-auto w-full text-xs sm:text-sm leading-tight text-slate-700 print:hidden" style={HEADER_TEXT_WIDTH_STYLE}>
           {/* The measurement PROBE, not the visible text. It is always `block`, so its height answers "would
               this sentence fit on one line here?" independently of what the visible copy is currently doing —
               measuring the real span would be circular, since switching it between `block` and `inline` changes
@@ -226,7 +236,41 @@ function AppShellIntro({ collapsed = false }) {
  * rounded top corners are only on screen at `scrollY 0`, so they made the pinned header change shape the
  * moment the user reached the top. A sticky bar has to look identical at every scroll position.
  */
-function AppShellHeaderStack({ collapsed, onCollapsedChange, children }) {
+/**
+ * The tagline/byline half of the intro, for the PRINTED COVER ONLY, where it sits BELOW the hero radar
+ * while the h1 stays above it (see AppShellIntro's `print:hidden` on its own copy of this paragraph, and
+ * TheoryContent for where this renders). Invisible on screen — there the header carries the whole intro.
+ *
+ * A second render rather than reordering, because in `main`'s flex column the header and the tab panels are
+ * siblings: `order` could only move the whole header before or after a whole panel, and the radar this must
+ * follow is nested several levels inside one. No CSS interleaves them. The copy is not duplicated — both
+ * this and AppShellIntro read the same SITE_COPY.
+ *
+ * `px-[15vw]` narrows the measure: `vh`/`vw` resolve against the page box in print, and the header's
+ * on-screen cap sets a line far too long to track on a printed sheet.
+ *
+ * The byline is on its OWN line here, unlike in the header where it runs on after `detail` — a cover page
+ * has vertical room to spend, and attribution reads as a credit line rather than a trailing clause.
+ */
+function AppShellPrintTagline() {
+  /* `mt-[5vh]` is not `print:`-prefixed because the whole block is print-only. It mirrors the h1's
+     `print:mb-[5vh]` on the other side of the radar, so the chart sits in equal space rather than being
+     crowded by the text above and below it. */
+  return (
+    <p className="hidden px-[15vw] text-center text-base leading-tight text-slate-700 mt-[5vh] print:block">
+      {SITE_COPY.tagline} {SITE_COPY.detail}
+      <span className="mt-1 block whitespace-nowrap text-slate-500">{SITE_COPY.byline}</span>
+    </p>
+  );
+}
+
+/**
+ * `printCoverOffset` pushes the header down the first printed sheet so that its h1, the hero radar below it
+ * and that radar's tagline read as one block near the middle of a cover page, rather than pinned to the top
+ * with the rest of the sheet empty. Off by default: the tool tab prints as a compact chart-plus-form
+ * document and wants no cover page at all, so only the caller knows.
+ */
+function AppShellHeaderStack({ collapsed, onCollapsedChange, printCoverOffset = false, children }) {
   const stackRef = useRef(null);
 
   // Publish how much pinned chrome a scroll target has to clear, so deep links and pillar jumps land BELOW the
@@ -276,6 +320,12 @@ function AppShellHeaderStack({ collapsed, onCollapsedChange, children }) {
         // See the docblock for `p-3` and `min-h-14` — between them they are the entire vertical geometry of the
         // header, and neither belongs on a child.
         "sticky top-0 z-40 min-h-14 bg-white p-3 shadow-sm print:static print:shadow-none",
+        // A RESERVE, NOT A MEASUREMENT. `vh` is the page box in print, but the height of the block being
+        // centred is content-driven — the intro prints expanded and its tagline wraps to its own measure,
+        // and the radar below is sized at runtime — so there is nothing to measure against from here.
+        // This leaves the pair a little above true centre, which is the safe direction: overflow the sheet
+        // by even a pixel and the cover page becomes two.
+        printCoverOffset && "print:mt-[18vh]",
       )}
     >
       {children}
@@ -539,4 +589,4 @@ function AppShellScrollTopButton() {
   );
 }
 
-export { AppShellHeaderStack, AppShellIntro };
+export { AppShellHeaderStack, AppShellIntro, AppShellPrintTagline };

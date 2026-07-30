@@ -10,9 +10,13 @@ import { cn } from "@/utils";
  * Deliberately NOT `role="status"`: that marks a live region, which would make a screen reader
  * announce every dot as it mounts and again as it clears on scroll. The dot is a passive marker on
  * the heading, so a labelled `img`-role span states it once when the heading is reached.
+ *
+ * `print:hidden`: the dot tracks what THIS reader has not scrolled past yet, held in session state.
+ * That is true of a browsing session, not of the document — on paper it is a red dot with nothing to
+ * explain it, and it would still be there long after the reader had caught up.
  */
 export function UnseenDot({ className, label = "New updates" }) {
   // A CSS-drawn dot has no `src`, so the lint rule's suggested <img> doesn't apply here.
   // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role
-  return <span role="img" aria-label={label} className={cn("shrink-0 rounded-full bg-[#FF3B30]", className)} />;
+  return <span role="img" aria-label={label} className={cn("shrink-0 rounded-full bg-[#FF3B30] print:hidden", className)} />;
 }
