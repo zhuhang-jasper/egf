@@ -88,10 +88,27 @@ export function Toaster() {
     <div
       aria-live="polite"
       aria-atomic="false"
+      // TOASTS SIT ABOVE THE BOTTOM NAV, NOT OVER IT. The bar is `fixed` at `bottom: 0` (see AppBottomNav)
+      // and this stack is `fixed` too, so anchoring to the viewport's bottom edge put the newest toast --
+      // the one that just appeared -- directly on top of the navigation. `z-[100]` means it wins that
+      // overlap rather than hiding behind it, which is the worse of the two failures: transient feedback
+      // covering the app's only navigation for the length of its timer.
+      //
+      // THE OFFSET REPEATS THE BAR'S OWN HEIGHT EXPRESSION rather than measuring it. `3rem` is the row's
+      // `min-h-12` and the `env()` term is the bar's `pb-[env(safe-area-inset-bottom)]`, so the two agree
+      // by construction -- the same pairing HomePage's `main` uses to reserve the bar's space. Measuring
+      // the element instead (as getPopoverViewportBounds does for popovers) would need a resize observer
+      // for a value that is static; the popovers need it because they clamp to a live rect, this does not.
+      // If the bar's height changes, these three sites change together.
+      //
+      // `+1rem` is the breathing room the stack had before, now measured from the bar's top edge instead of
+      // the viewport's. The old `max(1rem, env(...))` collapses into the sum: the inset is already carried
+      // by the bar's own padding underneath, so adding it again here would double it on a notched iPhone.
+      //
       // `print:hidden` — a toast is transient feedback about something the user just did. It is only in
       // the DOM while it is on screen, so printing during that window would otherwise stamp it onto the
       // page, `fixed` over whatever is underneath.
-      className="pointer-events-none fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-[100] flex flex-col-reverse items-center gap-2 px-4 print:hidden"
+      className="pointer-events-none fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-[100] flex flex-col-reverse items-center gap-2 px-4 print:hidden"
     >
       {toasts.map((t) => {
         const meta = VARIANT_META[t.variant] ?? VARIANT_META.default;
