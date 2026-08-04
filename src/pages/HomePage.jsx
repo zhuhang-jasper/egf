@@ -290,7 +290,7 @@ export default function HomePage() {
 
           The padding alone is enough for what this actually has to do: keep the footer and the end of a tab's
           content out from under the bar. It does mean the shortest possible page is the bar's height taller than
-          the viewport, so a very short tab can scroll by ~48px — a far smaller cost than a visible jump on every
+          the viewport, so a very short tab can scroll by ~56px — a far smaller cost than a visible jump on every
           switch, and `min-h-dvh` is left off `main` entirely so the footer's `mt-auto` still has a floor to push
           against via `#root`.
 
@@ -299,7 +299,7 @@ export default function HomePage() {
 
           `print:pb-0`: the bar is `print:hidden`, so on paper there is nothing to reserve for. */}
       <main
-        className="flex w-full flex-1 flex-col bg-white pb-[calc(3rem+env(safe-area-inset-bottom))] print:max-w-none print:p-0 print:pb-0 print:shadow-none"
+        className="flex w-full flex-1 flex-col bg-white pb-[calc(3.5rem+env(safe-area-inset-bottom))] print:max-w-none print:p-0 print:pb-0 print:shadow-none"
         style={{ minWidth: FE_UI.page.minWidthPx }}
       >
         {/* The sticky app header: the brand lockup and the scroll-to-top button, which the stack positions in

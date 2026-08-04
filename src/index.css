@@ -279,9 +279,9 @@
   /* THE TRAILING BLANK SHEET IS TRAILING HEIGHT, not a stray page break — choosing "Margins: None" in the
      print dialog makes it disappear, which is what an overflow-by-a-little looks like: give the content
      area more room and the overrun fits. `main` reserves the bottom nav's height with
-     `pb-[calc(3rem+env(safe-area-inset-bottom))]` and cancels it with `print:pb-0`, but that relies on
+     `pb-[calc(3.5rem+env(safe-area-inset-bottom))]` and cancels it with `print:pb-0`, but that relies on
      Tailwind's utility ordering to beat an arbitrary-value utility. Stated outright here so it cannot
-     depend on that: 48px of padding hanging off the end of the last page is exactly enough to demand
+     depend on that: 56px of padding hanging off the end of the last page is exactly enough to demand
      another sheet. */
   main {
     padding-bottom: 0 !important;

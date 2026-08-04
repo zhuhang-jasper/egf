@@ -61,7 +61,7 @@ const NAV_ITEMS = [
  * shortcut when it is added.
  *
  * THE PADDING IS ON THE BAR, NOT THE ROW, so the bar's background and its shadow extend into the inset while the
- * row of `min-h-12` touch targets sits entirely above it. Putting it on the row instead would pad the targets from
+ * row of `min-h-14` touch targets sits entirely above it. Putting it on the row instead would pad the targets from
  * below — the bar would be the right height, but the bottom 34px of it would be dead space that looks tappable.
  *
  * `bg-slate-100` MATCHES THE HEADER AND THE FOOTER, and the three values are one decision (see AppShellHeader's
@@ -125,15 +125,33 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
       aria-label="Primary"
       className="fixed inset-x-0 bottom-0 z-40 bg-slate-100 shadow-[0_-1px_3px_0_rgb(0_0_0/0.1),0_-1px_2px_1px_rgb(0_0_0/0.1)] pb-[env(safe-area-inset-bottom)] print:hidden"
     >
-      {/* Capped to the same measure as the Tool tab's content and centred, so on a wide screen the two items sit
-          under the content they navigate rather than stranded at the viewport's far corners.
+      {/* CENTRED AND CAPPED, so on a wide screen the items cluster at the middle rather than being stranded at
+          the viewport's far corners. Below the cap this is `w-full` and the items simply split the viewport —
+          which is the phone case, and the case the bar is really designed for.
 
-          NO HORIZONTAL PADDING, deliberately. `px-3` here inset every item by 12px, which meant the active
-          indicator — `inset-x-0` on the button — stopped 12px short of the bar's edge on the outer side and
-          could not reach it. The items are full-height, full-width targets on a bar; insetting them leaves dead
-          strips at both ends that look like part of the button but do not activate it. Any breathing room the
-          labels need belongs INSIDE each button, not around the row. */}
-      <div className="mx-auto flex w-full max-w-[550px] items-stretch">
+          THE CAP IS 360px, DOWN FROM THE TOOL TAB'S 550px MEASURE. Matching the content measure was the original
+          reasoning ("the items sit under the content they navigate"), and it was the wrong target: at 550px two
+          `flex-1` tabs are 275px each, so each label sits alone in the middle of a quarter-screen-wide slab with
+          ~100px of empty tint either side of it. The items read as far apart rather than as a group, and the eye
+          has to travel between them. 360px puts two tabs at 180px and three at 120px, close to a phone's natural
+          spacing — the bar looks the same on a desktop as it does on the device it was designed for, instead of
+          stretching to fill a measure it has no reason to match.
+
+          IT IS DELIBERATELY NOT `FE_UI.page.maxWidthPx`. The old value was that number hardcoded, and the
+          coupling was never real: the Theory tab's measure is 900, so the bar could only ever match one of the
+          two tabs anyway. Nothing about navigation needs to line up with body content, so this is its own value
+          and does not track that constant.
+
+          NO HORIZONTAL PADDING, deliberately, AND THE CAP IS NOT A SUBSTITUTE FOR ONE. `px-3` here inset every
+          item by 12px, which meant the active indicator — the top border on the button — stopped 12px short of
+          the row's edge on the outer side and could not reach it. Narrowing the CONTAINER does not have that
+          problem: each button still spans its full share of the row edge to edge, so the borders still abut into
+          one unbroken band and every pixel of a button is tappable. Any breathing room the labels need belongs
+          INSIDE each button, not around the row.
+
+          The empty tint either side of the row is bar, not dead target — the same as the space beside the
+          header's brand mark. Only space INSIDE the row's own width would be dead. */}
+      <div className="mx-auto flex w-full max-w-[360px] items-stretch">
         {NAV_ITEMS.map(({ id, label, icon: Icon, version }) => {
           const selected = activeTab === id;
           // Lit whether or not the Theory tab is active: opening the tab does not clear it. It is the aggregate
@@ -145,8 +163,21 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
                targets should be the same size and span the full width, so there is no dead gap between them and
                no item is easier to hit than another. It is also what makes a third tab a non-event.
 
-               `min-h-12` (48px) is the touch-target floor, well above the header row's 32px — this is a thumb
-               target now, not a pointer one. */
+               `min-h-14` (56px) MATCHES THE HEADER'S OWN `min-h-14`, so the app's two pinned bars are the same
+               weight of chrome top and bottom. It was `min-h-12` (48px) — already above the 44px touch-target
+               floor, so this is not an accessibility change but a symmetry one: at 48px the bar read thin
+               against a 56px header, which made the bottom of the page look like an afterthought rather than the
+               other half of the same shell.
+
+               THE PAINTED BAR IS 59px, NOT 56px, because the 3px `border-t` below sits outside this box's
+               `min-height`. The header is 57px for the same reason (`min-h-14` + its own `border-b`). Matching
+               the CONTENT rows rather than the outer edges is the right call: the borders are the boundary
+               marks, not part of the bar, and both are the 12px-padded-control geometry the header's docblock
+               describes.
+
+               ANYTHING THAT RESERVES THIS BAR'S SPACE HAS TO MOVE WITH IT — the row height is repeated as
+               `3.5rem` in HomePage's `main` padding and in the Toaster's bottom offset. See the note in
+               Toaster.jsx: they agree by construction, not by measurement, so all three change together. */
             <button
               key={id}
               type="button"
@@ -155,23 +186,48 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
               className={cn(
                 // No `rounded-md`: these are full-height segments of a bar, not free-floating buttons, so a
                 // corner radius would leave white notches where the active tint meets its neighbour.
-                "group relative flex min-h-12 flex-1 cursor-pointer select-none flex-col items-center justify-center gap-0.5 text-[11px] font-semibold",
+                // THE TYPE SIZE IS INHERITED BY THE LABEL AND THE VERSION BOTH, which is the point — the version
+                // span carries no size of its own precisely so the two stay one style. Change it here, not on the
+                // label.
+                //
+                // `11 → sm:12 → md:13` IS THE APP'S TYPE LADDER, ONE RUNG UP: a 1px step at each of the same two
+                // breakpoints every other scaling site uses. It is character-for-character CompetencyMatrix's own
+                // `text-[11px] sm:text-[12px] md:text-[13px]` (see its term label) — the endpoints were arrived at
+                // separately here, from the bar's own needs, and landed on a size pair the app already had.
+                //
+                // ONE RUNG UP FROM PillarCluster/ChartScores' `10 → 11 → 12`, because 10px is too small for this
+                // particular text: those are captions and cells read at leisure inside content, whereas these are
+                // the labels on the app's ONLY navigation, read at a glance and mostly on a phone — i.e. exactly
+                // the width where the ladder would have made them smallest.
+                //
+                // THE `sm` RUNG IS THE POINT, and it was missing: this was `11 → md:13`, a single 2px jump. Every
+                // other site steps at BOTH `sm` (640px) and `md` (768px), so between those two widths the page's
+                // captions grew and these labels did not — the nav visibly fell behind its surroundings in the
+                // band where they diverged, then over-corrected in one jump. Matching the app means matching the
+                // BREAKPOINTS, not just the two endpoints. Do not drop `sm` again on the grounds that it is a
+                // small step: being in step with the content is what it buys.
+                "group relative flex min-h-14 flex-1 cursor-pointer select-none flex-col items-center justify-center gap-1 text-[11px] sm:text-[12px] md:text-[13px] font-semibold",
 
-                // `border-t-2` ON EVERY ITEM, COLOURED ON ONLY ONE. This is what makes the rule span the whole
-                // bar while marking a single segment: each button owns the 2px directly above itself, the buttons
-                // are adjacent, so the borders abut into one unbroken band across the full width — dark over the
-                // active segment, invisible over the rest.
+                // A 3px BORDER ON EVERY ITEM, COLOURED ON ONLY ONE. This is what makes the rule span the whole
+                // ROW while marking a single segment: each button owns the 3px directly above itself, the buttons
+                // are adjacent, so the borders abut into one unbroken band across the row — dark over the active
+                // segment, invisible over the rest. The row, not the viewport: it is capped and centred (see
+                // above), so on a wide screen the band spans the centred group and the tint either side of it
+                // carries no rule.
+                //
+                // It was `border-t-2`. 3px is an arbitrary value because Tailwind's border scale jumps 2 → 4 with
+                // nothing between, and 4px read as a slab rather than a marker at this bar's weight.
                 //
                 // THE TRANSPARENT BORDER IS THE POINT, not filler. A border on the active item alone would make
-                // that item 2px taller than its neighbours, so the icons and labels would sit 1px off each other
-                // and the whole row would shift by 2px on every tab change. Giving the inactive items the same
-                // border in `transparent` means all segments are always the same height and only the COLOUR
-                // changes — nothing reflows.
+                // that item 3px taller than its neighbours, so the icons and labels would sit off each other and
+                // the whole row would shift by 3px on every tab change. Giving the inactive items the same border
+                // in `transparent` means all segments are always the same height and only the COLOUR changes —
+                // nothing reflows.
                 //
                 // Drawn by the border rather than an absolutely-positioned child (which is what this was first):
                 // a child had to be pulled to `-top-px` to reach the bar's edge and still fought the row's
-                // padding for its last 2px. A border IS the top edge, so there is no geometry to get right.
-                "border-t-2",
+                // padding for its last few px. A border IS the top edge, so there is no geometry to get right.
+                "border-t-[3px]",
 
                 // THE TINT IS A SECOND, NON-COLOUR SIGNAL. Colour alone (slate-900 vs slate-500) is too weak on
                 // its own: at a glance, and for anyone who discriminates these greys poorly, two similar labels in
@@ -214,14 +270,27 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
                   tab that happens to carry a version string.
 
                   `relative` on the wrapper rather than on the button: anchoring to the button would put the badge
-                  at the corner of a 48px-tall full-width segment, which reads as decorating the bar, not the tab.
+                  at the corner of a 56px-tall full-width segment, which reads as decorating the bar, not the tab.
                   The wrapper is exactly the icon's box, so `-top-0.5 -right-1` lands the dot on the glyph's own
                   top-right the way an app-icon badge sits.
 
                   `size-2` (8px) rather than the 6px it was inline: it is no longer next to 10px text that set its
-                  scale, and against a 20px icon 6px read as a smudge. */}
+                  scale, and against the icon 6px read as a smudge. It stays 8px against the 24px glyph — a badge
+                  scaling with its icon would just make it a bigger blob; 8px is a dot at both sizes.
+
+                  ITS OFFSETS ARE NOT SCALE-FREE, THOUGH, and they moved with the glyph: `-right-1.5` was set when
+                  the icon was 20px, and on a 24px box the same value sits 2px further from the corner, i.e. further
+                  in over the strokes. `-right-1` puts it back on the glyph's own top-right where an app-icon badge
+                  sits. Re-judge these two numbers whenever `size-*` on the Icon changes. */}
               <span className="relative shrink-0">
-                <Icon className={cn("size-5 shrink-0", selected ? "text-slate-900" : "text-slate-400 group-hover:text-slate-600")} aria-hidden />
+                {/* `size-6` (24px), up from `size-5`. The icon is the item's primary signal — the label under it
+                    is a 12px caption, so the glyph carries recognition at a glance and can afford the size. The
+                    row is 56px with `gap-0.5`, which leaves 24 + 2 + ~12 = ~38px of content in it: still comfortably
+                    inside the row with room either side, so nothing had to move to make space.
+
+                    THE UNSEEN DOT'S OFFSETS ARE MEASURED AGAINST THIS BOX and were re-judged for 24px — see the
+                    note below. A badge pinned to a glyph's corner does not survive the glyph changing size. */}
+                <Icon className={cn("size-6 shrink-0", selected ? "text-slate-900" : "text-slate-400 group-hover:text-slate-600")} aria-hidden />
                 {showUnseenDot ? (
                   // `ring-2` separates the dot from the glyph it overlaps — without it the red sits directly on the
                   // icon's strokes and the two read as one shape.
@@ -241,20 +310,34 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
                   // hovering a tab that has the dot is a transient state not worth a third value.
                   <UnseenDot
                     label="New framework updates"
-                    className={cn("absolute -top-0.5 -right-1.5 size-2 ring-2", selected ? "ring-slate-200" : "ring-slate-100")}
+                    className={cn("absolute -top-0.5 -right-1 size-2 ring-2", selected ? "ring-slate-200" : "ring-slate-100")}
                   />
                 ) : null}
               </span>
-              <span className="flex items-start leading-none">
+              {/* `items-baseline`, NOT `items-start`, which is what this was. Top-aligning two inline spans lines
+                  up their LINE BOXES, and a line box's top is only where the text starts if both spans are the
+                  same type size — the version was 10px against an 11px label, so flushing the tops sat the
+                  version's glyphs a fraction high and its baseline visibly above the label's. Baseline alignment
+                  is the relationship that actually reads as "aligned" for text set side by side, and it stays
+                  correct if either size is ever changed again. */}
+              <span className="flex items-baseline leading-none">
                 {label}
                 {version ? (
                   // Inline with the label: the version qualifies "Theory" rather than standing on its own.
                   //
+                  // NO TYPE SIZE AND NO WEIGHT OF ITS OWN — it inherits the button's `font-semibold` and its
+                  // responsive size, so it is the same style as the label beside it and rides the app's type ladder
+                  // across breakpoints without repeating any of its steps here. It was `text-[10px] font-semibold`:
+                  // the weight was already a restatement of the inherited value, and the fixed 10px was the whole
+                  // reason the two runs did not sit on one line. A version string one step smaller than the word it
+                  // qualifies reads as a footnote bolted on rather than part of the label.
+                  //
                   // `text-slate-500` in BOTH states, not a ternary on `selected`. The old segmented control needed
                   // two values because the active tab was a dark pill (`text-white/70` on it, slate otherwise);
                   // here the active tab is a light tint, so one muted grey is legible against both and a
-                  // conditional would be a decision that makes no difference.
-                  <span className="ml-1 text-[10px] font-semibold leading-none text-slate-500">{version}</span>
+                  // conditional would be a decision that makes no difference. It is ALSO now the only thing
+                  // distinguishing the version from the label, since the size and weight no longer do.
+                  <span className="ml-1 leading-none text-slate-500">{version}</span>
                 ) : null}
               </span>
             </button>
