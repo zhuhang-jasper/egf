@@ -4,6 +4,77 @@ import { ensureInterFontsLoaded } from "@/utils/export-image";
 
 const UNSUPPORTED_COLOR_RE = /(?:oklch|oklab|lab\(|lch\(|color\()/i;
 
+/** Ceiling on the slug's length inside a filename, so a long profile name can't produce an unwieldy one. */
+const PROFILE_SLUG_MAX_LENGTH = 30;
+
+/**
+ * Normalize a profile name into a lower-kebab-case slug fit for a filename.
+ *
+ * The name is free text the user typed — it can carry accents, emoji, punctuation, runs of spaces, or be
+ * blank — and it ends up in a downloaded filename and a share-sheet attachment name, so it has to come out
+ * as something every OS will accept.
+ *
+ * Steps, and why each is there:
+ *   - NFKD + strip combining marks folds "Café" to "Cafe" rather than dropping the accented letter, which
+ *     is what a bare a-z filter would do.
+ *   - Everything outside a-z0-9 becomes a hyphen, so emoji, slashes, dots and quotes cannot reach the
+ *     filesystem. Path separators and leading dots are the ones that actually matter here.
+ *   - Runs collapse and edge hyphens are trimmed, so "  My  Chart!  " gives "my-chart" and not
+ *     "--my--chart--".
+ *   - Truncated to {@link PROFILE_SLUG_MAX_LENGTH}, then re-trimmed in case the cut landed on a hyphen.
+ *
+ * Returns "" for a name that is blank or contains nothing slug-able (e.g. "🎉"). Callers decide what an
+ * empty slug means — see {@link buildChartFileName}, which drops the segment entirely.
+ */
+export function toProfileSlug(name) {
+  return String(name ?? "")
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, PROFILE_SLUG_MAX_LENGTH)
+    .replace(/^-+|-+$/g, "");
+}
+
+/**
+ * Today's date as `yyyy-mm-dd` in the user's LOCAL time zone.
+ *
+ * NOT `toISOString().slice(0, 10)`, which is UTC: for a user in UTC+8 exporting at 01:00, that returns
+ * yesterday's date, and for UTC-5 exporting at 20:00 it returns tomorrow's. The filename should say the
+ * day the person actually made the export, so this reads the local calendar fields and pads them.
+ */
+function getLocalDateStamp() {
+  const d = new Date();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${month}-${day}`;
+}
+
+/**
+ * The exported PNG's filename, filling `SITE_COPY.share.fileName`'s `{profileName}` and `{date}`
+ * placeholders.
+ *
+ * An UNNAMED profile leaves no trace in the filename: the placeholder and any hyphen or underscore
+ * immediately around it are removed together, so an unnamed chart gives a clean "9-pillar-egf-2026-08-04.png"
+ * rather than a name with a dangling separator or a double hyphen where the slug should have been. The date
+ * is never dropped this way — there is always a date, so its placeholder is a plain substitution.
+ *
+ * A template missing either placeholder is left as-is at that spot, so the filename can be simplified in
+ * `site.js` (drop the date, revert to a fixed string) without touching this code.
+ */
+export function buildChartFileName(profileName) {
+  const slug = toProfileSlug(profileName);
+  const withName = slug
+    ? SITE_COPY.share.fileName.replace("{profileName}", slug)
+    : // Swallow ONE neighbouring separator with the placeholder, the leading one by preference. Taking both
+      // sides would consume the hyphen that the NEXT segment needs — on "…-egf-{profileName}-{date}.png"
+      // that produced "…-egf2026-08-04.png". One side collapses the pair of separators to one; the other is
+      // left for whatever follows.
+      SITE_COPY.share.fileName.replace(/(?:[-_]\{profileName\}|\{profileName\}[-_]?)/g, "");
+  return withName.replace("{date}", getLocalDateStamp());
+}
+
 function sanitizeColorForHtml2Canvas(value) {
   const trimmed = String(value ?? "").trim();
   if (!trimmed || trimmed === "transparent") {
@@ -296,7 +367,11 @@ export async function renderChartImageBlob({ exportRoot, canvas, chart }) {
   }
 }
 
-export async function copyChartAsImageToClipboard({ exportRoot, canvas, chart }) {
+/**
+ * @param profileName Used only by the download fallback, to name the file. The clipboard path never sees
+ *   it — a pasted image has no filename.
+ */
+export async function copyChartAsImageToClipboard({ exportRoot, canvas, chart, profileName }) {
   if (!exportRoot || !canvas || !chart) {
     return { ok: false, method: null };
   }
@@ -318,7 +393,7 @@ export async function copyChartAsImageToClipboard({ exportRoot, canvas, chart })
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = SITE_COPY.share.fileName;
+  a.download = buildChartFileName(profileName);
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -353,9 +428,10 @@ function buildShareMessage(linkOverride) {
  * back to copying the image to the clipboard so the button never dead-ends.
  *
  * @param {string} [url] Optional link override embedded in the message; defaults to the tool link.
+ * @param {string} [profileName] Profile name, slugged into the attachment filename.
  * @returns {{ ok: boolean, method: "share" | "share-fallback-clipboard" | "share-fallback-download" | null }}
  */
-export async function shareChartAsImage({ exportRoot, canvas, chart, url }) {
+export async function shareChartAsImage({ exportRoot, canvas, chart, url, profileName }) {
   if (!exportRoot || !canvas || !chart) {
     return { ok: false, method: null };
   }
@@ -365,7 +441,9 @@ export async function shareChartAsImage({ exportRoot, canvas, chart, url }) {
     return { ok: false, method: null };
   }
 
-  const { fileName } = SITE_COPY.share;
+  // Named once and reused by all three paths (share attachment, clipboard fallback's download, the final
+  // download) so the file arrives under the same name however the share resolves.
+  const fileName = buildChartFileName(profileName);
   const shareTitle = SITE_COPY.share.title;
   const shareText = buildShareMessage(url);
 

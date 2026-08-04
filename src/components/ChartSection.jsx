@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
-import { Copy, Settings, Share } from "lucide-react";
+import { ImageDown, Settings, Share2 } from "lucide-react";
 
 import { ChartScores } from "@/components/ChartScores";
 import { ClusterLegend } from "@/components/ClusterLegend";
@@ -14,6 +14,8 @@ import { useAppStore } from "@/store/useAppStore";
 
 import { getChartTitleSizePx, getTrackBadgeMdHeightPx } from "@/chart/fonts";
 import { FE_UI, FEATURE_SCORES_SETTINGS, SITE_COPY } from "@/constants";
+import { TOOLBAR_ICON_SURFACE, TOOLBAR_SURFACE } from "@/styles/toolbar";
+import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
 import { copyChartAsImageToClipboard, shareChartAsImage } from "@/utils/copy-chart-image";
 
@@ -87,7 +89,7 @@ function ChartDisplayMenu() {
         aria-haspopup="menu"
         aria-label="Chart display settings"
         onClick={() => setOpen((v) => !v)}
-        className="group relative"
+        className={cn(TOOLBAR_ICON_SURFACE, "group relative")}
       >
         <Settings className="h-4 w-4" />
         {/* Points down, into clear space — a top tooltip would render up into the sticky header
@@ -122,6 +124,12 @@ function ChartDisplayMenu() {
  * Whether the Web Share API can share files here. True on mobile Safari/Chrome (and a few
  * desktop browsers like Safari/Edge); false on desktop Chrome-macOS / Firefox. We probe with a
  * tiny dummy file because canShare gates on the files payload specifically. Computed once.
+ *
+ * THE STRICT FILE PROBE, and deliberately stricter than the theory tab's share gate (see
+ * TheoryContent's CAN_SHARE_LINK, which only asks for `navigator.share`). The asymmetry is the point:
+ * THIS share exists to send the user's chart, so a share sheet that cannot carry the image cannot do the
+ * job and the button should not appear. The theory share sends a LINK with an image attached as a bonus,
+ * so it still works — degraded — without file support. Same API, different payload, different gate.
  */
 const CAN_SHARE_FILES = (() => {
   try {
@@ -139,10 +147,33 @@ const CAN_SHARE_FILES = (() => {
  * Image-export controls, as two standalone buttons: "Copy image" is always shown (copies to the
  * clipboard, or downloads as a fallback). "Share" is shown additionally only where the Web Share
  * API can share files (e.g. mobile Safari/Chrome), opening the OS share sheet.
+ *
+ * LABELLED, in the theory tab's toolbar surface (see styles/toolbar.js). These two are the same kind of
+ * page-level action as that tab's print/share icons and sit in the same place on the page, so they take
+ * the same muted-slate surface instead of the default `outline` button they used to wear — switching tabs
+ * should not restyle the chrome. They keep their text because neither glyph is self-explanatory here:
+ * `ImageDown` reads as "save an image" (which is the COPY button's fallback, not its primary path) and
+ * `Share2` is a generic share mark, so the word is what says which action this is.
+ *
+ * Share comes FIRST: it is the primary action where it exists, and copy is the fallback for everywhere
+ * else. Reading order matches that.
  */
 function ExportMenu({ onCopy, onShare }) {
   return (
-    <div className="flex shrink-0 items-center gap-2">
+    <div className="flex min-w-0 items-center gap-2">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        shape="pill"
+        onClick={onCopy}
+        className={cn(TOOLBAR_SURFACE, "group relative gap-1")}
+        aria-label="Copy image"
+      >
+        <ImageDown className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        Copy
+        <Tooltip text="Copy the chart image to your clipboard" />
+      </Button>
       {CAN_SHARE_FILES ? (
         <Button
           type="button"
@@ -150,27 +181,14 @@ function ExportMenu({ onCopy, onShare }) {
           size="sm"
           shape="pill"
           onClick={onShare}
-          className="group relative gap-1"
+          className={cn(TOOLBAR_SURFACE, "group relative gap-1")}
           aria-label="Share image"
         >
-          <Share className="h-3.5 w-3.5 shrink-0" aria-hidden />
-          Share image
+          <Share2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
+          Share
           <Tooltip text="Share the chart image" />
         </Button>
       ) : null}
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        shape="pill"
-        onClick={onCopy}
-        className="group relative gap-1"
-        aria-label="Copy image"
-      >
-        <Copy className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        Copy image
-        <Tooltip text="Copy the chart image to your clipboard" />
-      </Button>
     </div>
   );
 }
@@ -222,6 +240,7 @@ export function ChartSection({ isVisible }) {
         exportRoot: exportRef.current,
         canvas: canvasRef.current,
         chart: chartRef.current,
+        profileName: title,
       });
       if (result?.method === "clipboard") {
         track("chart_copied", { method: "clipboard" });
@@ -244,6 +263,7 @@ export function ChartSection({ isVisible }) {
         exportRoot: exportRef.current,
         canvas: canvasRef.current,
         chart: chartRef.current,
+        profileName: title,
       });
       if (result?.method === "share") {
         // Native share sheet opened — completion is out of our hands, so don't claim success.
@@ -276,12 +296,15 @@ export function ChartSection({ isVisible }) {
           list is unrelated: that one spaces its buttons horizontally.)
 
           `print:hidden` for the same reason theory's row carries it: these buttons only exist to be
-          clicked, and "Copy image" on paper is nonsense. The chart below is the thing being printed. */}
-      <div className="relative z-[2] flex w-full min-w-0 items-center justify-end gap-2 mb-2 print:hidden">
-        <div className="flex shrink-0 items-center gap-2">
-          <ExportMenu onCopy={handleCopy} onShare={handleShare} />
-          <ChartDisplayMenu />
-        </div>
+          clicked, and "Copy image" on paper is nonsense. The chart below is the thing being printed.
+
+          `justify-between` PINS ONE GROUP TO EACH END — the export actions at the left, the display-settings
+          gear at the right — which is the same division theory's toolbar makes (page actions left, changelog
+          right). Everything used to be bunched at the right together, so the gear (a settings control) read as
+          a third export button. */}
+      <div className="relative z-[2] flex w-full min-w-0 items-center justify-between gap-2 mb-2 print:hidden">
+        <ExportMenu onCopy={handleCopy} onShare={handleShare} />
+        <ChartDisplayMenu />
       </div>
 
       <div ref={exportRef} className="relative flex w-full min-w-0 flex-col self-stretch">

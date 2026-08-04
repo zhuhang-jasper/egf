@@ -86,14 +86,17 @@ export const SITE_COPY = {
       "Jasper's 9-Pillar Engineer Growth Framework: a model for measuring software engineering mastery and guiding career paths. {link}",
     // Query string appended to the app's base URL so the recipient lands on the Tool tab.
     toolLinkQuery: "?tab=tool",
-    // Fixed filename for the exported chart PNG.
-    fileName: "jaspers-9pillar-engineer-growth-framework.png",
+    // Filename for the exported chart PNG. `{profileName}` is the profile name slugged to lower-kebab and
+    // `{date}` the local calendar date as yyyy-mm-dd — both filled by buildChartFileName. An unnamed profile
+    // drops its placeholder AND the hyphen beside it, so the name never lands with a dangling separator.
+    // The date is last so exports of one profile sort chronologically in a file listing.
+    fileName: "9-pillar-egf-{profileName}-{date}.png",
     // The pre-rendered pillar poster in `public/`, attached to a Theory-tab share. A STATIC ASSET, not a
     // runtime capture: the theory tab has no single element worth rasterizing (it is a long document), and
     // this image is the framework's designed one-glance summary. Resolved against BASE_URL at call time
     // because the Pages build serves from /egf/. Bump the vN when the artwork is replaced, so caches and
     // already-shared copies stay distinguishable.
     theoryImagePath: "poster-pillar-v4.png",
-    theoryImageFileName: "9-pillar-engineer-growth-framework.png",
+    theoryImageFileName: "9-pillar-egf-theory.png",
   },
 };

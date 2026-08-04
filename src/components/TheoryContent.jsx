@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
-import { Printer, ScrollText, Share } from "lucide-react";
+import { Printer, ScrollText, Share2 } from "lucide-react";
 
 import { CareerTracks } from "@/components/CareerTracks";
 import { ChangelogModal } from "@/components/ChangelogModal";
@@ -24,6 +24,7 @@ import {
   THEORY_SECTION_COPY,
 } from "@/constants/theory-data";
 import { DOC_SECTION, DOC_TEXT } from "@/styles/doc-typography";
+import { TOOLBAR_SURFACE } from "@/styles/toolbar";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
 import { shareTheoryLink } from "@/utils/copy-chart-image";
@@ -38,18 +39,6 @@ import {
 } from "@/utils/theory-url";
 
 const cardClass = "rounded-xl border border-slate-300 bg-white shadow-md shadow-slate-200/40";
-
-/**
- * The look of the 32px square control at the left of this tab's toolbar.
- *
- * Worn by the print button and, where the browser can open a share sheet, the share button beside it — which
- * is why it is a named constant rather than inline classes. (It was also worn by a pair of admin shortcuts to
- * the Poster/Social pages before those moved to their own Admin tab; see AdminContent.)
- *
- * Only the surface lives here (radius, border, fill, text and hover colors). The layout, transition and
- * focus-visible ring come from `buttonVariants` at `size="icon"`, which is already this 32px square.
- */
-const TOOLBAR_ICON_SURFACE = "shrink-0 rounded-lg border-slate-200 bg-slate-100/80 text-slate-600 hover:bg-slate-200/80 hover:text-slate-900";
 
 /**
  * Whether the OS share sheet can be opened at all here — true on mobile Safari/Chrome and a few desktop
@@ -522,15 +511,22 @@ function TheoryContent({
               print rules in index.css are for. */}
           {/* `group relative` + `<Tooltip>` rather than a native `title`: one tooltip mechanism across the app,
               with no browser delay and the app's own styling. See components/ui/Tooltip.jsx. */}
+          {/* LABELLED, in the same pill as the tool tab's Share/Copy (see ChartSection's ExportMenu). These
+              two rows sit at the same place on the page and the user flips between them, so a bare icon here
+              beside a labelled pill there read as two different kinds of control. The `aria-label` stays
+              longer than the visible word: the label says which action, the aria-label says what it acts on,
+              which is what a screen reader needs when the surrounding heading isn't being read. */}
           <Button
             type="button"
             variant="outline"
-            size="icon"
+            size="sm"
+            shape="pill"
             onClick={() => window.print()}
             aria-label="Print the framework"
-            className={cn(TOOLBAR_ICON_SURFACE, "group relative")}
+            className={cn(TOOLBAR_SURFACE, "group relative gap-1")}
           >
-            <Printer className="size-4" aria-hidden />
+            <Printer className="size-3.5 shrink-0" aria-hidden />
+            Print
             <Tooltip text="Print the framework" placement="bottom" />
           </Button>
 
@@ -542,19 +538,21 @@ function TheoryContent({
             <Button
               type="button"
               variant="outline"
-              size="icon"
+              size="sm"
+              shape="pill"
               onClick={handleShareTheory}
               aria-label="Share the framework"
-              className={cn(TOOLBAR_ICON_SURFACE, "group relative")}
+              className={cn(TOOLBAR_SURFACE, "group relative gap-1")}
             >
-              <Share className="size-4" aria-hidden />
+              <Share2 className="size-3.5 shrink-0" aria-hidden />
+              Share
               <Tooltip text="Share the framework" placement="bottom" />
             </Button>
           ) : null}
         </div>
         <Button type="button" variant="outline" size="sm" shape="pill" onClick={() => setChangelogOpen(true)} className="gap-1">
           <ScrollText className="size-3.5 shrink-0" aria-hidden />
-          Show Changelog
+          Changelog
         </Button>
       </div>
 
