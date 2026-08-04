@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
-import { Image, Printer, ScrollText, Share2 } from "lucide-react";
+import { Printer, ScrollText } from "lucide-react";
 
 import { CareerTracks } from "@/components/CareerTracks";
 import { ChangelogModal } from "@/components/ChangelogModal";
@@ -13,7 +13,7 @@ import { UnseenDot } from "@/components/UnseenDot";
 
 import { getSectionSentinelId, useSectionSeenObserver } from "@/hooks/useSectionSeenObserver";
 
-import { FE_UI, FRAMEWORK_VERSION, IS_ADMIN, SITE_COPY } from "@/constants";
+import { FE_UI, FRAMEWORK_VERSION, SITE_COPY } from "@/constants";
 import {
   COMPETENCY_MATRIX,
   COMPETENCY_MATRIX_INTRO,
@@ -24,29 +24,18 @@ import {
 } from "@/constants/theory-data";
 import { DOC_SECTION, DOC_TEXT } from "@/styles/doc-typography";
 import { cn } from "@/utils";
-import { hrefForRoute } from "@/utils/route";
 import { scrollBelowStickyHeaderUntilSettled } from "@/utils/scroll";
 import { getPersistedExpandedPillar, getPillarCardElementId, persistExpandedPillar, THEORY_SECTION_IDS, THEORY_SECTIONS } from "@/utils/theory-url";
 
 const cardClass = "rounded-xl border border-slate-300 bg-white shadow-md shadow-slate-200/40";
 
-// Admin-only shortcuts to the standalone Poster/Social pages. These navigate away (full page load),
-// not in-app tabs. They live in this tab's toolbar rather than the app header so the header layout is
-// identical for admin and non-admin users. Gated by IS_ADMIN (?admin=1).
-const ADMIN_LINKS = [
-  { route: "poster", label: "Poster", icon: Image },
-  { route: "social", label: "Social", icon: Share2 },
-];
-
 /**
- * The look of the 32px square controls at the left of this tab's toolbar, worn by both the print button and
- * the admin page links so the row reads as one group rather than two treatments that happen to match.
+ * The look of the 32px square control at the left of this tab's toolbar.
  *
- * EVERY ONE OF THEM IS A `<Button>`, including the links — the admin entries render through `asChild`, which
- * passes these classes onto a real `<a>` rather than wrapping one. That distinction is worth keeping: they
- * navigate to another page, so they must stay anchors to keep cmd/middle-click, the right-click menu, the URL
- * on hover, and a screen reader announcing "link" instead of "button". Routing them through `onClick` would
- * look identical and quietly take all of that away.
+ * It used to be shared by the print button and a pair of admin shortcuts to the Poster/Social pages, which is
+ * why it is a named constant rather than inline classes. Those two moved to their own Admin tab (see
+ * AdminContent) — the print button is the only occupant now, but the name is kept because the toolbar is the
+ * natural home for any further page-level action beside it.
  *
  * Only the surface lives here (radius, border, fill, text and hover colors). The layout, transition and
  * focus-visible ring come from `buttonVariants` at `size="icon"`, which is already this 32px square.
@@ -466,10 +455,9 @@ function TheoryContent({
 
   return (
     <>
-      {/* Toolbar row: admin page links left, changelog right. The admin shortcuts used to float at the
-          right edge of the sticky tab bar, which forced an admin-only mobile layout up there; moving them
-          here keeps the app header identical for every user. `justify-between` with an empty left side
-          still parks the changelog button on the right for non-admins.
+      {/* Toolbar row: print left, changelog right. This also held admin shortcuts to the Poster/Social pages,
+          which have moved to their own Admin tab (see AdminContent) — so `justify-between` now pins one control
+          to each end for every user, admin or not.
 
           OUTSIDE THE SECTIONS COLUMN, and a sibling of it rather than its first child. That column's `gap-6`
           is the spacing BETWEEN SECTIONS; this row is page chrome, not a section, and being in there meant
@@ -481,10 +469,9 @@ function TheoryContent({
           shift when you switch tabs. */}
       <div className="mb-4 flex items-center justify-between gap-2 print:hidden">
         <div className="flex items-center gap-1.5">
-          {/* PRINT, FOR EVERYONE — the admin links beside it are gated behind `?admin=1`, this is not. The
-              theory tab is built to print as a reference document: a cover sheet, then a page per pillar. Until
-              now the only route to it was the browser's own menu, which readers do not associate with a page
-              they are looking at. Same 32px square as the admin links so the group reads as one row.
+          {/* PRINT, FOR EVERYONE. The theory tab is built to print as a reference document: a cover sheet, then
+              a page per pillar. Before this button the only route to it was the browser's own menu, which
+              readers do not associate with a page they are looking at.
 
               `window.print()` and nothing else. Paper size, margins and destination all live in the browser's
               dialog and none of them can be set from script — deliberately, since they are the user's choice.
@@ -501,17 +488,6 @@ function TheoryContent({
           >
             <Printer className="size-4" aria-hidden />
           </Button>
-          {IS_ADMIN
-            ? ADMIN_LINKS.map(({ route, label, icon: Icon }) => (
-                // `asChild` — styled as a button, still an anchor. See TOOLBAR_ICON_SURFACE for why these
-                // navigate as links rather than through an onClick handler.
-                <Button key={route} asChild variant="outline" size="icon" className={TOOLBAR_ICON_SURFACE}>
-                  <a href={hrefForRoute(route)} title={label} aria-label={label}>
-                    <Icon className="size-4" aria-hidden />
-                  </a>
-                </Button>
-              ))
-            : null}
         </div>
         <Button type="button" variant="outline" size="sm" shape="pill" onClick={() => setChangelogOpen(true)} className="gap-1">
           <ScrollText className="size-3.5 shrink-0" aria-hidden />

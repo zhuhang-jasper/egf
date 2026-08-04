@@ -420,7 +420,29 @@ export default function PosterPage() {
 
   return (
     <div className="flex w-full flex-col items-center overflow-x-hidden overflow-y-auto bg-black p-4">
-      <BackToToolButton />
+      {/* TOP CHROME ROW: the back link at the left, the canvas size at the right. Two unrelated things that
+          happen to share a row, which is why the row lives here and neither of them owns the other.
+
+          `w-full` + `justify-between` is what gives them their ends. This page centres its children, so a bare
+          link would be centred; the full-width row is also what the link's old `self-start` was working around.
+          It spans the viewport rather than the canvas's scaled width — the canvas is scaled to fit at runtime,
+          so matching it would mean threading that scale up here to place a static label.
+
+          `mb-4` is the gap down to the canvas, which the link itself used to carry.
+
+          THE SIZE LABEL IS OUT HERE, NOT IN THE CANVAS'S EXPORT CLUSTER, for two reasons: this row is on the
+          page's black background, so plain white text works with no chip behind it, and being outside the
+          `<article>` means it cannot end up in the rasterized PNG at all rather than relying on the
+          `data-export-ignore` opt-out to strip it.
+
+          The numbers come off the canvas constants themselves, so the label cannot drift from what the export
+          actually produces. */}
+      <div className="mb-4 flex w-full items-center justify-between gap-3">
+        <BackToToolButton />
+        <span className="shrink-0 select-none text-sm font-semibold tabular-nums text-white">
+          {CANVAS_W} × {CANVAS_H}
+        </span>
+      </div>
       {/* Scaling stage: reserves the scaled footprint so the canvas stays centred and
           scrolls cleanly; the article inside keeps its true pixel size for export. */}
       <div className="shrink-0" style={{ width: CANVAS_W * scale, height: CANVAS_H * scale }}>

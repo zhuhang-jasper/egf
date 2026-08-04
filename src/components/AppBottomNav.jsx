@@ -1,18 +1,23 @@
-import { FileText, Radar } from "lucide-react";
+import { FileText, Radar, Wrench } from "lucide-react";
 
 import { UnseenDot } from "@/components/UnseenDot";
 
-import { FRAMEWORK_VERSION } from "@/constants";
+import { FRAMEWORK_VERSION, IS_ADMIN } from "@/constants";
 import { cn } from "@/utils";
 
 /**
- * The app's primary navigation. Same two destinations the header's segmented control used to hold; `version`
- * still derives from the single FRAMEWORK_VERSION source so the label and the "unseen" dot (see
+ * The app's primary navigation. The first two are the same destinations the header's segmented control used to
+ * hold; `version` still derives from the single FRAMEWORK_VERSION source so the label and the "unseen" dot (see
  * useTheoryUpdates) cannot disagree.
+ *
+ * ADMIN IS APPENDED, NOT CONDITIONALLY RENDERED IN THE ROW BELOW, so the map stays a plain list and the items'
+ * `flex-1` does the rest: two tabs split the bar in half, three split it in thirds, and nothing else changes.
+ * This list and HomePage's VALID_TABS are the two places the tab is gated — see AdminContent.
  */
 const NAV_ITEMS = [
   { id: "tool", label: "Tool", icon: Radar },
   { id: "theory", label: "Theory", icon: FileText, version: `v${FRAMEWORK_VERSION}` },
+  ...(IS_ADMIN ? [{ id: "admin", label: "Admin", icon: Wrench }] : []),
 ];
 
 /**

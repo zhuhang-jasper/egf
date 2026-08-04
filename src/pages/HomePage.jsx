@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
+import { AdminContent } from "@/components/AdminContent";
 import { AppBottomNav } from "@/components/AppBottomNav";
 import { AppShellHeaderStack } from "@/components/AppShellHeader";
 import { TheoryContent } from "@/components/TheoryContent";
@@ -9,13 +10,16 @@ import { Toaster } from "@/components/ui/Toaster";
 import { getPersistedActiveTab, useTabScrollMemory } from "@/hooks/useTabScrollMemory";
 import { useTheoryUpdates } from "@/hooks/useTheoryUpdates";
 
-import { FE_UI } from "@/constants";
+import { FE_UI, IS_ADMIN } from "@/constants";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
 import { cleanTheoryDeepLinkParams, getTabFromUrl, parseTheoryDeepLink, syncTabInUrl } from "@/utils/theory-url";
 
 const appVersion = import.meta.env.VITE_APP_VERSION;
-const VALID_TABS = ["tool", "theory"];
+// `admin` is only a valid tab while the dev unlock is on (see constants/features.js), which is what makes a
+// stale `?tab=admin` or a remembered session tab fall back to the default for a normal visitor rather than
+// selecting a tab the bottom nav is not showing. Kept in step with AppBottomNav's NAV_ITEMS.
+const VALID_TABS = IS_ADMIN ? ["tool", "theory", "admin"] : ["tool", "theory"];
 
 /**
  * A tab's content region. Once rendered, both panels stay MOUNTED and are toggled with `hidden` rather than
@@ -81,6 +85,9 @@ const BOOT_DEEP_LINK = parseTheoryDeepLink();
 const TAB_WIDTH_STYLE = {
   tool: { maxWidth: FE_UI.page.maxWidthPx },
   theory: { maxWidth: FE_UI.page.theoryMaxWidthPx },
+  // The tool's measure, not theory's: two cards in a row want the narrower column, and it matches the
+  // bottom nav's own cap so the Admin item sits under the content it navigates.
+  admin: { maxWidth: FE_UI.page.maxWidthPx },
 };
 
 /**
@@ -324,6 +331,15 @@ export default function HomePage() {
             />
           ) : null}
         </TabPanel>
+        {/* MOUNTED ONLY WHEN THE TAB IS ACTIVE, unlike its two siblings. They stay mounted because a radar
+            chart's sizing passes and a long document's scroll position are expensive to rebuild; this panel is
+            two static link cards, so there is nothing to preserve and nothing to prefit. It also never renders
+            at all for a non-admin, since the tab cannot be selected (see VALID_TABS). */}
+        {IS_ADMIN ? (
+          <TabPanel label="Admin" active={activeTab === "admin"} widthStyle={TAB_WIDTH_STYLE.admin}>
+            {activeTab === "admin" ? <AdminContent /> : null}
+          </TabPanel>
+        ) : null}
 
         {/* Inside `main` and full-bleed, so it reads as the page's own footer rather than a strip of the page
             behind it.

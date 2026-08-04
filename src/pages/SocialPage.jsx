@@ -214,7 +214,14 @@ export default function SocialPage() {
 
   return (
     <div className="flex w-full flex-col items-center overflow-x-hidden overflow-y-auto bg-black p-4">
-      <BackToToolButton />
+      {/* Top chrome row: back link left, canvas size right. See the matching note in PosterPage for why the row
+          lives here, why the label is outside the canvas, and why the numbers come off the constants. */}
+      <div className="mb-4 flex w-full items-center justify-between gap-3">
+        <BackToToolButton />
+        <span className="shrink-0 select-none text-sm font-semibold tabular-nums text-white">
+          {CANVAS_W} × {CANVAS_H}
+        </span>
+      </div>
       <div className="shrink-0" style={{ width: CANVAS_W * scale, height: CANVAS_H * scale }}>
         <article
           ref={cardRef}
