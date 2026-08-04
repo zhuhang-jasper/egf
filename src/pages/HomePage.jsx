@@ -373,19 +373,25 @@ export default function HomePage() {
             base while it was the last thing on screen. It is not the last thing any more — AppBottomNav is fixed
             directly beneath it — and a black strip meeting a light bar looked like two unrelated pieces of chrome
             stacked by accident. The footer, the nav and the header are one surface, so they carry one value; it is
-            `bg-slate-50` now rather than the white all three started at, which is what makes the shell read as a
-            frame around the white content instead of being defined by shadows alone. See AppShellHeader's docblock.
+            `bg-slate-100` now rather than the white all three started at, which is what makes the shell read as a
+            frame around the white content instead of being defined by shadows alone. See AppShellHeader's docblock
+            for why the level is `100` and not `50`.
 
             The black survives where it still means something: the page wrapper outside `main`, which shows down
             both sides once the viewport is wider than the content measure.
 
             `text-slate-500` rather than `text-white/60` follows from the background; it is the same muted weight
-            against light that the old value was against dark, and it holds against a 50-level tint too.
+            against light that the old value was against dark, and it holds against a 100-level tint too.
 
-            NO BORDER of its own. This briefly had a `border-t` to replace the boundary the colour change used to
-            provide, but the bottom nav casts an upward shadow onto this strip (see AppBottomNav), so a hairline
-            here as well reads as two separators 40px apart. The footer is passive text at the end of the content;
-            it does not need to announce its own edge.
+            `border-t` ON THE TOP EDGE ONLY, and that is the boundary that matters here: this is where the chrome's
+            tint STARTS, so it is the seam between the white content above and the tinted footer-plus-nav below.
+            The tint alone leaves that a soft step the eye reads as a smudge rather than an edge; the hairline
+            makes it crisp, matching the header's own `border-b` at the top of the page.
+
+            STILL NO `border-b`. This once had a full border, which was removed because the bottom nav casts an
+            upward shadow onto this strip (see AppBottomNav) and a hairline at the footer's BOTTOM as well read as
+            two separators 40px apart. That is still true — the nav's shadow owns that edge, and the nav
+            deliberately has no `border-t` of its own for the same reason. Only the top edge is unclaimed.
 
             The tab panels' own bottom margin supplies the gap above — padding here would only make the strip
             taller, and `mt-*` is unavailable because `mt-auto` owns that margin to push the footer down on short
@@ -395,7 +401,7 @@ export default function HomePage() {
             index.css for how that works and why page numbers are not part of it. */}
         <footer
           data-print-running
-          className="mt-auto bg-slate-50 px-3 py-2 text-center text-[11px] text-slate-500 print:bg-transparent"
+          className="mt-auto border-t border-slate-200 bg-slate-100 px-3 py-2 text-center text-[11px] text-slate-500 print:border-0 print:bg-transparent"
         >
           © 2026 Jasper Loo Zhu Hang · All rights reserved · <span className="tabular-nums">v{appVersion}</span>
         </footer>

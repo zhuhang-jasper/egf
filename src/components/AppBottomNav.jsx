@@ -64,14 +64,15 @@ const NAV_ITEMS = [
  * row of `min-h-12` touch targets sits entirely above it. Putting it on the row instead would pad the targets from
  * below — the bar would be the right height, but the bottom 34px of it would be dead space that looks tappable.
  *
- * `bg-slate-50` MATCHES THE HEADER AND THE FOOTER, and the three values are one decision (see AppShellHeader's
- * docblock). All three were white, which left the shell defined by shadows alone; the tint is what separates
- * pinned chrome from the white content between it. It also has to be OPAQUE for the same reason the header's does
- * — scrolling content passes underneath this bar.
+ * `bg-slate-100` MATCHES THE HEADER AND THE FOOTER, and the three values are one decision (see AppShellHeader's
+ * docblock, which carries the reasoning for the level). All three were white, which left the shell defined by
+ * shadows alone; the tint is what separates pinned chrome from the white content between it. It also has to be
+ * OPAQUE for the same reason the header's does — scrolling content passes underneath this bar.
  *
  * THE TINT COST THIS FILE THREE MORE VALUES, not just the one: the active segment, the inactive hover, and the
- * unseen dot's ring all sat one step above white and had to move up with the bar to keep the same separation. See
- * their notes below. That coupling is the reason to change the bar's value in all four places at once or not at all.
+ * unseen dot's ring are all read AGAINST the bar, so each had to move up with it to keep its separation. See
+ * their notes below. That coupling is the reason to change the bar's value in all four places at once or not at
+ * all — and the hover is the one that fails loudest, since a hover equal to its own background does nothing.
  *
  * `print:hidden`: navigation is meaningless on paper, and the printed page already carries the header's title.
  */
@@ -86,6 +87,13 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
        Tailwind has no utility for that (every `shadow-*` casts downward), hence the arbitrary value — it is
        `shadow-sm`'s own two layers with the offsets and spread flipped, so the two bars read as the same weight
        of chrome rather than one being heavier than the other.
+
+       STILL NO `border-t` HERE, EVEN THOUGH THE HEADER GAINED A `border-b`. That is not an inconsistency: the
+       header's border separates the tinted bar from the WHITE content scrolling under it, whereas this bar's top
+       edge meets the footer, which carries the SAME tint (see HomePage). A hairline there would draw a line
+       through the middle of one continuous tinted region — the chrome would look split in two rather than
+       bounded. The boundary that needs marking on this side of the page is where the tint STARTS, which is the
+       footer's top edge, and that is where the hairline went.
 
        A shadow rather than the `border-t` this had first: a hairline is a seam between two flat areas, which is
        what made the bar look pasted onto the footer above it. A shadow lifts it off the content instead, which is
@@ -115,7 +123,7 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
     <nav
       id="app-bottom-nav"
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-40 bg-slate-50 shadow-[0_-1px_3px_0_rgb(0_0_0/0.1),0_-1px_2px_1px_rgb(0_0_0/0.1)] pb-[env(safe-area-inset-bottom)] print:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 bg-slate-100 shadow-[0_-1px_3px_0_rgb(0_0_0/0.1),0_-1px_2px_1px_rgb(0_0_0/0.1)] pb-[env(safe-area-inset-bottom)] print:hidden"
     >
       {/* Capped to the same measure as the Tool tab's content and centred, so on a wide screen the two items sit
           under the content they navigate rather than stranded at the viewport's far corners.
@@ -170,19 +178,33 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
                 // slightly different greys do not say which one you are on. Filled-versus-unfilled survives both,
                 // and it reinforces the rule above rather than repeating it.
                 //
-                // BOTH FILLS MOVED UP ONE STEP WHEN THE BAR GAINED ITS OWN TINT. The active segment was
-                // `bg-slate-100` and the hover `bg-slate-50`, both read against a white bar; against a
-                // `bg-slate-50` bar the hover became a no-op (same value as its background) and the active fill
-                // was one 50-level step from it, which is not enough to be the non-colour signal this comment
-                // claims it is. `slate-200` / `slate-100` restores both gaps. The active fill must stay a step
-                // clear of the HOVER too, not just the bar, or hovering an inactive tab would make it look selected.
+                // BOTH FILLS ARE READ AGAINST THE BAR, so both moved when it gained its tint. On a white bar they
+                // were `bg-slate-100` (active) and `bg-slate-50` (hover); on `bg-slate-100` those ARE the bar, so
+                // the hover would be a literal no-op and the active fill would disappear.
+                //
+                // THREE GAPS HAVE TO HOLD AT ONCE, which is what makes this fiddly to change: active vs BAR (or
+                // the selected tab is invisible), hover vs BAR (or hovering does nothing), and active vs HOVER
+                // (or hovering an inactive tab makes it look selected). Moving the bar forces both of these.
+                //
+                // THE ACTIVE FILL IS `slate-200`, ONE STEP OFF THE BAR — deliberately light. `slate-300` held all
+                // three gaps on full steps but read as heavy for what is a passive "you are here" marker, not a
+                // pressed button. Note the active state does NOT have to carry the signal alone: it also gets a
+                // `slate-900` top border and darker text, so a light fill is the third of three cues rather than
+                // the only one.
+                //
+                // THAT LEFT NO WHOLE STEP FOR THE HOVER, hence `slate-100/70` — the bar's own colour at 70%, i.e.
+                // a PARTIAL step between the white content and the bar. It is the one place a fractional value is
+                // right here: hover is transient and pointer-only (it does not exist on touch, where this bar
+                // mostly lives), so it can be the subtlest of the three states, whereas the selected state
+                // persists and must not be ambiguous. The alpha composites over the bar, so it tracks the bar's
+                // value automatically instead of being another hand-copied constant.
                 //
                 // `transition-colors` covers the border, the tint and the text together, so the whole segment
                 // resolves as one change on tab switch.
                 "transition-colors",
                 selected
                   ? "border-slate-900 bg-slate-200 text-slate-900"
-                  : "border-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-700",
+                  : "border-transparent text-slate-500 hover:bg-slate-100/70 hover:text-slate-700",
               )}
             >
               {/* THE UNSEEN DOT BADGES THE ICON, not the version text. It rode on `v4.1` as a superscript when this
@@ -205,15 +227,21 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
                   // icon's strokes and the two read as one shape.
                   //
                   // THE RING COLOUR TRACKS THE SEGMENT'S BACKGROUND so it reads as a GAP rather than an outline: the
-                  // active tab is tinted `bg-slate-200`, the others are the bar's own `bg-slate-50`, and a fixed
+                  // active tab is tinted `bg-slate-200`, the others are the bar's own `bg-slate-100`, and a fixed
                   // ring value would show as a visible halo on whichever one it did not match.
                   //
-                  // BOTH VALUES ARE COPIES, so they go stale silently — the ring cannot be `currentColor` or
-                  // inherit a background. If the bar's tint or the active fill changes, these two change with them.
-                  // `ring-white` was correct here only while the bar was white.
+                  // BOTH VALUES ARE HAND-COPIED FROM THE TWO BACKGROUNDS ABOVE, and nothing enforces that — a
+                  // ring cannot be `currentColor` or inherit a background, so if those two change and these do
+                  // not, the mismatch shows up as a halo rather than as an error. Every past value here was
+                  // correct only for one bar colour: `ring-white` while the bar was white, then `ring-slate-50`,
+                  // then `ring-slate-200` when the active fill was `slate-300`. Check this line whenever either
+                  // background moves.
+                  //
+                  // The INACTIVE ring matches the bar rather than the hover fill: the dot is on the icon, and
+                  // hovering a tab that has the dot is a transient state not worth a third value.
                   <UnseenDot
                     label="New framework updates"
-                    className={cn("absolute -top-0.5 -right-1.5 size-2 ring-2", selected ? "ring-slate-200" : "ring-slate-50")}
+                    className={cn("absolute -top-0.5 -right-1.5 size-2 ring-2", selected ? "ring-slate-200" : "ring-slate-100")}
                   />
                 ) : null}
               </span>
