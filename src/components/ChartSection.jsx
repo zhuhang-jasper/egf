@@ -1,6 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
-import { ImageDown, Settings, Share2 } from "lucide-react";
+// `Image` is aliased because the bare name is a global DOM constructor (`new Image()`), and a component
+// shadowing it at module scope is a trap for anything later in this file that wants the real one.
+import { Image as ImageIcon, Settings, Share2 } from "lucide-react";
 
 import { ChartScores } from "@/components/ChartScores";
 import { ClusterLegend } from "@/components/ClusterLegend";
@@ -152,8 +154,13 @@ const CAN_SHARE_FILES = (() => {
  * page-level action as that tab's print/share icons and sit in the same place on the page, so they take
  * the same muted-slate surface instead of the default `outline` button they used to wear — switching tabs
  * should not restyle the chrome. They keep their text because neither glyph is self-explanatory here:
- * `ImageDown` reads as "save an image" (which is the COPY button's fallback, not its primary path) and
- * `Share2` is a generic share mark, so the word is what says which action this is.
+ * `Image` names the SUBJECT of the action without saying what is done to it, and `Share2` is a generic
+ * share mark, so the word is what says which action this is.
+ *
+ * IT WAS `ImageDown` (an image with a download arrow), and that glyph advertised the wrong path: the arrow
+ * says "save to disk", which is only this button's FALLBACK for browsers without clipboard-image support —
+ * the primary behaviour is a clipboard copy (see handleCopy). A plain `Image` makes no claim about the
+ * verb and leaves that to the label, which is the honest split when one button has two possible outcomes.
  *
  * Share comes FIRST: it is the primary action where it exists, and copy is the fallback for everywhere
  * else. Reading order matches that.
@@ -174,7 +181,7 @@ function ExportMenu({ onCopy, onShare }) {
         className={cn(TOOLBAR_SURFACE, "group relative gap-1")}
         aria-label="Copy image"
       >
-        <ImageDown className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        <ImageIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
         Copy
         <Tooltip text="Copy the chart image to your clipboard" />
       </Button>
