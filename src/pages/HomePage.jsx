@@ -46,10 +46,15 @@ const VALID_TABS = IS_ADMIN ? ["tool", "theory", "admin"] : ["tool", "theory"];
  * charts inside come out fitted. HomePage holds it for a short window after mounting the inactive panel, then
  * drops back to `hidden`.
  *
- * `overflow-x-clip` WHILE INACTIVE, to stop a one-frame horizontal scrollbar on tab switch: on the frame a
- * switch commits, the outgoing panel can still be laid out with content sized for the wider measure. That
- * overflowed the document horizontally for a frame, the browser showed a scrollbar, and the visual viewport
- * shrank — which the `fixed` bottom nav is positioned against, so it visibly jumped ~15px.
+ * `overflow-x-clip max-w-full` WHILE INACTIVE, to stop a one-frame horizontal scrollbar on tab switch: on the
+ * frame a switch commits, the outgoing panel can still be laid out at the wider measure. That overflows the
+ * document horizontally for a frame, the browser shows a scrollbar, and the visual viewport shrinks — which the
+ * `fixed` bottom nav is positioned against, so it visibly jumps ~15px (see AppBottomNav for the frame trace).
+ *
+ * BOTH HALVES ARE LOAD-BEARING, and the clip alone was not enough — this was still reproducing with it in
+ * place. `overflow-x: clip` contains what is inside the box; it cannot clip the box itself, and the panel's own
+ * border-box is what overflows, since each panel carries its tab's measure (550 / 900) as a `max-width` on top
+ * of `w-full` and `px-3`. `max-w-full` caps the box at its container so it cannot exceed the viewport at all.
  *
  * Clipping only the INACTIVE panel is what makes this safe: the visible panel keeps `visible` overflow, so nothing
  * that should be able to escape its box (tooltips, dropdowns) is affected, and a hidden panel has nothing to show
@@ -64,9 +69,21 @@ function TabPanel({ label, active, prefit = false, widthStyle, children }) {
         // `h-0` instead of the margins during a prefit pass: `hidden` contributes no height, and this mode
         // must not either, or the document would grow by the margins alone while it lasts.
         prefit ? "h-0 overflow-hidden" : "mt-3 mb-0",
+
+        // `overflow-x: clip` ON THE INACTIVE PANEL. It contains what is INSIDE the box; the box itself is capped
+        // by `maxWidth` in the style object below, which is where that has to happen — see the note there.
         !active && "overflow-x-clip",
       )}
-      style={widthStyle}
+      /* `min(measure, 100%)` rather than the measure raw, so the panel's own border-box can never be wider than
+         its container and become the thing that overflows the document horizontally. Cheap belt-and-braces: the
+         `w-full` + `px-3` box is already within the viewport in practice, and the one-frame scrollbar that made
+         the bottom nav jump turned out to be the invisible tooltips instead (see AppBottomNav's note and
+         components/ui/Tooltip.jsx). Kept because a panel measure wider than the viewport is a real possibility
+         at narrow widths and this costs nothing.
+
+         INLINE, NOT A `max-w-full` CLASS: this is an inline style, and inline styles beat utility classes, so a
+         Tailwind cap alongside it would be silently overridden. The clamp has to be in the same declaration. */
+      style={{ maxWidth: `min(${widthStyle.maxWidth}px, 100%)` }}
       role="tabpanel"
       hidden={!active && !prefit}
       aria-hidden={!active}
@@ -81,7 +98,8 @@ function TabPanel({ label, active, prefit = false, widthStyle, children }) {
 // Parse once at module evaluation time so the URL is read before React renders.
 const BOOT_DEEP_LINK = parseTheoryDeepLink();
 
-/** Per-tab content measure. Constant per tab — see the note on TabPanel's `widthStyle`. */
+/** Per-tab content measure, in px. Constant per tab. TabPanel clamps it with `min(…, 100%)` rather than using
+ *  it raw — see the note on its `style` for why the panel's box must never exceed the viewport. */
 const TAB_WIDTH_STYLE = {
   tool: { maxWidth: FE_UI.page.maxWidthPx },
   theory: { maxWidth: FE_UI.page.theoryMaxWidthPx },

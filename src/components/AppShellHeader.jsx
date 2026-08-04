@@ -2,6 +2,8 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { ChevronsUp } from "lucide-react";
 
+import { Tooltip } from "@/components/ui/Tooltip";
+
 import { SITE_COPY } from "@/constants";
 import { cn } from "@/utils";
 import { clearStickyScrollOffset, getWindowScrollY, scrollWindowToTop, setStickyScrollOffset } from "@/utils/scroll";
@@ -301,13 +303,17 @@ function AppShellScrollTopButton() {
     <button
       type="button"
       onClick={() => scrollWindowToTop({ behavior: "smooth" })}
-      title="Scroll to top"
       aria-label="Scroll to top"
       // `top-3` matches the brand mark opposite, so the two corners share one centre line. Both resolve against
       // the stack's own `p-3` — see its docblock.
-      className="absolute right-3 top-3 z-10 inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-slate-100/80 text-slate-500 transition-colors hover:bg-slate-200/80 hover:text-slate-900 print:hidden"
+      //
+      // `group` for the Tooltip below, which replaces a native `title` so the app has one tooltip mechanism.
+      className="group absolute right-3 top-3 z-10 inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-slate-100/80 text-slate-500 transition-colors hover:bg-slate-200/80 hover:text-slate-900 print:hidden"
     >
       <ChevronsUp className="size-4" aria-hidden />
+      {/* `placement="bottom"` — this sits in the sticky header's top-right corner, so a tooltip above it would
+          land outside the header (Floating UI would flip it back down anyway; this states the intent). */}
+      <Tooltip text="Scroll to top" placement="bottom" />
     </button>
   );
 }

@@ -150,12 +150,12 @@ function ExportMenu({ onCopy, onShare }) {
           size="sm"
           shape="pill"
           onClick={onShare}
-          className="gap-1"
-          title="Share the chart image"
+          className="group relative gap-1"
           aria-label="Share image"
         >
           <Share className="h-3.5 w-3.5 shrink-0" aria-hidden />
           Share image
+          <Tooltip text="Share the chart image" />
         </Button>
       ) : null}
       <Button
@@ -164,12 +164,12 @@ function ExportMenu({ onCopy, onShare }) {
         size="sm"
         shape="pill"
         onClick={onCopy}
-        className="gap-1"
-        title="Copy the chart image to your clipboard"
+        className="group relative gap-1"
         aria-label="Copy image"
       >
         <Copy className="h-3.5 w-3.5 shrink-0" aria-hidden />
         Copy image
+        <Tooltip text="Copy the chart image to your clipboard" />
       </Button>
     </div>
   );

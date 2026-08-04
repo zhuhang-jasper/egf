@@ -92,7 +92,11 @@ export function AdminContent() {
           <a
             key={route}
             href={hrefForRoute(route)}
-            className="group row-span-3 grid grid-rows-subgrid justify-items-center gap-2 rounded-xl border border-slate-300 bg-white p-6 text-center shadow-md shadow-slate-200/40 transition-colors hover:border-slate-400 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+            /* `select-none` — these are navigation targets, not prose. A card is a big tap area, so a slightly
+               dragged click (or a long-press on touch) otherwise selects the label and description instead of
+               following the link, and leaves the text highlighted afterwards. The same reason the bottom nav's
+               items and the toolbar buttons carry it. */
+            className="group row-span-3 grid select-none grid-rows-subgrid justify-items-center gap-2 rounded-xl border border-slate-300 bg-white p-6 text-center shadow-md shadow-slate-200/40 transition-colors hover:border-slate-400 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
           >
             <Icon className="size-8 shrink-0 text-slate-500 transition-colors group-hover:text-slate-900" aria-hidden />
             <span className="text-base font-bold text-slate-900">{label}</span>

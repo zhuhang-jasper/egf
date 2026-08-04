@@ -89,10 +89,12 @@
        mouseenter/focusin, an event that by definition had not happened yet. The idle, invisible tooltip grew
        the document permanently and nothing would ever shift it back.
 
-       Fixed at the source: Tooltip now clamps in a `useLayoutEffect` (before first paint) and re-clamps via a
-       ResizeObserver, so its RESTING position is in bounds without needing a hover. See `clampToPage` in
-       components/ui/Tooltip.jsx. Do not put `hidden` back — it would only re-hide that class of bug while
-       also making the min-width floor unreachable.
+       Fixed at the source: Tooltip is positioned by Floating UI with `strategy: "fixed"`, so it is laid out
+       against the viewport and contributes NOTHING to the document's scroll extent — an overhang cannot grow the
+       page, visible or not. `flip()`/`shift()` also keep it on screen without any per-call-site alignment to
+       remember. It previously measured itself and corrected a centred position at runtime, which is what kept
+       regressing — see the note in components/ui/Tooltip.jsx. Do not put `hidden` back here; it would only
+       re-hide that class of bug while also making the min-width floor unreachable.
 
        THIS AXIS MUST SCROLL RATHER THAN CLIP, AND THAT COST A ROUND TO RELEARN. A `clip` here (with the scrollport
        moved to `html`) was tried to stop a one-frame horizontal scrollbar during tab switches, which was shrinking

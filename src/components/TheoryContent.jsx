@@ -9,6 +9,7 @@ import { PillarGrid } from "@/components/PillarGrid";
 import { ShareLinkButton } from "@/components/ShareLinkButton";
 import { StaticCompetencyChart } from "@/components/StaticCompetencyChart";
 import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { UnseenDot } from "@/components/UnseenDot";
 
 import { getSectionSentinelId, useSectionSeenObserver } from "@/hooks/useSectionSeenObserver";
@@ -477,16 +478,18 @@ function TheoryContent({
               dialog and none of them can be set from script — deliberately, since they are the user's choice.
               What the app CAN do is make its own layout insensitive to them, which is what `@page` and the
               print rules in index.css are for. */}
+          {/* `group relative` + `<Tooltip>` rather than a native `title`: one tooltip mechanism across the app,
+              with no browser delay and the app's own styling. See components/ui/Tooltip.jsx. */}
           <Button
             type="button"
             variant="outline"
             size="icon"
             onClick={() => window.print()}
-            title="Print the framework"
             aria-label="Print the framework"
-            className={TOOLBAR_ICON_SURFACE}
+            className={cn(TOOLBAR_ICON_SURFACE, "group relative")}
           >
             <Printer className="size-4" aria-hidden />
+            <Tooltip text="Print the framework" placement="bottom" />
           </Button>
         </div>
         <Button type="button" variant="outline" size="sm" shape="pill" onClick={() => setChangelogOpen(true)} className="gap-1">

@@ -28,6 +28,7 @@
     "bumpver:major": "npm version major --no-git-tag-version && npm run -s bumpver:commit"
   },
   "dependencies": {
+    "@floating-ui/react-dom": "^2.1.9",
     "@fontsource-variable/inter": "^5.2.8",
     "@radix-ui/react-slot": "^1.3.0",
     "@zumer/snapdom": "^2.15.0",

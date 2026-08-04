@@ -82,13 +82,27 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
        what made the bar look pasted onto the footer above it. A shadow lifts it off the content instead, which is
        the relationship that is actually true — this floats above a scrolling page.
 
-       NO `transform-gpu` HERE, AND THE FIX FOR THE TAB-SWITCH JUMP IS NOT IN THIS FILE. This bar visibly jumped on
-       every tab switch, and a compositor-layer promotion here looked like the fix but was not: the cause was that
-       the VIEWPORT ITSELF changed width. The two tabs use different content measures, so switching changed the
-       document height enough to add or drop the vertical scrollbar, and `inset-x-0` faithfully re-centred to the
-       new width. `scrollbar-gutter: stable` on `body` (see index.css) reserves that gutter permanently so the
-       width is constant. Promoting this to its own layer only made the symptom cheaper to repaint while leaving it
-       wrong, at the cost of a containing block for descendants and blurry text on some platforms. */
+       NO `transform-gpu` HERE, AND THE FIX FOR THE TAB-SWITCH JUMP IS NOT IN THIS FILE. A compositor-layer
+       promotion here looks like the fix and is not; it only makes the symptom cheaper to repaint while leaving it
+       wrong, at the cost of a containing block for descendants and blurry text on some platforms.
+
+       THE BAR JUMPED VERTICALLY BY ~15px FOR ONE FRAME ON EVERY TAB SWITCH, and `position: fixed` is not the
+       thing that was wrong — the viewport it is fixed to is what moved. A horizontal scrollbar appeared for a
+       single frame, and a horizontal scrollbar shrinks the VISUAL viewport: `innerHeight` stays put while
+       `visualViewport.height` drops by the scrollbar's height. `bottom: 0` resolves against the visual viewport,
+       so the bar faithfully followed it down and back. Traced frame by frame at a 376px viewport: `innerHeight`
+       707 throughout, `visualViewport.height` 707 → 692 → 707, bar gap 0 → 15 → 0.
+
+       THE OVERFLOW WAS A PAIR OF INVISIBLE TOOLTIPS, not anything in this file or in the tab panels' geometry —
+       `scrollWidth` 419 vs `clientWidth` 376, with the chart's "Chart display settings" and the profile menu's
+       "Manage profiles" tooltips the only boxes past the edge. They are `opacity-0`, so they are still laid out,
+       and the runtime clamp they used to carry was computed against a `hidden` (zero-width) panel while their tab
+       was inactive — a stale offset on the frame that panel became visible. Fixed by deleting the clamp: Tooltip
+       is positioned by Floating UI with `strategy: "fixed"`, so it is laid out against the viewport and cannot
+       contribute to the document's scroll extent at all. See components/ui/Tooltip.jsx.
+
+       Nothing here needs to change, and nothing here CAN fix it: a fixed element cannot opt out of the visual
+       viewport. Do not reach for `transform-gpu` or a `dvh` calc — neither addresses a shrinking viewport. */
     <nav
       id="app-bottom-nav"
       aria-label="Primary"

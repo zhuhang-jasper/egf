@@ -15,6 +15,7 @@ const NODE_MODULES_PKG = /\/node_modules\/(?<pkg>@[^/]+\/[^/]+|[^/]+)(?=\/|$)/g;
  */
 const CHUNK_RULES = [
   [/^@radix-ui\//, "radix"],
+  [/^@floating-ui\//, "floating-ui"],
   [/^chart\.js$/, "chart"],
   [/^@zumer\/snapdom$/, "snapdom"],
   [/^lucide-react$/, "lucide"],

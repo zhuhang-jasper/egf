@@ -7,6 +7,7 @@ import { ProfileCombobox } from "@/components/ProfileCombobox";
 import { SaveCollisionDialog } from "@/components/SaveCollisionDialog";
 import { Button } from "@/components/ui/button";
 import { MenuItem } from "@/components/ui/menu-item";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 import { useTouchPrimary } from "@/hooks/useTouchPrimary";
 
@@ -354,13 +355,15 @@ export function TitleToolbar() {
           variant="outline"
           size="sm"
           shape="pill"
-          className="shrink-0 gap-1.5"
+          className="group relative shrink-0 gap-1.5"
           onClick={handleNewProfile}
           aria-label="New profile — clear the name, badge and all levels to start fresh"
-          title="New profile — clear the name, badge and all levels to start fresh"
         >
           <FilePlus className="h-4 w-4" />
           New profile
+          {/* The tooltip carries what the label cannot: that this CLEARS everything. Was a native `title`; now
+              the app's one tooltip component. */}
+          <Tooltip text="Clears the name, badge and all levels to start fresh" />
         </Button>
         {/* Keypad toggle is touch-only — the numeric keyboard switch is meaningless with a physical
             keyboard, so it renders only when touch is the primary input. Icon + switch only (no text
@@ -371,9 +374,8 @@ export function TitleToolbar() {
             role="switch"
             aria-checked={levelKeyboardInputEnabled}
             aria-label="Keypad — numeric keyboard for level inputs"
-            title="Keypad — numeric keyboard for level inputs"
             onClick={toggleLevelKeyboardInputEnabled}
-            className="group inline-flex h-[26.5px] shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-slate-300 bg-white px-1.5 text-xs font-semibold tracking-wide text-slate-600 hover:bg-slate-50 hover:text-slate-800"
+            className="group relative inline-flex h-[26.5px] shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-slate-300 bg-white px-1.5 text-xs font-semibold tracking-wide text-slate-600 hover:bg-slate-50 hover:text-slate-800"
           >
             <Calculator className="size-3.5 shrink-0" aria-hidden />
             {/* Mini switch: black track when on, slate when off; knob slides right when on. */}
@@ -391,6 +393,7 @@ export function TitleToolbar() {
                 )}
               />
             </span>
+            <Tooltip text="Keypad — numeric keyboard for level inputs" />
           </button>
         ) : null}
         <div className="ml-auto flex items-center gap-1.5">
