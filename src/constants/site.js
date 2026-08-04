@@ -45,26 +45,22 @@ export const SITE_COPY = {
    * app deploys under (/egf/). Nothing on the page spells the acronym out, so "9-Pillar" is carrying the
    * recognition here — do not shorten this to a bare "EGF".
    *
-   * The header does not use this — the collapsed header shows `shortLockup` below, which is the mark
-   * rather than a text label. This is for the places the OS asks for a name and gives us no room.
+   * The header does not use this — it shows `shortLockup` below, which is the mark rather than a text
+   * label. This is for the places the OS asks for a name and gives us no room.
    */
   shortName: "9-Pillar EGF",
   /**
-   * The brand lockup shown beside the logo once the header is collapsed: an oversized numeral with the
-   * rest of the name stacked tight against it (see AppShellBrandMark).
+   * The brand lockup in the app header, beside the logo: an oversized numeral with the rest of the name
+   * stacked tight against it (see AppShellBrandMark).
    *
    * TWO LINES, NOT THREE. The full title breaks as "Pillar Engineer / Growth / Framework" at poster
-   * scale, but the collapsed header's row is 32px, and three lines inside it works out to ~8.5px type.
-   * Two lines fit that row at a legible size.
+   * scale, but the header's row is 32px, and three lines inside it works out to ~8.5px type. Two lines
+   * fit that row at a legible size.
    *
-   * TWO LENGTHS, BOTH TWO LINES. The lockup has to clear the centred tablist beside it, so the wide
-   * form runs out of room at ~700px. Rather than drop the mark there, `compactLines` abbreviates to the
-   * same shape at a third of the width — the numeral, the line break and the weight all survive, so it
-   * reads as the same mark rather than a different one. That buys it down to ~530px, below which even
-   * the short form meets the tabs and it hides for real.
-   *
-   * "EGF" matches `shortName` and the deploy path; "Pillar" is kept above it so the abbreviation is not
-   * carrying the identification alone.
+   * ONE LENGTH. There was a shorter `compactLines` pair ("Pillar" / "EGF") for when the lockup had to
+   * clear a centred tablist beside it, which ran out of room at ~700px. Navigation moved to a bottom bar
+   * and the header's title block is gone, so this form fits at every width the app supports and the
+   * abbreviation had no width left to serve.
    *
    * Split as data rather than derived from `title`: the break points are a typographic decision about
    * this lockup, not something recoverable from the sentence.
@@ -72,7 +68,6 @@ export const SITE_COPY = {
   shortLockup: {
     numeral: "9",
     lines: ["Pillar Engineer", "Growth Framework"],
-    compactLines: ["Pillar", "EGF"],
   },
   // Shown (muted) as the chart title when the title field is left blank but the title is enabled.
   chartTitlePlaceholder: "<chart_title_here>",

@@ -15,8 +15,8 @@ export function getWindowScrollY() {
 // `isProgrammaticScroll()` / `markProgrammaticScroll()` lived here, tracking a window during which scroll
 // events were known to come from the app rather than the user. Their only consumer was the header's
 // auto-collapse, which had to tell a real downward gesture from the per-tab restore, a deep-link glide, or
-// the matrix jump. Nothing reacts to scrolling as *intent* any more — the header is user-driven only (see
-// useHeaderCollapse) — so there is no longer anything to discriminate for.
+// the matrix jump. Nothing reacts to scrolling as *intent* any more — the header does not respond to scrolling
+// at all (see AppShellHeader) — so there is no longer anything to discriminate for.
 
 export function scrollWindowTo(y, { behavior = "auto" } = {}) {
   window.scrollTo({ top: Math.max(0, y), left: 0, behavior });
@@ -50,55 +50,11 @@ export function clearStickyScrollOffset() {
 // top once stuck, not its document position. Rather than being fixed, it stopped being needed:
 // `useTabScrollMemory` stores a plain `scrollY` again.
 
-/**
- * How much the sticky header's height CHANGES when the intro is toggled — the distance the page has to be
- * shifted so content appears to stay still.
- *
- * NOT THE INTRO'S OWN HEIGHT, which is what this used to return and is subtly wrong. The header stack has a
- * `min-h-14` floor (56px) that reserves the corner row for the absolutely-positioned brand mark and caret, since
- * neither contributes any height of its own. So the stack does not shrink to zero when the intro does — it stops
- * at that floor:
- *
- *   collapsed   max(56, 24 padding + 0)            = 56px
- *   expanded    24 padding + intro (~120px)        = ~144px
- *   the delta   ~88px, NOT the intro's ~120px
- *
- * Compensating by the intro's height over-scrolled by the difference (~32px), which is exactly the "content did
- * not stay still" symptom. The floor is a `min-height`, so the error is not even a constant — it is however much
- * of the floor the padding does not already fill.
- *
- * MEASURED, NOT DERIVED, for that reason: taking the stack's real height and subtracting what it will collapse to
- * keeps this correct if the padding, the floor, or the controls' size ever change, none of which this file should
- * have to know about.
- *
- * A HEIGHT, NOT A POSITION, which is what makes it safe to read off a sticky element. The position of a stuck
- * element's rect tracks the viewport rather than the document; its height does not.
- *
- * Reports the SETTLED delta, not an in-flight one: the intro animates, so a caller reacting to the toggle would
- * otherwise read a value part-way through the transition. The intro's `scrollHeight` ignores the animating
- * `grid-template-rows` track and gives the height it is heading for, and the floor is a static style value, so
- * both terms are already settled whichever direction the toggle is going.
- */
-export function getHeaderToggleDeltaPx(stackEl = document.getElementById("app-shell-header-stack")) {
-  const introEl = document.getElementById("app-shell-intro");
-  const content = introEl?.firstElementChild;
-  if (!stackEl || !content) {
-    return 0;
-  }
-
-  // The stack's height with the intro fully open: its own vertical padding plus the intro's target height. Read
-  // the padding off the computed style rather than hardcoding `p-3`, so this cannot drift from the class.
-  const styles = getComputedStyle(stackEl);
-  const verticalPadding = Number.parseFloat(styles.paddingTop) + Number.parseFloat(styles.paddingBottom);
-  const floor = Number.parseFloat(styles.minHeight) || 0;
-  const expanded = verticalPadding + content.scrollHeight;
-
-  // Collapsed, the intro contributes nothing, so the stack rests at whichever is larger: its padding, or the
-  // floor that holds the corner row. `max(0, …)` because a floor taller than the expanded height would otherwise
-  // yield a negative shift.
-  const collapsed = Math.max(verticalPadding, floor);
-  return Math.max(0, expanded - collapsed);
-}
+// `getHeaderToggleDeltaPx()` lived here: how much the sticky header's height changed when its title block was
+// toggled, so the page could be shifted by exactly that and content appear to stay still. The header has no
+// title block and no toggle any more (see AppShellHeader) — its height is the `min-h-14` floor, always — so
+// there is no delta to measure and nothing to compensate. `--app-sticky-offset` is still published from the
+// stack's real height, which is what every scroll target actually needs.
 
 /**
  * The vertical band a popover may occupy, in viewport coordinates: `{ top, bottom }`.

@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
-import { Image, ScrollText, Share2 } from "lucide-react";
+import { Image, Printer, ScrollText, Share2 } from "lucide-react";
 
-import { AppShellPrintTagline } from "@/components/AppShellHeader";
 import { CareerTracks } from "@/components/CareerTracks";
 import { ChangelogModal } from "@/components/ChangelogModal";
 import { CompetencyMatrix } from "@/components/CompetencyMatrix";
@@ -14,14 +13,14 @@ import { UnseenDot } from "@/components/UnseenDot";
 
 import { getSectionSentinelId, useSectionSeenObserver } from "@/hooks/useSectionSeenObserver";
 
-import { FE_UI, FRAMEWORK_VERSION, IS_ADMIN } from "@/constants";
+import { FE_UI, FRAMEWORK_VERSION, IS_ADMIN, SITE_COPY } from "@/constants";
 import {
-  CAREER_TRACKS_SECTION_INTRO,
+  COMPETENCY_MATRIX,
+  COMPETENCY_MATRIX_INTRO,
   getSkillTierBands,
-  PILLARS_SECTION_INTRO,
   SENIORITY_LEVEL_DEFINITIONS,
-  SENIORITY_SECTION_INTRO,
-  SKILL_TIERS_CAPTION,
+  SKILL_TIERS_INTRO,
+  THEORY_SECTION_COPY,
 } from "@/constants/theory-data";
 import { DOC_SECTION, DOC_TEXT } from "@/styles/doc-typography";
 import { cn } from "@/utils";
@@ -39,6 +38,21 @@ const ADMIN_LINKS = [
   { route: "social", label: "Social", icon: Share2 },
 ];
 
+/**
+ * The look of the 32px square controls at the left of this tab's toolbar, worn by both the print button and
+ * the admin page links so the row reads as one group rather than two treatments that happen to match.
+ *
+ * EVERY ONE OF THEM IS A `<Button>`, including the links — the admin entries render through `asChild`, which
+ * passes these classes onto a real `<a>` rather than wrapping one. That distinction is worth keeping: they
+ * navigate to another page, so they must stay anchors to keep cmd/middle-click, the right-click menu, the URL
+ * on hover, and a screen reader announcing "link" instead of "button". Routing them through `onClick` would
+ * look identical and quietly take all of that away.
+ *
+ * Only the surface lives here (radius, border, fill, text and hover colors). The layout, transition and
+ * focus-visible ring come from `buttonVariants` at `size="icon"`, which is already this 32px square.
+ */
+const TOOLBAR_ICON_SURFACE = "shrink-0 rounded-lg border-slate-200 bg-slate-100/80 text-slate-600 hover:bg-slate-200/80 hover:text-slate-900";
+
 // Stable fallback for the unseen-sections prop, so a caller that omits it doesn't hand the observer
 // a fresh Set identity on every render.
 const NO_UNSEEN_SECTIONS = new Set();
@@ -47,6 +61,35 @@ const returnsFalse = () => false;
 
 // Skill-tier band geometry is static — resolve the chained start/width percentages once.
 const SKILL_TIER_BANDS = getSkillTierBands();
+
+// THE MATRIX OPENS ITS FIRST PILLAR ON A FRESH VISIT, so the section shows what a pillar card actually
+// contains instead of asking the reader to take the lead-in's word for it. Nine collapsed cards read as a
+// second copy of the Section I pillar grid — a name over its focus areas — with the 45 cells nowhere on
+// screen. The first item open is what an accordion normally does for exactly this reason.
+//
+// Read from the matrix data rather than hardcoding "coding", so it follows the authored pillar order.
+const DEFAULT_EXPANDED_PILLAR = COMPETENCY_MATRIX[0].pillarId;
+
+/**
+ * The expanded pillar to boot with, resolving the three persisted states (see
+ * `getPersistedExpandedPillar`) against that default.
+ *
+ * A STORED EMPTY STRING WINS OVER THE DEFAULT: the user closed the matrix and reloaded, and reopening it
+ * for them would be the app arguing. Only a session that has never touched the matrix gets the default.
+ *
+ * A PILLAR DEEP-LINK SUPPRESSES IT TOO. The staged effect below deliberately boots from the persisted
+ * pillar and switches to the link's target only once scroll-restore has settled; opening pillar 1 here
+ * would just mean opening it to collapse it again ~350ms later, shifting layout mid-restore for nothing.
+ */
+function getInitialExpandedPillar(deepLink) {
+  const persisted = getPersistedExpandedPillar();
+  if (persisted !== null) {
+    return persisted || null;
+  }
+
+  const deepLinkPillar = deepLink?.section === THEORY_SECTIONS.matrix ? deepLink.pillar : null;
+  return deepLinkPillar ? null : DEFAULT_EXPANDED_PILLAR;
+}
 
 // Hero radar pillar-label sizing: scales linearly with the chart, 12px at its small-mobile width up
 // to 15px at FE_UI.page.chartMaxWidthPx (the wrapper cap below). Shared with the tool chart so the
@@ -61,6 +104,49 @@ const DEEPLINK_RESTORE_SETTLE_MS = 350;
 // Expand/collapse animation length — matches the `duration-300` on the matrix panel. After switching
 // to the deep-link pillar we wait this out so the card has stopped moving before we measure & glide.
 const DEEPLINK_EXPAND_ANIM_MS = 300;
+
+/**
+ * Whether the tagline's first sentence fits on a single line at the current width.
+ *
+ * Drives where the second sentence goes, per the rule: if the first sentence fits on one line the second
+ * starts a new one; if the first has to wrap, the second continues inline instead. Forcing a break in the
+ * wrapped case is what produced an orphaned word on its own line with the next sentence stranded below it.
+ *
+ * NOT EXPRESSIBLE IN CSS, which is why this measures. The condition depends on whether the RENDERED text
+ * fits, a fact only available after layout — a media query would instead have to hardcode "the width at
+ * which ~104 characters of `text-sm` fit", which is a number that goes stale silently the moment the copy
+ * or the type scale changes. `scrollHeight` against a single line's height is the direct question.
+ *
+ * This lived in AppShellHeader while the tagline was part of the app header, and moved here with it.
+ */
+function useFitsOneLine(ref) {
+  const [fits, setFits] = useState(true);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) {
+      return undefined;
+    }
+
+    // Compare the rendered height against one line's worth. Line height comes from the computed style
+    // rather than a constant so it tracks the responsive `text-xs sm:text-sm` step without being told.
+    const measure = () => {
+      const lineHeight = Number.parseFloat(getComputedStyle(el).lineHeight);
+      if (!Number.isFinite(lineHeight) || lineHeight <= 0) {
+        return;
+      }
+      // 1.5 lines as the threshold: comfortably above rounding noise on a single line, comfortably below two.
+      setFits(el.scrollHeight < lineHeight * 1.5);
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [ref]);
+
+  return fits;
+}
 
 /**
  * Zero-height marker bracketing a section's content, used by `useSectionSeenObserver` to detect that
@@ -138,137 +224,81 @@ function SeniorityPhaseTitle({ phase, className, breakAfterSlash = false }) {
  * rather than shrinking the type if a label ever looks cramped, since the percentages are
  * approximate by intent (see `SKILL_TIERS`) but a clipped word is just a bug.
  *
- * An L1-L5 ruler sits above the bands to anchor what the horizontal axis means. On mobile that ruler
- * is the only thing naming the axis, since the level cards are stacked by then and no longer form
- * visual columns above it; on desktop the ruler is aligned to those columns (see below) so the two
- * read as one scale, and the bands are positioned on that same axis via `axisPos`.
+ * SELF-CONTAINED AXIS. An L1-L5 ruler sits directly above the bands and is the only thing naming the
+ * horizontal scale, at every width. This card used to live at the tail of the Proficiency Levels
+ * section, where from `sm:` up it also registered with the five level cards above it — the ruler
+ * pulled out to the card's outer edge and the band edges were computed through the card grid's
+ * gutters, so "Core ends mid-L3" landed over the actual L3 column. Moved to the head of the matrix
+ * section (it is the legend for the tier pills on every pillar card), there is no column grid above it
+ * to register with, so both the ruler and the bands are plain percentages of this card's own track:
+ * five equal 20% cells, band edges at their authored percentages. The ruler and the bands share that
+ * one track, so they stay exact against each other, which is the alignment that carries the meaning.
+ *
+ * A FIGURE, NOT A TITLED CARD. The "Skill Tiers" h3 and the explanatory caption that used to bracket
+ * these bands both live outside now — the prose as `SKILL_TIERS_INTRO` immediately above (see the call
+ * site), the heading nowhere, since a title inside the box would repeat what that paragraph just said.
+ * What is left is the drawing.
+ *
+ * IT KEEPS ITS BORDER, though. Dropping the card was considered and rejected: three small tinted bands and
+ * a ruler on bare white read as unfinished, and the nine pillar cards below are cluster-tinted with a
+ * coloured left edge, so a plain white card is already a visibly different kind of object rather than a
+ * tenth one competing with them.
  */
-
-/**
- * Where a percentage of the logical L1-L5 axis falls, as a CSS length measured from the LEFT EDGE OF
- * THE BAND TRACK (i.e. inside this card's padding).
- *
- * The axis is defined by the seniority cards above: a real `grid-cols-5 gap-2`, so a column is
- * `(100% - 4g)/5` and NOT 20% of the width. A percentage `p` sits `p/20` columns along — that many
- * column-widths plus the gutters crossed getting there. Gutters are `min(cols, 4)`, never `cols`:
- * five columns have only four gutters, and counting a fifth pushes the 100% mark a full gap past the
- * right edge.
- *
- * The band track is inset by this card's `p-3` + 1px border, while the cards' container is not, so
- * the card-relative position is shifted left by that inset to land in track coordinates. Widths must
- * therefore be a DIFFERENCE of two `axisPos` values — the inset and the gutter terms only cancel for
- * a span measured from 0.
- *
- * `--egf-axis-gap` collapses to 0 on mobile, where the cards are stacked, there are no columns to
- * register with, and the whole expression degrades cleanly to a plain percentage of the track.
- */
-const AXIS_GAP = "var(--egf-axis-gap)";
-const AXIS_INSET = "var(--egf-axis-inset)";
-
-function axisPos(pct) {
-  const cols = pct / 20;
-  const gutters = Math.min(cols, 4);
-  return `calc(${cols} * (100% + 2 * ${AXIS_INSET} - 4 * ${AXIS_GAP}) / 5 + ${gutters} * ${AXIS_GAP} - ${AXIS_INSET})`;
-}
-
 function SkillTierBands() {
   return (
-    // `--egf-axis-gap` mirrors the card grid's `gap-2`, `--egf-axis-inset` this card's `p-3` + 1px
-    // border. Both are 0 on mobile, where the cards are stacked: with no columns to register with,
-    // `axisPos` degrades to a plain percentage of the track, which is the right behavior there.
-    <div
-      className={cn(
-        cardClass,
-        "flex flex-col gap-2 p-3",
-        "[--egf-axis-gap:0px] [--egf-axis-inset:0px]",
-        "sm:[--egf-axis-gap:0.5rem] sm:[--egf-axis-inset:calc(0.75rem+1px)]",
-      )}
-    >
-      <h3 className={cn(DOC_TEXT.cardTitlePlain, "font-bold")}>Skill Tiers</h3>
-
-      <div>
-        {/* Ruler: five equal cells naming the axis the bands are measured against.
-
-            From `sm:` up it also has to REGISTER with the seniority cards above, which are a
-            `grid-cols-5 gap-2` sibling in the same column — so each code sits centred over its own
-            card. Two things have to match for that:
-
-              1. the 8px gutter (`sm:gap-2`) — otherwise the cells are 20% of a gapless track and
-                 each one drifts left of its card, worsening toward L5;
-              2. the outer width. This card adds `p-3` (12px) and a 1px border that the card grid's
-                 container does not have, so the ruler is inset ~13px per side and its cells come out
-                 narrower than the columns. That error is symmetric about the centre: L3 looks right
-                 while L1/L2 sit left and L4/L5 sit right of their cards.
-
-            `-mx-[13px]` fixes (2) by pulling the track back out to the card's outer edge. Do NOT add
-            matching `px` here to keep the end labels inboard — it restores the exact width just
-            removed and silently makes this a no-op. The labels are centred in their cells and the
-            cells now match the columns, so the end codes land over their cards, not off the card.
-
-            Mobile stacks the cards, so there is nothing to register against and both are dropped.
-
-            The bands below register with the same axis via `axisPos`. */}
-        <div className="grid grid-cols-5 border-b border-slate-200 pb-1 sm:-mx-[calc(0.75rem+1px)] sm:gap-2">
-          {SENIORITY_LEVEL_DEFINITIONS.map(({ code }) => (
-            <span key={code} className={cn("text-center", DOC_TEXT.badgeMicro, "text-slate-400")}>
-              {code}
-            </span>
-          ))}
-        </div>
-
-        {/* Bands are normal flow rows, indented with a computed margin rather than absolutely
-            positioned, so the track's height comes from its content and the row gap is just
-            `space-y`. A computed offset (not a grid column) is what lets an edge land mid-column. */}
-        <div className="mt-1.5 flex flex-col gap-1 sm:gap-2">
-          {SKILL_TIER_BANDS.map(({ id, label, startPct, endPct, bandClass }) => (
-            <div
-              key={id}
-              // `bodySemibold` for the 12/13/14 body ramp (these labels are content, not a heading);
-              // `bandClass` stays last so the tier's text color beats that token's `text-slate-800`.
-              className={cn(
-                // `px-2` at sm and up, not `px-3`: the widest label ("Foundational") sits in the
-                // NARROWEST band, so horizontal padding is charged against the tightest budget on
-                // the track.
-                "flex items-center justify-center rounded-md px-1.5 py-1 italic sm:rounded-lg sm:px-2 sm:py-1.5",
-                DOC_TEXT.bodySemibold,
-                bandClass,
-              )}
-              // Edges sit on the card axis via `axisPos`, and width is the DIFFERENCE of two axis
-              // positions — the card-padding inset and the gutter terms only cancel for a span
-              // measured from 0, so mapping a width on its own would come out short.
-              //
-              // The two OUTER edges are clamped into the track and are knowingly inexact: 0% and 100%
-              // are the card grid's outer edges, which lie under this card's padding, so drawing them
-              // truly would overhang the card. `max(0px, …)` and the `min(…, 100%)` implied by
-              // clamping the right edge give up those two positions to keep the band inside its box.
-              // The four INTERIOR edges — Foundational's end, Core's start and end, Advanced's start
-              // — are the ones that carry meaning against the level cards, and they stay exact.
-              //
-              // `minWidth: max-content` still guards the label: the browser measures the rendered
-              // text and refuses to draw the band narrower. It only binds in narrow layouts (chiefly
-              // mobile, where there are no columns to register with anyway); where it does bind it
-              // wins over exact positioning, since an approximate percentage is fine but a clipped
-              // word is a bug.
-              style={{
-                marginLeft: `max(0px, ${axisPos(startPct)})`,
-                width: `calc(min(100%, ${axisPos(endPct)}) - max(0px, ${axisPos(startPct)}))`,
-                minWidth: "max-content",
-              }}
-            >
-              {label}
-            </div>
-          ))}
-        </div>
+    <div className={cn(cardClass, "p-3")}>
+      {/* Ruler: five equal 20% cells naming the axis the bands below are measured against. Both are plain
+          percentages of this one track — see the docblock for what was dropped when this card stopped
+          sitting under the five level cards. */}
+      <div className="grid grid-cols-5 border-b border-slate-200 pb-1">
+        {SENIORITY_LEVEL_DEFINITIONS.map(({ code }) => (
+          <span key={code} className={cn("text-center", DOC_TEXT.badgeMicro, "text-slate-400")}>
+            {code}
+          </span>
+        ))}
       </div>
 
-      <p className={DOC_TEXT.body}>{SKILL_TIERS_CAPTION}</p>
+      {/* Bands are normal flow rows, indented with a margin rather than absolutely positioned, so the
+          track's height comes from its content and the row gap is just the flex `gap`. A margin (not a
+          grid column) is what lets an edge land mid-column. */}
+      <div className="mt-1.5 flex flex-col gap-1 sm:gap-2">
+        {SKILL_TIER_BANDS.map(({ id, label, startPct, widthPct, bandClass }) => (
+          <div
+            key={id}
+            // `bodySemibold` for the 12/13/14 body ramp (these labels are content, not a heading);
+            // `bandClass` stays last so the tier's text color beats that token's `text-slate-800`.
+            className={cn(
+              // `px-2` at sm and up, not `px-3`: the widest label ("Foundational") sits in the NARROWEST
+              // band, so horizontal padding is charged against the tightest budget on the track.
+              "flex items-center justify-center rounded-md px-1.5 py-1 italic sm:rounded-lg sm:px-2 sm:py-1.5",
+              DOC_TEXT.bodySemibold,
+              bandClass,
+            )}
+            // Straight percentages of the track: no clamping needed, since 0-100% now IS the box.
+            //
+            // `minWidth: max-content` guards the label: the browser measures the rendered text and refuses
+            // to draw the band narrower. Where it binds it wins over exact positioning, since an
+            // approximate percentage is fine (see `SKILL_TIERS`) but a clipped word is a bug.
+            style={{
+              marginLeft: `${startPct}%`,
+              width: `${widthPct}%`,
+              minWidth: "max-content",
+            }}
+          >
+            {label}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
 
+// The two branches are mutually exclusive breakpoint views of the same five levels, so a fragment is
+// enough — there is nothing left to space now that the Skill Tiers card has moved to the matrix
+// section (it was the only sibling this needed a flex column for).
 function SeniorityStepper() {
   return (
-    <div className="flex flex-col gap-3">
+    <>
       <div className="flex flex-col gap-2 sm:hidden">
         {SENIORITY_LEVEL_DEFINITIONS.map(({ code, phase, description }) => (
           <div key={code} className={cn(cardClass, "flex items-center gap-2 p-3")}>
@@ -307,9 +337,7 @@ function SeniorityStepper() {
           ))}
         </div>
       </div>
-
-      <SkillTierBands />
-    </div>
+    </>
   );
 }
 
@@ -325,6 +353,8 @@ function TheoryContent({
   markSectionSeen = noop,
 }) {
   const consumedRef = useRef(false);
+  const taglineProbeRef = useRef(null);
+  const taglineFitsOneLine = useFitsOneLine(taglineProbeRef);
 
   // Clears a section's dot once both its head and tail have been in view AND the section has settled
   // on screen. Observes only the still-unseen sections, so this is inert for a caught-up user.
@@ -336,7 +366,7 @@ function TheoryContent({
   // effect below then switches to pillar B (collapse A, expand B) once restore has settled, and only
   // then glides to B. Expanding B immediately here would shift layout under the restore and land it
   // at the wrong spot.
-  const [expandedPillar, setExpandedPillar] = useState(getPersistedExpandedPillar);
+  const [expandedPillar, setExpandedPillar] = useState(() => getInitialExpandedPillar(deepLink));
 
   // The "What's New" highlighter is permanently OFF: the `**…**` markers still exist in the copy
   // (kept for future use) but the amber fill never renders, so elevated text always reads as plain
@@ -435,121 +465,279 @@ function TheoryContent({
   }, []);
 
   return (
-    <div className="flex flex-col gap-6 print:max-w-none">
-      <div className="flex flex-col gap-2">
-        {/* Toolbar row: admin page links left, changelog right. The admin shortcuts used to float at
-            the right edge of the sticky tab bar, which forced an admin-only mobile layout up there;
-            moving them here keeps the app header identical for every user. `justify-between` with an
-            empty left side still parks the changelog button on the right for non-admins.
+    <>
+      {/* Toolbar row: admin page links left, changelog right. The admin shortcuts used to float at the
+          right edge of the sticky tab bar, which forced an admin-only mobile layout up there; moving them
+          here keeps the app header identical for every user. `justify-between` with an empty left side
+          still parks the changelog button on the right for non-admins.
 
-            `mb-2` STACKS ON THIS COLUMN'S `gap-2` for 16px above the hero radar. The tool tab's toolbar
-            row is spaced with the identical pair (see ChartSection) — keep them in step, or the page
-            appears to shift when you switch tabs. The bare `gap-2` read as no gap at all here, since the
-            radar begins straight after this row rather than after a title row like the tool tab's. */}
-        <div className="mb-2 flex items-center justify-between gap-2 print:hidden">
-          <div className="flex items-center gap-1.5">
-            {IS_ADMIN
-              ? ADMIN_LINKS.map(({ route, label, icon: Icon }) => (
-                  <a
-                    key={route}
-                    href={hrefForRoute(route)}
-                    title={label}
-                    aria-label={label}
-                    className="inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-slate-100/80 text-slate-600 transition-colors hover:bg-slate-200/80 hover:text-slate-900"
-                  >
+          OUTSIDE THE SECTIONS COLUMN, and a sibling of it rather than its first child. That column's `gap-6`
+          is the spacing BETWEEN SECTIONS; this row is page chrome, not a section, and being in there meant
+          inheriting a 24px gap and then cancelling most of it back with `-mb-2` — a negative margin whose
+          only job was to undo the container it had been put in.
+
+          `mb-4` is the real number: 16px above the framework title, matching the tool tab's toolbar row
+          against its own first element (see ChartSection). Keep the two in step, or the page appears to
+          shift when you switch tabs. */}
+      <div className="mb-4 flex items-center justify-between gap-2 print:hidden">
+        <div className="flex items-center gap-1.5">
+          {/* PRINT, FOR EVERYONE — the admin links beside it are gated behind `?admin=1`, this is not. The
+              theory tab is built to print as a reference document: a cover sheet, then a page per pillar. Until
+              now the only route to it was the browser's own menu, which readers do not associate with a page
+              they are looking at. Same 32px square as the admin links so the group reads as one row.
+
+              `window.print()` and nothing else. Paper size, margins and destination all live in the browser's
+              dialog and none of them can be set from script — deliberately, since they are the user's choice.
+              What the app CAN do is make its own layout insensitive to them, which is what `@page` and the
+              print rules in index.css are for. */}
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => window.print()}
+            title="Print the framework"
+            aria-label="Print the framework"
+            className={TOOLBAR_ICON_SURFACE}
+          >
+            <Printer className="size-4" aria-hidden />
+          </Button>
+          {IS_ADMIN
+            ? ADMIN_LINKS.map(({ route, label, icon: Icon }) => (
+                // `asChild` — styled as a button, still an anchor. See TOOLBAR_ICON_SURFACE for why these
+                // navigate as links rather than through an onClick handler.
+                <Button key={route} asChild variant="outline" size="icon" className={TOOLBAR_ICON_SURFACE}>
+                  <a href={hrefForRoute(route)} title={label} aria-label={label}>
                     <Icon className="size-4" aria-hidden />
                   </a>
-                ))
-              : null}
+                </Button>
+              ))
+            : null}
+        </div>
+        <Button type="button" variant="outline" size="sm" shape="pill" onClick={() => setChangelogOpen(true)} className="gap-1">
+          <ScrollText className="size-3.5 shrink-0" aria-hidden />
+          Show Changelog
+        </Button>
+      </div>
+
+      <ChangelogModal open={changelogOpen} onClose={() => setChangelogOpen(false)} />
+
+      {/* THE SECTIONS COLUMN. `gap-6` here means one thing only: the distance between the cover and the four
+          numbered sections, and between those sections. Nothing that is not one of those five belongs in it. */}
+      <div className="flex flex-col gap-6 print:max-w-none">
+        {/* THE INTRO BLOCK, AND ON PAPER THE COVER PAGE — section I forces a page break, so the first
+            sheet carries exactly this: the framework title, the empty radar, and the tagline.
+
+            NOT A NUMBERED SECTION. It has no content of its own, so it gets no heading, no share link
+            and no unseen dot — it is the title plate that the four sections follow. That is also why
+            the app header carries no title block any more: this is where the framework introduces
+            itself, one tap from the tool rather than permanently above it.
+
+            ONE ORDER FOR BOTH MEDIA: title, radar, tagline. This block briefly ran radar-first on screen
+            with `print:order-first` lifting the title on paper, a divergence inherited from the days when
+            the title lived in the app header and the tagline had to be rendered a SECOND time under the
+            radar (the old `AppShellPrintTagline`) because no CSS could interleave two components with a
+            tab panel between them. With all three as siblings here, the ordering utility is gone too:
+            what you see is what prints.
+
+            `print:mt-[18vh]` — A RESERVE, NOT A MEASUREMENT: it pushes the trio down the sheet so it
+            reads as a cover rather than sitting at the top with the rest blank. The block's height is
+            content-driven (the radar is sized at runtime, the tagline wraps to its own measure), so
+            there is nothing to centre against from here. Landing a little above true centre is the
+            safe direction — overflow the sheet by a pixel and the cover becomes two pages.
+
+            NO BOTTOM MARGIN: this is a sibling of the four sections now, so the parent column's `gap-6`
+            sets the distance to section I, the same distance that separates every other pair. It used to
+            carry `mb-4` because it lived in a nested `gap-2` column with section I inside it. */}
+        <div className="flex flex-col print:mt-[18vh] gap-3">
+          {/* NOT A HEADING ELEMENT, and `aria-hidden`: the page's <h1> is the lockup in the sticky header
+              (see AppShellBrandMark), which announces this exact string and is present on both tabs. A
+              second h1 here would compete with it, and an h2 would sit above section I's own h2 for no
+              structural reason.
+
+              `mb-2` on screen, `print:mb-[5vh]` on paper. The printed cover has a whole sheet for three
+              elements, so the title and the plate below it read as a title and a figure rather than a
+              heading jammed against a chart; that generous space is paired with the tagline's matching
+              `print:mt-[5vh]` on the other side, so the radar sits in equal air.
+
+              The version is print-only. On screen it is already in the bottom nav's Theory tab. */}
+          <p
+            aria-hidden
+            className="text-balance mx-auto flex w-full flex-col items-center text-center text-xl sm:text-2xl font-extrabold leading-tight tracking-tight text-slate-900 print:mb-[5vh]"
+          >
+            {/* THE VERSION IS PRINT-ONLY. On screen the bottom nav's Theory tab already carries a `v4.1`
+                badge, so stating it again under the title said the same number twice within a thumb's reach.
+                A printout has no nav, and a reference document should say which version of the framework it
+                is — so paper gets it and the screen does not.
+
+                Two sibling spans, which the plate's `flex-col` sets as two rows: that is the layout paper
+                wants, and on screen the second one is simply not rendered. `text-xl` holds it a step under the
+                title's larger print size rather than inheriting it. */}
+            <span>{SITE_COPY.title}</span>
+            <span className="hidden text-xl print:block">v{FRAMEWORK_VERSION}</span>
+          </p>
+
+          {/* `data-print-hero-radar` is a hook for print CSS only — see the rule in index.css. The radar
+              inside is sized imperatively from its SCREEN width, and on paper that measurement is stale in a
+              way no JS can correct (`beforeprint` fires BEFORE the print layout exists, so measuring there
+              still reads the screen). The rule releases the frame's pinned height instead, so the canvas can
+              scale to the printed frame by its own aspect ratio. */}
+          <div data-print-hero-radar className="mx-auto w-full" style={{ maxWidth: FE_UI.page.chartMaxWidthPx }}>
+            <StaticCompetencyChart
+              levels={[]}
+              plainLabels={false}
+              pointLabelPxRange={HERO_POINT_LABEL_PX_RANGE}
+              clusterLabelColors
+              heroLabelNudge
+              hidePolygon
+              showLevelTicks
+              fullWidth
+              aria-label="Empty 9-pillar competency radar"
+            />
           </div>
-          <Button type="button" variant="outline" size="sm" shape="pill" onClick={() => setChangelogOpen(true)} className="gap-1">
-            <ScrollText className="size-3.5 shrink-0" aria-hidden />
-            Show Changelog
-          </Button>
+
+          {/* THE SECOND SENTENCE BREAKS ONLY IF THE FIRST FITS ON ONE LINE (see `useFitsOneLine`). When the
+              first sentence already has to wrap, forcing a break too leaves an orphaned word with the next
+              sentence stranded below it; letting it run on instead fills the lines. So:
+
+                first fits    → `block`, `detail` starts its own line
+                first wraps   → `inline`, `detail` continues the flow
+
+              NOT `text-pretty` on the paragraph. That algorithm shortens earlier lines to avoid a short
+              final one, and against the byline's unbreakable `whitespace-nowrap` run it produced ragged
+              lines with dead space at both ends — the text read as padded even though nothing here has
+              horizontal padding. The byline keeps its `nowrap` (a name should not split); it just must not
+              meet an algorithm that reacts to it.
+
+              THE BYLINE FOLLOWS THE SAME MEASUREMENT, INVERTED. It is nested inside `detail`'s span, so it
+              is subject to that span's decision first, and then takes one of its own:
+
+                tagline fits  → `mt-1 block`, attribution on its own line, 4px under `detail`
+                tagline wraps → inline, trailing `detail` wherever that sentence happens to end
+
+              Which sounds backwards until you look at the two results. Compact, the plate has three short
+              centred lines and room to give the credit its own; already wrapped, the text is three or four
+              full-measure lines and a fourth holding two words would read as a stray fragment, so trailing
+              is tidier. `whitespace-nowrap` in both cases — a name should not split — and that unbreakable
+              run is also why `text-pretty` cannot be used on the paragraph to tidy any of this up.
+
+              `mt-1` is paired with `block` rather than set unconditionally because it is only meaningful in
+              that branch: a vertical margin on an inline span pushes nothing apart, so leaving it on in the
+              wrapped case would be a rule that silently does nothing.
+
+              `print:px-[15vw]` narrows the measure on paper: `vw` resolves against the page box in print,
+              and a 900px line is far too long to track on a printed sheet. */}
+          <p className="relative mx-auto w-full text-center text-xs sm:text-sm leading-tight text-slate-700 print:mt-[5vh] print:px-[15vw] print:text-base">
+            {/* The measurement PROBE, not the visible text. It is always `block`, so its height answers
+                "would this sentence fit on one line here?" independently of what the visible copy is
+                currently doing — measuring the real span would be circular, since switching it between
+                `block` and `inline` changes the very height the decision is read from, and the two states
+                could oscillate.
+
+                `invisible` rather than `hidden`: it must still be laid out to have a height. Absolutely
+                positioned and `aria-hidden` so it costs no space and is not announced twice. */}
+            <span ref={taglineProbeRef} aria-hidden className="invisible pointer-events-none absolute inset-x-0 top-0 block">
+              {SITE_COPY.tagline}
+            </span>
+            <span className={cn(taglineFitsOneLine && "block")}>{SITE_COPY.tagline}</span>{" "}
+            <span className={cn(taglineFitsOneLine && "block")}>
+              {SITE_COPY.detail} <span className={cn("whitespace-nowrap text-slate-500", taglineFitsOneLine && "block")}>{SITE_COPY.byline}</span>
+            </span>
+          </p>
         </div>
-
-        <ChangelogModal open={changelogOpen} onClose={() => setChangelogOpen(false)} />
-
-        {/* ON PAPER THIS IS THE COVER PAGE: section I forces a page break, so the first sheet carries the
-            header's h1, this radar, and the tagline below it — nothing else. The centring is applied to the
-            HEADER rather than here (see `printCoverOffset` in HomePage/AppShellHeader), because it is the
-            whole group that has to sit mid-sheet; this simply follows the header as it does on screen. */}
-        <div className="mx-auto w-full mb-4" style={{ maxWidth: FE_UI.page.chartMaxWidthPx }}>
-          <StaticCompetencyChart
-            levels={[]}
-            plainLabels={false}
-            pointLabelPxRange={HERO_POINT_LABEL_PX_RANGE}
-            clusterLabelColors
-            heroLabelNudge
-            hidePolygon
-            showLevelTicks
-            fullWidth
-            aria-label="Empty 9-pillar competency radar"
-          />
-        </div>
-
-        {/* Print only: the intro's tagline + byline, which on paper belong UNDER the radar while the h1 stays
-            above it. The header hides its own copy in print — see AppShellIntro. */}
-        <AppShellPrintTagline />
-
 
         <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.pillars]} className="flex flex-col gap-3 print:break-before-page">
           {/* Head sentinel sits ABOVE the heading so it is reached before the dot it clears. */}
           <SectionSentinel section={THEORY_SECTIONS.pillars} edge="head" gapClass="-mb-3" />
           <SectionHeading
-            title="I. The 9 Pillars"
-            subtitle={PILLARS_SECTION_INTRO}
+            title={THEORY_SECTION_COPY[THEORY_SECTIONS.pillars].heading}
+            subtitle={THEORY_SECTION_COPY[THEORY_SECTIONS.pillars].intro}
             section={THEORY_SECTIONS.pillars}
             hasUnseenUpdates={unseenSections.has(THEORY_SECTIONS.pillars)}
           />
           <PillarGrid showLatestChanges={false} />
           <SectionSentinel section={THEORY_SECTIONS.pillars} edge="tail" gapClass="-mt-3" />
         </section>
+
+        <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.seniority]} className="flex flex-col gap-3 print:break-before-page">
+          <SectionSentinel section={THEORY_SECTIONS.seniority} edge="head" gapClass="-mb-3" />
+          <SectionHeading
+            title={THEORY_SECTION_COPY[THEORY_SECTIONS.seniority].heading}
+            subtitle={THEORY_SECTION_COPY[THEORY_SECTIONS.seniority].intro}
+            section={THEORY_SECTIONS.seniority}
+            hasUnseenUpdates={unseenSections.has(THEORY_SECTIONS.seniority)}
+          />
+          <SeniorityStepper />
+          <SectionSentinel section={THEORY_SECTIONS.seniority} edge="tail" gapClass="-mt-3" />
+        </section>
+
+        {/* NO SUBTITLE UNDER THIS HEADING, unlike I and II. This section is two blocks, each opening with
+            its own paragraph (see below), so a third paragraph in the subtitle slot would be introducing an
+            introduction. What used to sit there was the matrix lead-in, which described cards two blocks
+            further down and read as a caption for the tier diagram in between.
+
+            Still `gap-3` with a bare heading, where section IV drops to `gap-1`: there the next element is an
+            h3 subsection title that looked detached from the h2 across 12px, whereas here it is a paragraph
+            that opens a group of its own. Pulling that to 4px would make it look like the subtitle this
+            section deliberately does not have, and would break it away from the diagram it belongs to. */}
+        <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.matrix]} className="flex flex-col gap-3 print:break-before-page">
+          <SectionSentinel section={THEORY_SECTIONS.matrix} edge="head" gapClass="-mb-3" />
+          <SectionHeading
+            title={THEORY_SECTION_COPY[THEORY_SECTIONS.matrix].heading}
+            subtitle={THEORY_SECTION_COPY[THEORY_SECTIONS.matrix].intro}
+            section={THEORY_SECTIONS.matrix}
+            hasUnseenUpdates={unseenSections.has(THEORY_SECTIONS.matrix)}
+          />
+          {/* TWO PAIRS, EACH ITS OWN `gap-2` GROUP INSIDE THE SECTION'S `gap-3`: a paragraph bound to the
+              thing it introduces, twice. The asymmetry is what does the work — 8px below a paragraph ties it
+              to what follows, 12px between the groups keeps them apart — so neither paragraph can be read as
+              a caption for the block above it. That was the actual bug here: the tier prose sat BELOW the
+              bands, arriving after the reader had already worked out three tiers and five levels from the
+              picture, and the matrix lead-in sat under the section heading, two cards above the cards it
+              described.
+
+              THE TIER PAIR IS THE LEGEND FOR THE SECOND. Every pillar card labels its focus areas with the
+              same three pills in the same tints as these bands, so the key has to come first. It used to
+              trail the five level cards in section II, where on a phone it landed as a sixth card in a stack
+              of five about something else, and where that section's intro never mentioned tiers at all.
+
+              On paper both pairs share the section's opening sheet with pillar 1, which is a denser page than
+              it was before the tier block moved in: heading, two paragraphs, the diagram, then Coding, whose
+              level grid runs over onto the next sheet. Pillars 2-9 each get their own sheet. Giving Coding a
+              page break of its own instead was tried and is worse — it leaves this sheet two-thirds empty to
+              save a card from splitting, and the split is only visible on one pillar out of nine. */}
+          <div className="flex flex-col gap-2">
+            <p className={DOC_SECTION.intro}>{SKILL_TIERS_INTRO}</p>
+            <SkillTierBands />
+          </div>
+          <div className="flex flex-col gap-2">
+            <p className={DOC_SECTION.intro}>{COMPETENCY_MATRIX_INTRO}</p>
+            <CompetencyMatrix
+              expandedPillar={expandedPillar}
+              onExpandedPillarChange={setExpandedPillar}
+              scrollNav={matrixNav}
+              showLatestChanges={false}
+            />
+          </div>
+          <SectionSentinel section={THEORY_SECTIONS.matrix} edge="tail" gapClass="-mt-3" />
+        </section>
+
+        {/* gap-1 (not the other sections' gap-3): this section's intro is empty, so the heading is a bare
+            title line and needs to hug what follows rather than sit above a full gap. Section III's intro is
+            empty too but keeps `gap-3` — the difference is what comes next. Here it is an h3 subsection title,
+            which reads as detached from the h2 across 12px; there it is a bordered card. */}
+        <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.tracks]} className="flex flex-col gap-1 print:break-before-page">
+          <SectionSentinel section={THEORY_SECTIONS.tracks} edge="head" gapClass="-mb-1" />
+          <SectionHeading
+            title={THEORY_SECTION_COPY[THEORY_SECTIONS.tracks].heading}
+            subtitle={THEORY_SECTION_COPY[THEORY_SECTIONS.tracks].intro}
+            section={THEORY_SECTIONS.tracks}
+            hasUnseenUpdates={unseenSections.has(THEORY_SECTIONS.tracks)}
+          />
+          <CareerTracks isVisible={isVisible} />
+          <SectionSentinel section={THEORY_SECTIONS.tracks} edge="tail" gapClass="-mt-1" />
+        </section>
       </div>
-
-      <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.seniority]} className="flex flex-col gap-3 print:break-before-page">
-        <SectionSentinel section={THEORY_SECTIONS.seniority} edge="head" gapClass="-mb-3" />
-        <SectionHeading
-          title="II. The 5 Proficiency Levels (L1–L5)"
-          subtitle={SENIORITY_SECTION_INTRO}
-          section={THEORY_SECTIONS.seniority}
-          hasUnseenUpdates={unseenSections.has(THEORY_SECTIONS.seniority)}
-        />
-        <SeniorityStepper />
-        <SectionSentinel section={THEORY_SECTIONS.seniority} edge="tail" gapClass="-mt-3" />
-      </section>
-
-      <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.matrix]} className="flex flex-col gap-3 print:break-before-page">
-        <SectionSentinel section={THEORY_SECTIONS.matrix} edge="head" gapClass="-mb-3" />
-        <SectionHeading
-          title="III. The 45-Point Competency Matrix"
-          subtitle="The full behavioral matrix: 9 pillars across 5 levels. For each pillar, the focus areas are grouped into 3 skill tiers. Expand a pillar to reveal the 5 cells, each describing the observable behaviors expected at that level."
-          section={THEORY_SECTIONS.matrix}
-          hasUnseenUpdates={unseenSections.has(THEORY_SECTIONS.matrix)}
-        />
-        <CompetencyMatrix
-          expandedPillar={expandedPillar}
-          onExpandedPillarChange={setExpandedPillar}
-          scrollNav={matrixNav}
-          showLatestChanges={false}
-        />
-        <SectionSentinel section={THEORY_SECTIONS.matrix} edge="tail" gapClass="-mt-3" />
-      </section>
-
-      {/* gap-1 (not the other sections' gap-3): this section's intro is empty, so the heading is a
-          bare title line and needs to hug the first track card rather than sit above a full gap. */}
-      <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.tracks]} className="flex flex-col gap-1 print:break-before-page">
-        <SectionSentinel section={THEORY_SECTIONS.tracks} edge="head" gapClass="-mb-1" />
-        <SectionHeading
-          title="IV. Career Growth Paths"
-          subtitle={CAREER_TRACKS_SECTION_INTRO}
-          section={THEORY_SECTIONS.tracks}
-          hasUnseenUpdates={unseenSections.has(THEORY_SECTIONS.tracks)}
-        />
-        <CareerTracks isVisible={isVisible} />
-        <SectionSentinel section={THEORY_SECTIONS.tracks} edge="tail" gapClass="-mt-1" />
-      </section>
-    </div>
+    </>
   );
 }
 

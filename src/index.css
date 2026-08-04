@@ -203,6 +203,42 @@
     max-height: 100%;
   }
 
+  /* THE COVER RADAR, WHICH THE RULE ABOVE CANNOT RESCUE ON ITS OWN.
+
+     That rule rescales the BITMAP inside whatever box the frame gives it, and the frame's box is an inline
+     `height` in px written by `applyChartFrameLayout` from the frame's SCREEN width. Print never re-runs that
+     fit: `beforeprint` fires before the print layout exists, so measuring there still reads the screen, and the
+     ResizeObserver's rAF does not get a turn before rasterisation.
+
+     From a desktop window it does not matter — the frame is already at its 526px cap, which is also its printed
+     width. From a phone it does. A ~350px frame pins a ~330px height; on paper the frame widens to 526px but
+     keeps that height, so the canvas asks for `height: auto` (~496px), `max-height: 100%` clamps it to 330px,
+     and clamping a REPLACED element's height recomputes its width to preserve the ratio. The radar redraws at
+     its mobile size, centred in a frame nearly twice as wide: the "shrunken cover chart".
+
+     So release the height rather than fight the clamp. `height: auto` on the frame, `position: static` on the
+     absolutely-positioned box inside it (otherwise the frame has no in-flow content and collapses to zero), and
+     `max-height: none` so the canvas is free to take its full width. The frame then grows to whatever the canvas
+     needs, and the canvas keeps its own aspect ratio at the printed width.
+
+     SCOPED TO THE HERO, deliberately. The career-track radars pass a hard `maxHeightPx`, so releasing their
+     heights would let six charts grow past the size their grid is built around. */
+  [data-print-hero-radar] > div {
+    height: auto !important;
+    aspect-ratio: unset !important;
+  }
+
+  [data-print-hero-radar] > div > div {
+    position: static !important;
+  }
+
+  /* `display: block` alongside the released `max-height`: back in flow the canvas is an inline replaced
+     element, so it would sit on a text baseline and add a few px of descender gap under the radar. */
+  [data-print-hero-radar] canvas[data-radar-canvas] {
+    display: block;
+    max-height: none !important;
+  }
+
   /* The page itself is WHITE on paper. `body` is `bg-black` (see @layer base) because on screen that
      black is the surround the app's white card sits on, visible down both sides once the viewport is
      wider than the content measure. On paper there is no surround to show — but the black was still

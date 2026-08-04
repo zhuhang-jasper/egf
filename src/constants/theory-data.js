@@ -1,5 +1,53 @@
 import { CLUSTERS, getPillarGroups, getPillarLabel, getPillarLabelWithoutOrgan, getPillarOrder, getPlainChartPillarLabel } from "@/constants";
 import { COMPETENCY_LEVEL_COPY } from "@/constants/competency-matrix-data";
+import { THEORY_SECTIONS } from "@/utils/theory-url";
+
+/**
+ * Heading + intro for each of the four Theory sections, keyed by the same ids the deep-link and
+ * unseen-dot machinery uses (see `THEORY_SECTIONS`). ONE OBJECT rather than four loose constants
+ * scattered beside the data they head: the tab's outline is then readable in one place, and a future
+ * table of contents has a single source for the labels instead of scraping them out of JSX.
+ *
+ * THE HEADINGS ARE QUESTIONS, AND THEY KEEP THEIR NUMERALS. The question is what a reader actually
+ * arrives with; the numeral is what the printed document and the changelog's prose bullets refer back
+ * to. Both earn their place, so neither is dropped.
+ *
+ * II AND III ARE DELIBERATELY WORDED APART. "How do the 5 levels work" is the abstract scale; "what
+ * does each level look like in practice" is that scale spelled out cell by cell. Phrased any closer
+ * together the two collapse into the same question and the matrix stops looking like the payoff of
+ * the section above it.
+ *
+ * TWO SECTIONS HAVE NO INTRO, both for the same reason: the thing directly under the heading already
+ * introduces itself, and a paragraph above it would say so twice.
+ *
+ *   `matrix`   is two blocks, each with its own lead-in paragraph: `SKILL_TIERS_INTRO` above the tier
+ *              diagram, then `COMPETENCY_MATRIX_INTRO` above the nine pillar cards. A subtitle here would
+ *              be introducing an introduction — and when the matrix lead-in did sit in this slot, it
+ *              described cards two blocks below and read as a caption for the diagram in between.
+ *   `tracks`   opens with the "From Junior to Senior" subsection and its own framing (JUNIOR_TO_SENIOR).
+ *
+ * TheoryContent spaces those two headings to suit — see the notes at each.
+ */
+export const THEORY_SECTION_COPY = {
+  [THEORY_SECTIONS.pillars]: {
+    heading: "I. What are the 9 pillars?",
+    intro:
+      "This framework breaks down a software engineer's real-world competencies into 9 distinct pillars. Each pillar lists its focus areas, sorted from foundational to advanced, and ends with a signature question: a quick self-check you can ask yourself in daily work.",
+  },
+  [THEORY_SECTIONS.seniority]: {
+    heading: "II. How do the 5 levels work?",
+    intro:
+      "Each pillar is rated L1-L5. This measures your proficiency within that one pillar, from following instructions (L1) to shaping direction (L5). A single pillar level does not determine your overall seniority. Your actual engineering seniority is indicated by your whole chart shape.",
+  },
+  [THEORY_SECTIONS.matrix]: {
+    heading: "III. What does each level look like in practice?",
+    intro: "",
+  },
+  [THEORY_SECTIONS.tracks]: {
+    heading: "IV. Where does this take your career?",
+    intro: "",
+  },
+};
 
 function buildLevels(scores) {
   return getPillarOrder().map((id) => scores[id] ?? 2.5);
@@ -70,8 +118,19 @@ export function getSkillTierBands() {
   });
 }
 
-export const SKILL_TIERS_CAPTION =
-  "Within every pillar, the focus areas are not learned all at once. They cluster into three cumulative tiers that follow how you grow as you deepen a pillar.";
+/**
+ * Lead-in for the tier diagram, rendered ABOVE it (see TheoryContent). It was a caption below the bands,
+ * where "Within every pillar…" arrived after the reader had already worked out three tiers and five levels
+ * from the picture — defining a thing the eye had finished interpreting. Above, it lands in the order the
+ * ideas actually build: tiers exist, then here is where they fall on the L1-L5 axis.
+ *
+ * It has to say "skill tiers" in full, because it is now the only place on the page that names the concept.
+ * The diagram lost its "Skill Tiers" heading when this moved above it (two labels for one figure), the
+ * matrix lead-in below does not mention tiers, and the pills on each pillar card read "Foundational" /
+ * "Core" / "Advanced" rather than naming the set.
+ */
+export const SKILL_TIERS_INTRO =
+  "Within every pillar, the focus areas are not learned all at once. They cluster into three cumulative skill tiers that follow how you grow as you deepen a pillar.";
 
 const PILLAR_ABOUT_COPY = {
   coding: {
@@ -162,9 +221,6 @@ const CLUSTER_ABOUT_META = {
   operational: { subtitle: '(The "Force Multipliers")' },
 };
 
-export const PILLARS_SECTION_INTRO =
-  "This framework breaks down a software engineer's real-world competencies into 9 distinct pillars. Each pillar lists its focus areas, sorted from foundational to advanced, and ends with a signature question: a quick self-check you can ask yourself in daily work.";
-
 function buildPillarClusterGroups() {
   return getPillarGroups().map(({ id, title, pillars }) => ({
     id,
@@ -197,9 +253,6 @@ export const PILLAR_DEFINITIONS = PILLAR_CLUSTER_GROUPS.flatMap(({ label, subtit
     clusterSubtitle: subtitle,
   })),
 );
-
-export const SENIORITY_SECTION_INTRO =
-  "Each pillar is rated L1-L5. This measures your proficiency within that one pillar, from following instructions (L1) to shaping direction (L5). A single pillar level does not determine your overall seniority. Your actual engineering seniority is indicated by your whole chart shape.";
 
 /**
  * `phase` is the full quality/identity pair (Proficiency Levels section); `term` is the identity word
@@ -246,6 +299,37 @@ export const SENIORITY_LEVEL_DEFINITIONS = [
 
 export const SENIORITY_LEVELS = SENIORITY_LEVEL_DEFINITIONS;
 
+/**
+ * Lead-in for the nine pillar cards, and NOT the section's intro — it renders directly above the first
+ * card rather than under the heading, because the tier diagram sits between the two and a paragraph
+ * announcing the matrix landed above a figure that is not the matrix.
+ *
+ * IT OPENS BY POINTING AT WHAT FOLLOWS. "Below is the full behavioral matrix" tells the reader that the
+ * nine cards under this paragraph ARE the matrix, which is the one thing the cards themselves cannot say:
+ * collapsed, they look like the Section I pillar grid. (The cards now help too, via the "View matrix"
+ * control on each header.)
+ *
+ * WRITTEN AS SENTENCES. This began life as a section subtitle and opened like one, "The full behavioral
+ * matrix: 9 pillars across 5 levels", a noun phrase and a colon, which reads as a title. That is fine
+ * hanging off a heading and wrong as body copy standing beside `SKILL_TIERS_INTRO`, which opens with a
+ * plain declarative sentence. Both paragraphs in this section now do.
+ *
+ * THE INSTRUCTION GOES LAST, and says "any". It used to be sandwiched mid-paragraph, where it interrupted
+ * the description with a mechanic, and it used to say "expand a pillar", which read oddly once the first
+ * pillar started out open (see DEFAULT_EXPANDED_PILLAR): the sentence would be asking for something already
+ * done directly below it. "Open any pillar" covers the other eight, and "open" is the verb the card's own
+ * control uses.
+ *
+ * It no longer restates that the focus areas are grouped into tiers: the diagram immediately above says so,
+ * and every collapsed pillar card shows the three pills anyway.
+ *
+ * "45 cells" carries the number the section heading used to ("III. The 45-Point Competency Matrix"), which
+ * the question form dropped, and "matrix" is here because the heading no longer names it either. Both are
+ * how the framework is described elsewhere (see SITE_COPY.detail), so each should be said once in the tab.
+ */
+export const COMPETENCY_MATRIX_INTRO =
+  "Below is the full behavioral matrix: 9 pillars across 5 levels, 45 cells in total. Each cell describes the observable behaviors expected at that level. Open any pillar to read its five.";
+
 function buildCompetencyMatrix() {
   let order = 0;
 
@@ -279,8 +363,6 @@ const KEY_PILLAR_RANK = new Map(ABOUT_PILLAR_SEQUENCE.map((id, index) => [getPla
 export function sortKeyFocusPillars(pillarNames) {
   return [...pillarNames].sort((a, b) => (KEY_PILLAR_RANK.get(a) ?? Number.MAX_SAFE_INTEGER) - (KEY_PILLAR_RANK.get(b) ?? Number.MAX_SAFE_INTEGER));
 }
-
-export const CAREER_TRACKS_SECTION_INTRO = "";
 
 export const JUNIOR_TO_SENIOR = {
   title: "From Junior to Senior (L1–L3)",

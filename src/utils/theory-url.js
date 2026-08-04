@@ -12,9 +12,24 @@
 
 const EXPANDED_PILLAR_SESSION_KEY = "app:expandedPillar";
 
+/**
+ * Which matrix pillar is open, as THREE states rather than two:
+ *
+ *   "coding"   that pillar is open
+ *   ""         nothing is open, and the user closed it
+ *   null       nothing is open, and the user has not touched the matrix this session
+ *
+ * The last two used to be one value — closing everything called `removeItem`, so it was
+ * indistinguishable from a fresh session. That is fine when the default is "all collapsed" and stops
+ * being fine the moment there IS a default: the matrix opens its first pillar on a fresh visit (see
+ * TheoryContent), which must not quietly undo a collapse the user performed and then reloaded into.
+ *
+ * So a deliberate none is STORED as the empty string, and only an absent key means "never chosen".
+ * Callers wanting the plain two-state answer can read `getPersistedExpandedPillar() || null`.
+ */
 export function getPersistedExpandedPillar() {
   try {
-    return sessionStorage.getItem(EXPANDED_PILLAR_SESSION_KEY) || null;
+    return sessionStorage.getItem(EXPANDED_PILLAR_SESSION_KEY);
   } catch {
     return null;
   }
@@ -22,11 +37,7 @@ export function getPersistedExpandedPillar() {
 
 export function persistExpandedPillar(id) {
   try {
-    if (id) {
-      sessionStorage.setItem(EXPANDED_PILLAR_SESSION_KEY, id);
-    } else {
-      sessionStorage.removeItem(EXPANDED_PILLAR_SESSION_KEY);
-    }
+    sessionStorage.setItem(EXPANDED_PILLAR_SESSION_KEY, id || "");
   } catch {}
 }
 

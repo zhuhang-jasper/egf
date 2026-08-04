@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 
 import { AppBottomNav } from "@/components/AppBottomNav";
-import { AppShellHeaderStack, AppShellIntro } from "@/components/AppShellHeader";
+import { AppShellHeaderStack } from "@/components/AppShellHeader";
 import { TheoryContent } from "@/components/TheoryContent";
 import { ToolContent } from "@/components/ToolContent";
 import { Toaster } from "@/components/ui/Toaster";
 
-import { useHeaderCollapse } from "@/hooks/useHeaderCollapse";
 import { getPersistedActiveTab, useTabScrollMemory } from "@/hooks/useTabScrollMemory";
 import { useTheoryUpdates } from "@/hooks/useTheoryUpdates";
 
@@ -126,12 +125,6 @@ export default function HomePage() {
   // deep-link's own scroll-to-target then takes over via cancelRestoreRef — so a shared link restores
   // the previous position before gliding to the target, instead of starting from the top.
   const { saveActiveTabScroll } = useTabScrollMemory(activeTab, cancelRestoreRef);
-
-  // The intro's collapsed state is CSS, not a scroll position — one boolean shared by both tabs, changed
-  // ONLY by the user (the caret, or a pull at the top). Scrolling no longer touches it in either direction;
-  // see useHeaderCollapse for why having two writers for this one bit was the source of the whole class of
-  // bugs here.
-  const { collapsed: headerCollapsed, setCollapsed: setHeaderCollapsed } = useHeaderCollapse();
 
   // Cross-tab jump from a tool-form pillar's help icon into the theory matrix. The `seq` bump makes
   // repeated clicks on the same pillar re-trigger the expand + scroll even when the tab is already open.
@@ -284,20 +277,16 @@ export default function HomePage() {
         className="flex w-full flex-1 flex-col bg-white pb-[calc(3rem+env(safe-area-inset-bottom))] print:max-w-none print:p-0 print:pb-0 print:shadow-none"
         style={{ minWidth: FE_UI.page.minWidthPx }}
       >
-        {/* The sticky app header: the collapsing title block, plus the brand mark and caret that the stack
-            positions in its own corners. Full-width, so it spans the viewport regardless of which tab's measure
-            is active below it.
+        {/* The sticky app header: the brand lockup and the scroll-to-top button, which the stack positions in
+            its own two corners. Full-width, so it spans the viewport regardless of which tab's measure is active
+            below it, and PROPLESS — it holds no state and takes none.
 
-            NAVIGATION IS NOT IN HERE. It was a segmented control in a second row of this stack; it now sits at the
-            viewport bottom (AppBottomNav, rendered after the footer below), which is what lets the header be
-            brand + caret and nothing else — and is why the stack has a single child again. */}
-        {/* `printCoverOffset` only on the theory tab: printing it produces a multi-page reference document,
-            whose first sheet is the header plus the hero radar and nothing else (section I forces a break),
-            so that pair is centred as a cover. The tool tab prints as one compact chart-plus-form sheet and
-            wants no cover page, hence the tab-dependent flag rather than a rule inside the header. */}
-        <AppShellHeaderStack collapsed={headerCollapsed} onCollapsedChange={setHeaderCollapsed} printCoverOffset={activeTab === "theory"}>
-          <AppShellIntro collapsed={headerCollapsed} />
-        </AppShellHeaderStack>
+            NEITHER NAVIGATION NOR THE TITLE IS IN HERE. Navigation was a segmented control in a second row of
+            this stack and now sits at the viewport bottom (AppBottomNav, rendered after the footer below); the
+            framework title and tagline were a collapsible block in the first row and now open the Theory tab
+            (see TheoryContent). What is left is pinned chrome that costs the same 56px on every screenful of
+            both tabs, which is the only thing that earns a place there. */}
+        <AppShellHeaderStack />
 
         {/* `active || inactiveMounted` rather than `active`: a panel is mounted for good once it has been
             rendered even once, so switching away never tears down a chart or a scroll position. Only the very

@@ -44,7 +44,10 @@ function LevelCellContent({ level, showLatestChanges }) {
 function PillarMatrixLevels({ levels, showLatestChanges }) {
   return (
     <>
-      <div className="divide-y divide-slate-300/50 px-3 py-1 sm:hidden">
+      {/* NO VERTICAL PADDING HERE — each row brings its own `py-2`, so the first and last already sit 8px
+          off the strips above and below, matching the `py-2` on the desktop branch whose rows have none.
+          The `py-1` this used to carry stacked on top of that and made mobile 12px for no reason. */}
+      <div className="divide-y divide-slate-300/50 px-3 sm:hidden">
         {SENIORITY_LEVEL_DEFINITIONS.map(({ code, term }) => (
           <div key={code} className="flex flex-col py-2 gap-2">
             <LevelPill code={code} term={term} />
@@ -73,8 +76,10 @@ function PillarMatrixLevels({ levels, showLatestChanges }) {
  * The pillar's focus areas as three cumulative skill tiers (framework v4.0). Rendered in the always
  * visible card header, so the tiers read without expanding the pillar.
  *
- * Each tier is labelled with a colored pill carrying the same tint as its band in the Proficiency
- * Levels section, so the two places tiers appear read as one system. The list is a two-column grid
+ * Each tier is labelled with a colored pill carrying the same tint as its band in the Skill Tiers card
+ * at the head of this section, so the key and the nine cards that use it read as one system — which is
+ * why that card sits directly above these rather than in the section before. The list is a two-column
+ * grid
  * whose first track is `max-content`: the pill column sizes itself to the longest label, so the three
  * pills share one width and the focus-area text starts on a common edge, with no hardcoded width to
  * outgrow (a wider label at a smaller breakpoint just widens the track).
@@ -123,9 +128,9 @@ function PillarMatrixCard({
     <article
       ref={cardRef}
       id={getPillarCardElementId(pillarId)}
-      /* `print:break-before-page` gives every pillar its own sheet, so the printed matrix reads as one
-         page per pillar — except the first, which shares its page with the section heading rather than
-         leaving that heading stranded alone (see `printBreakBefore` at the call site).
+      /* `print:break-before-page` gives every pillar its own sheet EXCEPT the first, which shares page one
+         with the section's opening matter rather than leaving it stranded (see `printBreakBefore` at the
+         call site).
          Deliberately NOT paired with `break-inside-avoid`: a pillar card is about a page tall and some
          run over, and telling an over-tall box not to break is what makes it overlap the next one.
          `print:overflow-visible` — A CLIPPED BOX CANNOT BE SPLIT ACROSS A PAGE. `overflow: hidden` makes
@@ -143,30 +148,71 @@ function PillarMatrixCard({
       )}
       style={{ backgroundColor: getClusterSurfaceBg(color), borderLeftColor: textColor }}
     >
+      {/* THE HEADER IS A SECOND, SILENT TRIGGER. The visible control is the strip below the focus areas; this
+          keeps the card-wide tap target that a labelled strip cannot match on a phone, but it carries NO
+          affordance of its own any more. It used to end in a caret, then a labelled caret, then a bordered
+          rail — each of which had to be paid for out of the same row the wrapping focus-area list needs, and
+          none of which said plainly that a matrix was inside. Handing that job to a full-width strip returned
+          the whole row to the content.
+
+          `aria-controls`/`aria-expanded` on both triggers is deliberate: they are two controls for one panel,
+          which assistive tech states correctly, rather than one control with a hidden second hit area. */}
       <button
         type="button"
         id={`${panelId}-trigger`}
         aria-expanded={expanded}
         aria-controls={panelId}
         onClick={onToggle}
+        // `print:border-b` — ON PAPER THIS HEADER CARRIES THE DIVIDER ITSELF, because the strip that draws it
+        // on screen is `print:hidden` and every pillar prints open. Without it the pillar name would run
+        // straight into its own level grid.
+        className="flex w-full cursor-pointer select-none flex-col gap-2 px-3 pt-2.5 pb-2.5 text-left transition-colors hover:bg-black/[0.04] print:border-b print:border-slate-300/60 print:pb-1.5"
+      >
+        <h3 className={cn("min-w-0", DOC_TEXT.cardTitlePlain, "font-bold")}>
+          {order}. {pillarName}
+        </h3>
+        <FocusTierList focusTiers={focusTiers} />
+        {note ? <p className={cn("min-w-0", DOC_TEXT.bodyItalic, "opacity-90")}>{note}</p> : null}
+      </button>
+
+      {/* THE DISCLOSURE, AS A FULL-WIDTH STRIP RATHER THAN A CORNER CARET.
+          It reads differently either side of the toggle, and both readings are wanted:
+
+            collapsed   the last thing in the card, so it reads as "continue here"
+            expanded    unmoved, so it becomes the divider between the pillar's summary and its matrix
+
+          That second position is why the strip is a SIBLING of the panel and not inside it: it has to stay
+          above the levels when they open, not scroll in with them.
+
+          FULL WIDTH BUYS THE WORDS BACK. "View matrix" cost ~86px of the header row and was cut to "L1-L5"
+          and then to a stacked pair to fit; here the width is free, so the control can say what it opens.
+          "matrix" is the word the section's lead-in uses (see COMPETENCY_MATRIX_INTRO), so the copy and the
+          control name the same thing — which was the actual complaint: nine collapsed cards look like the
+          Section I pillar grid, so a paragraph about a 45-cell matrix seemed to describe another page.
+
+          `border-t` MATCHES THE COPY-LINK STRIP at the foot of the expanded panel, so the card has one footer
+          idiom used twice rather than two. Expanded, the two strips bracket the level grid.
+
+          `border-b` ONLY WHILE EXPANDED, which is what turns the strip from a footer into a divider band: open,
+          it is enclosed top and bottom and separates summary from matrix; collapsed, the card's own bottom edge
+          closes it and a second line would just double up 8px above the border it sits on.
+
+          `print:hidden` — a control that cannot be operated on paper, where every pillar is already open, so
+          the caret would point the wrong way and the label would advertise a done deal. */}
+      <button
+        type="button"
+        aria-expanded={expanded}
+        aria-controls={panelId}
+        onClick={onToggle}
         className={cn(
-          "flex w-full cursor-pointer select-none items-center gap-2 px-3 pt-2.5 text-left transition-colors hover:bg-black/[0.04]",
-          expanded ? "pb-1.5 border-b border-slate-300/60" : "pb-2.5",
-          // Every pillar prints expanded (see the panel below), so every header prints with its
-          // expanded treatment — the rule that separates a heading from the grid underneath it.
-          "print:pb-1.5 print:border-b print:border-slate-300/60",
+          "flex w-full cursor-pointer select-none items-center justify-center gap-1.5 border-t border-slate-300/60 py-2",
+          "text-slate-600 transition-colors hover:bg-black/[0.04] hover:text-slate-900 print:hidden",
+          expanded && "border-b border-slate-300/60",
+          DOC_TEXT.badgeSm,
         )}
       >
-        <div className="flex min-w-0 flex-1 flex-col gap-2">
-          <h3 className={cn("min-w-0", DOC_TEXT.cardTitlePlain, "font-bold")}>
-            {order}. {pillarName}
-          </h3>
-          <FocusTierList focusTiers={focusTiers} />
-          {note ? <p className={cn("min-w-0", DOC_TEXT.bodyItalic, "opacity-90")}>{note}</p> : null}
-        </div>
-        {/* `print:hidden` — the caret is the affordance for a control that cannot be operated on paper,
-            and on paper every pillar is already open, so it would also be pointing the wrong way. */}
-        <ChevronDown className={cn("size-4 shrink-0 text-slate-800 transition-transform print:hidden", expanded && "rotate-180")} aria-hidden />
+        {expanded ? "Hide matrix" : "View matrix"}
+        <ChevronDown className={cn("size-4 shrink-0 transition-transform", expanded && "rotate-180")} aria-hidden />
       </button>
 
       {/* CSS grid-rows 0fr→1fr animates the panel height open/closed without measuring pixels.
@@ -316,7 +362,7 @@ function CompetencyMatrix({ expandedPillar, onExpandedPillarChange, scrollNav, s
           key={pillar.pillarId}
           {...pillar}
           // One printed sheet per pillar, EXCEPT the first: breaking before it too would strand the
-          // section heading on a page of its own. The heading shares page one with pillar 1 instead.
+          // section's opening matter on a page of its own. Pillar 1 shares page one with it instead.
           printBreakBefore={index > 0}
           expanded={expandedPillar === pillar.pillarId}
           onToggle={() => handleToggle(pillar.pillarId)}
