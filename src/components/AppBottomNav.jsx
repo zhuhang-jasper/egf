@@ -229,10 +229,10 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
                 // padding for its last few px. A border IS the top edge, so there is no geometry to get right.
                 "border-t-[3px]",
 
-                // THE TINT IS A SECOND, NON-COLOUR SIGNAL. Colour alone (slate-900 vs slate-500) is too weak on
-                // its own: at a glance, and for anyone who discriminates these greys poorly, two similar labels in
-                // slightly different greys do not say which one you are on. Filled-versus-unfilled survives both,
-                // and it reinforces the rule above rather than repeating it.
+                // THE TINT IS A SECOND, NON-COLOUR SIGNAL. Colour alone (black vs slate-500) is too weak on its
+                // own: at a glance, and for anyone who discriminates these greys poorly, two labels in different
+                // darks do not say which one you are on. Filled-versus-unfilled survives both, and it reinforces
+                // the rule above rather than repeating it.
                 //
                 // BOTH FILLS ARE READ AGAINST THE BAR, so both moved when it gained its tint. On a white bar they
                 // were `bg-slate-100` (active) and `bg-slate-50` (hover); on `bg-slate-100` those ARE the bar, so
@@ -245,8 +245,8 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
                 // THE ACTIVE FILL IS `slate-200`, ONE STEP OFF THE BAR — deliberately light. `slate-300` held all
                 // three gaps on full steps but read as heavy for what is a passive "you are here" marker, not a
                 // pressed button. Note the active state does NOT have to carry the signal alone: it also gets a
-                // `slate-900` top border and darker text, so a light fill is the third of three cues rather than
-                // the only one.
+                // BLACK top border and black text, so a light fill is the third of three cues rather than the
+                // only one.
                 //
                 // THAT LEFT NO WHOLE STEP FOR THE HOVER, hence `slate-100/70` — the bar's own colour at 70%, i.e.
                 // a PARTIAL step between the white content and the bar. It is the one place a fractional value is
@@ -258,8 +258,22 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
                 // `transition-colors` covers the border, the tint and the text together, so the whole segment
                 // resolves as one change on tab switch.
                 "transition-colors",
+
+                // THE ACTIVE MARK IS TRUE `black`, NOT `slate-900`. Everything else in the app's greys is on the
+                // slate ramp, and slate-900 (#0f172a) carries that ramp's blue cast — against the bar's own
+                // slate-100 the two sit on one hue, so the active tab was the darkest thing in a family rather
+                // than a mark set apart from it. Black has no cast, so it reads as ink on the chrome.
+                //
+                // BOTH THE BORDER AND THE TEXT, together, because they are one mark: a black rule over slate-900
+                // words (or the reverse) shows up as two slightly different darks stacked, which is more visible
+                // than either value is wrong. The icon takes it too — see the Icon's own `text-black` below, which
+                // has to be changed with these.
+                //
+                // The INACTIVE side stays on the slate ramp deliberately: it is the unselected majority and should
+                // recede into the chrome it sits on, which is exactly what sharing the bar's hue does. Black is
+                // reserved for the one segment being marked.
                 selected
-                  ? "border-slate-900 bg-slate-200 text-slate-900"
+                  ? "border-black bg-slate-200 text-black"
                   : "border-transparent text-slate-500 hover:bg-slate-100/70 hover:text-slate-700",
               )}
             >
@@ -290,7 +304,9 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
 
                     THE UNSEEN DOT'S OFFSETS ARE MEASURED AGAINST THIS BOX and were re-judged for 24px — see the
                     note below. A badge pinned to a glyph's corner does not survive the glyph changing size. */}
-                <Icon className={cn("size-6 shrink-0", selected ? "text-slate-900" : "text-slate-400 group-hover:text-slate-600")} aria-hidden />
+                {/* `text-black` when selected, matching the border and label above rather than the `slate-900` this
+                    was — the three are one mark and have to move together. */}
+                <Icon className={cn("size-6 shrink-0", selected ? "text-black" : "text-slate-400 group-hover:text-slate-600")} aria-hidden />
                 {showUnseenDot ? (
                   // `ring-2` separates the dot from the glyph it overlaps — without it the red sits directly on the
                   // icon's strokes and the two read as one shape.
