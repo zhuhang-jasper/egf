@@ -79,9 +79,21 @@ export const SITE_COPY = {
     // Message body. `{link}` is replaced at runtime with the canonical tool link.
     messageTemplate:
       "Check out my engineering spider chart! I just mapped my skills using Jasper's 9-Pillar Engineer Growth Framework. Find out yours at: {link}",
+    // Message body for sharing the Theory tab itself. A DIFFERENT SENTENCE, not a reworded one: the chart
+    // message is first-person about a result the sharer produced ("my spider chart"), and the theory tab is
+    // not a result — it is the reference document behind it, so the message points at the framework instead.
+    theoryMessageTemplate:
+      "Jasper's 9-Pillar Engineer Growth Framework: a model for measuring software engineering mastery and guiding career paths. {link}",
     // Query string appended to the app's base URL so the recipient lands on the Tool tab.
     toolLinkQuery: "?tab=tool",
     // Fixed filename for the exported chart PNG.
     fileName: "jaspers-9pillar-engineer-growth-framework.png",
+    // The pre-rendered pillar poster in `public/`, attached to a Theory-tab share. A STATIC ASSET, not a
+    // runtime capture: the theory tab has no single element worth rasterizing (it is a long document), and
+    // this image is the framework's designed one-glance summary. Resolved against BASE_URL at call time
+    // because the Pages build serves from /egf/. Bump the vN when the artwork is replaced, so caches and
+    // already-shared copies stay distinguishable.
+    theoryImagePath: "poster-pillar-v4.png",
+    theoryImageFileName: "9-pillar-engineer-growth-framework.png",
   },
 };

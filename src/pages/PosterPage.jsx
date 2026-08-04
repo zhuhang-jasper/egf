@@ -1,6 +1,7 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { Chart, Filler, LineElement, PointElement, RadarController, RadialLinearScale } from "chart.js";
+import { Settings } from "lucide-react";
 
 import { BackToToolButton } from "@/components/BackToToolButton";
 
@@ -11,12 +12,17 @@ import { CAREER_TRACK_PROFILES, PILLAR_CLUSTER_GROUPS } from "@/constants/theory
 import { track } from "@/utils/analytics";
 import { copyShareToClipboard, downloadSharePng } from "@/utils/export-image";
 
-// Fixed design canvas — a 2:3 poster portrait (1080×1620). Wider than a phone-screen
-// 9:16 so it reads well in the LinkedIn feed, but long enough for large, poster-scale
-// type across the header, radar, pillars, and tracks bands. The canvas renders at this
-// exact pixel size (the page scrolls if the window is smaller) so the export is 1:1.
+// Design canvas WIDTH — 1080px. Wider than a phone-screen 9:16 so it reads well in the LinkedIn
+// feed, and wide enough for large, poster-scale type. The canvas renders at this exact pixel width
+// (the page scrolls if the window is smaller) so the export is 1:1.
+//
+// THE HEIGHT IS NOT A CONSTANT. It used to be a fixed 1620 (a 2:3 portrait), which only worked while
+// the poster always carried the same two bands. Now that either band can be switched off, a fixed
+// frame would leave a tall blank strip below the content — and no table of per-combination heights
+// would survive an edit to any band's contents. So the article's height is `auto`: the bands stack
+// from the top and the paper ends where they end. `useMeasuredHeight` reads the resulting height back
+// out for the two things that need a number — the scaled preview footprint and the export.
 const CANVAS_W = 1080;
-const CANVAS_H = 1620;
 
 // A deliberately well-rounded-but-varied profile so the radar reads as a rich,
 // asymmetric shape rather than a flat ring — purely illustrative for the poster.
@@ -112,9 +118,9 @@ const TRACKS = CAREER_TRACK_PROFILES.map((t) => ({
 
 /**
  * Visual fit-scale for the preview only — fits the viewport WIDTH (the page scrolls
- * vertically). The poster renders at its true CANVAS_W×CANVAS_H pixels and is scaled with a
- * CSS transform; the export path (renderShareBlob) strips that transform before capture, so the
- * preview scales to width while the export stays a pixel-exact 1080×1620.
+ * vertically). The poster renders at its true pixel size and is scaled with a CSS transform; the
+ * export path (renderShareBlob) strips that transform before capture, so the preview scales to
+ * width while the export stays pixel-exact.
  */
 function useFitScale() {
   const [scale, setScale] = useState(1);
@@ -132,6 +138,43 @@ function useFitScale() {
 }
 
 /**
+ * The article's own rendered height in CANVAS pixels — what the fixed 1620 used to assert.
+ *
+ * MEASURED, NOT COMPUTED. Summing band heights in JS would mean maintaining a second, parallel model
+ * of the layout that silently drifts the first time a font metric, a wrap, or a padding changes; the
+ * browser has already done this arithmetic exactly once, correctly, and `getBoundingClientRect` is how
+ * we read the answer.
+ *
+ * `/ scale` converts back out of the preview transform: the rect is the SCALED box on screen, and every
+ * consumer of this number (the stage footprint, the export size) wants the true unscaled height. Guard
+ * on `scale > 0` so a degenerate scale can't produce Infinity.
+ *
+ * ResizeObserver rather than a one-shot measure: the height changes when a band is toggled, when fonts
+ * finish loading, and when a chart canvas settles. Rounded UP — a fractional height would crop the last
+ * device pixel off the export.
+ */
+function useMeasuredHeight(ref, scale) {
+  const [height, setHeight] = useState(null);
+  useEffect(() => {
+    const node = ref.current;
+    if (!node || typeof ResizeObserver === "undefined") {
+      return undefined;
+    }
+    const measure = () => {
+      const rect = node.getBoundingClientRect();
+      if (scale > 0 && rect.height > 0) {
+        setHeight(Math.ceil(rect.height / scale));
+      }
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [ref, scale]);
+  return height;
+}
+
+/**
  * Rasterize the poster to a high-res PNG via snapdom.
  *
  * snapdom (unlike html2canvas) natively understands Tailwind v4's oklch()/oklab() colours and
@@ -145,9 +188,11 @@ function useFitScale() {
  */
 // The poster's PNG export runs through the shared share-image pipeline (font embedding, the
 // off-screen clone, canvas mirroring, snapdom capture) — see src/utils/export-image.js.
+// Height is passed in per call rather than baked in, because it is now whatever the content came out
+// to (see useMeasuredHeight) instead of a build-time constant.
 const POSTER_FILENAME = "9-pillar-engineer-growth-framework-poster.png";
-const copyPosterToClipboard = (node) => copyShareToClipboard(node, CANVAS_W, CANVAS_H, "poster");
-const downloadPosterPng = (node) => downloadSharePng(node, CANVAS_W, CANVAS_H, POSTER_FILENAME, "poster");
+const copyPosterToClipboard = (node, height) => copyShareToClipboard(node, CANVAS_W, height, "poster");
+const downloadPosterPng = (node, height) => downloadSharePng(node, CANVAS_W, height, POSTER_FILENAME, "poster");
 
 /** Big tracking-wide divider label used between the poster's content bands. */
 function SectionLabel({ children }) {
@@ -163,7 +208,15 @@ function SectionLabel({ children }) {
 // Radial ring geometry, in poster pixels. The ring is an ellipse — wider than tall — so the
 // nine cards spread across the available width and stay clear of one another top-to-bottom.
 const RING_W = 984; // stage width (canvas minus side padding)
-const RING_H = 620; // stage height — trimmed so the bottom edge sits just under the lowest labels
+// The ring's LAYOUT BOX — the coordinate space the labels are placed in, NOT the height the band
+// occupies on the paper. Every label's `cy` is measured from `RING_H / 2`, so this number is the ring's
+// vertical ORIGIN as much as its size: changing it moves all nine labels rather than trimming the box.
+//
+// It is deliberately taller than the labels need, because the ring is a circle of text with ragged top
+// and bottom edges and the slack is what keeps the placement math simple. `PillarRing` then measures
+// the labels' real union and pulls the band's own height in to fit (see the `fit` state there), so the
+// slack costs nothing on the paper — which matters now that the paper is only as tall as its content.
+const RING_H = 620;
 const RING_RX = 300; // horizontal radius to each label centre
 const RING_RY = 250; // vertical radius to each label centre — pulled in toward the hub
 // Diagonal/corner labels (Architecture, Domain Logic, Process, Product Sense…) sit closer to
@@ -306,18 +359,81 @@ function PosterRadar({ levels, showClusters = false, showPolygon = true, showTic
   return <canvas ref={canvasRef} aria-label="competency radar chart" />;
 }
 
-/** Chart hub + ring of 9 pillar cards. Replaces the old separate chart and pillar-list bands. */
+/**
+ * Chart hub + ring of 9 floating pillar labels.
+ *
+ * TWO NESTED BOXES, because the ring's layout space and the space it actually fills are different
+ * things. The inner box is the full `RING_W × RING_H` coordinate space every label's position is
+ * computed against — it cannot shrink without moving the labels. The outer box is what the paper sees,
+ * and it is clamped to `fit`: the measured union of the nine labels plus the radar hub.
+ *
+ * WHY MEASURE INSTEAD OF DERIVING. The label positions are known in JS, but their heights are not:
+ * each is a name row plus a signature question that wraps to one or two lines depending on the text and
+ * the font metrics, and `translate(-50%, -50%)` centres each box on its point, so the topmost and
+ * bottommost edges depend on those heights. The browser resolves all of that during layout; a
+ * `getBoundingClientRect` sweep reads the answer instead of restating it as a second set of constants
+ * that would drift the first time a question is reworded.
+ *
+ * `getBoundingClientRect` values are in SCALED screen pixels (the poster is under a CSS transform), so
+ * every measurement is taken RELATIVE to the inner box's own rect and divided by its scale factor —
+ * `rect.width / RING_W` recovers the scale without the component needing to know it. The result is in
+ * ring coordinates, which is what the style below wants.
+ */
 function PillarRing() {
+  const innerRef = useRef(null);
+  // null until measured — until then the band reserves the full RING_H, which is the pre-existing
+  // behaviour and never smaller than the fit, so the first paint can't clip anything.
+  const [fit, setFit] = useState(null);
+
+  useEffect(() => {
+    const inner = innerRef.current;
+    if (!inner || typeof ResizeObserver === "undefined") {
+      return undefined;
+    }
+    const measure = () => {
+      const base = inner.getBoundingClientRect();
+      // Recover the CSS-transform scale from the box whose unscaled width we already know.
+      const scale = base.width / RING_W;
+      if (!(scale > 0)) {
+        return;
+      }
+      let top = Infinity;
+      let bottom = -Infinity;
+      for (const child of inner.children) {
+        const r = child.getBoundingClientRect();
+        top = Math.min(top, (r.top - base.top) / scale);
+        bottom = Math.max(bottom, (r.bottom - base.top) / scale);
+      }
+      if (Number.isFinite(top) && Number.isFinite(bottom)) {
+        // Clamp to the layout box: the labels' boxes overhang it horizontally (and the paper clips that),
+        // so refuse to report a fit taller than the space the positions were computed in.
+        setFit({ top: Math.max(0, Math.floor(top)), height: Math.min(RING_H, Math.ceil(bottom - Math.max(0, top))) });
+      }
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(inner);
+    for (const child of inner.children) {
+      observer.observe(child);
+    }
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div className="relative mx-auto -mt-1" style={{ width: RING_W, height: RING_H }}>
-      {/* Centre radar — point labels hidden; the ring cards ARE the labels */}
-      <div className="absolute" style={{ width: CHART_SIZE, height: CHART_SIZE, left: "50%", top: "50%", transform: "translate(-50%, -50%)" }}>
-        {/* Centre: cluster-coloured L1–L5 radial grid — data polygon hidden; the ring labels carry the meaning */}
-        <PosterRadar levels={POSTER_LEVELS} showClusters showPolygon={false} showTicks />
+    // `overflow-hidden` on the clamp box: once it is shorter than RING_H, the inner box's unused bottom
+    // slack must not push the paper's own height back out.
+    <div className="relative mx-auto overflow-hidden" style={{ width: RING_W, height: fit ? fit.height : RING_H }}>
+      {/* Lifted by the measured top slack, so trimming the box crops empty space rather than the labels. */}
+      <div ref={innerRef} className="absolute left-0" style={{ width: RING_W, height: RING_H, top: fit ? -fit.top : 0 }}>
+        {/* Centre radar — point labels hidden; the ring cards ARE the labels */}
+        <div className="absolute" style={{ width: CHART_SIZE, height: CHART_SIZE, left: "50%", top: "50%", transform: "translate(-50%, -50%)" }}>
+          {/* Centre: cluster-coloured L1–L5 radial grid — data polygon hidden; the ring labels carry the meaning */}
+          <PosterRadar levels={POSTER_LEVELS} showClusters showPolygon={false} showTicks />
+        </div>
+        {RING_PILLARS.map((p) => (
+          <PillarNode key={p.id} pillar={p} />
+        ))}
       </div>
-      {RING_PILLARS.map((p) => (
-        <PillarNode key={p.id} pillar={p} />
-      ))}
     </div>
   );
 }
@@ -382,6 +498,95 @@ function TrackCard({ careerTrack }) {
   );
 }
 
+/**
+ * One toggle row in the poster settings menu. A copy of the tool tab's `DisplayCheckbox`
+ * (see ChartSection) rather than an import: that one is local to that file, and this menu sits on the
+ * poster page's BLACK chrome, so the row colours are the menu's own rather than the tool's `bg-muted`
+ * surface. If a third caller ever appears, promote it to a shared component then.
+ *
+ * `select-none` because these rows get clicked repeatedly and a double-click would select the label.
+ */
+function PosterToggle({ label, checked, onChange }) {
+  return (
+    <label className="flex cursor-pointer select-none items-center gap-2.5 rounded-md px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-100">
+      <input
+        type="checkbox"
+        checked={checked}
+        aria-label={label}
+        onChange={(e) => onChange(e.target.checked)}
+        className="size-3.5 shrink-0 rounded border border-slate-300 accent-slate-900"
+      />
+      <span>{label}</span>
+    </label>
+  );
+}
+
+/**
+ * Which bands the poster shows. Same interaction as the tool tab's chart-settings popover — an icon
+ * button that opens a checkbox menu, dismissed by Escape or an outside click — but WITHOUT the tooltip:
+ * the tool's icon sits among several others that need distinguishing, while this is the only settings
+ * control on the row.
+ *
+ * State is OWNED BY THE PAGE, not this menu and not the app store: it is view state for a single
+ * admin-facing page with nothing to restore across sessions, unlike the tool's chart toggles which are
+ * part of the persisted draft.
+ *
+ * `absolute` + `left-1/2 -translate-x-1/2` hangs the panel under the centred button. This is the only
+ * control on the row that opens anything, so the panel has the full width of the black chrome to
+ * itself and needs no edge-collision handling.
+ */
+function PosterSettingsMenu({ showPillars, setShowPillars, showTracks, setShowTracks }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) {
+      return undefined;
+    }
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        setOpen(false);
+      }
+    };
+    const onMouse = (e) => {
+      if (rootRef.current && !rootRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", onMouse);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", onMouse);
+    };
+  }, [open]);
+
+  return (
+    <div ref={rootRef} className="relative shrink-0">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-haspopup="menu"
+        aria-label="Poster display settings"
+        onClick={() => setOpen((v) => !v)}
+        className="flex size-8 cursor-pointer items-center justify-center rounded-lg border border-white/20 bg-white/10 text-white transition-colors hover:bg-white/20"
+      >
+        <Settings className="size-4" aria-hidden />
+      </button>
+      {open ? (
+        <div
+          role="menu"
+          aria-label="Poster display settings"
+          className="absolute left-1/2 top-[calc(100%+4px)] z-50 w-max -translate-x-1/2 rounded-lg border border-slate-300 bg-white py-1 shadow-lg"
+        >
+          <PosterToggle label="The 9 Pillars" checked={showPillars} onChange={setShowPillars} />
+          <PosterToggle label="3 Career Tracks" checked={showTracks} onChange={setShowTracks} />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export default function PosterPage() {
   const posterRef = useRef(null);
   // Which action (if any) is running, and the transient result of the last one.
@@ -389,7 +594,14 @@ export default function PosterPage() {
   const [copyState, setCopyState] = useState("idle"); // idle | done | error
   const [downloadState, setDownloadState] = useState("idle");
   const [errMsg, setErrMsg] = useState("");
+  // Which bands the paper carries. Both on by default — the full poster is what this page is for.
+  const [showPillars, setShowPillars] = useState(true);
+  const [showTracks, setShowTracks] = useState(true);
   const scale = useFitScale();
+  // Null until the first measurement lands (one frame). Callers fall back to a width-based estimate
+  // rather than 0, so the stage doesn't collapse and re-expand on mount.
+  const measuredHeight = useMeasuredHeight(posterRef, scale);
+  const canvasH = measuredHeight ?? Math.round(CANVAS_W * 1.5);
 
   const runExport = async (action, fn, setState) => {
     if (!posterRef.current || busy) {
@@ -398,8 +610,11 @@ export default function PosterPage() {
     setBusy(action);
     setErrMsg("");
     try {
-      await fn(posterRef.current);
-      track("poster_exported", { action });
+      await fn(posterRef.current, canvasH);
+      // Height and bands ride along because the poster is no longer one fixed artifact: without them
+      // an export event can't be told apart from any other shape the toggles produce.
+      const bands = [showPillars && "pillars", showTracks && "tracks"].filter(Boolean).join("+") || "none";
+      track("poster_exported", { action, height: canvasH, bands });
       setState("done");
       setTimeout(() => setState("idle"), 2000);
     } catch (err) {
@@ -420,8 +635,9 @@ export default function PosterPage() {
 
   return (
     <div className="flex w-full flex-col items-center overflow-x-hidden overflow-y-auto bg-black p-4">
-      {/* TOP CHROME ROW: the back link at the left, the canvas size at the right. Two unrelated things that
-          happen to share a row, which is why the row lives here and neither of them owns the other.
+      {/* TOP CHROME ROW: the back link at the left, the settings button centred, the canvas size at the right.
+          Three unrelated things that happen to share a row, which is why the row lives here and none of them
+          owns the others.
 
           `w-full` + `justify-between` is what gives them their ends. This page centres its children, so a bare
           link would be centred; the full-width row is also what the link's old `self-start` was working around.
@@ -435,24 +651,42 @@ export default function PosterPage() {
           `<article>` means it cannot end up in the rasterized PNG at all rather than relying on the
           `data-export-ignore` opt-out to strip it.
 
-          The numbers come off the canvas constants themselves, so the label cannot drift from what the export
-          actually produces. */}
-      <div className="mb-4 flex w-full items-center justify-between gap-3">
+          The numbers are the same ones handed to the export, so the label cannot drift from what the export
+          actually produces — and now that the height is measured rather than fixed, the label doubles as a
+          readout of what the toggles below did to the paper.
+
+          THE SETTINGS BUTTON IS ABSOLUTELY CENTRED, not the middle child of a `justify-between` row. Three
+          flex children would put it at the centre of the LEFTOVER space between two items of unequal width
+          (the back link is far wider than the size label), which reads as visibly off-centre. Taking it out
+          of flow centres it on the row itself, and the two flanking items keep their ends. */}
+      <div className="relative mb-4 flex w-full items-center justify-between gap-3">
         <BackToToolButton />
+        <div className="pointer-events-none absolute inset-x-0 flex justify-center">
+          <div className="pointer-events-auto">
+            <PosterSettingsMenu showPillars={showPillars} setShowPillars={setShowPillars} showTracks={showTracks} setShowTracks={setShowTracks} />
+          </div>
+        </div>
         <span className="shrink-0 select-none text-sm font-semibold tabular-nums text-white">
-          {CANVAS_W} × {CANVAS_H}
+          {CANVAS_W} × {canvasH}
         </span>
       </div>
-      {/* Scaling stage: reserves the scaled footprint so the canvas stays centred and
-          scrolls cleanly; the article inside keeps its true pixel size for export. */}
-      <div className="shrink-0" style={{ width: CANVAS_W * scale, height: CANVAS_H * scale }}>
-        {/* Fixed-size paper canvas — rendered 1:1 (then visually scaled) so the export is pixel-exact.
-            Bands take their natural height; justify-between distributes the remaining slack as gaps,
-            so nothing overflows or overlaps. */}
+      {/* Scaling stage: reserves the scaled footprint so the canvas stays centred and scrolls cleanly; the
+          article inside keeps its true pixel size for export. Its height tracks the MEASURED article height,
+          so switching a band off reclaims the page scroll instead of leaving a tall gap below the paper. */}
+      <div className="shrink-0" style={{ width: CANVAS_W * scale, height: canvasH * scale }}>
+        {/* Fixed-WIDTH paper canvas, auto height — rendered 1:1 (then visually scaled) so the export is
+            pixel-exact. Bands stack from the top and take their natural height, and the paper ends where the
+            last one does.
+
+            `overflow-hidden` STAYS, and is load-bearing horizontally rather than vertically: the ring's labels
+            are absolutely positioned `CARD_W`-wide boxes whose outer halves reach past the canvas edge (the
+            widest span to -85px on the left and 1069px on the right, against a 0–1080 canvas). The text inside
+            them is aligned toward the ring's centre, so what hangs over the edge is empty box — but only while
+            it is clipped. Removing this would let those boxes widen the paper itself. */}
         <article
           ref={posterRef}
           className="relative flex flex-col overflow-hidden bg-white px-10 py-10 shadow-2xl"
-          style={{ width: CANVAS_W, height: CANVAS_H, transform: `scale(${scale})`, transformOrigin: "top left" }}
+          style={{ width: CANVAS_W, transform: `scale(${scale})`, transformOrigin: "top left" }}
         >
           {/* Floating export controls — inside the poster (scale with it), top-right, excluded from
               the rasterized PNG via the data-export-ignore selector in renderShareBlob. */}
@@ -505,40 +739,54 @@ export default function PosterPage() {
           </header>
 
           {/* The 9 pillars as a radial ring around the central radar — chart + labels merged.
-              Negative top margin tucks the ring up close under the section header (the stage has
-              empty space above its topmost labels). */}
-          <div className="mt-6 flex flex-col gap-0">
-            <SectionLabel>The 9 Pillars</SectionLabel>
-            <PillarRing />
-          </div>
 
-          {/* Career tracks — foundational L1–L2 phase, then three columns that split at L3 */}
-          <div className="-mt-2 flex flex-col gap-3">
-            <SectionLabel>3 Career Tracks</SectionLabel>
+              No negative top margin any more: one used to tuck the ring up under the section header, since the
+              stage reserved empty space above its topmost labels. PillarRing now trims that edge itself, so the
+              band sits on the ordinary gap.
 
-            {/* Foundational phase: everyone starts here, then forks at Senior (L3) */}
-            <div
-              className="mt-1 flex items-center gap-4 rounded-2xl px-4 py-2"
-              style={{ backgroundColor: `${CLUSTER_META.technical.color}47`, border: `3px solid ${CLUSTER_META.technical.color}` }}
-            >
-              <span
-                className="shrink-0 rounded-md px-2 py-[1px] text-center text-[18px] font-extrabold text-white"
-                style={{ backgroundColor: CLUSTER_META.technical.accent }}
+              Toggled by the settings menu. Unmounted rather than hidden, so the paper's measured height
+              actually drops when it is off — `invisible`/`opacity-0` would keep occupying the stage. */}
+          {showPillars ? (
+            <div className="mt-6 flex flex-col gap-3 mb-3">
+              <SectionLabel>The 9 Pillars</SectionLabel>
+              <PillarRing />
+            </div>
+          ) : null}
+
+          {/* Career tracks — foundational L1–L2 phase, then three columns that split at L3.
+
+              A PLAIN `mt-6` IN BOTH CASES. This used to be `-mt-2`, a negative margin that existed to claw
+              back the ring stage's empty bottom edge; PillarRing now trims that edge itself, so subtracting
+              it again here would pull the tracks up into the lowest pillar labels. The same `mt-6` applies
+              with the ring switched off, where the band simply follows the header. */}
+          {showTracks ? (
+            <div className="mt-6 flex flex-col gap-3">
+              <SectionLabel>3 Career Tracks</SectionLabel>
+
+              {/* Foundational phase: everyone starts here, then forks at Senior (L3) */}
+              <div
+                className="mt-1 flex items-center gap-4 rounded-2xl px-4 py-2"
+                style={{ backgroundColor: `${CLUSTER_META.technical.color}47`, border: `3px solid ${CLUSTER_META.technical.color}` }}
               >
-                L1–L2
-              </span>
-              <span className="shrink-0 text-[24px] font-extrabold" style={{ color: CLUSTER_META.technical.accent }}>
-                Software Engineer
-              </span>
-              <span className="ml-3 min-w-0 translate-y-[1px] text-[20px] text-slate-700">Build the technical foundation everyone shares.</span>
-            </div>
+                <span
+                  className="shrink-0 rounded-md px-2 py-[1px] text-center text-[18px] font-extrabold text-white"
+                  style={{ backgroundColor: CLUSTER_META.technical.accent }}
+                >
+                  L1–L2
+                </span>
+                <span className="shrink-0 text-[24px] font-extrabold" style={{ color: CLUSTER_META.technical.accent }}>
+                  Software Engineer
+                </span>
+                <span className="ml-3 min-w-0 translate-y-[1px] text-[20px] text-slate-700">Build the technical foundation everyone shares.</span>
+              </div>
 
-            <div className="grid grid-cols-3 items-stretch gap-3">
-              {TRACKS.map((careerTrack) => (
-                <TrackCard key={careerTrack.name} careerTrack={careerTrack} />
-              ))}
+              <div className="grid grid-cols-3 items-stretch gap-3">
+                {TRACKS.map((careerTrack) => (
+                  <TrackCard key={careerTrack.name} careerTrack={careerTrack} />
+                ))}
+              </div>
             </div>
-          </div>
+          ) : null}
         </article>
       </div>
     </div>

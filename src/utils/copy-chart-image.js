@@ -410,3 +410,73 @@ export async function shareChartAsImage({ exportRoot, canvas, chart, url }) {
   URL.revokeObjectURL(objectUrl);
   return { ok: true, method: "share-fallback-download" };
 }
+
+/**
+ * Share the Theory tab: its deep link, plus the pre-rendered pillar poster from `public/` as an
+ * attached image so the share lands with a visual instead of a bare URL.
+ *
+ * TWO PAYLOADS, ONE INTENT. Where a share sheet can take files, the recipient gets image + text; where it
+ * cannot, they get the text (with the link in it) alone. The link is the point of this share, so a
+ * browser that refuses files must still be able to complete it — which is why the no-files path shares
+ * text rather than falling back to a clipboard copy or a PNG download the way {@link shareChartAsImage}
+ * does. That function's image is generated on the spot and would be lost if not captured somewhere; this
+ * one is a static asset the user can reach any time, so there is nothing to rescue.
+ *
+ * The fetch is deliberately not fatal: if the asset 404s or the network is down, we still share the text.
+ * An image is an enhancement to this share, never its content.
+ *
+ * @param {string} url The theory link to embed in the message.
+ * @returns {{ ok: boolean, method: "share" | "share-text" | null }}
+ */
+export async function shareTheoryLink(url) {
+  if (typeof navigator === "undefined" || typeof navigator.share !== "function") {
+    return { ok: false, method: null };
+  }
+
+  const shareTitle = SITE_COPY.share.title;
+  const shareText = SITE_COPY.share.theoryMessageTemplate.replace("{link}", url);
+  // No separate `url` field, for the same reason as the chart share: the link is already in the text,
+  // and passing both duplicates it in apps like WhatsApp/Telegram.
+  const textOnly = { title: shareTitle, text: shareText };
+
+  let file = null;
+  try {
+    const base = import.meta.env.BASE_URL || "/";
+    const res = await fetch(`${base}${SITE_COPY.share.theoryImagePath}`);
+    if (res.ok && typeof File === "function") {
+      const blob = await res.blob();
+      const candidate = new File([blob], SITE_COPY.share.theoryImageFileName, { type: blob.type || "image/png" });
+      // canShare gates on the files payload specifically; if it passes, share() can take files.
+      if (typeof navigator.canShare !== "function" || navigator.canShare({ files: [candidate] })) {
+        file = candidate;
+      }
+    }
+  } catch (e) {
+    // Asset missing/offline — fall through to the text-only share.
+    console.warn(e);
+  }
+
+  try {
+    await navigator.share(file ? { ...textOnly, files: [file] } : textOnly);
+    return { ok: true, method: file ? "share" : "share-text" };
+  } catch (e) {
+    // AbortError = user dismissed the share sheet; a no-op, not a failure.
+    if (e?.name === "AbortError") {
+      return { ok: true, method: file ? "share" : "share-text" };
+    }
+    // A file payload can still be rejected at share() time even after canShare passed. The link is the
+    // point of this share, so retry without the image rather than reporting a failure.
+    if (file) {
+      try {
+        await navigator.share(textOnly);
+        return { ok: true, method: "share-text" };
+      } catch (retryErr) {
+        if (retryErr?.name === "AbortError") {
+          return { ok: true, method: "share-text" };
+        }
+        console.warn(retryErr);
+      }
+    }
+    return { ok: false, method: null };
+  }
+}

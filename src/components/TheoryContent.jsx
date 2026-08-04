@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
-import { Printer, ScrollText } from "lucide-react";
+import { Printer, ScrollText, Share } from "lucide-react";
 
 import { CareerTracks } from "@/components/CareerTracks";
 import { ChangelogModal } from "@/components/ChangelogModal";
@@ -25,23 +25,47 @@ import {
 } from "@/constants/theory-data";
 import { DOC_SECTION, DOC_TEXT } from "@/styles/doc-typography";
 import { cn } from "@/utils";
+import { track } from "@/utils/analytics";
+import { shareTheoryLink } from "@/utils/copy-chart-image";
 import { scrollBelowStickyHeaderUntilSettled } from "@/utils/scroll";
-import { getPersistedExpandedPillar, getPillarCardElementId, persistExpandedPillar, THEORY_SECTION_IDS, THEORY_SECTIONS } from "@/utils/theory-url";
+import {
+  buildTheoryShareUrl,
+  getPersistedExpandedPillar,
+  getPillarCardElementId,
+  persistExpandedPillar,
+  THEORY_SECTION_IDS,
+  THEORY_SECTIONS,
+} from "@/utils/theory-url";
 
 const cardClass = "rounded-xl border border-slate-300 bg-white shadow-md shadow-slate-200/40";
 
 /**
  * The look of the 32px square control at the left of this tab's toolbar.
  *
- * It used to be shared by the print button and a pair of admin shortcuts to the Poster/Social pages, which is
- * why it is a named constant rather than inline classes. Those two moved to their own Admin tab (see
- * AdminContent) — the print button is the only occupant now, but the name is kept because the toolbar is the
- * natural home for any further page-level action beside it.
+ * Worn by the print button and, where the browser can open a share sheet, the share button beside it — which
+ * is why it is a named constant rather than inline classes. (It was also worn by a pair of admin shortcuts to
+ * the Poster/Social pages before those moved to their own Admin tab; see AdminContent.)
  *
  * Only the surface lives here (radius, border, fill, text and hover colors). The layout, transition and
  * focus-visible ring come from `buttonVariants` at `size="icon"`, which is already this 32px square.
  */
 const TOOLBAR_ICON_SURFACE = "shrink-0 rounded-lg border-slate-200 bg-slate-100/80 text-slate-600 hover:bg-slate-200/80 hover:text-slate-900";
+
+/**
+ * Whether the OS share sheet can be opened at all here — true on mobile Safari/Chrome and a few desktop
+ * browsers, false on desktop Chrome-macOS / Firefox. Computed once at module load; the API's presence
+ * does not change within a page's lifetime.
+ *
+ * A PLAIN `navigator.share` CHECK, deliberately NOT the `canShare({ files: [...] })` probe that gates the
+ * chart's Share button (see ChartSection). The share DOES attach the pillar poster, so the stricter probe
+ * looks tempting — but the image is an enhancement and the link is the payload. `shareTheoryLink` runs the
+ * file probe itself and drops to a text-only share when it fails, so gating the button on file support
+ * would hide it from browsers that can still deliver the thing being shared.
+ *
+ * Where the API is absent there is no fallback worth a button, and none is needed: every section heading
+ * carries a copy-link control (ShareLinkButton), which is the desktop route to the same URL.
+ */
+const CAN_SHARE_LINK = typeof navigator !== "undefined" && typeof navigator.share === "function";
 
 // Stable fallback for the unseen-sections prop, so a caller that omits it doesn't hand the observer
 // a fresh Set identity on every render.
@@ -454,11 +478,29 @@ function TheoryContent({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /**
+   * Hand the theory tab's URL, plus the pillar poster image, to the OS share sheet.
+   *
+   * `buildTheoryShareUrl(null, null)` gives the plain `?tab=theory` link — no `section`/`pillar` —
+   * because this is the tab-level control: it shares the document, not wherever the reader happens to be
+   * scrolled to. Per-section links stay the job of the copy-link icon in each heading.
+   *
+   * NO TOAST ON EITHER OUTCOME. The sheet is its own feedback when it opens, and once it closes what the
+   * chosen app did is out of our hands; a dismissal is a decision, not an error. `method` distinguishes
+   * the image share from the text-only fallback so the split is visible in analytics.
+   */
+  const handleShareTheory = async () => {
+    const result = await shareTheoryLink(buildTheoryShareUrl(null, null));
+    if (result.ok) {
+      track("theory_shared", { method: result.method });
+    }
+  };
+
   return (
     <>
-      {/* Toolbar row: print left, changelog right. This also held admin shortcuts to the Poster/Social pages,
-          which have moved to their own Admin tab (see AdminContent) — so `justify-between` now pins one control
-          to each end for every user, admin or not.
+      {/* Toolbar row: page actions (print, and share where the browser can) at the left, changelog at the right.
+          This also held admin shortcuts to the Poster/Social pages, which have moved to their own Admin tab (see
+          AdminContent) — so `justify-between` now pins one group to each end for every user, admin or not.
 
           OUTSIDE THE SECTIONS COLUMN, and a sibling of it rather than its first child. That column's `gap-6`
           is the spacing BETWEEN SECTIONS; this row is page chrome, not a section, and being in there meant
@@ -491,6 +533,24 @@ function TheoryContent({
             <Printer className="size-4" aria-hidden />
             <Tooltip text="Print the framework" placement="bottom" />
           </Button>
+
+          {/* SHARE, WHERE THE OS CAN. Conditional on `CAN_SHARE_LINK` (see above), which in practice means
+              mobile: the share sheet is how a link leaves the browser on a phone, where there is no
+              "copy the URL bar" gesture worth the name. Desktop readers lose nothing — the copy-link icon
+              on every section heading is the same URL by another route. */}
+          {CAN_SHARE_LINK ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={handleShareTheory}
+              aria-label="Share the framework"
+              className={cn(TOOLBAR_ICON_SURFACE, "group relative")}
+            >
+              <Share className="size-4" aria-hidden />
+              <Tooltip text="Share the framework" placement="bottom" />
+            </Button>
+          ) : null}
         </div>
         <Button type="button" variant="outline" size="sm" shape="pill" onClick={() => setChangelogOpen(true)} className="gap-1">
           <ScrollText className="size-3.5 shrink-0" aria-hidden />
