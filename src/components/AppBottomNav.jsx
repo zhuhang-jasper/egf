@@ -60,9 +60,18 @@ const NAV_ITEMS = [
  * Note (2) only takes effect for home-screen icons created AFTER it shipped: iOS bakes the launch mode into the
  * shortcut when it is added.
  *
- * THE PADDING IS ON THE BAR, NOT THE ROW, so the bar's white background and its shadow extend into the inset while
- * the row of `min-h-12` touch targets sits entirely above it. Putting it on the row instead would pad the targets
- * from below — the bar would be the right height, but the bottom 34px of it would be dead space that looks tappable.
+ * THE PADDING IS ON THE BAR, NOT THE ROW, so the bar's background and its shadow extend into the inset while the
+ * row of `min-h-12` touch targets sits entirely above it. Putting it on the row instead would pad the targets from
+ * below — the bar would be the right height, but the bottom 34px of it would be dead space that looks tappable.
+ *
+ * `bg-slate-50` MATCHES THE HEADER AND THE FOOTER, and the three values are one decision (see AppShellHeader's
+ * docblock). All three were white, which left the shell defined by shadows alone; the tint is what separates
+ * pinned chrome from the white content between it. It also has to be OPAQUE for the same reason the header's does
+ * — scrolling content passes underneath this bar.
+ *
+ * THE TINT COST THIS FILE THREE MORE VALUES, not just the one: the active segment, the inactive hover, and the
+ * unseen dot's ring all sat one step above white and had to move up with the bar to keep the same separation. See
+ * their notes below. That coupling is the reason to change the bar's value in all four places at once or not at all.
  *
  * `print:hidden`: navigation is meaningless on paper, and the printed page already carries the header's title.
  */
@@ -106,7 +115,7 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
     <nav
       id="app-bottom-nav"
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-40 bg-white shadow-[0_-1px_3px_0_rgb(0_0_0/0.1),0_-1px_2px_1px_rgb(0_0_0/0.1)] pb-[env(safe-area-inset-bottom)] print:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 bg-slate-50 shadow-[0_-1px_3px_0_rgb(0_0_0/0.1),0_-1px_2px_1px_rgb(0_0_0/0.1)] pb-[env(safe-area-inset-bottom)] print:hidden"
     >
       {/* Capped to the same measure as the Tool tab's content and centred, so on a wide screen the two items sit
           under the content they navigate rather than stranded at the viewport's far corners.
@@ -161,12 +170,19 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
                 // slightly different greys do not say which one you are on. Filled-versus-unfilled survives both,
                 // and it reinforces the rule above rather than repeating it.
                 //
+                // BOTH FILLS MOVED UP ONE STEP WHEN THE BAR GAINED ITS OWN TINT. The active segment was
+                // `bg-slate-100` and the hover `bg-slate-50`, both read against a white bar; against a
+                // `bg-slate-50` bar the hover became a no-op (same value as its background) and the active fill
+                // was one 50-level step from it, which is not enough to be the non-colour signal this comment
+                // claims it is. `slate-200` / `slate-100` restores both gaps. The active fill must stay a step
+                // clear of the HOVER too, not just the bar, or hovering an inactive tab would make it look selected.
+                //
                 // `transition-colors` covers the border, the tint and the text together, so the whole segment
                 // resolves as one change on tab switch.
                 "transition-colors",
                 selected
-                  ? "border-slate-900 bg-slate-100 text-slate-900"
-                  : "border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-700",
+                  ? "border-slate-900 bg-slate-200 text-slate-900"
+                  : "border-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-700",
               )}
             >
               {/* THE UNSEEN DOT BADGES THE ICON, not the version text. It rode on `v4.1` as a superscript when this
@@ -189,11 +205,15 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
                   // icon's strokes and the two read as one shape.
                   //
                   // THE RING COLOUR TRACKS THE SEGMENT'S BACKGROUND so it reads as a GAP rather than an outline: the
-                  // active tab is tinted `bg-slate-100`, the others are the bar's white, and a fixed `ring-white`
-                  // would show as a visible halo on the tinted one.
+                  // active tab is tinted `bg-slate-200`, the others are the bar's own `bg-slate-50`, and a fixed
+                  // ring value would show as a visible halo on whichever one it did not match.
+                  //
+                  // BOTH VALUES ARE COPIES, so they go stale silently — the ring cannot be `currentColor` or
+                  // inherit a background. If the bar's tint or the active fill changes, these two change with them.
+                  // `ring-white` was correct here only while the bar was white.
                   <UnseenDot
                     label="New framework updates"
-                    className={cn("absolute -top-0.5 -right-1.5 size-2 ring-2", selected ? "ring-slate-100" : "ring-white")}
+                    className={cn("absolute -top-0.5 -right-1.5 size-2 ring-2", selected ? "ring-slate-200" : "ring-slate-50")}
                   />
                 ) : null}
               </span>

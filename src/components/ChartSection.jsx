@@ -160,6 +160,10 @@ const CAN_SHARE_FILES = (() => {
  */
 function ExportMenu({ onCopy, onShare }) {
   return (
+    // `gap-2` IS SHARED WITH THEORY'S PRINT/SHARE GROUP (see TheoryContent's toolbar row) — same pills, same
+    // place on the page, so the same 8px between them. Theory's was `gap-1.5`; keep the two in step. It
+    // coincides with the parent row's `gap-2` but is not the same decision: that one spaces this group from
+    // the display-settings gear at the far end, a different boundary — see the note on that row.
     <div className="flex min-w-0 items-center gap-2">
       <Button
         type="button"
@@ -283,17 +287,22 @@ export function ChartSection({ isVisible }) {
     }
   };
 
-  /* `gap-2` on the column below, rather than a margin on the toolbar alone, so the space under the
-     toolbar is expressed exactly as the theory tab expresses its own — a column `gap-2` plus the row's
-     `mb-2` (see TheoryContent). Same classes, same total, nothing to convert when comparing the two.
-     The column has only two children (the toolbar and the export block), so the gap applies at exactly
-     one boundary: the one being spaced. It also sits OUTSIDE `exportRef`, so it cannot reach the image. */
+  /* NO `gap` ON THIS COLUMN. The 16px under the toolbar used to be split across two classes — this column's
+     `gap-2` plus the row's own `mb-2` — which was described as matching how the theory tab expresses the same
+     space. It no longer was: theory's toolbar became a sibling of its sections column (dropping the `-mb-2`
+     hack it needed while inside it), so that side is a single `mb-4` and there is no gapped column at all.
+     The totals agreed while the construction did not, so comparing the two tabs meant adding two numbers on
+     one side only. The whole 16px is now the row's own `mb-4`, the same class theory uses. */
   return (
-    <div className="flex w-full min-w-0 flex-col items-center gap-2">
-      {/* Its own `mb-2` on top of the column's `gap-2` puts 16px below this toolbar. Theory's changelog
-          row is the same row at the same position in the other tab, spaced identically — keep the two in
-          step, or the page appears to shift when you switch tabs. (The `gap-2` in this row's own class
-          list is unrelated: that one spaces its buttons horizontally.)
+    <div className="flex w-full min-w-0 flex-col items-center">
+      {/* `mb-4` is 16px below this toolbar, in one class. Theory's changelog row is the same row at the same
+          position in the other tab and carries the same `mb-4` — keep the two in step, or the page appears to
+          shift when you switch tabs. (The `gap-2` in this row's own class list is unrelated: that one spaces
+          its buttons horizontally, and is matched to theory's button group separately.)
+
+          IT OWNS THE SPACING OUTRIGHT, which is why the parent column has no `gap`: with the margin here, the
+          space below the toolbar is one number in one place rather than a sum of two, and it cannot be changed
+          by adding a third child to that column. It also sits OUTSIDE `exportRef`, so it cannot reach the image.
 
           `print:hidden` for the same reason theory's row carries it: these buttons only exist to be
           clicked, and "Copy image" on paper is nonsense. The chart below is the thing being printed.
@@ -302,7 +311,7 @@ export function ChartSection({ isVisible }) {
           gear at the right — which is the same division theory's toolbar makes (page actions left, changelog
           right). Everything used to be bunched at the right together, so the gear (a settings control) read as
           a third export button. */}
-      <div className="relative z-[2] flex w-full min-w-0 items-center justify-between gap-2 mb-2 print:hidden">
+      <div className="relative z-[2] mb-4 flex w-full min-w-0 items-center justify-between gap-2 print:hidden">
         <ExportMenu onCopy={handleCopy} onShare={handleShare} />
         <ChartDisplayMenu />
       </div>

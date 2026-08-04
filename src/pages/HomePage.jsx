@@ -369,17 +369,18 @@ export default function HomePage() {
             height.
 
             Rendered once outside both tabpanels, so it survives tab switches untouched. */}
-        {/* WHITE, NOT BLACK, AND THAT IS ABOUT THE BOTTOM NAV. This was a black band, which read as the page's
-            own base while it was the last thing on screen. It is not the last thing any more — AppBottomNav is
-            fixed directly beneath it — and a black strip meeting a white bar looked like two unrelated pieces of
-            chrome stacked by accident. Matching the nav (and the header above it) makes the shell one surface,
-            with the `border-t` hairlines doing the separating instead of a colour change.
+        {/* IT MATCHES THE BOTTOM NAV, WHICHEVER VALUE THAT IS. This was a black band, which read as the page's own
+            base while it was the last thing on screen. It is not the last thing any more — AppBottomNav is fixed
+            directly beneath it — and a black strip meeting a light bar looked like two unrelated pieces of chrome
+            stacked by accident. The footer, the nav and the header are one surface, so they carry one value; it is
+            `bg-slate-50` now rather than the white all three started at, which is what makes the shell read as a
+            frame around the white content instead of being defined by shadows alone. See AppShellHeader's docblock.
 
             The black survives where it still means something: the page wrapper outside `main`, which shows down
             both sides once the viewport is wider than the content measure.
 
             `text-slate-500` rather than `text-white/60` follows from the background; it is the same muted weight
-            against light that the old value was against dark.
+            against light that the old value was against dark, and it holds against a 50-level tint too.
 
             NO BORDER of its own. This briefly had a `border-t` to replace the boundary the colour change used to
             provide, but the bottom nav casts an upward shadow onto this strip (see AppBottomNav), so a hairline
@@ -394,7 +395,7 @@ export default function HomePage() {
             index.css for how that works and why page numbers are not part of it. */}
         <footer
           data-print-running
-          className="mt-auto bg-white px-3 py-2 text-center text-[11px] text-slate-500 print:bg-transparent"
+          className="mt-auto bg-slate-50 px-3 py-2 text-center text-[11px] text-slate-500 print:bg-transparent"
         >
           © 2026 Jasper Loo Zhu Hang · All rights reserved · <span className="tabular-nums">v{appVersion}</span>
         </footer>

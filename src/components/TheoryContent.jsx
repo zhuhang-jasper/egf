@@ -14,7 +14,7 @@ import { UnseenDot } from "@/components/UnseenDot";
 
 import { getSectionSentinelId, useSectionSeenObserver } from "@/hooks/useSectionSeenObserver";
 
-import { FE_UI, FRAMEWORK_VERSION, SITE_COPY } from "@/constants";
+import { FE_UI, FRAMEWORK_VERSION, IS_ADMIN, SITE_COPY } from "@/constants";
 import {
   COMPETENCY_MATRIX,
   COMPETENCY_MATRIX_INTRO,
@@ -496,39 +496,57 @@ function TheoryContent({
           inheriting a 24px gap and then cancelling most of it back with `-mb-2` — a negative margin whose
           only job was to undo the container it had been put in.
 
-          `mb-4` is the real number: 16px above the framework title, matching the tool tab's toolbar row
-          against its own first element (see ChartSection). Keep the two in step, or the page appears to
-          shift when you switch tabs. */}
+          `mb-4` is the real number: 16px above the framework title. The tool tab's toolbar row carries the
+          same `mb-4` against its own first element (see ChartSection) — it reached the same 16px through a
+          column `gap-2` plus its own `mb-2` until that was collapsed into this one class, so the two tabs now
+          state the spacing identically instead of only agreeing on the total. Keep them in step, or the page
+          appears to shift when you switch tabs. */}
       <div className="mb-4 flex items-center justify-between gap-2 print:hidden">
-        <div className="flex items-center gap-1.5">
-          {/* PRINT, FOR EVERYONE. The theory tab is built to print as a reference document: a cover sheet, then
-              a page per pillar. Before this button the only route to it was the browser's own menu, which
-              readers do not associate with a page they are looking at.
+        {/* `gap-2` MATCHES THE TOOL TAB'S EXPORT GROUP (see ChartSection's ExportMenu), which is the same row of
+            same-sized pills at the same place in the other tab. This was `gap-1.5` against that group's `gap-2` —
+            a 2px difference nobody chose, but visible as the buttons shifting when you flip tabs, which is the
+            exact drift TOOLBAR_SURFACE exists to prevent for their colours. Keep the two in step, or switching
+            tabs appears to nudge the chrome.
 
-              `window.print()` and nothing else. Paper size, margins and destination all live in the browser's
-              dialog and none of them can be set from script — deliberately, since they are the user's choice.
-              What the app CAN do is make its own layout insensitive to them, which is what `@page` and the
-              print rules in index.css are for. */}
-          {/* `group relative` + `<Tooltip>` rather than a native `title`: one tooltip mechanism across the app,
-              with no browser delay and the app's own styling. See components/ui/Tooltip.jsx. */}
-          {/* LABELLED, in the same pill as the tool tab's Share/Copy (see ChartSection's ExportMenu). These
-              two rows sit at the same place on the page and the user flips between them, so a bare icon here
-              beside a labelled pill there read as two different kinds of control. The `aria-label` stays
-              longer than the visible word: the label says which action, the aria-label says what it acts on,
-              which is what a screen reader needs when the surrounding heading isn't being read. */}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            shape="pill"
-            onClick={() => window.print()}
-            aria-label="Print the framework"
-            className={cn(TOOLBAR_SURFACE, "group relative gap-1")}
-          >
-            <Printer className="size-3.5 shrink-0" aria-hidden />
-            Print
-            <Tooltip text="Print the framework" placement="bottom" />
-          </Button>
+            THIS GROUP CAN BE EMPTY, and is for the common case: Print is admin-gated and Share is mobile-only,
+            so a desktop reader without the dev unlock renders neither. That is fine and needs no special case —
+            an empty flex child is zero-width, the row's `gap-2` collapses against it, and `justify-between`
+            still puts Changelog on the right edge. It is kept as a wrapper rather than flattened into the row
+            because it is what groups the left-hand actions when they ARE present. */}
+        <div className="flex items-center gap-2">
+          {/* PRINT, ADMIN ONLY. The theory tab is built to print as a reference document — a cover sheet, then a
+              page per pillar — and the print CSS stays in the build for everyone: `window.print()` from the
+              browser's own menu still produces that layout, and `@page` and the print rules in index.css are
+              what make it insensitive to the paper size, margins and destination that only the browser's dialog
+              can set. This button is just the in-page shortcut to it, and it is now gated behind the dev unlock
+              (see constants/features.js) rather than shown to every reader.
+
+              THE FEATURE IS NOT GONE, ONLY THE BUTTON. Nothing about the printed output depends on this being
+              rendered, so hiding it costs a reader the affordance and not the capability.
+
+              `group relative` + `<Tooltip>` rather than a native `title`: one tooltip mechanism across the app,
+              with no browser delay and the app's own styling. See components/ui/Tooltip.jsx.
+
+              LABELLED, in the same pill as the tool tab's Share/Copy (see ChartSection's ExportMenu). These two
+              rows sit at the same place on the page and the user flips between them, so a bare icon here beside
+              a labelled pill there read as two different kinds of control. The `aria-label` stays longer than
+              the visible word: the label says which action, the aria-label says what it acts on, which is what
+              a screen reader needs when the surrounding heading isn't being read. */}
+          {IS_ADMIN ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              shape="pill"
+              onClick={() => window.print()}
+              aria-label="Print the framework"
+              className={cn(TOOLBAR_SURFACE, "group relative gap-1")}
+            >
+              <Printer className="size-3.5 shrink-0" aria-hidden />
+              Print
+              <Tooltip text="Print the framework" placement="bottom" />
+            </Button>
+          ) : null}
 
           {/* SHARE, WHERE THE OS CAN. Conditional on `CAN_SHARE_LINK` (see above), which in practice means
               mobile: the share sheet is how a link leaves the browser on a phone, where there is no

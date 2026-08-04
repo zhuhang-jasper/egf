@@ -35,8 +35,14 @@ import { clearStickyScrollOffset, getWindowScrollY, scrollWindowToTop, setSticky
  * correct for that after the fact. Sticky removes the cause — the header occupies viewport space, not
  * document space above the scroll position — which is what lets `useTabScrollMemory` store a plain `scrollY`.
  *
- * `bg-white` is required, not cosmetic: once this overlaps content it must be opaque, whereas in flow it
- * merely inherited the card's white.
+ * `bg-slate-50` is required TO BE OPAQUE, not merely to be tinted: this overlaps scrolling content, so any
+ * transparency would show that content sliding underneath the lockup. It was `bg-white` when the header was in
+ * flow and inherited the card's white; the tint is what now distinguishes pinned chrome from the white page
+ * between it and the footer, which the `shadow-sm` alone was doing.
+ *
+ * THE SAME TINT IS ON THE FOOTER AND THE BOTTOM NAV (see HomePage and AppBottomNav). The three are one surface —
+ * the app's chrome — wrapping a white content area; tinting only this one would read as a stray band. If this
+ * value changes, change all three.
  *
  * `p-3` — ONE 12px INSET ON ALL FOUR SIDES, declared once here. Both vertical halves used to live on children,
  * which meant the header's inset was assembled from three files and none of them owned it. It is this element's
@@ -94,8 +100,10 @@ function AppShellHeaderStack() {
       ref={stackRef}
       id="app-shell-header-stack"
       // `shadow-sm` sits on THIS box. The boundary between pinned chrome and scrolling content is this
-      // element's bottom edge, so the shadow belongs here — on a child it was cast onto this box's own white
+      // element's bottom edge, so the shadow belongs here — on a child it was cast onto this box's own
       // background and inset from the card's edges, which drew a visible line partway across the header.
+      // KEPT ALONGSIDE THE TINT: the tint says "this is chrome", the shadow says "it floats above what is
+      // scrolling under it". A 50-level tint against white is too slight to carry the second job on its own.
       // No `relative` needed for the corner controls to anchor here: `position: sticky` already establishes a
       // containing block for absolutely-positioned children, and adding `relative` would just conflict over
       // the same `position` property.
@@ -105,7 +113,7 @@ function AppShellHeaderStack() {
       //
       // See the docblock for `p-3`, `min-h-14` and `print:hidden` — between them they are the entire geometry
       // of the header, and none of it belongs on a child.
-      className="sticky top-0 z-40 min-h-14 bg-white p-3 shadow-sm print:hidden"
+      className="sticky top-0 z-40 min-h-14 bg-slate-50 p-3 shadow-sm print:hidden"
     >
       <AppShellBrandMark />
       <AppShellScrollTopButton />
@@ -308,7 +316,14 @@ function AppShellScrollTopButton() {
       // the stack's own `p-3` — see its docblock.
       //
       // `group` for the Tooltip below, which replaces a native `title` so the app has one tooltip mechanism.
-      className="group absolute right-3 top-3 z-10 inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-slate-100/80 text-slate-500 transition-colors hover:bg-slate-200/80 hover:text-slate-900 print:hidden"
+      //
+      // ONE LEVEL DARKER THAN IT WAS, AND OPAQUE, BECAUSE THE BAR IS TINTED. This was `bg-slate-100/80` over
+      // `border-slate-200`, which was a clear step up from a white bar; against `bg-slate-50` that same fill is
+      // near-invisible and its `slate-200/80` hover lands where the resting state used to be, so the button
+      // stopped reading as a control and its hover stopped reading as feedback. Each value moves up one step to
+      // preserve the contrast it had. The alphas go too: `/80` over white and `/80` over slate-50 are different
+      // colours, so a translucent fill would silently re-tint if the bar's value ever changed again.
+      className="group absolute right-3 top-3 z-10 inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-slate-300 bg-slate-200 text-slate-500 transition-colors hover:bg-slate-300 hover:text-slate-900 print:hidden"
     >
       <ChevronsUp className="size-4" aria-hidden />
       {/* `placement="bottom"` — this sits in the sticky header's top-right corner, so a tooltip above it would
