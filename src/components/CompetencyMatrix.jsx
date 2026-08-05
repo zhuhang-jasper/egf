@@ -167,12 +167,16 @@ function PillarMatrixCard({
         borderLeftColor: textColor,
       }}
     >
-      {/* THE HEADER IS A SECOND, SILENT TRIGGER. The visible control is the strip below the focus areas; this
+      {/* THE HEADER IS A SECOND, SILENT TRIGGER. The visible control is the strip at the foot of the card; this
           keeps the card-wide tap target that a labelled strip cannot match on a phone, but it carries NO
           affordance of its own any more. It used to end in a caret, then a labelled caret, then a bordered
           rail — each of which had to be paid for out of the same row the wrapping focus-area list needs, and
           none of which said plainly that a matrix was inside. Handing that job to a full-width strip returned
           the whole row to the content.
+
+          It also matters MORE now that the strip has moved below the panel: on a collapsed card the two
+          triggers are adjacent, but on an expanded one the header is the only way to close the pillar without
+          scrolling to the end of its matrix.
 
           `aria-controls`/`aria-expanded` on both triggers is deliberate: they are two controls for one panel,
           which assistive tech states correctly, rather than one control with a hidden second hit area. */}
@@ -183,9 +187,10 @@ function PillarMatrixCard({
         aria-controls={panelId}
         onClick={onToggle}
         data-matrix-toggle
-        // `print:border-b` — ON PAPER THIS HEADER CARRIES THE DIVIDER ITSELF, because the strip that draws it
-        // on screen is `print:hidden` and every pillar prints open. Without it the pillar name would run
-        // straight into its own level grid.
+        // `print:border-b` — ON PAPER THIS HEADER CARRIES THE DIVIDER ITSELF. Every pillar prints open and both
+        // footer rows are `print:hidden`, so nothing else separates the summary from the levels; without it the
+        // pillar name would run straight into its own level grid. On screen the divider is the copy-link row's
+        // top border, at the far end of the matrix.
         className="flex w-full cursor-pointer select-none flex-col gap-2 px-3 pt-2.5 pb-2.5 text-left print:border-b print:border-slate-300/60 print:pb-1.5"
       >
         <h3 className={cn("min-w-0", DOC_TEXT.cardTitlePlain, "font-bold")}>
@@ -193,50 +198,6 @@ function PillarMatrixCard({
         </h3>
         <FocusTierList focusTiers={focusTiers} />
         {note ? <p className={cn("min-w-0", DOC_TEXT.bodyItalic, "opacity-90")}>{note}</p> : null}
-      </button>
-
-      {/* THE DISCLOSURE, AS A FULL-WIDTH STRIP RATHER THAN A CORNER CARET.
-          It reads differently either side of the toggle, and both readings are wanted:
-
-            collapsed   the last thing in the card, so it reads as "continue here"
-            expanded    unmoved, so it becomes the divider between the pillar's summary and its matrix
-
-          That second position is why the strip is a SIBLING of the panel and not inside it: it has to stay
-          above the levels when they open, not scroll in with them.
-
-          FULL WIDTH BUYS THE WORDS BACK. "View matrix" cost ~86px of the header row and was cut to "L1-L5"
-          and then to a stacked pair to fit; here the width is free, so the control can say what it opens.
-          "matrix" is the word the section's lead-in uses (see COMPETENCY_MATRIX_INTRO), so the copy and the
-          control name the same thing — which was the actual complaint: nine collapsed cards look like the
-          Section I pillar grid, so a paragraph about a 45-cell matrix seemed to describe another page.
-
-          `border-t` MATCHES THE COPY-LINK STRIP at the foot of the expanded panel, so the card has one footer
-          idiom used twice rather than two. Expanded, the two strips bracket the level grid.
-
-          `border-b` ONLY WHILE EXPANDED, which is what turns the strip from a footer into a divider band: open,
-          it is enclosed top and bottom and separates summary from matrix; collapsed, the card's own bottom edge
-          closes it and a second line would just double up 8px above the border it sits on.
-
-          `print:hidden` — a control that cannot be operated on paper, where every pillar is already open, so
-          the caret would point the wrong way and the label would advertise a done deal. */}
-      <button
-        type="button"
-        aria-expanded={expanded}
-        aria-controls={panelId}
-        onClick={onToggle}
-        data-matrix-toggle
-        className={cn(
-          "flex w-full cursor-pointer select-none items-center justify-center gap-1.5 border-t border-slate-300/60 py-2",
-          // The tint is the card's (see the article). The label darkening stays local to the strip but is
-          // driven from the CARD's hover state, so hovering the header up top also sharpens the words down
-          // here — the strip is where this control says what it does, and both triggers are that control.
-          "text-slate-600 transition-colors group-has-[[data-matrix-toggle]:hover]/card:text-slate-900 print:hidden",
-          expanded && "border-b border-slate-300/60",
-          DOC_TEXT.badgeSm,
-        )}
-      >
-        {expanded ? "Hide matrix" : "View matrix"}
-        <ChevronDown className={cn("size-4 shrink-0 transition-transform", expanded && "rotate-180")} aria-hidden />
       </button>
 
       {/* CSS grid-rows 0fr→1fr animates the panel height open/closed without measuring pixels.
@@ -265,7 +226,12 @@ function PillarMatrixCard({
           <PillarMatrixLevels levels={levels} showLatestChanges={showLatestChanges} />
           {/* `print:hidden` on the STRIP, not just the button inside it (which carries its own): this
               row exists only to hold that button, so hiding the button alone would leave an empty
-              bordered band under every pillar — and on paper there are now nine of them. */}
+              bordered band under every pillar — and on paper there are now nine of them.
+
+              INSIDE the panel, unlike the toggle below it, which is deliberate: this row is about the
+              matrix, so it should scroll in and out with the levels rather than sit under a collapsed
+              card offering to copy a link to content that is not on screen. Its `border-t` is what
+              separates the levels from the card's footer rows. */}
           <div className="flex justify-center border-t border-slate-300/60 py-2 print:hidden">
             <ShareLinkButton
               section={THEORY_SECTIONS.matrix}
@@ -276,6 +242,53 @@ function PillarMatrixCard({
           </div>
         </div>
       </section>
+
+      {/* THE DISCLOSURE, AS A FULL-WIDTH STRIP RATHER THAN A CORNER CARET, AND ALWAYS THE CARD'S LAST ROW.
+          It reads the same either side of the toggle, which is the point:
+
+            collapsed   the last thing in the card, so it reads as "continue here"
+            expanded    still the last thing, so "Hide matrix" is where the matrix ENDS
+
+          It used to sit ABOVE the panel so it would hold still while the levels opened under it. That
+          traded a stationary control for an unreachable one: an expanded L1–L5 grid is several screens
+          tall, so a reader who had scrolled to the bottom of it had no way to close the pillar except to
+          scroll all the way back up past everything they had just read. Below the panel the control is
+          wherever the reading ends. Collapsed, it has not moved at all — a 0fr panel occupies no space,
+          so this is still the row directly under the focus areas.
+
+          A SIBLING OF THE PANEL, NOT INSIDE IT: it must stay operable when the panel is squeezed to 0fr,
+          and anything inside is clipped away with the levels.
+
+          FULL WIDTH BUYS THE WORDS BACK. "View matrix" cost ~86px of the header row and was cut to "L1-L5"
+          and then to a stacked pair to fit; here the width is free, so the control can say what it opens.
+          "matrix" is the word the section's lead-in uses (see COMPETENCY_MATRIX_INTRO), so the copy and the
+          control name the same thing — which was the actual complaint: nine collapsed cards look like the
+          Section I pillar grid, so a paragraph about a 45-cell matrix seemed to describe another page.
+
+          `border-t` MATCHES THE COPY-LINK ROW now directly above it, so the card's foot is one idiom used
+          twice: copy-link, then close. No `border-b` in either state any more — the card's own bottom edge
+          closes the strip, and while expanded the divider job belongs to the copy-link row's top border.
+
+          `print:hidden` — a control that cannot be operated on paper, where every pillar is already open, so
+          the caret would point the wrong way and the label would advertise a done deal. */}
+      <button
+        type="button"
+        aria-expanded={expanded}
+        aria-controls={panelId}
+        onClick={onToggle}
+        data-matrix-toggle
+        className={cn(
+          "flex w-full cursor-pointer select-none items-center justify-center gap-1.5 border-t border-slate-300/60 py-2",
+          // The tint is the card's (see the article). The label darkening stays local to the strip but is
+          // driven from the CARD's hover state, so hovering the header up top also sharpens the words down
+          // here — the strip is where this control says what it does, and both triggers are that control.
+          "text-slate-600 transition-colors group-has-[[data-matrix-toggle]:hover]/card:text-slate-900 print:hidden",
+          DOC_TEXT.badgeSm,
+        )}
+      >
+        {expanded ? "Hide matrix" : "View matrix"}
+        <ChevronDown className={cn("size-4 shrink-0 transition-transform", expanded && "rotate-180")} aria-hidden />
+      </button>
     </article>
   );
 }
@@ -313,11 +326,14 @@ function CompetencyMatrix({ expandedPillar, onExpandedPillarChange, scrollNav, s
     const next = pillarId === expandedPillar ? null : pillarId;
     persistExpandedPillar(next);
     onExpandedPillarChange(next);
-    if (next) {
-      scrollToCardSoon(next);
-    } else {
-      cancelPendingScroll();
-    }
+    // COLLAPSING SCROLLS TOO, to the card being closed. The close control sits at the FOOT of the matrix,
+    // so it is normally clicked from the far end of several screens of levels — all of which are above the
+    // cursor and all of which vanish. Left alone, the viewport keeps its scroll offset while the document
+    // shrinks under it, and the reader is dumped somewhere among the pillars that follow, with the card
+    // they just closed far off the top of the screen. Re-aiming at that card keeps them where they were
+    // working. (Closing from the header instead moves almost nothing — the card's top is already up
+    // there — so the same call is a no-op rather than a competing jump.)
+    scrollToCardSoon(pillarId);
   };
 
   // Cross-tab jump from a tool-form pillar's help icon. Keyed on `scrollNav.seq` (bumps every click)
