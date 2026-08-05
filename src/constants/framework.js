@@ -23,6 +23,20 @@ export function getClusterSurfaceBg(color) {
 }
 
 /**
+ * The hovered form of {@link getClusterSurfaceBg}: the SAME cluster hex, just laid on thicker
+ * (0x55 → 0x77 alpha, ~33% → ~47%).
+ *
+ * Deliberately not a black overlay. Washing 4% black over these surfaces desaturates them toward
+ * grey — the lavender/peach/sage read as dirty rather than deeper, and the three clusters converge on
+ * the same muddy tint instead of each going darker in its own colour. Turning the alpha up keeps the
+ * hue and saturation exactly where they were and only strengthens the tint, which is what "a shade
+ * darker" actually means on a translucent surface over a light page.
+ */
+export function getClusterSurfaceHoverBg(color) {
+  return `${color}77`;
+}
+
+/**
  * The single chart-axis order and form-cluster grouping (ids reference {@link PILLARS}).
  * There is one pillar layout for the whole app; the FE/BE distinction is now a purely cosmetic
  * badge (see {@link TRACK_BADGE_OPTIONS}), not a different pillar set.

@@ -24,6 +24,7 @@ export {
   TRACK_BADGE_OPTIONS,
   TRACK_BADGE_UI,
   getClusterSurfaceBg,
+  getClusterSurfaceHoverBg,
 } from "@/constants/framework";
 export {
   BREADTH_TOP_RATIO,

@@ -5,7 +5,7 @@ import { ChevronDown } from "lucide-react";
 import { EmphasizedText } from "@/components/EmphasizedText";
 import { ShareLinkButton } from "@/components/ShareLinkButton";
 
-import { getClusterSurfaceBg } from "@/constants";
+import { getClusterSurfaceBg, getClusterSurfaceHoverBg } from "@/constants";
 import { COMPETENCY_MATRIX, SENIORITY_LEVEL_DEFINITIONS, SKILL_TIERS } from "@/constants/theory-data";
 import { DOC_TEXT, WHATS_NEW_HIGHLIGHT_CLASS } from "@/styles/doc-typography";
 import { cn } from "@/utils";
@@ -142,11 +142,30 @@ function PillarMatrixCard({
          the coloured left edge. Nothing here actually overflows, so dropping it on paper costs nothing.
          Every card in the theory and tool tabs has the same clip and the same need — see PillarCluster
          and CareerTracks. */
+      /* ONE CARD, ONE HOVER. The header and the strip below the focus areas are two buttons doing the
+         same thing, so a tint that followed the cursor between them made the card look like two
+         controls stacked — hover the title, the title lights; slide down to the strip, the title goes
+         dark and the strip lights. The tint therefore lives HERE, on their shared parent, keyed off
+         `[data-matrix-toggle]:hover`, so either trigger lights the whole card and moving between them
+         changes nothing.
+         The attribute selector is doing real work: a plain `has-[button:hover]` would also fire for the
+         copy-link button inside the expanded panel, which is a *different* action and must not read as
+         "this toggles". Only the two toggles carry the marker.
+
+         BOTH SURFACE COLOURS COME IN AS CUSTOM PROPERTIES, and the utilities only ever switch between
+         them. They are per-cluster and computed, so they cannot live in a class — but an inline
+         `background-color` would beat any `hover:bg-*` utility, so the value that varies is the *variable*
+         and `background-color` itself stays in CSS where the hover variant can win. */
       className={cn(
         "overflow-hidden rounded-xl border border-white/70 border-l-[3px] shadow-md shadow-slate-200/40 print:overflow-visible",
+        "group/card bg-(--card-surface) transition-colors has-[[data-matrix-toggle]:hover]:bg-(--card-surface-hover)",
         printBreakBefore && "print:break-before-page",
       )}
-      style={{ backgroundColor: getClusterSurfaceBg(color), borderLeftColor: textColor }}
+      style={{
+        "--card-surface": getClusterSurfaceBg(color),
+        "--card-surface-hover": getClusterSurfaceHoverBg(color),
+        borderLeftColor: textColor,
+      }}
     >
       {/* THE HEADER IS A SECOND, SILENT TRIGGER. The visible control is the strip below the focus areas; this
           keeps the card-wide tap target that a labelled strip cannot match on a phone, but it carries NO
@@ -163,10 +182,11 @@ function PillarMatrixCard({
         aria-expanded={expanded}
         aria-controls={panelId}
         onClick={onToggle}
+        data-matrix-toggle
         // `print:border-b` — ON PAPER THIS HEADER CARRIES THE DIVIDER ITSELF, because the strip that draws it
         // on screen is `print:hidden` and every pillar prints open. Without it the pillar name would run
         // straight into its own level grid.
-        className="flex w-full cursor-pointer select-none flex-col gap-2 px-3 pt-2.5 pb-2.5 text-left transition-colors hover:bg-black/[0.04] print:border-b print:border-slate-300/60 print:pb-1.5"
+        className="flex w-full cursor-pointer select-none flex-col gap-2 px-3 pt-2.5 pb-2.5 text-left print:border-b print:border-slate-300/60 print:pb-1.5"
       >
         <h3 className={cn("min-w-0", DOC_TEXT.cardTitlePlain, "font-bold")}>
           {order}. {pillarName}
@@ -204,9 +224,13 @@ function PillarMatrixCard({
         aria-expanded={expanded}
         aria-controls={panelId}
         onClick={onToggle}
+        data-matrix-toggle
         className={cn(
           "flex w-full cursor-pointer select-none items-center justify-center gap-1.5 border-t border-slate-300/60 py-2",
-          "text-slate-600 transition-colors hover:bg-black/[0.04] hover:text-slate-900 print:hidden",
+          // The tint is the card's (see the article). The label darkening stays local to the strip but is
+          // driven from the CARD's hover state, so hovering the header up top also sharpens the words down
+          // here — the strip is where this control says what it does, and both triggers are that control.
+          "text-slate-600 transition-colors group-has-[[data-matrix-toggle]:hover]/card:text-slate-900 print:hidden",
           expanded && "border-b border-slate-300/60",
           DOC_TEXT.badgeSm,
         )}
