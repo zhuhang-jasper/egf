@@ -50,3 +50,27 @@ export const IS_ADMIN = resolveIsAdmin();
 
 /** When false, hides score cards and the Scores display toggle. Admin-gated. */
 export const FEATURE_SCORES_SETTINGS = IS_ADMIN;
+
+/**
+ * When false, hides the "Chart" and "Level labels" display toggles. Admin-gated because both strip
+ * information the exported image needs to stand on its own: the levels polygon IS the data, and the
+ * 0–5 ticks are the only scale a viewer can read magnitude against. A chart that circulates without
+ * them is unreadable and not comparable to anyone else's, so the public build keeps both on.
+ *
+ * Gating the toggle is not enough on its own — a draft persisted while the toggle was reachable
+ * would otherwise leave a public user stuck with a broken chart and no way back. parseChartDisplay()
+ * in src/utils/storage.js forces both flags off whenever this is false.
+ */
+export const FEATURE_CHART_STRUCTURE_SETTINGS = IS_ADMIN;
+
+/**
+ * When false, hides the "Legend" display toggle so every chart carries the cluster legend.
+ *
+ * Deliberately a separate flag from FEATURE_CHART_STRUCTURE_SETTINGS even though both are currently
+ * IS_ADMIN, because the reasoning differs and only one of them is a judgement call. Hiding the
+ * polygon or the ticks makes the image unreadable; hiding the legend only costs reach. The legend is
+ * the one element that names the model (Technical / Product / Operational) and so marks a shared
+ * chart as this framework rather than a generic radar. That is a promotion bet, and a reasonable one
+ * to revisit, so keep it independently flippable.
+ */
+export const FEATURE_CHART_LEGEND_SETTING = IS_ADMIN;

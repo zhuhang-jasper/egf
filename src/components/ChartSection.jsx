@@ -15,7 +15,7 @@ import { useCompetencyChart } from "@/hooks/useCompetencyChart";
 import { useAppStore } from "@/store/useAppStore";
 
 import { getChartTitleSizePx, getTrackBadgeMdHeightPx } from "@/chart/fonts";
-import { FE_UI, FEATURE_SCORES_SETTINGS, SITE_COPY } from "@/constants";
+import { FE_UI, FEATURE_CHART_LEGEND_SETTING, FEATURE_CHART_STRUCTURE_SETTINGS, FEATURE_SCORES_SETTINGS, SITE_COPY } from "@/constants";
 import { TOOLBAR_ICON_SURFACE, TOOLBAR_SURFACE } from "@/styles/toolbar";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
@@ -106,9 +106,15 @@ function ChartDisplayMenu() {
         >
           <DisplayCheckbox label="Title" checked={!chartTitleHidden} onChange={(v) => setChartTitleHidden(!v)} />
           <DisplayCheckbox label="Badge" checked={!chartBadgeHidden} onChange={(v) => setChartBadgeHidden(!v)} />
-          <DisplayCheckbox label="Chart" checked={!levelsPolygonHidden} onChange={(v) => setLevelsPolygonHidden(!v)} />
-          <DisplayCheckbox label="Level labels" checked={!chartLevelTicksHidden} onChange={(v) => setChartLevelTicksHidden(!v)} />
-          <DisplayCheckbox label="Legend" checked={!chartLegendHidden} onChange={(v) => setChartLegendHidden(!v)} />
+          {FEATURE_CHART_STRUCTURE_SETTINGS ? (
+            <>
+              <DisplayCheckbox label="Chart" checked={!levelsPolygonHidden} onChange={(v) => setLevelsPolygonHidden(!v)} />
+              <DisplayCheckbox label="Level labels" checked={!chartLevelTicksHidden} onChange={(v) => setChartLevelTicksHidden(!v)} />
+            </>
+          ) : null}
+          {FEATURE_CHART_LEGEND_SETTING ? (
+            <DisplayCheckbox label="Legend" checked={!chartLegendHidden} onChange={(v) => setChartLegendHidden(!v)} />
+          ) : null}
           {/* Appearance of the pillar labels themselves, as opposed to the show/hide toggles above. */}
           <hr className="my-1 border-t border-border" />
           <DisplayCheckbox label="Colored pillar labels" checked={clusterLabelColors} onChange={setClusterLabelColors} />

@@ -1,4 +1,4 @@
-import { PROFILES_STORAGE_KEY, SCHEMA_VERSION, STORAGE_KEY } from "@/constants";
+import { FEATURE_CHART_LEGEND_SETTING, FEATURE_CHART_STRUCTURE_SETTINGS, PROFILES_STORAGE_KEY, SCHEMA_VERSION, STORAGE_KEY } from "@/constants";
 import { migrateBadgeKey, normalizeSavedState, normalizeStoredProfile, toCanonicalStoragePayload } from "@/constants/levels";
 
 /** True when a stored payload predates the current schema (missing or lower `schemaVersion`). */
@@ -31,9 +31,14 @@ export function parseChartDisplay(parsed) {
   }
   const defaults = getDefaultChartDisplay();
   return {
-    levelsPolygonHidden: parsed.levelsPolygonHidden === true,
-    chartLevelTicksHidden: parsed.chartLevelTicksHidden === true,
-    chartLegendHidden: parsed.chartLegendHidden === true,
+    // These three are forced back on in the public build: their toggles are admin-gated (see
+    // FEATURE_CHART_STRUCTURE_SETTINGS / FEATURE_CHART_LEGEND_SETTING), so honouring a draft
+    // persisted while they were still reachable would strand a user with a degraded chart and no
+    // control left to restore it. Reading them off here is what heals those older drafts, and the
+    // healed value is written back on the next persistDraft().
+    levelsPolygonHidden: FEATURE_CHART_STRUCTURE_SETTINGS && parsed.levelsPolygonHidden === true,
+    chartLevelTicksHidden: FEATURE_CHART_STRUCTURE_SETTINGS && parsed.chartLevelTicksHidden === true,
+    chartLegendHidden: FEATURE_CHART_LEGEND_SETTING && parsed.chartLegendHidden === true,
     chartBadgeHidden: parsed.chartBadgeHidden === true,
     chartTitleHidden: parsed.chartTitleHidden === true,
     footerScoresHidden: Object.hasOwn(parsed, "footerScoresHidden") ? parsed.footerScoresHidden === true : defaults.footerScoresHidden,
