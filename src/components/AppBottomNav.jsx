@@ -64,10 +64,14 @@ const NAV_ITEMS = [
  * row of `min-h-14` touch targets sits entirely above it. Putting it on the row instead would pad the targets from
  * below — the bar would be the right height, but the bottom 34px of it would be dead space that looks tappable.
  *
- * `bg-slate-100` MATCHES THE HEADER AND THE FOOTER, and the three values are one decision (see AppShellHeader's
- * docblock, which carries the reasoning for the level). All three were white, which left the shell defined by
- * shadows alone; the tint is what separates pinned chrome from the white content between it. It also has to be
- * OPAQUE for the same reason the header's does — scrolling content passes underneath this bar.
+ * `bg-slate-100` MATCHES THE HEADER, and the two values are one decision (see AppShellHeader's docblock, which
+ * carries the reasoning for the level). Both were white, which left the shell defined by shadows alone; the tint is
+ * what separates pinned chrome from the white content between it. It also has to be OPAQUE for the same reason the
+ * header's does — scrolling content passes underneath this bar.
+ *
+ * THE FOOTER USED TO CARRY IT TOO AND NO LONGER DOES (see HomePage). The tinted surface is the two PINNED bars; the
+ * footer is in flow and is content, so it kept `main`'s white. Nothing here had to change when it went — this bar's
+ * top edge meets white either way, and the shadow below already handles that.
  *
  * THE TINT COST THIS FILE THREE MORE VALUES, not just the one: the active segment, the inactive hover, and the
  * unseen dot's ring are all read AGAINST the bar, so each had to move up with it to keep its separation. See
@@ -88,16 +92,16 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
        `shadow-sm`'s own two layers with the offsets and spread flipped, so the two bars read as the same weight
        of chrome rather than one being heavier than the other.
 
-       STILL NO `border-t` HERE, EVEN THOUGH THE HEADER GAINED A `border-b`. That is not an inconsistency: the
-       header's border separates the tinted bar from the WHITE content scrolling under it, whereas this bar's top
-       edge meets the footer, which carries the SAME tint (see HomePage). A hairline there would draw a line
-       through the middle of one continuous tinted region — the chrome would look split in two rather than
-       bounded. The boundary that needs marking on this side of the page is where the tint STARTS, which is the
-       footer's top edge, and that is where the hairline went.
+       STILL NO `border-t` HERE, EVEN THOUGH THE HEADER GAINED A `border-b`, AND THE SHADOW IS WHY. This had a
+       hairline first, and a hairline is a seam between two flat areas — it made the bar look pasted onto whatever
+       was above it. The shadow lifts it off instead, which is the relationship that is actually true: this floats
+       above a scrolling page. That is not the header's situation. Its border marks where the page's content BEGINS
+       under a bar that is flush with the top edge of the viewport; this bar has a whole page below nothing.
 
-       A shadow rather than the `border-t` this had first: a hairline is a seam between two flat areas, which is
-       what made the bar look pasted onto the footer above it. A shadow lifts it off the content instead, which is
-       the relationship that is actually true — this floats above a scrolling page.
+       IT IS ALSO THE ONLY BOTTOM BOUNDARY, and that is deliberate. The footer above once carried this bar's tint
+       plus a `border-t` of its own, which put a second separator 56px up from this shadow; the footer dropped both
+       (see HomePage), so the shadow against white is the one edge on this side of the page. Adding a `border-t`
+       here would rebuild the doubling from the other direction.
 
        NO `transform-gpu` HERE, AND THE FIX FOR THE TAB-SWITCH JUMP IS NOT IN THIS FILE. A compositor-layer
        promotion here looks like the fix and is not; it only makes the symptom cheaper to repaint while leaving it

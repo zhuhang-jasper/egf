@@ -369,39 +369,44 @@ export default function HomePage() {
             height.
 
             Rendered once outside both tabpanels, so it survives tab switches untouched. */}
-        {/* IT MATCHES THE BOTTOM NAV, WHICHEVER VALUE THAT IS. This was a black band, which read as the page's own
-            base while it was the last thing on screen. It is not the last thing any more — AppBottomNav is fixed
-            directly beneath it — and a black strip meeting a light bar looked like two unrelated pieces of chrome
-            stacked by accident. The footer, the nav and the header are one surface, so they carry one value; it is
-            `bg-slate-100` now rather than the white all three started at, which is what makes the shell read as a
-            frame around the white content instead of being defined by shadows alone. See AppShellHeader's docblock
-            for why the level is `100` and not `50`.
+        {/* NO BACKGROUND AND NO BORDER — IT INHERITS `main`'s WHITE AND IS DELIBERATELY NOT PART OF THE CHROME.
+            This went black → `bg-slate-100` → nothing, and each step was a correction to the one before.
+
+            Black read as the page's own base while this was the last thing on screen. It stopped being the last
+            thing when AppBottomNav arrived fixed directly beneath it, and a black strip meeting a light bar looked
+            like two unrelated pieces of chrome stacked by accident. The fix at the time was to give it the tint the
+            header and the nav carry, so all three read as one surface framing the white content.
+
+            That over-corrected. The nav ALREADY separates itself from white content with an upward shadow (see
+            AppBottomNav) — that is the whole reason it has no `border-t` — so the tint was buying a second copy of
+            a boundary the nav owns, and the `border-t` it needed to keep that tint from going mushy put a hairline
+            56px above the nav's shadow. Two separators that close together is exactly the objection that got the
+            `border-b` removed from this element earlier. Dropping both leaves ONE bottom boundary: the nav's
+            shadow, cast onto white, which is the case it was designed for.
+
+            What the chrome loses is nothing real. The header still bounds the top with a tint plus `border-b`, the
+            nav still bounds the bottom; this is passive legal text, and it reads as the end of the content rather
+            than as a band of UI, which is what it actually is.
 
             The black survives where it still means something: the page wrapper outside `main`, which shows down
             both sides once the viewport is wider than the content measure.
 
-            `text-slate-500` rather than `text-white/60` follows from the background; it is the same muted weight
-            against light that the old value was against dark, and it holds against a 100-level tint too.
-
-            `border-t` ON THE TOP EDGE ONLY, and that is the boundary that matters here: this is where the chrome's
-            tint STARTS, so it is the seam between the white content above and the tinted footer-plus-nav below.
-            The tint alone leaves that a soft step the eye reads as a smudge rather than an edge; the hairline
-            makes it crisp, matching the header's own `border-b` at the top of the page.
-
-            STILL NO `border-b`. This once had a full border, which was removed because the bottom nav casts an
-            upward shadow onto this strip (see AppBottomNav) and a hairline at the footer's BOTTOM as well read as
-            two separators 40px apart. That is still true — the nav's shadow owns that edge, and the nav
-            deliberately has no `border-t` of its own for the same reason. Only the top edge is unclaimed.
+            `text-slate-500` OUTLASTED BOTH BACKGROUNDS. It replaced `text-white/60` when the black went, and it is
+            the same muted weight against white that it was against the tint — it needs no revisiting here.
 
             The tab panels' own bottom margin supplies the gap above — padding here would only make the strip
             taller, and `mt-*` is unavailable because `mt-auto` owns that margin to push the footer down on short
-            pages. */}
+            pages.
+
+            NO `print:` OVERRIDES LEFT. There were two, `print:border-0 print:bg-transparent`, and both existed only
+            to undo the tint and the hairline on paper; with neither declared, the printed running footer gets the
+            transparent, borderless box it always wanted by default. */}
         {/* `data-print-running` opts this into being a RUNNING FOOTER on paper — repeated at the foot of
             every sheet rather than appearing once at the end. See the `@page`/fixed-position rules in
             index.css for how that works and why page numbers are not part of it. */}
         <footer
           data-print-running
-          className="mt-auto border-t border-slate-200 bg-slate-100 px-3 py-2 text-center text-[11px] text-slate-500 print:border-0 print:bg-transparent"
+          className="mt-auto px-3 py-2 text-center text-[11px] text-slate-500"
         >
           © 2026 Jasper Loo Zhu Hang · All rights reserved · <span className="tabular-nums">v{appVersion}</span>
         </footer>

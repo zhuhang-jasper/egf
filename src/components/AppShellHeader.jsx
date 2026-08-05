@@ -37,18 +37,21 @@ import { clearStickyScrollOffset, getWindowScrollY, scrollWindowToTop, setSticky
  *
  * `bg-slate-100` is required TO BE OPAQUE, not merely to be tinted: this overlaps scrolling content, so any
  * transparency would show that content sliding underneath the lockup. It was `bg-white` when the header was in
- * flow and inherited the card's white; the tint is what now distinguishes pinned chrome from the white page
- * between it and the footer, which the `shadow-sm` alone was doing.
+ * flow and inherited the card's white; the tint is what now distinguishes pinned chrome from the white page below
+ * it, which the `shadow-sm` alone was doing.
  *
  * IT IS `100`, NOT `50`, BECAUSE `50` DID NOT READ AS A TINT AT ALL. `slate-50` (#f8fafc) against white is about
  * a 3% luminance step — invisible on most screens, so the chrome went on looking like undifferentiated white and
  * the shadow was still doing all the work. `slate-100` (#f1f5f9) is the first step that actually separates.
  * Do not go back down without checking it on a real display.
  *
- * THE SAME TINT IS ON THE FOOTER AND THE BOTTOM NAV (see HomePage and AppBottomNav). The three are one surface —
- * the app's chrome — wrapping a white content area; tinting only this one would read as a stray band. If this
- * value changes, change all three, plus the four values that are read AGAINST it: the scroll-top button here, and
- * the bottom nav's active segment, inactive hover and unseen-dot rings.
+ * THE SAME TINT IS ON THE BOTTOM NAV (see AppBottomNav). The two PINNED bars are one surface — the app's chrome —
+ * wrapping a white content area; tinting only this one would read as a stray band. If this value changes, change
+ * both, plus the four values that are read AGAINST it: the scroll-top button here, and the bottom nav's active
+ * segment, inactive hover and unseen-dot rings.
+ *
+ * THE FOOTER IS NOT PART OF IT ANY MORE. It carried this tint for a while and gave it up — it is in flow, so it is
+ * content, and its band plus hairline only duplicated the boundary the nav's shadow already draws. See HomePage.
  *
  * `p-3` — ONE 12px INSET ON ALL FOUR SIDES, declared once here. Both vertical halves used to live on children,
  * which meant the header's inset was assembled from three files and none of them owned it. It is this element's
