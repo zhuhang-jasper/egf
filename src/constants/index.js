@@ -39,12 +39,20 @@ export {
   TECHNICAL_FLOOR_PILLARS,
 } from "@/constants/scoring";
 export { CHANGELOG, changelogRank, isNewerVersion, SECTION_LATEST_VERSION } from "@/constants/changelog";
-export { FEATURE_CHART_LEGEND_SETTING, FEATURE_CHART_STRUCTURE_SETTINGS, FEATURE_SCORES_SETTINGS, IS_ADMIN } from "@/constants/features";
+export {
+  ADMIN_PASSWORD_REQUESTED,
+  FEATURE_CHART_LEGEND_SETTING,
+  FEATURE_CHART_STRUCTURE_SETTINGS,
+  FEATURE_SCORES_SETTINGS,
+  IS_ADMIN,
+  unlockAdmin,
+} from "@/constants/features";
 export { SITE_COPY } from "@/constants/site";
 export {
   ADMIN_UNLOCK_KEY,
   FRAMEWORK_VERSION,
   PROFILES_STORAGE_KEY,
+  RETIRED_STORAGE_KEYS,
   SCHEMA_VERSION,
   STORAGE_KEY,
   THEORY_SECTION_PROGRESS_KEY,

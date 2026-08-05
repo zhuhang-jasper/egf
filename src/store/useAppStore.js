@@ -702,7 +702,9 @@ export const useAppStore = create((set, get) => ({
 function findNameBadgeCollision(profiles, title, badge, selfId) {
   const name = String(title).trim().toLowerCase();
   const b = normalizeAttachedBadge(badge);
-  return profiles.find((p) => p.id !== selfId && String(p.title).trim().toLowerCase() === name && normalizeAttachedBadge(p.attachedBadge) === b) ?? null;
+  return (
+    profiles.find((p) => p.id !== selfId && String(p.title).trim().toLowerCase() === name && normalizeAttachedBadge(p.attachedBadge) === b) ?? null
+  );
 }
 
 /** True when the stored profile's badge + canonical pillar levels equal the current draft's. */

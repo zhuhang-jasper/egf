@@ -241,14 +241,7 @@ function AppShellBrandMark() {
       {/* `size-8` to match the button opposite. The two bracket the bar, so a smaller mark read as lopsided
           against a 32px button. Intrinsic size stays 96px so it stays sharp on retina; `rounded-lg` matches
           that button's corner radius rather than the mark's own 4px. */}
-      <img
-        src={`${import.meta.env.BASE_URL}favicon-96x96.png`}
-        alt=""
-        aria-hidden
-        width={96}
-        height={96}
-        className="size-8 shrink-0 rounded-lg"
-      />
+      <img src={`${import.meta.env.BASE_URL}favicon-96x96.png`} alt="" aria-hidden width={96} height={96} className="size-8 shrink-0 rounded-lg" />
       {/* NO WIDTH GATE and no opacity state — a plain `flex`. This used to hide below 510px (a centred 248px
           tablist left the corner ~39px) and later cross-fade in only while the header's title block was
           collapsed. Neither condition exists now: see the docblock. */}

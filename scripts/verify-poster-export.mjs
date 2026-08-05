@@ -39,6 +39,17 @@ const DEBUG_PORT = 9339;
 const EXPECT_W = 2160; // CANVAS_W (1080) × export scale (2)
 const EXPECT_H = 3240; // CANVAS_H (1620) × export scale (2)
 
+// `/poster` IS ADMIN-GATED (see src/App.jsx): a visitor without the unlock flag is sent to the tool
+// instead. This run always starts from a fresh `--user-data-dir`, so localStorage is empty and the gate
+// would fire on every navigation — hence seeding the flag below, before the page's own scripts run.
+//
+// MUST MATCH ADMIN_UNLOCK_KEY in src/constants/storage.js. Duplicated because this script talks to a
+// built/served app over CDP and cannot import from the bundle; if that key is ever bumped again, the
+// "did not land on /poster" check below is what tells you, rather than seven inscrutable failures.
+// Seeding the flag rather than visiting `?admin=1` deliberately skips the password prompt: a
+// `window.prompt` in headless Chrome is a CDP dialog to intercept, which is a race this does not need.
+const ADMIN_UNLOCK_KEY = "fe-growth-framework:admin:v2";
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function cdpHttp(path) {
@@ -198,10 +209,23 @@ try {
   await page.send("Page.enable");
   await page.send("Runtime.enable");
 
+  // Unlock BEFORE the document's own scripts run: App.jsx resolves the route gate at module-eval time,
+  // so a flag written after load would be too late for this navigation.
+  await page.send("Page.addScriptToEvaluateOnNewDocument", {
+    source: `try { localStorage.setItem(${JSON.stringify(ADMIN_UNLOCK_KEY)}, "1"); } catch {}`,
+  });
+
   const loaded = new Promise((resolve) => page.on((m) => m.method === "Page.loadEventFired" && resolve()));
   await page.send("Page.navigate", { url: POSTER_URL });
   await loaded;
   await sleep(2000); // let React + Chart.js mount and draw
+
+  // The gate rewrites the URL to the tool root when it fires, so this distinguishes "the poster is
+  // broken" from "the poster never rendered because the unlock key drifted" — see ADMIN_UNLOCK_KEY above.
+  const onPoster = await page.send("Runtime.evaluate", { expression: "location.pathname", returnByValue: true });
+  if (!String(onPoster.result.value).includes("poster")) {
+    throw new Error(`Admin gate redirected to ${onPoster.result.value} — ADMIN_UNLOCK_KEY in this script no longer matches src/constants/storage.js`);
+  }
 
   const res = await page.send("Runtime.evaluate", { expression: RENDER_AND_ASSERT, awaitPromise: true, returnByValue: true });
   const out = JSON.parse(res.result.value);

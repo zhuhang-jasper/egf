@@ -285,7 +285,8 @@ export function TitleToolbar() {
 
   // The copy action's label + handler depend on whether the name already differs from the source.
   // "Save as copy" prefills "Copy of <source>" and detaches so the user can rename before saving.
-  const copyAction = saveStatus === "renaming" ? { label: "Save new", onSelect: handleSaveAsNew } : { label: "Save as copy", onSelect: handleDuplicate };
+  const copyAction =
+    saveStatus === "renaming" ? { label: "Save new", onSelect: handleSaveAsNew } : { label: "Save as copy", onSelect: handleDuplicate };
 
   // The undo action reverts the draft to the linked profile: title while renaming, values while
   // modified. No undo for "saved" (nothing changed) or "new" (no link).

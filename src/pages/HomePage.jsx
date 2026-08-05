@@ -404,10 +404,7 @@ export default function HomePage() {
         {/* `data-print-running` opts this into being a RUNNING FOOTER on paper — repeated at the foot of
             every sheet rather than appearing once at the end. See the `@page`/fixed-position rules in
             index.css for how that works and why page numbers are not part of it. */}
-        <footer
-          data-print-running
-          className="mt-auto px-3 py-2 text-center text-[11px] text-slate-500"
-        >
+        <footer data-print-running className="mt-auto px-3 py-2 text-center text-[11px] text-slate-500">
           © 2026 Jasper Loo Zhu Hang · All rights reserved · <span className="tabular-nums">v{appVersion}</span>
         </footer>
       </main>

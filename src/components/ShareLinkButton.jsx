@@ -92,7 +92,11 @@ export function ShareLinkButton({ section, pillar = null, label = null, ariaLabe
       aria-label={ariaLabel}
       onClick={handleShare}
       // `print:hidden` — copying a deep link is an action, and the URL it copies isn't on the paper.
-      className={cn("group relative inline-flex cursor-pointer select-none items-center rounded-md transition-colors print:hidden", variantClass, className)}
+      className={cn(
+        "group relative inline-flex cursor-pointer select-none items-center rounded-md transition-colors print:hidden",
+        variantClass,
+        className,
+      )}
     >
       {copied ? <CheckIcon /> : <LinkIcon />}
       {labeled ? <span>{copied ? "Copied!" : label}</span> : <Tooltip text={copied ? "Copied" : "Copy link"} visible={copied} />}

@@ -162,10 +162,24 @@ function readSeenSections() {
     migrated[section] = baseline;
   }
   // Written back immediately, which CONSUMES the legacy key: from here on the map exists, the early
-  // return above wins, and readLegacySeenVersion is never consulted again for this user. So the
-  // legacy key is read at most once per browser and is safe to stop reading (and to delete) once
-  // enough time has passed that anyone who hasn't visited since is not worth migrating.
-  writeSeenSections(migrated);
+  // return above wins, and readLegacySeenVersion is never consulted again for this user.
+  const persisted = writeSeenSections(migrated);
+  // DELETED AT THE POINT OF CONSUMPTION, not by the boot-time sweeper in utils/storage.js. Its whole
+  // value has just been transferred into the map above, so keeping it serves nothing — but the order is
+  // the reason this cannot be a retired key: `retireLegacyKeys()` runs before React mounts, so it would
+  // wipe the baseline BEFORE this function ever read it, and a returning user would be silently
+  // re-baselined to "caught up" and lose every dot the key exists to preserve.
+  //
+  // Doing it here also removes the waiting period that a sweep-based retirement would need. The
+  // migration keeps working for a browser that shows up years late, and still cleans up after itself.
+  //
+  // GATED ON THE WRITE HAVING LANDED, so a store that rejected the map (quota, private mode) does not
+  // also lose the baseline it was derived from: nothing is deleted, and the next load migrates again
+  // from the same legacy value. Deleting unconditionally would turn one failed write into a permanently
+  // re-baselined user.
+  if (persisted) {
+    dropLegacySeenVersion();
+  }
   return migrated;
 }
 
@@ -192,14 +206,31 @@ function readLegacySeenVersion() {
   }
 }
 
-function writeSeenSections(map) {
-  writeJson(THEORY_SEEN_SECTIONS_KEY, map);
+/**
+ * Retire the legacy single-version baseline, once its value has been migrated into the section map.
+ *
+ * Silent on failure: the key is already unreachable by then (see readSeenSections), so a store that
+ * refuses the delete costs nothing but the leftover bytes.
+ */
+function dropLegacySeenVersion() {
+  try {
+    localStorage.removeItem(THEORY_SEEN_VERSION_KEY);
+  } catch {
+    /* private mode / disabled store */
+  }
 }
 
+function writeSeenSections(map) {
+  return writeJson(THEORY_SEEN_SECTIONS_KEY, map);
+}
+
+/** @returns true when the value actually reached localStorage. */
 function writeJson(key, value) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
+    return true;
   } catch {
     // localStorage unavailable (private mode, quota) — keep the session-only value.
+    return false;
   }
 }

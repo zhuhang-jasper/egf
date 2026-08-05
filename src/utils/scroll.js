@@ -214,7 +214,7 @@ export function glideElementBelowStickyHeader(element, { durationMs = 300 } = {}
   const startError = element.getBoundingClientRect().top - getStickyScrollOffsetPx();
   // Matches the panel's `ease-out` closely enough to read as one motion; the exact curve matters less than
   // both finishing together.
-  const easeOut = (p) => 1 - Math.pow(1 - p, 3);
+  const easeOut = (p) => 1 - (1 - p) ** 3;
 
   let raf = 0;
   let stable = 0;

@@ -97,9 +97,7 @@ function FocusTierList({ focusTiers }) {
         <li key={id} className={cn("col-span-2 grid min-w-0 grid-cols-subgrid", DOC_TEXT.body)}>
           {/* `font-semibold` last so it beats `badgeMicro`'s `font-bold` (twMerge keeps the later of
               two conflicting utilities). */}
-          <span className={cn("self-start rounded-full px-2 py-0.5 text-center", DOC_TEXT.badgeMicro, bandClass, "font-semibold")}>
-            {label}
-          </span>
+          <span className={cn("self-start rounded-full px-2 py-0.5 text-center", DOC_TEXT.badgeMicro, bandClass, "font-semibold")}>{label}</span>
           <span className="min-w-0">{focusTiers[id]}</span>
         </li>
       ))}
@@ -164,7 +162,7 @@ function PillarMatrixCard({
       style={{
         "--card-surface": getClusterSurfaceBg(color),
         "--card-surface-hover": getClusterSurfaceHoverBg(color),
-        borderLeftColor: textColor,
+        "borderLeftColor": textColor,
       }}
     >
       {/* THE HEADER IS A SECOND, SILENT TRIGGER. The visible control is the strip at the foot of the card; this

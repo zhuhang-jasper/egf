@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import App from "@/App.jsx";
 import { initAnalytics } from "@/utils/analytics";
 import { disableBrowserScrollRestoration } from "@/utils/scroll";
+import { retireLegacyKeys } from "@/utils/storage";
 
 // Point Chart.js's in-canvas text (radar labels, ticks) at Inter too — must run before any
 // chart mounts, so it lives here rather than in a page. See src/chart/defaults.js.
@@ -20,6 +21,11 @@ import "@/index.css";
 
 disableBrowserScrollRestoration();
 initAnalytics();
+
+// Drop keys a previous version wrote and this one never reads (see RETIRED_STORAGE_KEYS). Before the
+// render so a load never both reads storage and cleans it in the same frame — none of the retired keys
+// are read any more, so the order is belt-and-braces rather than load-bearing.
+retireLegacyKeys();
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
