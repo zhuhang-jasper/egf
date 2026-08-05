@@ -87,10 +87,14 @@ export const SITE_COPY = {
     // Query string appended to the app's base URL so the recipient lands on the Tool tab.
     toolLinkQuery: "?tab=tool",
     // Filename for the exported chart PNG. `{profileName}` is the profile name slugged to lower-kebab and
-    // `{date}` the local calendar date as yyyy-mm-dd — both filled by buildChartFileName. An unnamed profile
-    // drops its placeholder AND the hyphen beside it, so the name never lands with a dangling separator.
-    // The date is last so exports of one profile sort chronologically in a file listing.
+    // `{date}` the local calendar date as yyyy-mm-dd, both filled by buildChartFileName. The date is last so
+    // exports of one profile sort chronologically in a file listing.
     fileName: "9-pillar-egf-{profileName}-{date}.png",
+    // Stands in for `{profileName}` when the profile has no name (or nothing slug-able). A named segment,
+    // rather than silently dropping it, so a downloaded file says which of several exports was the unnamed
+    // one instead of looking like the naming just failed. "untitled" and not "blank": the chart has content,
+    // it is the title that is missing. Set this to "" to go back to dropping the segment entirely.
+    unnamedProfileSlug: "untitled",
     // The pre-rendered pillar poster in `public/`, attached to a Theory-tab share. A STATIC ASSET, not a
     // runtime capture: the theory tab has no single element worth rasterizing (it is a long document), and
     // this image is the framework's designed one-glance summary. Resolved against BASE_URL at call time

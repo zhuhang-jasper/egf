@@ -24,7 +24,7 @@ const PROFILE_SLUG_MAX_LENGTH = 30;
  *   - Truncated to {@link PROFILE_SLUG_MAX_LENGTH}, then re-trimmed in case the cut landed on a hyphen.
  *
  * Returns "" for a name that is blank or contains nothing slug-able (e.g. "🎉"). Callers decide what an
- * empty slug means — see {@link buildChartFileName}, which drops the segment entirely.
+ * empty slug means: see {@link buildChartFileName}, which substitutes an "untitled" segment.
  */
 export function toProfileSlug(name) {
   return String(name ?? "")
@@ -55,23 +55,24 @@ function getLocalDateStamp() {
  * The exported PNG's filename, filling `SITE_COPY.share.fileName`'s `{profileName}` and `{date}`
  * placeholders.
  *
- * An UNNAMED profile leaves no trace in the filename: the placeholder and any hyphen or underscore
- * immediately around it are removed together, so an unnamed chart gives a clean "9-pillar-egf-2026-08-04.png"
- * rather than a name with a dangling separator or a double hyphen where the slug should have been. The date
- * is never dropped this way — there is always a date, so its placeholder is a plain substitution.
+ * An UNNAMED profile falls back to `SITE_COPY.share.unnamedProfileSlug`, giving
+ * "9-pillar-egf-untitled-2026-08-04.png". The segment stays occupied on purpose: a file whose name simply
+ * skips from "egf" to the date reads like the naming broke, where "untitled" reads like a state the export
+ * knew about. The date is never substituted this way — there is always a date, so it is a plain replace.
+ *
+ * The segment is only DROPPED if that fallback is itself blank, which is how `site.js` reverts to the
+ * previous clean "9-pillar-egf-2026-08-04.png" without touching this code. Dropping swallows ONE neighbouring
+ * separator with the placeholder, the leading one by preference: taking both sides would consume the hyphen
+ * the NEXT segment needs, which on "…-egf-{profileName}-{date}.png" produced "…-egf2026-08-04.png".
  *
  * A template missing either placeholder is left as-is at that spot, so the filename can be simplified in
  * `site.js` (drop the date, revert to a fixed string) without touching this code.
  */
 export function buildChartFileName(profileName) {
-  const slug = toProfileSlug(profileName);
+  const slug = toProfileSlug(profileName) || toProfileSlug(SITE_COPY.share.unnamedProfileSlug);
   const withName = slug
     ? SITE_COPY.share.fileName.replace("{profileName}", slug)
-    : // Swallow ONE neighbouring separator with the placeholder, the leading one by preference. Taking both
-      // sides would consume the hyphen that the NEXT segment needs — on "…-egf-{profileName}-{date}.png"
-      // that produced "…-egf2026-08-04.png". One side collapses the pair of separators to one; the other is
-      // left for whatever follows.
-      SITE_COPY.share.fileName.replace(/(?:[-_]\{profileName\}|\{profileName\}[-_]?)/g, "");
+    : SITE_COPY.share.fileName.replace(/(?:[-_]\{profileName\}|\{profileName\}[-_]?)/g, "");
   return withName.replace("{date}", getLocalDateStamp());
 }
 
