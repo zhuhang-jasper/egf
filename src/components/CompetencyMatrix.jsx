@@ -9,7 +9,7 @@ import { getClusterSurfaceBg, getClusterSurfaceHoverBg } from "@/constants";
 import { COMPETENCY_MATRIX, SENIORITY_LEVEL_DEFINITIONS, SKILL_TIERS } from "@/constants/theory-data";
 import { DOC_TEXT, WHATS_NEW_HIGHLIGHT_CLASS } from "@/styles/doc-typography";
 import { cn } from "@/utils";
-import { holdElementBelowStickyHeader, scrollBelowStickyHeaderUntilSettled } from "@/utils/scroll";
+import { glideElementBelowStickyHeader, holdElementInPlace, scrollBelowStickyHeaderUntilSettled } from "@/utils/scroll";
 import { getPillarCardElementId, persistExpandedPillar, THEORY_SECTIONS } from "@/utils/theory-url";
 
 const levelBadgeClass = cn("flex size-5 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white sm:size-6", DOC_TEXT.badgeMicro);
@@ -295,30 +295,32 @@ function PillarMatrixCard({
 
 function CompetencyMatrix({ expandedPillar, onExpandedPillarChange, scrollNav, showLatestChanges = false }) {
   const cardRefs = useRef({});
-  const scrollTimerRef = useRef(null);
   const cancelScrollRef = useRef(null);
 
+  // Both toggle paths now start their scroll on the commit that begins the animation, so there is no
+  // pending `setTimeout` to clear here any more — only a running rAF loop to stop.
   const cancelPendingScroll = () => {
-    clearTimeout(scrollTimerRef.current);
     cancelScrollRef.current?.();
     cancelScrollRef.current = null;
   };
 
-  // Scroll the just-opened card's top under the sticky bar, after the expand/collapse animation
-  // settles. A previously-open card *above* the new one collapses over MATRIX_ANIM_MS, so the new
-  // card keeps sliding up while we scroll — a single measurement lands it under the bar with no gap.
-  // scrollBelowStickyHeaderUntilSettled re-aims until the layout stops moving. Driven from the click
-  // — NOT a `useLayoutEffect` on `expandedPillar` — so it never fires on mount/refresh (which would
-  // yank the restored scroll) or twice under StrictMode.
-  const scrollToCardSoon = (pillarId) => {
-    cancelPendingScroll();
-    scrollTimerRef.current = setTimeout(() => {
-      const card = cardRefs.current[pillarId];
-      if (card) {
-        cancelScrollRef.current = scrollBelowStickyHeaderUntilSettled(card);
-      }
-    }, MATRIX_ANIM_MS);
-  };
+  // EXPANDING GLIDES ON THE ANIMATION'S OWN CLOCK, starting with it rather than after it.
+  //
+  // This used to wait MATRIX_ANIM_MS and then smooth-scroll, which forced the two halves of one gesture to
+  // happen in sequence: the new levels animated open wherever the reader happened to be standing — a flash
+  // of content far down the page — and only then did the view travel up to meet them. Running the glide on
+  // the same 300ms budget as the panels makes it a single movement: the card rises into place as its levels
+  // open, and there is no interval during which the matrix is visible but misplaced.
+  //
+  // The glide must not begin until the panel's `grid-rows` change is COMMITTED, or the first frame measures
+  // the old layout (collapsing card still at full height) and aims at a destination that never existed. So
+  // the click records its intent here and a `useLayoutEffect` below starts the glide post-commit.
+  //
+  // A ref, rather than a `useLayoutEffect` keyed on `expandedPillar` alone: only a click may scroll. Keying
+  // on the value would also fire on mount and on refresh — yanking the scroll position the theory tab had
+  // just restored — and twice under StrictMode. Consuming the ref makes the effect inert unless a toggle
+  // actually set it.
+  const pendingExpandRef = useRef(null);
 
   // COLLAPSING PINS THE CARD INSTEAD OF CHASING IT, and starts NOW rather than after the animation.
   //
@@ -329,19 +331,37 @@ function CompetencyMatrix({ expandedPillar, onExpandedPillarChange, scrollNav, s
   // screens of height), then our smooth scroll travelled back to the card. The lurch was never a scroll
   // we asked for, so there was no way to make it graceful — only to stop it happening.
   //
-  // Holding the card's top at the sticky inset for the duration of the collapse absorbs the clamp frame
-  // by frame: the card does not move at all, the levels concertina shut into it, and there is nothing
-  // left to recover from afterwards.
+  // Holding the card still for the duration of the collapse absorbs the clamp frame by frame: the card does
+  // not move at all, the levels concertina shut into it, and there is nothing left to recover from afterwards.
   //
-  // Closing from the HEADER is the same call and needs no special case — the card's top is already at
-  // the inset there, so each frame's correction is zero and the pin is simply invisible.
+  // WHERE it holds is the card's own current position, not the top of the page (see holdElementInPlace, which
+  // floors it at the sticky inset). That distinction covers the other two ways this gets clicked without a
+  // special case for either: from the HEADER, the card's top is already at the inset, so every correction is
+  // zero and the pin is invisible; scrolled UP with the card mid-viewport, the card is already in view, so the
+  // right amount of scrolling is none and the pin holds it exactly where the reader left it.
   const holdCardWhileCollapsing = (pillarId) => {
     cancelPendingScroll();
     const card = cardRefs.current[pillarId];
     if (card) {
-      cancelScrollRef.current = holdElementBelowStickyHeader(card, { durationMs: MATRIX_ANIM_MS });
+      cancelScrollRef.current = holdElementInPlace(card, { durationMs: MATRIX_ANIM_MS });
     }
   };
+
+  // Starts the expand glide once the panel's new `grid-rows` value is committed, so frame one measures the
+  // layout the animation is actually running toward. Runs on every commit but does nothing unless a click
+  // left a pillar id in the ref — see `pendingExpandRef`.
+  useLayoutEffect(() => {
+    const pillarId = pendingExpandRef.current;
+    if (!pillarId) {
+      return;
+    }
+    pendingExpandRef.current = null;
+    cancelPendingScroll();
+    const card = cardRefs.current[pillarId];
+    if (card) {
+      cancelScrollRef.current = glideElementBelowStickyHeader(card, { durationMs: MATRIX_ANIM_MS });
+    }
+  });
 
   useEffect(() => () => cancelPendingScroll(), []);
 
@@ -353,9 +373,9 @@ function CompetencyMatrix({ expandedPillar, onExpandedPillarChange, scrollNav, s
     if (collapsing) {
       holdCardWhileCollapsing(pillarId);
     } else {
-      // Expanding: the card's destination keeps moving while a previously-open pillar above it closes,
-      // so glide to it once the layout has settled rather than pinning a position it hasn't reached.
-      scrollToCardSoon(pillarId);
+      // Hand off to the layout effect above, which starts the glide once this state change has committed
+      // and the card can be measured against the layout it is animating toward.
+      pendingExpandRef.current = pillarId;
     }
   };
 
