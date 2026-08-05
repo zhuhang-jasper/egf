@@ -9,7 +9,7 @@ import { getClusterSurfaceBg, getClusterSurfaceHoverBg } from "@/constants";
 import { COMPETENCY_MATRIX, SENIORITY_LEVEL_DEFINITIONS, SKILL_TIERS } from "@/constants/theory-data";
 import { DOC_TEXT, WHATS_NEW_HIGHLIGHT_CLASS } from "@/styles/doc-typography";
 import { cn } from "@/utils";
-import { scrollBelowStickyHeaderUntilSettled } from "@/utils/scroll";
+import { holdElementBelowStickyHeader, scrollBelowStickyHeaderUntilSettled } from "@/utils/scroll";
 import { getPillarCardElementId, persistExpandedPillar, THEORY_SECTIONS } from "@/utils/theory-url";
 
 const levelBadgeClass = cn("flex size-5 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white sm:size-6", DOC_TEXT.badgeMicro);
@@ -320,20 +320,43 @@ function CompetencyMatrix({ expandedPillar, onExpandedPillarChange, scrollNav, s
     }, MATRIX_ANIM_MS);
   };
 
+  // COLLAPSING PINS THE CARD INSTEAD OF CHASING IT, and starts NOW rather than after the animation.
+  //
+  // The close control sits at the FOOT of the matrix, so it is normally clicked from the far end of
+  // several screens of levels — all of which are ABOVE the viewport and all of which vanish. Waiting
+  // MATRIX_ANIM_MS and then gliding produced two separate movements for one click: first the page
+  // lurched upward on its own (the browser clamping `scrollY` to a document that just lost several
+  // screens of height), then our smooth scroll travelled back to the card. The lurch was never a scroll
+  // we asked for, so there was no way to make it graceful — only to stop it happening.
+  //
+  // Holding the card's top at the sticky inset for the duration of the collapse absorbs the clamp frame
+  // by frame: the card does not move at all, the levels concertina shut into it, and there is nothing
+  // left to recover from afterwards.
+  //
+  // Closing from the HEADER is the same call and needs no special case — the card's top is already at
+  // the inset there, so each frame's correction is zero and the pin is simply invisible.
+  const holdCardWhileCollapsing = (pillarId) => {
+    cancelPendingScroll();
+    const card = cardRefs.current[pillarId];
+    if (card) {
+      cancelScrollRef.current = holdElementBelowStickyHeader(card, { durationMs: MATRIX_ANIM_MS });
+    }
+  };
+
   useEffect(() => () => cancelPendingScroll(), []);
 
   const handleToggle = (pillarId) => {
-    const next = pillarId === expandedPillar ? null : pillarId;
+    const collapsing = pillarId === expandedPillar;
+    const next = collapsing ? null : pillarId;
     persistExpandedPillar(next);
     onExpandedPillarChange(next);
-    // COLLAPSING SCROLLS TOO, to the card being closed. The close control sits at the FOOT of the matrix,
-    // so it is normally clicked from the far end of several screens of levels — all of which are above the
-    // cursor and all of which vanish. Left alone, the viewport keeps its scroll offset while the document
-    // shrinks under it, and the reader is dumped somewhere among the pillars that follow, with the card
-    // they just closed far off the top of the screen. Re-aiming at that card keeps them where they were
-    // working. (Closing from the header instead moves almost nothing — the card's top is already up
-    // there — so the same call is a no-op rather than a competing jump.)
-    scrollToCardSoon(pillarId);
+    if (collapsing) {
+      holdCardWhileCollapsing(pillarId);
+    } else {
+      // Expanding: the card's destination keeps moving while a previously-open pillar above it closes,
+      // so glide to it once the layout has settled rather than pinning a position it hasn't reached.
+      scrollToCardSoon(pillarId);
+    }
   };
 
   // Cross-tab jump from a tool-form pillar's help icon. Keyed on `scrollNav.seq` (bumps every click)

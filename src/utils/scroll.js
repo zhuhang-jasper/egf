@@ -128,3 +128,58 @@ export function scrollBelowStickyHeaderUntilSettled(element, { stableFrames = 5,
   raf = requestAnimationFrame(tick);
   return () => cancelAnimationFrame(raf);
 }
+
+/**
+ * Hold `element`'s top pinned to the sticky inset for `durationMs`, correcting every frame.
+ *
+ * The opposite job to `scrollBelowStickyHeaderUntilSettled`, which GLIDES to a target that happens to
+ * be moving. This one keeps an already-correct position from being lost while the document changes
+ * height underneath it — collapsing a matrix pillar from the strip at its foot removes several screens
+ * of content from ABOVE the viewport, so the browser clamps `scrollY` to the shrinking `scrollHeight`
+ * and the page appears to lurch upward on its own. Re-asserting the card's top on each frame of the
+ * animation absorbs that clamp as it happens: the card does not move, and the levels concertina shut
+ * into it.
+ *
+ * `behavior: "auto"` is essential and not an optimisation — a smooth scroll owns the scroll position
+ * for its own duration and eases toward a snapshot of the target, so issuing one per frame against a
+ * live layout fights itself and lands late. Corrections here must be instant to be invisible.
+ *
+ * Runs on a frame count rather than a deadline because `Date.now()` and friends measure wall time,
+ * which is not what a CSS transition is paced by; a dropped frame should extend the guard, not end it
+ * early while the panel is still moving.
+ *
+ * Returns a cleanup function that cancels the pending animation frame.
+ */
+export function holdElementBelowStickyHeader(element, { durationMs = 300 } = {}) {
+  if (!element) {
+    return () => {};
+  }
+
+  let raf = 0;
+  let frames = 0;
+  let stable = 0;
+  // ~60fps, plus a small margin so the final settled layout is asserted after the transition ends.
+  const totalFrames = Math.ceil(durationMs / 16.7) + 4;
+  const tick = () => {
+    frames += 1;
+    const target = Math.round(element.getBoundingClientRect().top + window.scrollY - getStickyScrollOffsetPx());
+    const drift = Math.abs(target - window.scrollY);
+    if (drift >= 1) {
+      stable = 0;
+      scrollWindowTo(target, { behavior: "auto" });
+    } else {
+      stable += 1;
+    }
+    // RELEASE EARLY ONCE NOTHING IS MOVING. The pin overrides the scroll position on every frame it runs,
+    // so while it is active the user cannot scroll — acceptable for the ~300ms a collapse actually takes,
+    // but not a moment longer. Three consecutive driftless frames mean the layout has stopped changing and
+    // the guard has nothing left to absorb. This is what keeps `motion-reduce` honest, where the panel
+    // closes instantly and every frame after the first would be pure interference.
+    if (stable >= 3 || frames >= totalFrames) {
+      return;
+    }
+    raf = requestAnimationFrame(tick);
+  };
+  raf = requestAnimationFrame(tick);
+  return () => cancelAnimationFrame(raf);
+}
