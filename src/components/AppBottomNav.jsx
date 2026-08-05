@@ -125,33 +125,32 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
       aria-label="Primary"
       className="fixed inset-x-0 bottom-0 z-40 bg-slate-100 shadow-[0_-1px_3px_0_rgb(0_0_0/0.1),0_-1px_2px_1px_rgb(0_0_0/0.1)] pb-[env(safe-area-inset-bottom)] print:hidden"
     >
-      {/* CENTRED AND CAPPED, so on a wide screen the items cluster at the middle rather than being stranded at
-          the viewport's far corners. Below the cap this is `w-full` and the items simply split the viewport —
-          which is the phone case, and the case the bar is really designed for.
+      {/* FULL-WIDTH AND CENTRED. The row always spans the viewport; what bounds it on a wide screen is the PER-ITEM
+          cap on the buttons below, not a cap here. `justify-center` is what that cap needs to be usable: once the
+          items stop growing they no longer fill the row, and without it the leftover width would collect on one
+          side and strand the group against the left edge.
 
-          THE CAP IS 360px, DOWN FROM THE TOOL TAB'S 550px MEASURE. Matching the content measure was the original
-          reasoning ("the items sit under the content they navigate"), and it was the wrong target: at 550px two
-          `flex-1` tabs are 275px each, so each label sits alone in the middle of a quarter-screen-wide slab with
-          ~100px of empty tint either side of it. The items read as far apart rather than as a group, and the eye
-          has to travel between them. 360px puts two tabs at 180px and three at 120px, close to a phone's natural
-          spacing — the bar looks the same on a desktop as it does on the device it was designed for, instead of
-          stretching to fill a measure it has no reason to match.
+          THE CAP MOVED OFF THIS CONTAINER, and the reason is the tab count. It was `max-w-[360px]` here, which
+          fixed the whole ROW's width — so every tab added made all the tabs narrower (two at 180px, three at
+          120px, four at 90px) until they were too small to read. Capping each ITEM instead makes the row's natural
+          width `n × 180px`, so the bar GROWS with the tab count and stays centred, and adding a tab never shrinks
+          the ones already there. This is the same instinct as the note below about not coupling to a content
+          measure: the bar's width should follow what is in it, not a number chosen for a different reason.
 
-          IT IS DELIBERATELY NOT `FE_UI.page.maxWidthPx`. The old value was that number hardcoded, and the
-          coupling was never real: the Theory tab's measure is 900, so the bar could only ever match one of the
-          two tabs anyway. Nothing about navigation needs to line up with body content, so this is its own value
-          and does not track that constant.
+          Below `xs` (470px) the items are uncapped and simply split the viewport — see the note on the button. At
+          that width the row is the full viewport in both cases, so this container behaves identically either side
+          of the breakpoint and needs no responsive variant of its own.
 
           NO HORIZONTAL PADDING, deliberately, AND THE CAP IS NOT A SUBSTITUTE FOR ONE. `px-3` here inset every
           item by 12px, which meant the active indicator — the top border on the button — stopped 12px short of
-          the row's edge on the outer side and could not reach it. Narrowing the CONTAINER does not have that
-          problem: each button still spans its full share of the row edge to edge, so the borders still abut into
-          one unbroken band and every pixel of a button is tappable. Any breathing room the labels need belongs
-          INSIDE each button, not around the row.
+          the row's edge on the outer side and could not reach it. Bounding the ITEMS does not have that problem:
+          each button still spans its own share of the row edge to edge, so the borders still abut into one
+          unbroken band and every pixel of a button is tappable. Any breathing room the labels need belongs INSIDE
+          each button, not around the row.
 
-          The empty tint either side of the row is bar, not dead target — the same as the space beside the
-          header's brand mark. Only space INSIDE the row's own width would be dead. */}
-      <div className="mx-auto flex w-full max-w-[360px] items-stretch">
+          Above `xs`, the empty tint either side of the capped group is bar, not dead target — the same as the
+          space beside the header's brand mark. Only space INSIDE a button's own width would be dead. */}
+      <div className="mx-auto flex w-full items-stretch justify-center">
         {NAV_ITEMS.map(({ id, label, icon: Icon, version }) => {
           const selected = activeTab === id;
           // Lit whether or not the Theory tab is active: opening the tab does not clear it. It is the aggregate
@@ -162,6 +161,26 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
                one place the old segmented control's equal-columns behaviour was actually right: a bottom bar's
                targets should be the same size and span the full width, so there is no dead gap between them and
                no item is easier to hit than another. It is also what makes a third tab a non-event.
+
+               `xs:max-w-[180px]` IS THE BAR'S ONLY WIDTH BOUND, and it is PER ITEM rather than on the row (see
+               the container's note for why it moved). With `flex-1` the items grow equally until each hits 180px,
+               at which point the row stops at `n × 180px` and `justify-center` centres it. So the bar widens as
+               tabs are added instead of subdividing a fixed 360px, and no tab ever shrinks because another one
+               was added.
+
+               180px IS THE OLD 360px ROW AT TODAY'S TWO TABS, chosen so this change is a no-op at the current tab
+               count and only shows up from the third tab on. It is also roughly a phone tab's width, which is the
+               size these targets were tuned at.
+
+               UNCAPPED BELOW `xs` (470px), where `flex-1` alone runs and the items split the viewport. A 180px
+               cap would bind there on any phone wider than 360px and leave bare tint down each side, which is the
+               opposite of what is wanted at the width where the bar is thumb-driven — targets should be as large
+               as the screen allows. `xs` is the app's own smallest breakpoint (index.css, PillarGrid,
+               ChartScores), so the bar changes shape on the same line everything else does.
+
+               THE THREE-TAB CASE IS WHY THE CAP CANNOT BE MUCH LOWER: at 350px, the app's floor, three uncapped
+               tabs are ~117px each and already tight for "Theory v4.1". Lowering 180px pushes the wide-screen row
+               toward that same crampedness for no gain.
 
                `min-h-14` (56px) MATCHES THE HEADER'S OWN `min-h-14`, so the app's two pinned bars are the same
                weight of chrome top and bottom. It was `min-h-12` (48px) — already above the 44px touch-target
@@ -206,14 +225,14 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
                 // band where they diverged, then over-corrected in one jump. Matching the app means matching the
                 // BREAKPOINTS, not just the two endpoints. Do not drop `sm` again on the grounds that it is a
                 // small step: being in step with the content is what it buys.
-                "group relative flex min-h-14 flex-1 cursor-pointer select-none flex-col items-center justify-center gap-1 text-[11px] sm:text-[12px] md:text-[13px] font-semibold",
+                "group relative flex min-h-14 flex-1 xs:max-w-[150px] cursor-pointer select-none flex-col items-center justify-center gap-1 text-[11px] sm:text-[12px] md:text-[13px] font-semibold",
 
                 // A 3px BORDER ON EVERY ITEM, COLOURED ON ONLY ONE. This is what makes the rule span the whole
                 // ROW while marking a single segment: each button owns the 3px directly above itself, the buttons
                 // are adjacent, so the borders abut into one unbroken band across the row — dark over the active
-                // segment, invisible over the rest. The row, not the viewport: it is capped and centred (see
-                // above), so on a wide screen the band spans the centred group and the tint either side of it
-                // carries no rule.
+                // segment, invisible over the rest. The band spans the ITEMS, not the viewport: above `xs` they
+                // are capped and centred (see above), so it covers the centred group and the tint either side of
+                // it carries no rule. Below `xs` the items fill the viewport, so the band does too.
                 //
                 // It was `border-t-2`. 3px is an arbitrary value because Tailwind's border scale jumps 2 → 4 with
                 // nothing between, and 4px read as a slab rather than a marker at this bar's weight.
@@ -272,9 +291,7 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
                 // The INACTIVE side stays on the slate ramp deliberately: it is the unselected majority and should
                 // recede into the chrome it sits on, which is exactly what sharing the bar's hue does. Black is
                 // reserved for the one segment being marked.
-                selected
-                  ? "border-black bg-slate-200 text-black"
-                  : "border-transparent text-slate-500 hover:bg-slate-100/70 hover:text-slate-700",
+                selected ? "border-black bg-slate-200 text-black" : "border-transparent text-slate-500 hover:bg-slate-100/70 hover:text-slate-700",
               )}
             >
               {/* THE UNSEEN DOT BADGES THE ICON, not the version text. It rode on `v4.1` as a superscript when this
