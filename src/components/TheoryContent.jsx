@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Printer, ScrollText, Share2 } from "lucide-react";
 
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { UnseenDot } from "@/components/UnseenDot";
 
+import { useFitsOneLine } from "@/hooks/useFitsOneLine";
 import { getSectionSentinelId, useSectionSeenObserver } from "@/hooks/useSectionSeenObserver";
 
 import { FE_UI, FRAMEWORK_VERSION, IS_ADMIN, SITE_COPY } from "@/constants";
@@ -107,80 +108,6 @@ const DEEPLINK_RESTORE_SETTLE_MS = 350;
 // Expand/collapse animation length — matches the `duration-300` on the matrix panel. After switching
 // to the deep-link pillar we wait this out so the card has stopped moving before we measure & glide.
 const DEEPLINK_EXPAND_ANIM_MS = 300;
-
-/**
- * Whether the tagline's first sentence fits on a single line at the current width.
- *
- * Drives where the second sentence goes, per the rule: if the first sentence fits on one line the second
- * starts a new one; if the first has to wrap, the second continues inline instead. Forcing a break in the
- * wrapped case is what produced an orphaned word on its own line with the next sentence stranded below it.
- *
- * NOT EXPRESSIBLE IN CSS, which is why this measures. The condition depends on whether the RENDERED text
- * fits, a fact only available after layout — a media query would instead have to hardcode "the width at
- * which ~104 characters of `text-sm` fit", which is a number that goes stale silently the moment the copy
- * or the type scale changes. `scrollHeight` against a single line's height is the direct question.
- *
- * This lived in AppShellHeader while the tagline was part of the app header, and moved here with it.
- *
- * `isVisible` IS A DEPENDENCY, NOT AN OPTIMISATION, and it is what stops this flipping in front of the user
- * on the way into the Theory tab. The ResizeObserver below cannot do that job alone: it fires after layout,
- * but the `setFits` it calls schedules a re-render for a LATER frame, so the wrong wrap paints once and
- * corrects. Re-running as a LAYOUT effect on the visibility change instead means the measurement happens in
- * the same commit that removed the panel's `hidden` — the box is laid out, and a state update from a layout
- * effect re-renders synchronously BEFORE paint, so only the corrected wrap is ever displayed.
- *
- * That also covers the cases the guard inside `measure` cannot: a first mount that happened while hidden, a
- * width that changed while the tab slept, and a cold load whose first measurement ran against the fallback
- * face before Inter arrived (the same staleness useChartFrameFit forces a refit for).
- */
-function useFitsOneLine(ref, isVisible) {
-  const [fits, setFits] = useState(true);
-
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) {
-      return undefined;
-    }
-
-    // Compare the rendered height against one line's worth. Line height comes from the computed style
-    // rather than a constant so it tracks the responsive `text-xs sm:text-sm` step without being told.
-    const measure = () => {
-      // AN UNRENDERED PROBE IS NOT A PROBE THAT FITS, and conflating the two caused a visible flip of this
-      // whole block on every entry to the Theory tab. An inactive TabPanel is `hidden`, i.e. `display: none`,
-      // which gives every descendant no box at all — so `scrollHeight` reads 0, 0 passes the test below, and
-      // the ResizeObserver (which fires on the collapse to zero) reset this to `true` every time the tab was
-      // LEFT. Coming back, the tagline painted one-sentence-per-line, then measured and snapped to inline.
-      //
-      // That was also a line-height change in the document on every switch, which the scroll-restore burst
-      // then had to chase — so a remembered position visibly settled instead of just being there. See
-      // useTabScrollMemory, whose re-assert loop exists for real late reflows like the radars' sizing passes,
-      // not for one this file could avoid creating.
-      //
-      // Bailing keeps the last good answer instead: the value is measured once while the panel is laid out
-      // (its first mount is a `prefit` pass, which has real width by design) and then survives every
-      // hide/show cycle untouched. `offsetWidth` rather than a `display` check because it answers the
-      // question that actually matters — no width means there is no wrapping to decide.
-      if (el.offsetWidth === 0) {
-        return;
-      }
-      const lineHeight = Number.parseFloat(getComputedStyle(el).lineHeight);
-      if (!Number.isFinite(lineHeight) || lineHeight <= 0) {
-        return;
-      }
-      // 1.5 lines as the threshold: comfortably above rounding noise on a single line, comfortably below two.
-      setFits(el.scrollHeight < lineHeight * 1.5);
-    };
-
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-    // `isVisible`: re-measure before paint whenever the tab is entered — see the docblock. The observer
-    // stays for genuine in-tab resizes (rotate, window drag), where a frame's lag is not perceptible.
-  }, [ref, isVisible]);
-
-  return fits;
-}
 
 /**
  * Zero-height marker bracketing a section's content, used by `useSectionSeenObserver` to detect that

@@ -131,6 +131,30 @@
   }
 }
 
+/* Install banner entrance — see src/components/InstallPrompt.jsx. It rises from below because that is
+   where it comes from: the banner is pinned just above the bottom nav, so sliding up reads as it
+   arriving from off-screen rather than fading in on top of content the user was reading. */
+@keyframes install-rise {
+  from {
+    opacity: 0;
+    transform: translateY(1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.install-enter {
+  animation: install-rise 280ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .install-enter {
+    animation: none;
+  }
+}
+
 /* Countdown ring around a toast's dismiss "X" — see src/components/ui/Toaster.jsx. The circle is
    drawn with its full circumference as one dash, so animating `stroke-dashoffset` unwinds the arc
    over the toast's remaining lifetime. The offset runs 0 → *negative* circumference, which retreats

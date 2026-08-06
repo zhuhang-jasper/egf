@@ -40,6 +40,24 @@ export const THEORY_SECTION_PROGRESS_KEY = "fe-growth-framework:theory-section-p
 // visit), which would have left the password gating new devices only. Abandoning the old key costs one
 // re-entry per device and nothing else: the value is a single "1" with nothing to migrate.
 export const ADMIN_UNLOCK_KEY = "fe-growth-framework:admin:v2";
+// Timestamp (epoch ms) at which the user dismissed the floating install banner. Read back as a
+// cooldown: the banner stays quiet for INSTALL_DISMISS_DAYS after it, then may offer again.
+//
+// THE HEADER'S INSTALL PILL IGNORES THIS ENTIRELY (see InstallPrompt's InstallPill), which is what makes
+// the cooldown safe to have at all: it silences the surface that appears UNINVITED, while the deliberate
+// one stays permanently available. Someone who dismisses the banner has not lost the install path, only
+// stopped being asked about it.
+export const INSTALL_DISMISSED_AT_KEY = "fe-growth-framework:install-dismissed-at:v1";
+// How long a dismissal suppresses the banner. Long enough not to nag on the next visit, short enough that
+// a user who comes back to the tool a fortnight later gets one more offer.
+//
+// ROLLING, NOT A TOTAL CAP: each dismissal writes a fresh timestamp, so the banner returns after 7 quiet
+// days and can be dismissed for another 7. There is deliberately no "asked N times, give up" counter —
+// the pill is the permanent path, so this only has to stop the banner being annoying, not retire it.
+//
+// ONLY THE X STARTS THE COOLDOWN. Cancelling the browser's own install sheet does not (see InstallPrompt's
+// `onInstall`): declining that dialog is not the same as asking not to be offered again.
+export const INSTALL_DISMISS_DAYS = 7;
 
 /**
  * Keys this app WROTE in a previous version and will never read again. Deleted on first load (see

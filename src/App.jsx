@@ -1,4 +1,5 @@
 import { AdminUnlockPrompt } from "@/components/AdminUnlockPrompt";
+import { InstallPrompt } from "@/components/InstallPrompt";
 
 import { ADMIN_PASSWORD_REQUESTED, IS_ADMIN } from "@/constants";
 import HomePage from "@/pages/HomePage";
@@ -47,16 +48,22 @@ if (isGatedRoute && !ADMIN_PASSWORD_REQUESTED) {
   }
 }
 
+// Which of the two export canvases is being rendered, if either. `null` means the tool — including an
+// unknown segment and a gated admin route, both of which fall through to it below.
+//
+// DERIVED ONCE AND SHARED, so the install banner's "not on an export canvas" test cannot drift from
+// what is actually on screen. Re-deriving it from `route` down in App would have to repeat the
+// `isGatedRoute` fall-through, and would silently start disagreeing the moment a third route existed.
+const exportCanvasRoute = !isGatedRoute && (route === "poster" || route === "social") ? route : null;
+
 function RoutedPage() {
   // A gated route falls through to the tool rather than showing an error: there is nothing here a
   // visitor did wrong, and "this page does not exist for you" would only advertise that it exists.
-  if (!isGatedRoute) {
-    if (route === "poster") {
-      return <PosterPage />;
-    }
-    if (route === "social") {
-      return <SocialPage />;
-    }
+  if (exportCanvasRoute === "poster") {
+    return <PosterPage />;
+  }
+  if (exportCanvasRoute === "social") {
+    return <SocialPage />;
   }
   return <HomePage />;
 }
@@ -65,6 +72,19 @@ export default function App() {
   return (
     <>
       <RoutedPage />
+
+      {/* The floating "add to home screen" banner. Renders nothing unless there is an install path to
+          offer and the user has not dismissed it recently — see components/InstallPrompt.
+
+          NOT ON THE POSTER/SOCIAL ROUTES. Both are fixed-canvas surfaces that get rasterized to a PNG
+          at an exact pixel size (see utils/export-image), so a floating banner over them is at best
+          noise on a page whose only job is to be captured, and at worst lands in the exported image.
+          They also have no bottom nav, which is what this banner's offset is measured against.
+
+          Outside RoutedPage because it is `fixed`: its position comes from the viewport, not from the
+          page's flow. Same reason AdminUnlockPrompt and the Toaster sit at this level. */}
+      {exportCanvasRoute === null ? <InstallPrompt /> : null}
+
       {/* Renders nothing unless `?admin=1` was visited on a locked device. It overlays the routed page
           rather than replacing it, so cancelling (or a browser that never shows it) leaves a working
           app rather than a dead end — which is exactly what the `window.prompt` it replaced did not do.

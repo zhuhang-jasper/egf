@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { AdminContent } from "@/components/AdminContent";
 import { AppBottomNav } from "@/components/AppBottomNav";
 import { AppShellHeaderStack } from "@/components/AppShellHeader";
+import { ScrollTopFab } from "@/components/ScrollTopFab";
 import { TheoryContent } from "@/components/TheoryContent";
 import { ToolContent } from "@/components/ToolContent";
 import { Toaster } from "@/components/ui/Toaster";
@@ -417,6 +418,17 @@ export default function HomePage() {
           `main` carries the matching bottom padding (see its className) so the footer and the end of a tab's
           content are not hidden underneath this bar. */}
       <AppBottomNav activeTab={activeTab} onTabChange={handleTabChange} theoryHasUnseenUpdates={theoryHasUnseenUpdates} />
+
+      {/* SCROLL-TO-TOP, THEORY TAB ONLY. It used to live in the header's right corner, which the install pill now
+          holds (see AppShellHeader and InstallPrompt's InstallPill). Gated on the tab rather than rendered always
+          because the theory document is the only thing here long enough to need it — the tool tab is a chart and a
+          form in about two screenfuls, and a floating button over the form's right edge would cover input rows to
+          save a gesture nobody was asking for. See ScrollTopFab.
+
+          Outside `main` alongside AppBottomNav, and for the same reason: it is `fixed`, so its position comes from
+          the viewport rather than this flow, and keeping it out of `main` leaves it clear of that element's
+          `min-w` floor and print overrides. */}
+      {activeTab === "theory" ? <ScrollTopFab /> : null}
 
       <Toaster />
     </div>

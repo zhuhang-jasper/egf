@@ -1,12 +1,10 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef } from "react";
 
-import { ChevronsUp } from "lucide-react";
-
-import { Tooltip } from "@/components/ui/Tooltip";
+import { InstallPill } from "@/components/InstallPrompt";
 
 import { SITE_COPY } from "@/constants";
 import { cn } from "@/utils";
-import { clearStickyScrollOffset, getWindowScrollY, scrollWindowToTop, setStickyScrollOffset } from "@/utils/scroll";
+import { clearStickyScrollOffset, setStickyScrollOffset } from "@/utils/scroll";
 
 // THE HEADER NO LONGER CARRIES A TITLE BLOCK, AND HAS NO EXPAND/COLLAPSE.
 //
@@ -19,7 +17,13 @@ import { clearStickyScrollOffset, getWindowScrollY, scrollWindowToTop, setSticky
 // stayed above — the header and that radar being in different components, no CSS could interleave them. As
 // siblings in the Theory tab they are one `print:order-first` apart.
 //
-// What is left is a permanent 56px bar: the brand lockup (now the page's <h1>) and a scroll-to-top button.
+// What is left is a permanent 56px bar: the brand lockup (now the page's <h1>) and the install pill.
+//
+// SCROLL-TO-TOP USED TO HOLD THAT RIGHT CORNER AND HAS MOVED OUT to a floating button on the Theory tab (see
+// ScrollTopFab). Two reasons, and the second is the real one: the install pill needs a permanent home that is
+// not inside either tab's scrolling content, and scroll-to-top only ever mattered on the long document. The
+// corner was also empty for the whole first screenful (the button was gated on `scrollY > 0`), so a control
+// that IS always relevant is a better tenant than one that is usually absent.
 //
 // DON'T PUT THE TITLE BACK HERE. The bar is pinned at every scroll depth on both tabs, so anything in it is
 // paid for on every screen of every page — which is what made a collapsible title necessary in the first
@@ -129,7 +133,10 @@ function AppShellHeaderStack() {
       className="sticky top-0 z-40 min-h-14 border-b border-slate-200 bg-slate-100 p-3 shadow-sm print:hidden"
     >
       <AppShellBrandMark />
-      <AppShellScrollTopButton />
+      {/* Renders nothing unless this browser can actually install the app, so the corner is simply empty on a
+          desktop browser with no install path and on an already-installed PWA — see InstallPrompt's InstallPill.
+          That is the same "absent rather than inert" rule the scroll-top button followed when it lived here. */}
+      <InstallPill />
     </div>
   );
 }
@@ -262,85 +269,6 @@ function AppShellBrandMark() {
         </span>
       </span>
     </h1>
-  );
-}
-
-/**
- * Scroll to the top of the page. The header's only control, in its top-RIGHT corner opposite the brand mark.
- *
- * IT ONLY EXISTS WHILE THERE IS SOMEWHERE TO GO. Gated on `scrollY > 0`, so at the top of the page the corner is
- * empty. A control that is always present but does nothing for the whole first screenful is worse than no
- * control: it teaches that pressing it has no effect, which is the lesson that then applies when it would have
- * worked.
- *
- * THIS REPLACES A HIDDEN GESTURE. Scroll-to-top used to be "tap the tab you are already on", announced by a
- * tooltip on hover. That was defensible while navigation was a segmented control beside the title — the tabs and
- * the title were the same piece of chrome — but navigation moved to a bottom bar (see AppBottomNav), where the
- * active item is the easiest thing on screen to hit by accident and there is no hover to advertise anything. So
- * the behaviour was removed from the tap and given its own button here, where it is visible rather than secret.
- *
- * `right-3` TAKES THE TRUE CORNER, which it could not while the header's collapse caret was there: that button
- * had to hold the exact corner so it would not move under the pointer that had just clicked it, and this one sat
- * `right-12` (12px inset + 32px + a 4px gap) inboard of it. With the caret gone, an offset button with nothing
- * beside it just reads as misaligned.
- *
- * A DOUBLE CHEVRON, which used to be about distinguishing it from that single-chevron caret and now simply says
- * "all the way" rather than "one step".
- *
- * `smooth`, unlike the instant scrolls elsewhere in the app: those are restores and jumps that should feel like
- * the page was always there, whereas this is a journey the user asked for and the motion is the feedback that it
- * happened. `motion-reduce` is honoured by the browser's own `scroll-behavior` handling of `smooth`.
- */
-function AppShellScrollTopButton() {
-  // Whether there is anywhere to scroll up to. The listener is `passive` because this never calls
-  // `preventDefault` — a non-passive scroll listener would let this block the scroll it is only observing.
-  const [canScrollUp, setCanScrollUp] = useState(false);
-
-  useEffect(() => {
-    const sync = () => setCanScrollUp(getWindowScrollY() > 0);
-    sync();
-    window.addEventListener("scroll", sync, { passive: true });
-    window.addEventListener("resize", sync);
-    return () => {
-      window.removeEventListener("scroll", sync);
-      window.removeEventListener("resize", sync);
-    };
-  }, []);
-
-  // Unmounted rather than hidden: there is nothing to animate to or from, and an invisible button in the corner
-  // would still be in the tab order.
-  if (!canScrollUp) {
-    return null;
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={() => scrollWindowToTop({ behavior: "smooth" })}
-      aria-label="Scroll to top"
-      // `top-3` matches the brand mark opposite, so the two corners share one centre line. Both resolve against
-      // the stack's own `p-3` — see its docblock.
-      //
-      // `group` for the Tooltip below, which replaces a native `title` so the app has one tooltip mechanism.
-      //
-      // ITS FILL IS READ AGAINST THE BAR'S TINT, so it moved when the bar did. On white this was
-      // `bg-slate-100/80` with a `slate-200/80` hover and a `slate-200` border, which was a clear step up from
-      // its background; on `bg-slate-100` those exact values ARE the background, so the button would vanish and
-      // its hover would land where the resting state used to be — no longer reading as a control, and its hover
-      // no longer reading as feedback. `slate-200` resting / `slate-300` hover keeps two visible steps above the
-      // bar, and the border goes to `slate-300` so the button's own outline stays clear of the header's
-      // `border-b` at the same value.
-      //
-      // OPAQUE, NOT `/80`. A translucent fill composites with whatever is behind it, so `/80` over white and
-      // `/80` over `slate-100` are different colours — the fill would silently re-tint the next time the bar's
-      // value changed. Nothing here needs to see through to the content anyway.
-      className="group absolute right-3 top-3 z-10 inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-slate-300 bg-slate-200 text-slate-500 transition-colors hover:bg-slate-300 hover:text-slate-900 print:hidden"
-    >
-      <ChevronsUp className="size-4" aria-hidden />
-      {/* `placement="bottom"` — this sits in the sticky header's top-right corner, so a tooltip above it would
-          land outside the header (Floating UI would flip it back down anyway; this states the intent). */}
-      <Tooltip text="Scroll to top" placement="bottom" />
-    </button>
   );
 }
 
