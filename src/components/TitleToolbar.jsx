@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { Calculator, CircleCheck, Copy, FilePlus, MoreVertical, Pencil, Save, Undo2 } from "lucide-react";
 
+import { BackupReminderDialog } from "@/components/BackupReminderDialog";
 import { ProfileActionsMenu } from "@/components/ProfileActionsMenu";
 import { ProfileCombobox } from "@/components/ProfileCombobox";
 import { SaveCollisionDialog } from "@/components/SaveCollisionDialog";
@@ -15,6 +16,7 @@ import { selectHasUnsavedWork, selectProfileSaveStatus, UNDO_TOAST_KEY, useAppSt
 
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
+import { readProfileCreateCount } from "@/utils/storage";
 
 // The Save button doubles as the save-status indicator. Each status sets the button's icon, label,
 // styling, and disabled state. `saved` means the draft matches a saved profile (nothing to save);
@@ -237,6 +239,11 @@ export function TitleToolbar() {
   // open; it carries the blocked attempt's analytics so they survive to the resolution.
   const [pendingCollision, setPendingCollision] = useState(null);
 
+  // Open when a save just CREATED the user's 1st, 10th, 20th … profile (the store flags it — see
+  // writeProfile). Raised here rather than in the store because it is one more piece of save-result
+  // routing, and this is where every save path already lands.
+  const [backupReminderOpen, setBackupReminderOpen] = useState(false);
+
   const trackSaved = (extra) => track("profile_saved", { attached_badge: useAppStore.getState().attachedBadge, ...extra });
 
   // Route a writeProfile result: a collision opens the dialog; a real save fires analytics. Blank
@@ -252,6 +259,10 @@ export function TitleToolbar() {
     }
     if (result?.status === "saved") {
       trackSaved(analytics);
+      if (result.backupReminder) {
+        setBackupReminderOpen(true);
+        track("backup_reminder_shown", { count: readProfileCreateCount() });
+      }
       if (result.undo) {
         showToast(`Updated “${result.savedTitle}”`, {
           variant: "dark",
@@ -402,6 +413,7 @@ export function TitleToolbar() {
         </div>
       </div>
       <SaveCollisionDialog collision={pendingCollision} onOverwrite={handleOverwrite} onCancel={() => setPendingCollision(null)} />
+      <BackupReminderDialog open={backupReminderOpen} onClose={() => setBackupReminderOpen(false)} />
     </div>
   );
 }

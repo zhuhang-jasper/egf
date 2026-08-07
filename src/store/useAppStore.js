@@ -12,7 +12,15 @@ import {
 } from "@/constants/levels";
 import { track } from "@/utils/analytics";
 import { exportProfilesToFile, parseImportedProfiles } from "@/utils/profile-transfer";
-import { getDefaultChartDisplay, loadDraftFromStorage, loadProfilesFromStorage, saveDraftToStorage, writeProfilesToStorage } from "@/utils/storage";
+import {
+  bumpProfileCreateCount,
+  getDefaultChartDisplay,
+  isBackupReminderMilestone,
+  loadDraftFromStorage,
+  loadProfilesFromStorage,
+  saveDraftToStorage,
+  writeProfilesToStorage,
+} from "@/utils/storage";
 
 const initialDraft = loadDraftFromStorage() ?? { ...getDefaultChartState(), ...getDefaultChartDisplay() };
 const initialProfiles = loadProfilesFromStorage();
@@ -483,7 +491,9 @@ export const useAppStore = create((set, get) => ({
   // prompt (Overwrite / Cancel).
   //
   // Returns one of:
-  //   { status: "saved" }                    — written successfully
+  //   { status: "saved" }                    — written successfully (carries `backupReminder` when
+  //                                            this write CREATED a profile and the device's running
+  //                                            creation total hit a milestone — see storage.js)
   //   { status: "add-title" }                — blank title, nothing written
   //   { status: "error" }                    — payload failed to normalize
   //   { status: "collision", name, badge }   — name+badge clash; caller must decide
@@ -554,6 +564,15 @@ export const useAppStore = create((set, get) => ({
     const overwrote = replaceIdx >= 0 ? existing[replaceIdx] : null;
     const undo = overwrote || removedSource ? { profiles: existing, activeSavedProfileId: get().activeSavedProfileId } : null;
 
+    // Count only writes that ADD a row. `replaceIdx < 0` is exactly that test: an update to the linked
+    // profile and an "Overwrite it" both resolve to an existing index and leave the total alone, so the
+    // backup reminder tracks how many profiles the user has accumulated, not how often they hit Save.
+    //
+    // Deliberately NOT undone by restoreProfiles: the undo puts the profile back, but it cannot un-show
+    // a modal the user has already read. Re-counting a re-created profile would replay the 1st-profile
+    // reminder for someone who has seen it.
+    const backupReminder = replaceIdx < 0 && isBackupReminderMilestone(bumpProfileCreateCount());
+
     writeProfilesToStorage(next);
     set({
       profiles: next,
@@ -562,7 +581,7 @@ export const useAppStore = create((set, get) => ({
       saveFeedback: "saved",
     });
     get().persistDraft();
-    return { status: "saved", savedTitle: state.title, overwroteTitle: overwrote?.title ?? null, undo };
+    return { status: "saved", savedTitle: state.title, overwroteTitle: overwrote?.title ?? null, undo, backupReminder };
   },
 
   // Save/Update the current draft. Updates the linked profile in place (renaming it if the title

@@ -1,6 +1,9 @@
 import {
+  BACKUP_REMINDER_EVERY,
+  BACKUP_REMINDER_FIRST,
   FEATURE_CHART_LEGEND_SETTING,
   FEATURE_CHART_STRUCTURE_SETTINGS,
+  PROFILE_SAVE_COUNT_KEY,
   PROFILES_STORAGE_KEY,
   RETIRED_STORAGE_KEYS,
   SCHEMA_VERSION,
@@ -144,6 +147,42 @@ export function writeProfilesToStorage(profiles) {
   } catch {
     /* quota / private mode */
   }
+}
+
+/**
+ * The running total of profiles this device has ever created (PROFILE_SAVE_COUNT_KEY). 0 when absent,
+ * unreadable, or garbage — a missing count reads as "has never created one", which is the same state a
+ * brand-new device is in, so a wiped or corrupt value costs at most one extra reminder.
+ */
+export function readProfileCreateCount() {
+  try {
+    const n = Number(localStorage.getItem(PROFILE_SAVE_COUNT_KEY));
+    return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/** Record one profile creation and return the new total (unchanged on a store we cannot write). */
+export function bumpProfileCreateCount() {
+  const next = readProfileCreateCount() + 1;
+  try {
+    localStorage.setItem(PROFILE_SAVE_COUNT_KEY, String(next));
+  } catch {
+    /* quota / private mode — the reminder just won't advance; nothing else depends on it */
+  }
+  return next;
+}
+
+/**
+ * Whether a creation count is a backup-reminder milestone: the 1st, then every 10th (1, 10, 20, …).
+ *
+ * DERIVED FROM THE COUNT, with no "last shown at" companion key. The count only ever moves forward, and
+ * only at the moment of a creation, so testing it once per creation shows each milestone exactly once —
+ * a marker key would add a second thing to migrate and retire for no behaviour the count cannot give.
+ */
+export function isBackupReminderMilestone(count) {
+  return count === BACKUP_REMINDER_FIRST || (count > 0 && count % BACKUP_REMINDER_EVERY === 0);
 }
 
 /**

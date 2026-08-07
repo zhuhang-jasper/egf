@@ -59,6 +59,33 @@ export const INSTALL_DISMISSED_AT_KEY = "fe-growth-framework:install-dismissed-a
 // `onInstall`): declining that dialog is not the same as asking not to be offered again.
 export const INSTALL_DISMISS_DAYS = 7;
 
+// How many profiles this device has ever CREATED (a running total, never decremented). Drives the
+// backup reminder — see BACKUP_REMINDER_MILESTONES.
+//
+// CREATIONS, NOT SAVES: only a write that adds a new profile row counts. Updating a loaded profile,
+// overwriting a name clash, and re-saving the same profile all leave it alone, so someone iterating on
+// one profile all afternoon is reminded once, not fifty times.
+//
+// A LIFETIME TOTAL, NOT `profiles.length`: the count has to survive the profiles it counted. Deleting
+// every profile and starting again should not replay the reminder from 1 — the user has already been
+// told where their data lives.
+export const PROFILE_SAVE_COUNT_KEY = "fe-growth-framework:profile-save-count:v1";
+
+/**
+ * Creation counts at which the "profiles live in this browser, export to back them up" modal is shown:
+ * the first profile, then every tenth.
+ *
+ * FIRST, THEN SPARSE, is the whole design. The 1st is the only moment the warning is genuinely news —
+ * the user has just trusted the app with something for the first time and does not yet know it is not
+ * on a server. Everything after that is a periodic nudge to re-export a collection that has grown, and
+ * a nudge that fires often enough to be dismissed reflexively teaches the user to dismiss it.
+ *
+ * Read via a predicate rather than a stored "last shown" marker (see shouldShowBackupReminder): the
+ * count alone decides, so there is no second key to keep in sync with it.
+ */
+export const BACKUP_REMINDER_FIRST = 1;
+export const BACKUP_REMINDER_EVERY = 10;
+
 /**
  * Keys this app WROTE in a previous version and will never read again. Deleted on first load (see
  * utils/storage.js `retireLegacyKeys`).
