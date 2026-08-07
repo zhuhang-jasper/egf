@@ -21,6 +21,7 @@ import {
   COMPETENCY_MATRIX_INTRO,
   getSkillTierBands,
   SENIORITY_LEVEL_DEFINITIONS,
+  SKILL_TIERS_CAPTION,
   SKILL_TIERS_INTRO,
   THEORY_SECTION_COPY,
 } from "@/constants/theory-data";
@@ -195,10 +196,15 @@ function SeniorityPhaseTitle({ phase, className, breakAfterSlash = false }) {
  * five equal 20% cells, band edges at their authored percentages. The ruler and the bands share that
  * one track, so they stay exact against each other, which is the alignment that carries the meaning.
  *
- * A FIGURE, NOT A TITLED CARD. The "Skill Tiers" h3 and the explanatory caption that used to bracket
- * these bands both live outside now — the prose as `SKILL_TIERS_INTRO` immediately above (see the call
- * site), the heading nowhere, since a title inside the box would repeat what that paragraph just said.
- * What is left is the drawing.
+ * A FIGURE, NOT A TITLED CARD. The "Skill Tiers" h3 lives nowhere now and the prose that framed these
+ * bands lives outside, as `SKILL_TIERS_INTRO` immediately above (see the call site): a title inside the
+ * box would repeat what that paragraph just said. What is left is the drawing, plus the one caption the
+ * drawing needs.
+ *
+ * THAT CAPTION IS PART OF THE FIGURE, which is why it is inside the border rather than a fourth paragraph
+ * under the card. `SKILL_TIERS_CAPTION` reads the stagger the bands draw — it only parses with the picture
+ * in view, and it is answering the misreading the picture invites (taking a band's left edge as the level
+ * a tier "starts" at). A rule above it separates it from the track so it is not mistaken for a fourth band.
  *
  * IT KEEPS ITS BORDER, though. Dropping the card was considered and rejected: three small tinted bands and
  * a ruler on bare white read as unfinished, and the nine pillar cards below are cluster-tinted with a
@@ -213,7 +219,10 @@ function SkillTierBands() {
           sitting under the five level cards. */}
       <div className="grid grid-cols-5 border-b border-slate-200 pb-1">
         {SENIORITY_LEVEL_DEFINITIONS.map(({ code }) => (
-          <span key={code} className={cn("text-center", DOC_TEXT.badgeMicro, "text-slate-400")}>
+          // The in-card grey (see doc-typography.js), hardcoded because `badgeMicro` carries no color of its
+          // own. It was slate-400 — the lightest text on the page — which left the ruler fainter than the
+          // caption directly below it in the same card. Keep it in step if that grey ever moves again.
+          <span key={code} className={cn("text-center", DOC_TEXT.badgeMicro, "text-slate-600")}>
             {code}
           </span>
         ))}
@@ -250,6 +259,10 @@ function SkillTierBands() {
           </div>
         ))}
       </div>
+
+      {/* `metaBody`, the captions rung: 11px and one shade below in-card body, so this reads as annotation
+          on the figure rather than as another paragraph of the section's prose. */}
+      <p className={cn("mt-2 border-t border-slate-200 pt-2", DOC_TEXT.metaBody)}>{SKILL_TIERS_CAPTION}</p>
     </div>
   );
 }
@@ -734,12 +747,14 @@ function TheoryContent({
           <SectionSentinel section={THEORY_SECTIONS.matrix} edge="tail" gapClass="-mt-3" />
         </section>
 
-        {/* gap-1 (not the other sections' gap-3): this section's intro is empty, so the heading is a bare
-            title line and needs to hug what follows rather than sit above a full gap. Section III's intro is
-            empty too but keeps `gap-3` — the difference is what comes next. Here it is an h3 subsection title,
-            which reads as detached from the h2 across 12px; there it is a bordered card. */}
-        <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.tracks]} className="flex flex-col gap-1 print:break-before-page">
-          <SectionSentinel section={THEORY_SECTIONS.tracks} edge="head" gapClass="-mb-1" />
+        {/* `gap-3` like the other sections. This was `gap-1` for as long as the section's intro was empty:
+            a bare h2 title line has to hug the h3 subsection title below it, which otherwise reads as
+            detached across 12px. (Section III's intro is empty too but keeps `gap-3`, because what follows
+            it is a bordered card rather than another heading.) Now that the intro carries the S1-S5 / L1-L5
+            note, the heading is a title plus a paragraph — the same shape as sections I and II — and the
+            paragraph is what separates the two headings, so the tight gap has nothing left to fix. */}
+        <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.tracks]} className="flex flex-col gap-3 print:break-before-page">
+          <SectionSentinel section={THEORY_SECTIONS.tracks} edge="head" gapClass="-mb-3" />
           <SectionHeading
             title={THEORY_SECTION_COPY[THEORY_SECTIONS.tracks].heading}
             subtitle={THEORY_SECTION_COPY[THEORY_SECTIONS.tracks].intro}
@@ -747,7 +762,7 @@ function TheoryContent({
             hasUnseenUpdates={unseenSections.has(THEORY_SECTIONS.tracks)}
           />
           <CareerTracks isVisible={isVisible} />
-          <SectionSentinel section={THEORY_SECTIONS.tracks} edge="tail" gapClass="-mt-1" />
+          <SectionSentinel section={THEORY_SECTIONS.tracks} edge="tail" gapClass="-mt-3" />
         </section>
       </div>
     </>

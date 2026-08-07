@@ -17,16 +17,19 @@ import { THEORY_SECTIONS } from "@/utils/theory-url";
  * together the two collapse into the same question and the matrix stops looking like the payoff of
  * the section above it.
  *
- * TWO SECTIONS HAVE NO INTRO, both for the same reason: the thing directly under the heading already
- * introduces itself, and a paragraph above it would say so twice.
+ * `matrix` HAS NO INTRO, because the thing directly under the heading already introduces itself and a
+ * paragraph above it would say so twice: the section is two blocks, each with its own lead-in
+ * (`SKILL_TIERS_INTRO` above the tier diagram, then `COMPETENCY_MATRIX_INTRO` above the nine pillar
+ * cards). A subtitle here would be introducing an introduction — and when the matrix lead-in did sit in
+ * this slot, it described cards two blocks below and read as a caption for the diagram in between.
  *
- *   `matrix`   is two blocks, each with its own lead-in paragraph: `SKILL_TIERS_INTRO` above the tier
- *              diagram, then `COMPETENCY_MATRIX_INTRO` above the nine pillar cards. A subtitle here would
- *              be introducing an introduction — and when the matrix lead-in did sit in this slot, it
- *              described cards two blocks below and read as a caption for the diagram in between.
- *   `tracks`   opens with the "From Junior to Senior" subsection and its own framing (JUNIOR_TO_SENIOR).
+ * `tracks` WAS ALSO INTRO-LESS on that reasoning, since it opens with the "From Junior to Senior"
+ * subsection and its own framing (JUNIOR_TO_SENIOR). Its intro earns the slot by doing something that
+ * framing does not: it disambiguates the S1-S5 notation the whole section is written in from the L1-L5
+ * of Section II. That has to land before the first "S1-S3" the reader meets, which is JUNIOR_TO_SENIOR's
+ * own title, so it cannot wait for the subsection to make the point in passing.
  *
- * TheoryContent spaces those two headings to suit — see the notes at each.
+ * TheoryContent spaces both headings to suit — see the notes at each.
  */
 export const THEORY_SECTION_COPY = {
   [THEORY_SECTIONS.pillars]: {
@@ -37,7 +40,7 @@ export const THEORY_SECTION_COPY = {
   [THEORY_SECTIONS.seniority]: {
     heading: "II. How do the 5 levels work?",
     intro:
-      "Each pillar is rated L1-L5. This measures your proficiency within that one pillar, from following instructions (L1) to shaping direction (L5). A single pillar level does not determine your overall seniority. Your actual engineering seniority is indicated by your whole chart shape.",
+      "Each pillar is rated L1-L5. This measures your proficiency within that one pillar, from following instructions (L1) to shaping direction (L5). A single pillar level does not set your seniority. Your career stage (S1-S5, see Section IV) shows in the whole chart shape, not in one axis.",
   },
   [THEORY_SECTIONS.matrix]: {
     heading: "III. What does each level look like in practice?",
@@ -45,7 +48,8 @@ export const THEORY_SECTION_COPY = {
   },
   [THEORY_SECTIONS.tracks]: {
     heading: "IV. Where does this take your career?",
-    intro: "",
+    intro:
+      "Career stages are written S1-S5 to keep them separate from pillar levels L1-L5. S3 does not mean L3 in every pillar.",
   },
 };
 
@@ -131,6 +135,18 @@ export function getSkillTierBands() {
  */
 export const SKILL_TIERS_INTRO =
   "Within every pillar, the focus areas are not learned all at once. They cluster into three cumulative skill tiers that follow how you grow as you deepen a pillar.";
+
+/**
+ * Caption INSIDE the tier card, below the bands. Unlike {@link SKILL_TIERS_INTRO}, which has to arrive
+ * before the picture (it names the concept the picture is of), this one only makes sense after the eye
+ * has already seen the stagger: it reads the overlap the bands draw, so it belongs under them.
+ *
+ * It exists because the overlap is the one thing the diagram states but does not explain. A reader who
+ * sees three offset bands over L1-L5 will otherwise take the horizontal position as a rule ("Advanced
+ * starts at L3"), which is exactly the column-reading this says not to do.
+ */
+export const SKILL_TIERS_CAPTION =
+  "The tiers overlap on purpose. You pick up a focus area based on where it sits within a tier, not on a fixed column. A late Core focus area can appear at the same level as an early Advanced one.";
 
 const PILLAR_ABOUT_COPY = {
   coding: {
@@ -365,21 +381,21 @@ export function sortKeyFocusPillars(pillarNames) {
 }
 
 export const JUNIOR_TO_SENIOR = {
-  title: "From Junior to Senior (L1–L3)",
+  title: "From Junior to Senior (S1–S3)",
   intro:
-    "At L1 and L2, your title is simply Software Engineer, whatever your daily domain (frontend, backend, fullstack). The domain shapes which pillars grow first, but it does not decide your career track. That choice comes at L3.",
+    "At S1 and S2, your title is simply Software Engineer, whatever your daily domain (frontend, backend, fullstack). The domain shapes which pillars grow first, but it does not decide your career track. That choice comes at S3.",
 };
 
 export const FOUNDATIONAL_PHASE = {
   title: "Building the Foundation",
   intro:
-    "Across L1–L3 the whole chart grows fairly evenly, with the Technical cluster leading. The shape stays balanced: you're widening the base, not specializing yet.",
+    "Across S1–S3 the whole chart grows fairly evenly, with the Technical cluster leading. The shape stays balanced: you're widening the base, not specializing yet.",
   technicalPillars: ["Coding", "UI/UX", "Domain Logic", "Architecture"],
   stageCharts: [
     {
       id: "junior",
       title: "Junior",
-      role: { level: "L1", title: "Junior Software Engineer" },
+      role: { level: "S1", title: "Junior Software Engineer" },
       levels: buildLevels({
         coding: 1,
         domainLogic: 1,
@@ -395,7 +411,7 @@ export const FOUNDATIONAL_PHASE = {
     {
       id: "mid",
       title: "Mid",
-      role: { level: "L2", title: "Mid Software Engineer" },
+      role: { level: "S2", title: "Mid Software Engineer" },
       levels: buildLevels({
         coding: 2,
         domainLogic: 2,
@@ -411,7 +427,7 @@ export const FOUNDATIONAL_PHASE = {
     {
       id: "senior",
       title: "Senior",
-      role: { level: "L3", title: "Senior Software Engineer" },
+      role: { level: "S3", title: "Senior Software Engineer" },
       levels: buildLevels({
         coding: 3,
         domainLogic: 3,
@@ -428,8 +444,8 @@ export const FOUNDATIONAL_PHASE = {
 };
 
 export const SENIOR_FORK = {
-  title: "The Senior Fork (L3)",
-  intro: "At L3, your career path forks into three tracks, based on where you drive the most impact, not on your tech stack.",
+  title: "The Senior Fork (S3)",
+  intro: "At S3, your career path forks into three tracks, based on where you drive the most impact, not on your tech stack.",
 };
 
 export const CAREER_TRACK_PROFILES = [
@@ -441,10 +457,10 @@ export const CAREER_TRACK_PROFILES = [
     summary:
       "Masters system health and engineering excellence: solving complex architectural problems as a technical force-multiplier, intentionally bypassing people management. Most commonly entered from backend.",
     roleLevels: [
-      { level: "L3", title: "Senior Software Engineer" },
-      { level: "L4", title: "Staff Software Engineer" },
-      { level: "L5", title: "Principal Software Engineer / Solution Architect" },
-      { level: "L6", title: "Technical Fellow" },
+      { level: "S3", title: "Senior Software Engineer" },
+      { level: "S4", title: "Staff Software Engineer" },
+      { level: "S5", title: "Principal Software Engineer / Solution Architect" },
+      { level: "S6", title: "Technical Fellow" },
     ],
     levels: buildLevels({
       coding: 4,
@@ -469,10 +485,10 @@ export const CAREER_TRACK_PROFILES = [
     summary:
       "Masters the user journey and product judgment: bridging code and product strategy to make sure the right thing gets built. Most commonly entered from frontend.",
     roleLevels: [
-      { level: "L3", title: "Senior Product Engineer" },
-      { level: "L4", title: "Staff Product Engineer" },
-      { level: "L5", title: "Principal Product Engineer / Product Architect" },
-      { level: "L6", title: "Chief Architect" },
+      { level: "S3", title: "Senior Product Engineer" },
+      { level: "S4", title: "Staff Product Engineer" },
+      { level: "S5", title: "Principal Product Engineer / Product Architect" },
+      { level: "S6", title: "Chief Architect" },
     ],
     levels: buildLevels({
       coding: 3.5,
@@ -494,11 +510,11 @@ export const CAREER_TRACK_PROFILES = [
     summary:
       "Masters team speed and alignment: transitioning from execution into management to unblock teams, streamline processes, and deliver high-value initiatives. Entered from either stack.",
     roleLevels: [
-      { level: "L3", title: "Senior Engineer (Track 1/2)" },
-      { level: "L4", title: "Team Lead" },
-      { level: "L5", title: "Engineering Manager" },
-      { level: "L6", title: "Head of Engineering / VP" },
-      { level: "L7", title: "Chief Technology Officer" },
+      { level: "S3", title: "Senior Engineer (Track 1/2)" },
+      { level: "S4", title: "Team Lead" },
+      { level: "S5", title: "Engineering Manager" },
+      { level: "S6", title: "Head of Engineering / VP" },
+      { level: "S7", title: "Chief Technology Officer" },
     ],
     levels: buildLevels({
       coding: 3.5,

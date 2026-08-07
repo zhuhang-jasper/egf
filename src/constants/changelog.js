@@ -44,6 +44,18 @@ import { THEORY_SECTIONS } from "@/utils/theory-url";
 // covering everything ("All sections: ...") still has to tag every section explicitly.
 export const CHANGELOG = [
   {
+    version: "4.2",
+    date: "Aug 7, 2026",
+    // No `pillars` tag. The rename swept the whole app, but Section I never printed an L1-L5 anywhere,
+    // so a Pillars dot would send a reader looking for a change they cannot find.
+    sections: ["seniority", "matrix", "tracks"],
+    changes: [
+      "Career Growth Paths: career ladder renamed from L1-L5 to S1-S5 (career stages), so it no longer collides with the pillar proficiency scale. A bare L now always means a pillar level. Added a notation line under the section heading spelling out the difference.",
+      "Proficiency Levels: intro rewritten to bridge pillar levels to career stages. Seniority reads from the whole chart shape, not from one axis.",
+      "Competency Matrix: added a caption under the skill tier diagram, explaining that the tiers overlap on purpose and a focus area is not fixed to a level column.",
+    ],
+  },
+  {
     version: "4.1",
     date: "Jul 25, 2026",
     sections: ["seniority", "matrix"],

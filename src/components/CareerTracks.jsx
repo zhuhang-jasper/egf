@@ -6,7 +6,7 @@ import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 import { CLUSTERS, getClusterSurfaceBg } from "@/constants";
 import { CAREER_TRACK_PROFILES, FOUNDATIONAL_PHASE, JUNIOR_TO_SENIOR, SENIOR_FORK, sortKeyFocusPillars } from "@/constants/theory-data";
-import { DOC_TEXT } from "@/styles/doc-typography";
+import { DOC_SECTION, DOC_TEXT } from "@/styles/doc-typography";
 import { cn } from "@/utils";
 
 /**
@@ -138,8 +138,8 @@ function FoundationStageBody({ chart, style, centerRole = false, animateChart = 
   );
 }
 
-/** Mobile-only (<sm): one chart at a time with a centered horizontal L1/L2/L3 badge selector above
- *  it, so the chart stays centered. Tapping a level swaps the chart. Starts on the first stage (L1).
+/** Mobile-only (<sm): one chart at a time with a centered horizontal S1/S2/S3 badge selector above
+ *  it, so the chart stays centered. Tapping a level swaps the chart. Starts on the first stage (S1).
  *  At sm and up the desktop 3-up grid is shown instead (this whole block is `sm:hidden`). */
 // How long each stage stays on screen before the carousel auto-advances to the next.
 const FOUNDATION_AUTOPLAY_MS = 1400;
@@ -294,16 +294,21 @@ export function CareerTracks({ isVisible = true }) {
 
   return (
     <div className="flex flex-col gap-3">
+      {/* `DOC_SECTION.intro`, not a `DOC_TEXT.body*` token. Both subsection lead-ins sit on the page rather
+          than inside a card, so they take the page grey under the surface rule in doc-typography.js. They
+          were `bodyMedium`, the CARD grey — identical size, but lighter than the Section IV intro
+          directly above, which made the section look like it dimmed one step past its own opening line.
+          Weight carries the distinction between the h3 and its paragraph; color does not need to. */}
       <div className="flex flex-col gap-1 pt-1">
         <h3 className={cn(DOC_TEXT.subsectionTitle, "font-bold")}>{JUNIOR_TO_SENIOR.title}</h3>
-        <p className={DOC_TEXT.bodyMedium}>{JUNIOR_TO_SENIOR.intro}</p>
+        <p className={DOC_SECTION.intro}>{JUNIOR_TO_SENIOR.intro}</p>
       </div>
 
       <FoundationalPhase isVisible={isVisible} emojiSpokes={emojiSpokes} />
 
       <div className="flex flex-col gap-1 pt-1">
         <h3 className={cn(DOC_TEXT.subsectionTitle, "font-bold")}>{SENIOR_FORK.title}</h3>
-        <p className={DOC_TEXT.bodyMedium}>{SENIOR_FORK.intro}</p>
+        <p className={DOC_SECTION.intro}>{SENIOR_FORK.intro}</p>
       </div>
 
       <div className="grid grid-cols-1 items-start gap-2 sm:grid-cols-3 sm:grid-rows-[auto_auto_auto_auto_auto]">

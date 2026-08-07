@@ -92,8 +92,8 @@ const TRACK_TONE = {
 };
 
 // Career tracks rebuilt from the canonical profiles: the characteristic chart shape,
-// the key pillars (as chips), and the L-level → role ladder. No prose. People & Delivery has a
-// 5th rung (L7 CTO); the first four (L3–L6) still align row-for-row with the other two tracks.
+// the key pillars (as chips), and the S-level → role ladder. No prose. People & Delivery has a
+// 5th rung (S7 CTO); the first four (S3–S6) still align row-for-row with the other two tracks.
 const TRACKS = CAREER_TRACK_PROFILES.map((t) => ({
   id: t.id,
   name: t.name,
@@ -102,14 +102,14 @@ const TRACKS = CAREER_TRACK_PROFILES.map((t) => ({
   keyPillars: (t.id === "product-focused" ? ["Domain Logic", "Product Sense", "UI/UX", "Communication"] : t.keyFocusPillars)
     .map((nm) => PILLAR_BY_NAME[nm])
     .filter(Boolean),
-  // Poster-only guard on the People & Delivery L3 rung, which must stay ONE line on the poster.
+  // Poster-only guard on the People & Delivery S3 rung, which must stay ONE line on the poster.
   // Theory currently supplies this exact string, so the map is a no-op today; it stays as a pin so a
   // longer theory title (e.g. "Senior Engineer (via Track 1/2)") can't silently wrap the rung here.
   roleLevels: t.roleLevels.map((r) => {
     if (t.id !== "people-delivery") {
       return r;
     }
-    if (r.level === "L3") {
+    if (r.level === "S3") {
       return { ...r, title: "Senior Engineer (Track 1/2)" };
     }
     return r;
@@ -471,8 +471,8 @@ function TrackCard({ careerTrack }) {
         ))}
       </div>
 
-      {/* L-level → role ladder — grows to fill the card and distributes its rows evenly, so the
-          ladders bottom-align across cards even when one track has an extra rung (L7 CTO). */}
+      {/* S-level → role ladder — grows to fill the card and distributes its rows evenly, so the
+          ladders bottom-align across cards even when one track has an extra rung (S7 CTO). */}
       <div className="mt-3 flex flex-1 flex-col justify-between gap-3">
         {careerTrack.roleLevels.map((r) => (
           <div key={r.level} className="flex items-center gap-2">
@@ -483,7 +483,7 @@ function TrackCard({ careerTrack }) {
               {r.level}
             </span>
             <span className="min-w-0 text-[20px] font-semibold leading-tight text-slate-700 -mr-2">
-              {r.level === "L5"
+              {r.level === "S5"
                 ? r.title.split(" / ").map((part, i) => (
                     <span key={part} className="block">
                       {i > 0 ? `/ ${part}` : part}
@@ -753,7 +753,7 @@ export default function PosterPage() {
             </div>
           ) : null}
 
-          {/* Career tracks — foundational L1–L2 phase, then three columns that split at L3.
+          {/* Career tracks — foundational S1–S2 phase, then three columns that split at S3.
 
               A PLAIN `mt-6` IN BOTH CASES. This used to be `-mt-2`, a negative margin that existed to claw
               back the ring stage's empty bottom edge; PillarRing now trims that edge itself, so subtracting
@@ -763,7 +763,7 @@ export default function PosterPage() {
             <div className="mt-6 flex flex-col gap-3">
               <SectionLabel>3 Career Tracks</SectionLabel>
 
-              {/* Foundational phase: everyone starts here, then forks at Senior (L3) */}
+              {/* Foundational phase: everyone starts here, then forks at Senior (S3) */}
               <div
                 className="mt-1 flex items-center gap-4 rounded-2xl px-4 py-2"
                 style={{ backgroundColor: `${CLUSTER_META.technical.color}47`, border: `3px solid ${CLUSTER_META.technical.color}` }}
@@ -772,7 +772,7 @@ export default function PosterPage() {
                   className="shrink-0 rounded-md px-2 py-[1px] text-center text-[18px] font-extrabold text-white"
                   style={{ backgroundColor: CLUSTER_META.technical.accent }}
                 >
-                  L1–L2
+                  S1–S2
                 </span>
                 <span className="shrink-0 text-[24px] font-extrabold" style={{ color: CLUSTER_META.technical.accent }}>
                   Software Engineer

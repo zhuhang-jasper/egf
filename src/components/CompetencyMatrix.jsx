@@ -19,6 +19,9 @@ function LevelPill({ code, term }) {
   return (
     <span className="inline-flex max-w-full items-center gap-1.5 self-start rounded-full border border-slate-300/60 bg-white py-0.5 pl-0.5 pr-2.5">
       <span className={levelBadgeClass}>{code}</span>
+      {/* Off the grey ladder on purpose: this is a label inside a pill, not prose. The badge beside it is
+          already slate-900 on white, so the term is the quiet half of a two-part chip and takes the
+          lightest grey rather than a prose rung. */}
       <span className="truncate text-[11px] font-semibold leading-snug text-slate-500 sm:text-[12px] md:text-[13px]">{term}</span>
     </span>
   );
@@ -195,6 +198,10 @@ function PillarMatrixCard({
           {order}. {pillarName}
         </h3>
         <FocusTierList focusTiers={focusTiers} />
+        {/* `bodyItalic`, the same token as the signature questions in the Section I pillar grid. Both are the
+            framework's own voice annotating a pillar, so they read at one size and weight wherever they
+            appear. Sizing this to the skill-tier caption (`metaBody`, 11/12/13) was tried and reverted — it
+            tied the note to a figure caption in another section instead of to its counterpart. */}
         {note ? <p className={cn("min-w-0", DOC_TEXT.bodyItalic, "opacity-90")}>{note}</p> : null}
       </button>
 

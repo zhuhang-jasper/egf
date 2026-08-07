@@ -10,7 +10,7 @@ export const SCHEMA_VERSION = 2;
 //
 // A bump alone raises NO dots: which sections light up comes from the matching CHANGELOG entry's
 // `sections` field, so add the entry in the same commit as the bump.
-export const FRAMEWORK_VERSION = "4.1";
+export const FRAMEWORK_VERSION = "4.2";
 // LEGACY (v1): a single version string — the framework version the user last OPENED the Theory tab
 // at. Superseded by the per-section map below, which dismisses on scroll rather than on open. Still
 // read once, to migrate an existing user's baseline so the switch doesn't light every dot at once.
