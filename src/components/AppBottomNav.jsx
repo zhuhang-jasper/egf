@@ -265,18 +265,38 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
                 // the selected tab is invisible), hover vs BAR (or hovering does nothing), and active vs HOVER
                 // (or hovering an inactive tab makes it look selected). Moving the bar forces both of these.
                 //
-                // THE ACTIVE FILL IS `slate-200`, ONE STEP OFF THE BAR — deliberately light. `slate-300` held all
-                // three gaps on full steps but read as heavy for what is a passive "you are here" marker, not a
-                // pressed button. Note the active state does NOT have to carry the signal alone: it also gets a
-                // BLACK top border and black text, so a light fill is the third of three cues rather than the
-                // only one.
+                // THE ACTIVE FILL IS `slate-200`, ONE STEP OFF THE BAR — deliberately light. `slate-300` has now been
+                // tried TWICE and rejected twice: it buys the hover a full rung to sit on, but the active tab then
+                // reads as a PRESSED BUTTON rather than a passive "you are here" marker, which is the wrong idea
+                // about what the mark is for. Do not reach for it a third time. The active state does not have to
+                // carry the signal alone — it also gets a BLACK top border and black text, so a light fill is the
+                // third of three cues.
                 //
-                // THAT LEFT NO WHOLE STEP FOR THE HOVER, hence `slate-100/70` — the bar's own colour at 70%, i.e.
-                // a PARTIAL step between the white content and the bar. It is the one place a fractional value is
-                // right here: hover is transient and pointer-only (it does not exist on touch, where this bar
-                // mostly lives), so it can be the subtlest of the three states, whereas the selected state
-                // persists and must not be ambiguous. The alpha composites over the bar, so it tracks the bar's
-                // value automatically instead of being another hand-copied constant.
+                // THAT PUTS ACTIVE ADJACENT TO THE BAR, so the hover between them is HALF A RUNG by arithmetic, not
+                // by choice. slate-100 and slate-200 are consecutive; there is no named colour in the gap, so a
+                // middleground has to be a fraction of a step. `slate-200/50` is that fraction expressed as what it
+                // actually is: THE ACTIVE FILL AT HALF STRENGTH, so hover is literally halfway to selected and stays
+                // halfway if the active value is ever retuned. An arbitrary hex (rgb(234 239 245), the same colour)
+                // would be a third constant to keep in step by hand.
+                //
+                // THE GAPS ARE GENUINELY FAINT AND THAT IS THE CEILING, NOT AN OVERSIGHT. Bar to active is only 1.125
+                // contrast to begin with, so splitting it lands ~1.055 on each side. Hover is transient and
+                // POINTER-ONLY — it does not exist on touch, where this bar mostly lives — so it is the right state
+                // to spend the subtlest signal on, while the selected state persists and must stay unambiguous. There
+                // is no arrangement that makes both bold: widening the hover means darkening active, which is the
+                // trade already refused above.
+                //
+                // WHAT MAKES THIS DIFFERENT FROM THE `slate-100/70` IT REPLACES — and the distinction is the whole
+                // point, since both are alpha values over the same bar. That one was the BAR'S OWN colour at 70%:
+                // slate-100 over slate-100 composites to slate-100 exactly, contrast 1.000, a literal no-op. It was
+                // correct when the bar was white and silently died when the bar took the tint. This one is the
+                // ACTIVE colour at 50%, which is a different colour from the background by construction — it cannot
+                // collapse into the bar without slate-200 itself becoming slate-100.
+                //
+                // SO THE RULE IS NOT "NEVER ALPHA", IT IS "NEVER ALPHA OF THE BACKGROUND YOU SIT ON". An earlier
+                // revision of this note concluded the fix was to go opaque; that overshot. Alpha of a DIFFERENT rung
+                // is what makes a half-step expressible at all here, and it is self-maintaining in the one direction
+                // that matters — it tracks the state it interpolates toward, not the surface it has to differ from.
                 //
                 // `transition-colors` covers the border, the tint and the text together, so the whole segment
                 // resolves as one change on tab switch.
@@ -295,7 +315,7 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
                 // The INACTIVE side stays on the slate ramp deliberately: it is the unselected majority and should
                 // recede into the chrome it sits on, which is exactly what sharing the bar's hue does. Black is
                 // reserved for the one segment being marked.
-                selected ? "border-black bg-slate-200 text-black" : "border-transparent text-slate-500 hover:bg-slate-100/70 hover:text-slate-700",
+                selected ? "border-black bg-slate-200 text-black" : "border-transparent text-slate-500 hover:bg-slate-200/50",
               )}
             >
               {/* THE UNSEEN DOT BADGES THE ICON, not the version text. It rode on `v4.1` as a superscript when this
@@ -326,8 +346,33 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
                     THE UNSEEN DOT'S OFFSETS ARE MEASURED AGAINST THIS BOX and were re-judged for 24px — see the
                     note below. A badge pinned to a glyph's corner does not survive the glyph changing size. */}
                 {/* `text-black` when selected, matching the border and label above rather than the `slate-900` this
-                    was — the three are one mark and have to move together. */}
-                <Icon className={cn("size-6 shrink-0", selected ? "text-black" : "text-slate-400 group-hover:text-slate-600")} aria-hidden />
+                    was — the three are one mark and have to move together.
+
+                    NO HOVER VALUE, HERE OR ON THE BUTTON — the glyph is slate-400 at rest and stays slate-400 while
+                    hovered. Hover is carried by the segment's BACKGROUND alone (see the fill note above). Neither the
+                    icon nor the label shifts colour.
+
+                    IT CARRIED `group-hover:text-slate-600` AND THAT WENT FIRST, because a rung of the slate ramp is
+                    not a fixed amount of visual weight — it trades against how much ink carries it. slate-600 was
+                    nominally LIGHTER than the label's hover slate-700, matching the one-rung offset the resting state
+                    keeps (slate-400 icon vs slate-500 label), but 24px of solid 2px strokes reads heavier than 11px
+                    semibold text, so the glyph looked DARKER than the label it was supposed to sit behind. Worse at
+                    24px than at the 20px it was set for.
+
+                    THE LABEL'S `hover:text-slate-700` THEN WENT TOO, rather than being matched. Aligning the two on
+                    one hover colour was the intermediate fix and it worked, but it left the segment doing two things
+                    at once: lifting its fill AND darkening its contents. One signal is enough for a transient,
+                    pointer-only state, and the fill is the one that reads as "this whole target is live" rather than
+                    as the text itself changing meaning.
+
+                    THE RESTING OFFSET SURVIVES ALL OF THIS. slate-400 against the label's slate-500 is unchanged: at
+                    rest the icon is decoration on an unselected tab and should sit back from its label. That was never
+                    the thing that looked wrong.
+
+                    SO THERE IS NOW EXACTLY ONE COLOUR PER STATE PER ELEMENT, and no `group-hover` anywhere in this
+                    button. Nothing here needs re-judging the next time `size-*` changes, which is what the deleted
+                    values could not promise. */}
+                <Icon className={cn("size-6 shrink-0", selected ? "text-black" : "text-slate-400")} aria-hidden />
                 {showUnseenDot ? (
                   // NO RING. The dot used to carry `ring-2` in the segment's own background colour, so the band
                   // read as a gap separating the red from the icon strokes underneath. Nothing tied that colour
