@@ -539,9 +539,44 @@ function TheoryContent({
             </Button>
           ) : null}
         </div>
-        <Button type="button" variant="outline" size="sm" shape="pill" onClick={() => setChangelogOpen(true)} className="gap-1">
+        {/* THE VERSION RIDES THE CHANGELOG BUTTON, because this is the one control that explains it: the number
+            says which version you are reading, and the thing it is printed on is what tells you what changed to
+            get here. Anywhere else it is a bare stamp the reader cannot act on.
+
+            IT DOES NOT DUPLICATE THE BOTTOM NAV'S BADGE at any distance that matters. The hero plate keeps its
+            version print-only for exactly that reason (see its note) — it sits a thumb's reach from the nav's
+            `v4.2`, so on screen it would state the number twice in one glance. This row is at the top of a
+            scrolling page while the nav is pinned to the bottom of the viewport, so the two are never read
+            together, and the nav's badge is a "which tab" label where this is the document's own version.
+
+            `aria-label` CARRIES THE WHOLE STRING, since the visible text is now two runs and a middot: a screen
+            reader would otherwise announce "Changelog · v 4.2" as punctuation between fragments.
+
+            THE MIDDOT IS A SIBLING SPAN, not part of either run, so it takes the separator's own muted grey
+            rather than inheriting the label's weight — the same treatment the footer gives its dividers.
+
+            `tabular-nums` MATCHES THE FOOTER'S app version (see HomePage). Version strings are figures, and a
+            proportional `1` in `v4.1` would set the pill's width jittering against `v4.2` on the next release. */}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          shape="pill"
+          onClick={() => setChangelogOpen(true)}
+          aria-label={`Changelog, currently on version ${FRAMEWORK_VERSION}`}
+          className="gap-1"
+        >
           <ScrollText className="size-3.5 shrink-0" aria-hidden />
           Changelog
+          <span aria-hidden className="text-slate-400">
+            ·
+          </span>
+          {/* `font-normal` against the label's inherited weight, and `text-slate-500` against its darker ink:
+              the version qualifies "Changelog" rather than sharing billing with it. This is the same demotion
+              the bottom nav's version span makes, by the same two properties. */}
+          <span aria-hidden className="font-normal tabular-nums text-slate-500">
+            v{FRAMEWORK_VERSION}
+          </span>
         </Button>
       </div>
 
