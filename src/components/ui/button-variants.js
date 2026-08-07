@@ -3,11 +3,24 @@ import { cva } from "class-variance-authority";
 export const buttonVariants = cva(
   // select-none: buttons get clicked (and double-clicked) as controls, never read as prose — without
   // it a double-click highlights the label text.
-  "inline-flex cursor-pointer select-none items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
+  // ring-offset-2: the ring is a mid grey and sits flush to the edge without it, which is legible on an
+  // `outline` button (light fill, so the ring reads against the fill as much as the page) but nearly
+  // invisible on `default`, whose near-black fill it would touch directly. The offset puts a band of
+  // page background between fill and ring, so focus is visible on every variant rather than only the
+  // pale ones. On base, not on `default`, because it is the ring that is wrong here, not that variant.
+  "inline-flex cursor-pointer select-none items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
+        // `disabled:bg-primary/50` on top of the shared `disabled:opacity-50`, because opacity alone is
+        // not enough on a near-black fill: half-strength black is still a confident mid-grey button, so
+        // the disabled Unlock read as "solid, just a lighter shade" rather than as unavailable. Fading
+        // the FILL as well drops it back toward the page, leaving the label to carry the shape.
+        //
+        // TUNED BY EYE, downward from full strength and back up again: 25 dissolved the button into the
+        // panel almost entirely, which reads as absent rather than as a control that is currently
+        // unavailable. 50 keeps it present and still clearly inert.
+        default: "bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-primary/50",
         outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",

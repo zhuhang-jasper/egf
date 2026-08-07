@@ -1,75 +1,67 @@
-import { useEffect, useRef } from "react";
-import { createPortal } from "react-dom";
+import { useRef } from "react";
 
 import { Button } from "@/components/ui/button";
+import { DESTRUCTIVE_CONFIRM_CLASS, ExclamationMark, Modal } from "@/components/ui/Modal";
 
 /**
- * Generic confirm dialog. Portaled to <body> (like {@link ChangelogModal}); closes on backdrop
- * click, the cancel button, and Escape. Locks body scroll and focuses the cancel button while open.
+ * Generic confirm dialog: a question, a confirm and a cancel. The shell (scrim, panel, Escape, scroll
+ * lock, title row) comes from {@link Modal} — this file is only the two buttons and the copy.
+ *
+ * Focus lands on CANCEL, not confirm, and that matters most for the destructive uses: a stray Enter on
+ * an unread dialog should do the harmless thing.
  *
  * Props:
  *   - open              — whether the dialog is shown.
- *   - title / message   — heading + body copy.
+ *   - title / message   — heading + body copy. `message` takes a node, so a dialog can emphasise part
+ *                         of its sentence (see SaveCollisionDialog).
+ *   - icon              — lucide component for the title row (see Modal). IGNORED when `destructive`.
  *   - confirmLabel      — confirm button text (default "Confirm").
  *   - cancelLabel       — cancel button text (default "Cancel").
- *   - destructive       — style the confirm button red (default false).
+ *   - destructive       — the whole high-risk treatment: exclamation icon + red outline confirm.
  *   - onConfirm / onCancel — handlers.
  */
-export function ConfirmDialog({ open, title, message, confirmLabel = "Confirm", cancelLabel = "Cancel", destructive = false, onConfirm, onCancel }) {
+export function ConfirmDialog({
+  open,
+  title,
+  message,
+  icon = null,
+  confirmLabel = "Confirm",
+  cancelLabel = "Cancel",
+  destructive = false,
+  onConfirm,
+  onCancel,
+}) {
   const cancelButtonRef = useRef(null);
 
-  useEffect(() => {
-    if (!open) {
-      return undefined;
-    }
-    const onKeyDown = (event) => {
-      if (event.key === "Escape") {
-        onCancel();
-      }
-    };
-    document.addEventListener("keydown", onKeyDown);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    cancelButtonRef.current?.focus();
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = prevOverflow;
-    };
-  }, [open, onCancel]);
-
-  if (!open) {
-    return null;
-  }
-
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 print:hidden"
-      // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role
-      role="alertdialog"
-      aria-modal="true"
-      aria-labelledby="confirm-dialog-title"
-      aria-describedby="confirm-dialog-desc"
-    >
-      {/* Backdrop — click to cancel. */}
-      <button type="button" aria-label={cancelLabel} onClick={onCancel} className="absolute inset-0 cursor-default bg-slate-900/50" />
-
-      {/* Panel */}
-      <div className="relative flex w-full max-w-sm flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
-        <div className="flex flex-col gap-1.5">
-          <h2 id="confirm-dialog-title" className="text-base font-bold text-slate-900">
-            {title}
-          </h2>
-          <p id="confirm-dialog-desc" className="text-sm leading-snug text-slate-600">
-            {message}
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-2">
+  return (
+    <Modal
+      open={open}
+      title={title}
+      // `destructive` CARRIES THE WHOLE TREATMENT — the exclamation icon AND the red confirm, together —
+      // so a high-risk dialog cannot be built half-styled, and every one of them looks identical.
+      //
+      // IT OVERRIDES `icon` RATHER THAN DEFERRING TO IT, which is the point: Delete all passed a bin, and
+      // a bin is a fine picture of deleting but a poor warning, so each destructive dialog drifted toward
+      // illustrating its own verb. One mark across all of them is what makes the shape recognisable as
+      // "this one is dangerous" before any of the words are read. `icon` still serves the non-destructive
+      // dialogs (GlobeX, Lock), where there is no such thing to standardise on.
+      icon={destructive ? ExclamationMark : icon}
+      // The exclamation is drawn edge to edge, unlike the lucide glyphs the safe dialogs use, so it takes
+      // the tighter disc. Rides along with `destructive` for the same reason the icon does: one flag, one
+      // locked-in look.
+      compactIcon={destructive}
+      onClose={onCancel}
+      closeLabel={cancelLabel}
+      initialFocusRef={cancelButtonRef}
+      titleId="confirm-dialog-title"
+      descriptionId="confirm-dialog-desc"
+      actions={
+        <>
           <Button
             type="button"
             variant="outline"
             shape="pill"
-            className={destructive ? "justify-center border-red-500/50 text-red-600 hover:bg-red-50 hover:text-red-700" : "justify-center"}
+            className={destructive ? DESTRUCTIVE_CONFIRM_CLASS : "justify-center"}
             onClick={onConfirm}
           >
             {confirmLabel}
@@ -77,9 +69,12 @@ export function ConfirmDialog({ open, title, message, confirmLabel = "Confirm", 
           <Button ref={cancelButtonRef} type="button" variant="outline" shape="pill" className="justify-center" onClick={onCancel}>
             {cancelLabel}
           </Button>
-        </div>
-      </div>
-    </div>,
-    document.body,
+        </>
+      }
+    >
+      <p id="confirm-dialog-desc" className="text-sm leading-snug text-slate-600">
+        {message}
+      </p>
+    </Modal>
   );
 }

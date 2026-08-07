@@ -272,12 +272,15 @@ function InstallPrompt() {
            only has to be findable, whereas this appears in response to a moment and is the whole point of the
            card it sits on. Same offer, two jobs, two weights — do not "unify" them.
 
-           Hover lifts to a faint slate, since there is nowhere brighter to go from white. */
+           Hover lifts to a faint slate, since there is nowhere brighter to go from white.
+
+           `ring-offset-slate-900` matches the card behind it. The base offset colour is the page background
+           (white), which on this dark card would draw a white band around the focus ring. */
         <Button
           type="button"
           variant="default"
           shape="pill"
-          className="mt-1 flex-none bg-white px-5 text-slate-900 hover:bg-slate-100"
+          className="mt-1 flex-none bg-white px-5 text-slate-900 ring-offset-slate-900 hover:bg-slate-100"
           onClick={onInstall}
         >
           Install
