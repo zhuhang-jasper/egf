@@ -329,26 +329,16 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
                     was — the three are one mark and have to move together. */}
                 <Icon className={cn("size-6 shrink-0", selected ? "text-black" : "text-slate-400 group-hover:text-slate-600")} aria-hidden />
                 {showUnseenDot ? (
-                  // `ring-2` separates the dot from the glyph it overlaps — without it the red sits directly on the
-                  // icon's strokes and the two read as one shape.
+                  // NO RING. The dot used to carry `ring-2` in the segment's own background colour, so the band
+                  // read as a gap separating the red from the icon strokes underneath. Nothing tied that colour
+                  // to the background it was copied from, and every past value (`ring-white`, then `ring-slate-50`,
+                  // then `ring-slate-200`) was correct for exactly one bar colour and showed as a halo after the
+                  // next change. The dot sits at the glyph's top-right corner, clear of its strokes, so it reads
+                  // on its own without one.
                   //
-                  // THE RING COLOUR TRACKS THE SEGMENT'S BACKGROUND so it reads as a GAP rather than an outline: the
-                  // active tab is tinted `bg-slate-200`, the others are the bar's own `bg-slate-100`, and a fixed
-                  // ring value would show as a visible halo on whichever one it did not match.
-                  //
-                  // BOTH VALUES ARE HAND-COPIED FROM THE TWO BACKGROUNDS ABOVE, and nothing enforces that — a
-                  // ring cannot be `currentColor` or inherit a background, so if those two change and these do
-                  // not, the mismatch shows up as a halo rather than as an error. Every past value here was
-                  // correct only for one bar colour: `ring-white` while the bar was white, then `ring-slate-50`,
-                  // then `ring-slate-200` when the active fill was `slate-300`. Check this line whenever either
-                  // background moves.
-                  //
-                  // The INACTIVE ring matches the bar rather than the hover fill: the dot is on the icon, and
-                  // hovering a tab that has the dot is a transient state not worth a third value.
-                  <UnseenDot
-                    label="New framework updates"
-                    className={cn("absolute -top-0.5 -right-1 size-2 ring-2", selected ? "ring-slate-200" : "ring-slate-100")}
-                  />
+                  // If a ring comes back it needs BOTH a width and a colour: `ring-2` alone falls through to
+                  // Tailwind's `--color-ring` (a mid grey, see src/index.css) and draws exactly the halo above.
+                  <UnseenDot label="New framework updates" className={cn("absolute top-0 -right-2 size-2")} />
                 ) : null}
               </span>
               {/* `items-baseline`, NOT `items-start`, which is what this was. Top-aligning two inline spans lines
