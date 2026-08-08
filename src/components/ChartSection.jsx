@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/Tooltip";
 
 import { useCompetencyChart } from "@/hooks/useCompetencyChart";
+import { useMiddleEllipsis } from "@/hooks/useMiddleEllipsis";
 
 import { useAppStore } from "@/store/useAppStore";
 
@@ -214,6 +215,8 @@ export function ChartSection({ isVisible }) {
   const exportRef = useRef(null);
   const canvasRef = useRef(null);
   const frameRef = useRef(null);
+  // The invisible span inside the title that `useMiddleEllipsis` writes candidate strings into to measure them.
+  const titleMeasureRef = useRef(null);
   const showToast = useAppStore((s) => s.showToast);
 
   const title = useAppStore((s) => s.title);
@@ -239,6 +242,11 @@ export function ChartSection({ isVisible }) {
   const showTitleRow = showVisibleTitle || showBadge;
   const layoutWidth = chartWidth || FE_UI.page.minWidthPx;
   const titleSizePx = getChartTitleSizePx(layoutWidth);
+  // MIDDLE-ELLIPSIS THE TITLE so a long profile name stays on one line with both ends readable, rather than
+  // wrapping (which grew the row and pushed the chart down) or being end-truncated by `truncate` (which eats
+  // the part that usually tells two profiles apart). `isVisible` is passed through because the tool tab is
+  // `display: none` when Theory is open and nothing can be measured there — see the hook.
+  const fittedTitle = useMiddleEllipsis(titleMeasureRef, displayTitle, isVisible);
   // THE ROW'S HEIGHT IS A FUNCTION OF CHART WIDTH ALONE — deliberately NOT of what is currently in it.
   //
   // It briefly keyed off `showVisibleTitle`, falling back to the badge's intrinsic height when the title was
@@ -393,10 +401,30 @@ export function ChartSection({ isVisible }) {
 
                    NO `fontSize` OF ITS OWN: it inherits the row's, which is set to exactly this value. That is
                    what makes the row's `em` floor and this element's leading resolve against the same number
-                   by construction rather than by both being handed it. */
-                className={`m-0 min-w-0 flex-1 text-left leading-tight tracking-tight only:ml-2 ${titleIsBlank ? "text-slate-900/30 font-regular" : "text-slate-900 font-extrabold"}`}
+                   by construction rather than by both being handed it.
+
+                   `truncate` IS NOT USED HERE and would be wrong: it ellipsises the END, and a profile name's
+                   end is the part most likely to distinguish it ("… Engineer L4" vs "… L5"). The middle is cut
+                   instead — see `useMiddleEllipsis` — which needs the text on ONE line, hence `whitespace-nowrap`
+                   in place of the wrapping this used to do.
+
+                   `title` CARRIES THE FULL NAME so the untruncated string is still reachable: a native tooltip
+                   on hover, and the accessible name via `aria-label`, since what is rendered may be elided. */
+                className={`relative m-0 min-w-0 flex-1 overflow-hidden text-left leading-tight tracking-tight whitespace-nowrap only:ml-2 ${titleIsBlank ? "text-slate-900/30 font-regular" : "text-slate-900 font-extrabold"}`}
+                title={titleIsBlank ? undefined : displayTitle}
+                aria-label={titleIsBlank ? undefined : displayTitle}
               >
-                {displayTitle}
+                {/* THE MEASURING ELEMENT, and it is deliberately EMPTY as far as React is concerned. The fitting
+                    loop writes candidate strings into it and reads `scrollWidth` back; React renders nothing
+                    into it, so the two never fight over its contents (see the hook's note on `ref`).
+
+                    It is `absolute` so it takes no space and cannot affect the row — but `left-0 right-0` keeps
+                    it exactly as wide as this <h2>, which is the width the visible text is actually fitted
+                    against. It inherits font, weight and tracking from the heading, so what it measures is the
+                    same type that will be painted. `invisible` rather than `hidden`: it must still be laid out
+                    to have a `scrollWidth` at all. */}
+                <span ref={titleMeasureRef} aria-hidden className="pointer-events-none invisible absolute left-0 right-0 whitespace-nowrap" />
+                {fittedTitle}
               </h2>
             ) : (
               <h2 id="competency-chart-heading" className="sr-only">
