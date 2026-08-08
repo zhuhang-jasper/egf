@@ -104,7 +104,6 @@ export function getChartTitleSizePx(chartWidthPx) {
   return getChartPointLabelSizeExactPx(chartWidthPx) * labelMultiplier;
 }
 
-
 /** Initial frame height before label bounds are measured from the live chart. */
 export function getChartFrameEstimatedHeightPx(chartWidthPx) {
   const ratio = FE_UI.chartFrame.heightWidthRatio;

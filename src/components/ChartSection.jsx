@@ -366,10 +366,7 @@ export function ChartSection({ isVisible }) {
             different leading than the title's. Nothing else in the row renders bare text — the badge sets
             `leading-none` itself and the title carries `leading-tight`. */}
         {showTitleRow ? (
-          <div
-            className="relative z-[1] mb-3 flex w-full min-w-0 items-center gap-3"
-            style={{ fontSize: titleSizePx, minHeight: titleRowMinHeight }}
-          >
+          <div className="relative z-[1] mb-3 flex w-full min-w-0 items-center gap-3" style={{ fontSize: titleSizePx, minHeight: titleRowMinHeight }}>
             {/* `matchHeightPx` IS WHAT MAKES THE BADGE FOLLOW THE TITLE rather than define the row, and it is
                 UNCONDITIONAL — it does not check whether the title is currently shown. It was conditional, and
                 that meant hiding the title also resized the pill beside it, so one toggle changed two things.

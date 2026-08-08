@@ -48,8 +48,7 @@ export const THEORY_SECTION_COPY = {
   },
   [THEORY_SECTIONS.tracks]: {
     heading: "IV. Where does this take your career?",
-    intro:
-      "Career stages are written S1-S5 to keep them separate from pillar levels L1-L5. S3 does not mean L3 in every pillar.",
+    intro: "Career stages are written S1-S5 to keep them separate from pillar levels L1-L5. S3 does not mean L3 in every pillar.",
   },
 };
 

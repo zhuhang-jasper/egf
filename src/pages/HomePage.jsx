@@ -83,16 +83,7 @@ const VALID_TABS = IS_ADMIN ? ["tool", "theory", "admin"] : ["tool", "theory"];
  * entrance does not run when a panel first mounts — the app would otherwise slide in on every cold load, and
  * the prefit pass (which lays the inactive panel out for real) would animate an invisible panel for nothing.
  */
-function TabPanel({
-  label,
-  active,
-  prefit = false,
-  leaving = false,
-  animating = false,
-  direction = "left",
-  widthStyle,
-  children,
-}) {
+function TabPanel({ label, active, prefit = false, leaving = false, animating = false, direction = "left", widthStyle, children }) {
   // THE LEAVING PANEL IS INVISIBLE AND ZERO-HEIGHT, WHICH IS WHY THERE IS SO LITTLE MACHINERY HERE. An earlier
   // version faded it out, and to do that correctly it had to be `fixed` at a viewport offset measured in a
   // layout effect, with a `maxHeight` clipping it to the visible region, so that the incoming panel did not

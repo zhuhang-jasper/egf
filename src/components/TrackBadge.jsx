@@ -73,9 +73,7 @@ export function TrackBadge({ variant, className, size = "sm", hidden = false, ch
       data-chart-export="track-badge"
       className={cn(
         "inline-flex shrink-0 items-center",
-        isLarge
-          ? "justify-center font-bold leading-none"
-          : "justify-center rounded px-[0.85em] py-[2px] text-[10px] font-semibold leading-[1.4]",
+        isLarge ? "justify-center font-bold leading-none" : "justify-center rounded px-[0.85em] py-[2px] text-[10px] font-semibold leading-[1.4]",
         !isLarge && "font-medium",
         ui.pillClass,
         hidden && "invisible pointer-events-none",
