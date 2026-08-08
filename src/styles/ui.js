@@ -24,7 +24,70 @@ export const FE_UI = {
     minChartHeightPx: 120,
   },
   chart: {
-    title: { labelMultiplier: 1.4, minPx: 14, maxPx: 22 },
+    /**
+     * Chart title size, as a multiple of the radar's axis-label size (see getChartTitleSizePx). Expressed
+     * that way ON PURPOSE: the title sits directly above the canvas and beside the track badge, both of which
+     * scale with chart width, so a fixed px size or a Tailwind `text-*` step would drift out of proportion at
+     * every width but the one it was picked at.
+     *
+     * THE THEORY TAB'S FRAMEWORK TITLE RUNS OFF THIS SAME NUMBER (see TheoryContent), so the two are equal at
+     * every width by construction rather than by agreement. Theory used to carry its own Tailwind `text-*`
+     * ladder instead; that was dropped because the tool's breakpoints are not Tailwind's — the tool panel caps
+     * at 550, so the chart reaches full size around a 550px viewport while `sm:` does not fire until 640,
+     * which stepped the title for a reason unrelated to the chart it sits above.
+     *
+     * THE SIZE IS FRACTIONAL — getChartTitleSizePx does not round, and reads the exact label curve rather
+     * than the rounded label the badge and legend take (see chart/fonts.js). So this multiplier scales a
+     * continuous ramp, and the title tracks the chart at every width instead of holding a size across a band
+     * and then snapping when the rounded label ticks over.
+     *
+     * The floor is still a genuine plateau, but it comes from the LABEL's own `pointLabelMinPx` clamp rather
+     * than from rounding: below ~415px of chart width the label is pinned at 12, so the title is flat at
+     * `12 × 1.4 = 16.8` across every phone width. Above that it rises continuously to `15.23 × 1.4 ≈ 21.3` at
+     * the 526px chart.
+     *
+     * THERE IS NO `minPx`, ON PURPOSE. The floor is structural: the label is already clamped to
+     * `chartFonts.pointLabelMinPx` (12) before the multiplier, so the title cannot go below `12 × 1.4 = 16.8`.
+     * An explicit `minPx: 14` used to sit here and was dead — under the product, so nothing could ever reach
+     * it. Retune the floor via the multiplier (or that label clamp), not by reintroducing a second one.
+     *
+     * SHARING getChartPointLabelSizePx IS THE POINT, not an implementation detail. The track badge and the
+     * cluster legend take their size from the same call at `× 0.9` (see getChartSecondaryLabelSizePx), so the
+     * title, the badge and the legend are three fixed ratios of one number and cannot drift apart as the chart
+     * resizes. Anything that wants to move with the chart belongs on this function, not on a private ramp.
+     *
+     * THERE IS NO `maxPx` EITHER, AND ADDING ONE BACK WOULD DO NOTHING. It carried `maxPx: 22`, which was
+     * kept for a while on the argument that it guarded the size shared with the theory framework title. That
+     * argument was wrong: `page.chartMaxWidthPx` holds the canvas at 526, so the title tops out at ~21.3 and
+     * ANY ceiling above that is unreachable. Raising it to 30 produced identical output at every width.
+     *
+     * THE REAL CEILING IS THE CANVAS WIDTH. Both titles are a fixed multiple of a label that is a fixed
+     * multiple of the chart, and the chart stops growing at 526 — so that is what bounds the type. To change
+     * the largest the titles get, move `page.chartMaxWidthPx` or `labelMultiplier`. A font clamp cannot.
+     *
+     * LEADING IS NOT CONFIGURED HERE AT ALL — both titles take Tailwind's `leading-tight` and nothing in JS
+     * knows or needs to know what that resolves to. There was a `lineHeightMultiplier: 1.25` here mirroring
+     * the class so the title ROW could reserve the right height; it is gone, because a ratio duplicated in
+     * two languages is a ratio that eventually disagrees. The row now floors itself at `1.25em` against its
+     * own font size (see `titleRowMinHeight` in ChartSection), which is the same computation the class does,
+     * done once, by the browser.
+     *
+     * That `em` floor is also what holds the row's height when the TITLE IS HIDDEN and only the track badge
+     * is left: the font size sits on the ROW, not on the <h2>, so it is present whether or not the heading
+     * renders. The row is the same height in all four show/hide combinations.
+     *
+     * THE ROW IS SIZED BY THE TITLE AND THE BADGE FOLLOWS IT (see TrackBadge's `matchHeightPx`). The
+     * dependency used to run the other way — the row took the badge's intrinsic height and the title's
+     * `lineHeight` was pinned to it — which was backwards: the title is the row's primary content and the
+     * badge is chrome, and it meant a wrapped title (the name is `flex-1` and has no truncation) took its
+     * leading from a pill's padding, which at narrow widths came out as exactly `leading-none`.
+     *
+     * WRAPPING IS RARE BUT NOT IMPOSSIBLE. MAX_PROFILE_NAME_LENGTH is set to 28 precisely so an ordinary name
+     * stays on one line at the app's 350px floor — but that is a character budget, and capitals are far wider
+     * than lowercase, so an all-caps name at the limit can still take two lines. This leading has to be a real
+     * typographic value for those, not a pill's height.
+     */
+    title: { labelMultiplier: 1.4 },
     layoutPaddingHorizontal: { minPx: 2, maxPx: 5 },
     radarCenterFix: true,
     /**

@@ -74,9 +74,24 @@ export const TRACK_BADGE_UI = {
   },
 };
 
-/** Max characters allowed in a profile name. Enforced at the input and when parsing to canonical
- * state, so typed, imported, and any other write path all stay bounded. */
-export const MAX_PROFILE_NAME_LENGTH = 60;
+/**
+ * Max characters allowed in a profile name. Enforced at the input and when parsing to canonical state, so
+ * typed, imported, and any other write path all stay bounded.
+ *
+ * SET TO KEEP THE CHART TITLE ON ONE LINE. The name is rendered as the chart's title beside the track badge
+ * (see ChartSection), where it is `flex-1` with no truncation and therefore wraps. The binding constraint is
+ * the app's 350px width floor: the title is 19px there with roughly 282px of room next to the badge, which
+ * fits about 29 characters of ordinary mixed-case text. 28 sits just inside that, and every wider viewport
+ * has more room, so if it fits at the floor it fits everywhere.
+ *
+ * THIS IS NOT AN ABSOLUTE GUARANTEE, because a character budget cannot be one — glyph widths vary by roughly
+ * 2x between lowercase and capitals, so 28 characters of "WWWW…" still wraps where 28 of ordinary text does
+ * not. Sizing for that worst case would mean a limit near 16, which is too short to name a profile. If a hard
+ * guarantee is ever needed, it has to come from CSS on the title (`truncate`), not from this number.
+ *
+ * Was 60, which wrapped to two lines on desktop and three at the floor.
+ */
+export const MAX_PROFILE_NAME_LENGTH = 28;
 
 /** Pillar ids persisted in profiles (missing keys default on load). */
 export const CANONICAL_PILLAR_IDS = [...new Set(PILLAR_ORDER)];

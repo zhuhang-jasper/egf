@@ -239,7 +239,25 @@ export function ChartSection({ isVisible }) {
   const showTitleRow = showVisibleTitle || showBadge;
   const layoutWidth = chartWidth || FE_UI.page.minWidthPx;
   const titleSizePx = getChartTitleSizePx(layoutWidth);
-  const titleRowHeightPx = getTrackBadgeMdHeightPx(layoutWidth);
+  // THE ROW'S HEIGHT IS A FUNCTION OF CHART WIDTH ALONE — deliberately NOT of what is currently in it.
+  //
+  // It briefly keyed off `showVisibleTitle`, falling back to the badge's intrinsic height when the title was
+  // hidden. That made the row (and so everything below it, the chart included) jump every time the title was
+  // toggled in the display menu, which is a visible shift for a control that is only meant to hide one label.
+  // Both toggles live in the same menu and either can be off, so the row has to be the same height in all four
+  // combinations or one of them moves the chart.
+  //
+  // `max()` OF THE TWO CANDIDATES, IN CSS RATHER THAN JS: the title's line box, and the badge's own intrinsic
+  // height. Taking the larger means the row always fits whichever is shown and stays put when either is
+  // hidden. The title is the taller of the two at every width today, so this resolves to the line box in
+  // practice — the badge term is what keeps it honest if that ever stops being true.
+  //
+  // The line-box term is `1.25em` AGAINST THE ROW'S OWN `fontSize`, which is set to the title's size below.
+  // `leading-tight` IS 1.25 — a ratio, always relative to font size — so expressing the row's floor in `em`
+  // lets the browser resolve exactly what the class resolves, from the same font size, in the same layout
+  // pass. That removes the JS mirror of the ratio entirely: nothing in JS has to know what `leading-tight`
+  // means, and the two cannot drift when the class changes.
+  const titleRowMinHeight = `max(1.25em, ${getTrackBadgeMdHeightPx(layoutWidth)}px)`;
 
   useLayoutEffect(() => {
     if (isVisible) {
@@ -330,14 +348,53 @@ export function ChartSection({ isVisible }) {
       </div>
 
       <div ref={exportRef} className="relative flex w-full min-w-0 flex-col self-stretch">
+        {/* `fontSize` ON THE ROW IS WHAT THE `1.25em` FLOOR RESOLVES AGAINST — see `titleRowMinHeight`. The row
+            carries the title's size so the browser can compute the same line box `leading-tight` will produce,
+            without JS ever encoding the 1.25. The <h2> inside inherits it rather than setting its own, so there
+            is exactly one place the size is applied.
+
+            The old `leading-none` is gone: it existed to stop the row's own line box padding the height out
+            while the height came from JS, and it would now fight the `em` floor by resolving against a
+            different leading than the title's. Nothing else in the row renders bare text — the badge sets
+            `leading-none` itself and the title carries `leading-tight`. */}
         {showTitleRow ? (
-          <div className="relative z-[1] flex w-full min-w-0 items-center gap-3 leading-none mb-2" style={{ minHeight: titleRowHeightPx }}>
-            {showBadge ? <TrackBadge variant={attachedBadge} size="md" className="shrink-0" chartWidth={chartWidth} /> : null}
+          <div
+            className="relative z-[1] mb-3 flex w-full min-w-0 items-center gap-3"
+            style={{ fontSize: titleSizePx, minHeight: titleRowMinHeight }}
+          >
+            {/* `matchHeightPx` IS WHAT MAKES THE BADGE FOLLOW THE TITLE rather than define the row, and it is
+                UNCONDITIONAL — it does not check whether the title is currently shown. It was conditional, and
+                that meant hiding the title also resized the pill beside it, so one toggle changed two things.
+                The pill is now the same size in all four show/hide combinations, exactly like the row it sits
+                in (see `titleRowHeightPx`).
+
+                IT MATCHES THE TITLE'S FONT SIZE, NOT THE ROW HEIGHT. Matching the row would stretch the pill
+                across the title's full leading, which at narrow widths is a 22px pill around an 11px label —
+                visibly chunkier for no reason. The em box is the better target: the pill ends up the height of
+                the title's letters, which is what the eye actually aligns it against, and it keeps the pill's
+                height-to-label ratio close to where it already was (1.6x at the 350px floor). */}
+            {showBadge ? (
+              <TrackBadge variant={attachedBadge} size="md" className="shrink-0" chartWidth={chartWidth} matchHeightPx={titleSizePx} />
+            ) : null}
             {showVisibleTitle ? (
               <h2
                 id="competency-chart-heading"
-                className={`m-0 min-w-0 flex-1 text-left only:ml-2 ${titleIsBlank ? "text-black/30 font-regular" : "text-black font-bold"}`}
-                style={{ fontSize: titleSizePx, lineHeight: `${titleRowHeightPx}px` }}
+                /* IDENTICAL TO THE THEORY TAB'S FRAMEWORK TITLE IN EVERY RESPECT BUT ALIGNMENT — same size
+                   (both call getChartTitleSizePx with the same chart width), same `leading-tight`, weight,
+                   tracking and color. Only `text-left` differs, because this one shares a row with the track
+                   badge while theory's is centred over its radar. Keep the two in step; they are meant to read
+                   as one piece of typography appearing in two places.
+
+                   `leading-tight` RATHER THAN AN INLINE `lineHeight`, which is what this used to have (at a
+                   slightly different 1.2). Two elements carrying the same utility class are the same by
+                   construction; two elements computing a number in separate files are the same only until one
+                   is edited — and the row's own floor is now `1.25em`, so nothing in JS has to know what this
+                   class resolves to (see `titleRowMinHeight`).
+
+                   NO `fontSize` OF ITS OWN: it inherits the row's, which is set to exactly this value. That is
+                   what makes the row's `em` floor and this element's leading resolve against the same number
+                   by construction rather than by both being handed it. */
+                className={`m-0 min-w-0 flex-1 text-left leading-tight tracking-tight only:ml-2 ${titleIsBlank ? "text-slate-900/30 font-regular" : "text-slate-900 font-extrabold"}`}
               >
                 {displayTitle}
               </h2>

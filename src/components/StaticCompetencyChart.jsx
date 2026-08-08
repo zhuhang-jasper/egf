@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 import { useStaticCompetencyChart } from "@/hooks/useStaticCompetencyChart";
 
@@ -53,6 +53,14 @@ export function StaticCompetencyChart({
   // with them. Takes precedence over plainLabels. The caller owns the decision — charts that share a
   // layout should share one source for it so they all swap at once (see CareerTracks).
   emojiOnlyLabels = false,
+  // Called with the frame width this chart measured, whenever it changes. For chrome OUTSIDE the chart that
+  // has to scale with it — the theory tab's framework title sits above the hero radar and sizes itself from
+  // this, the same way the tool tab's chart title sizes itself from useCompetencyChart's `frameWidth`.
+  //
+  // It republishes the fit hook's existing measurement rather than exposing a ref to observe: the frame is
+  // already under one ResizeObserver driving the fit, and a caller measuring the same box again would be a
+  // second observer and a second layout read per frame for a number this one already has.
+  onFrameWidthChange,
   "aria-label": ariaLabel,
 }) {
   const canvasRef = useRef(null);
@@ -95,7 +103,16 @@ export function StaticCompetencyChart({
     ],
   );
 
-  useStaticCompetencyChart(canvasRef, frameRef, chartState);
+  const { frameWidth } = useStaticCompetencyChart(canvasRef, frameRef, chartState);
+
+  // Effect rather than a call during render: this notifies a PARENT, and setting parent state while this
+  // component is rendering is the "cannot update a component while rendering a different component" warning.
+  // `frameWidth` only changes when the box is actually resized, so this settles immediately at each size.
+  useEffect(() => {
+    if (frameWidth) {
+      onFrameWidthChange?.(frameWidth);
+    }
+  }, [frameWidth, onFrameWidthChange]);
 
   return (
     <div

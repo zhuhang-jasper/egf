@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Printer, ScrollText, Share2 } from "lucide-react";
 
@@ -15,6 +15,7 @@ import { UnseenDot } from "@/components/UnseenDot";
 import { useFitsOneLine } from "@/hooks/useFitsOneLine";
 import { getSectionSentinelId, useSectionSeenObserver } from "@/hooks/useSectionSeenObserver";
 
+import { getChartTitleSizePx } from "@/chart/fonts";
 import { FE_UI, FRAMEWORK_VERSION, IS_ADMIN, SITE_COPY } from "@/constants";
 import {
   COMPETENCY_MATRIX,
@@ -348,6 +349,15 @@ function TheoryContent({
   // receive a hardcoded `false`.
   const [changelogOpen, setChangelogOpen] = useState(false);
 
+  // The hero radar's measured frame width, republished by StaticCompetencyChart's `onFrameWidthChange`. It
+  // sizes the framework title above it (see the note on that element), so the theory tab's title and the tool
+  // tab's chart title run off the same function and the same number.
+  //
+  // `useCallback` because it is a prop on the chart and one of that effect's dependencies — an inline arrow
+  // would be a new function every render and would refire the notify effect on every render of this tab.
+  const [heroChartWidth, setHeroChartWidth] = useState(0);
+  const handleHeroFrameWidth = useCallback((width) => setHeroChartWidth(width), []);
+
   // In-app jump from a tool-form pillar's help icon. Expanding the pillar makes CompetencyMatrix
   // scroll to it; persist so the choice survives like a normal expand. Keyed on `seq` so clicking
   // the same pillar again re-runs (a no-op state change wouldn't re-trigger the matrix scroll).
@@ -623,7 +633,26 @@ function TheoryContent({
               The version is print-only. On screen it is already in the bottom nav's Theory tab. */}
           <p
             aria-hidden
-            className="text-balance mx-auto flex w-full flex-col items-center text-center text-xl sm:text-2xl font-extrabold leading-tight tracking-tight text-slate-900 print:mb-[5vh]"
+            /* SIZED FROM THE HERO RADAR'S MEASURED WIDTH, exactly like the tool tab's chart title — same
+               function (getChartTitleSizePx), same input, so the two titles are the same size at every
+               viewport rather than merely agreeing at their endpoints.
+
+               THIS IS A TITLE ABOVE A CHART, which is what makes the chart the right thing to scale against.
+               It used to run on the document's own breakpoint ladder (`text-[18px] sm:text-[20px]
+               md:text-[22px]`, the DOC_TEXT idiom), and that ladder is right for the prose BELOW the hero —
+               but this title's job is to head the radar, and the radar's size does not follow those
+               breakpoints. Between 550 and 768 the hero was already at its full 526px while the title was
+               still two rungs down, because the theory panel is 900 wide and reaches the radar's cap long
+               before `md` fires.
+
+               The two charts are the same width by construction — the tool panel caps at 550 (526 inside its
+               gutters) and the hero caps its own wrapper at FE_UI.page.chartMaxWidthPx to match, see the note
+               there — so one width feeds both titles and they cannot drift.
+
+               `heroChartWidth` starts at 0 and the fallback keeps the first paint at the mobile size, which is
+               the smaller of the two ends; the real measurement lands on the same frame the radar fits. */
+            className="text-balance mx-auto flex w-full flex-col items-center font-extrabold leading-tight tracking-tight text-slate-900 text-center print:mb-[5vh]"
+            style={{ fontSize: getChartTitleSizePx(heroChartWidth || FE_UI.page.minWidthPx) }}
           >
             {/* THE VERSION IS PRINT-ONLY. On screen the bottom nav's Theory tab already carries a `v4.1`
                 badge, so stating it again under the title said the same number twice within a thumb's reach.
@@ -631,8 +660,10 @@ function TheoryContent({
                 is — so paper gets it and the screen does not.
 
                 Two sibling spans, which the plate's `flex-col` sets as two rows: that is the layout paper
-                wants, and on screen the second one is simply not rendered. `text-xl` holds it a step under the
-                title's larger print size rather than inheriting it. */}
+                wants, and on screen the second one is simply not rendered. `text-xl` (20px) holds it a step
+                under the title rather than inheriting it — the title prints at whatever its last SCREEN
+                measurement gave, which is 22px from any desktop, the same staleness the hero radar itself
+                already has on paper (see the note on its wrapper below). */}
             <span>{SITE_COPY.title}</span>
             <span className="hidden text-xl print:block">v{FRAMEWORK_VERSION}</span>
           </p>
@@ -652,6 +683,7 @@ function TheoryContent({
               hidePolygon
               showLevelTicks
               fullWidth
+              onFrameWidthChange={handleHeroFrameWidth}
               aria-label="Empty 9-pillar competency radar"
             />
           </div>
