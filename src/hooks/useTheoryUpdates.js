@@ -9,6 +9,7 @@ import {
   THEORY_SEEN_SECTIONS_KEY,
   THEORY_SEEN_VERSION_KEY,
 } from "@/constants";
+import { track } from "@/utils/analytics";
 
 /**
  * Drives the Theory tab's unseen-updates indicators — both the per-section dots on the section
@@ -63,6 +64,10 @@ export function useTheoryUpdates() {
       }
       const next = { ...prev, [section]: FRAMEWORK_VERSION };
       writeSeenSections(next);
+      // Inside the bail-guarded branch, so this fires once per section per framework version — the same
+      // latch that stops the dot coming back. A new CHANGELOG entry re-arms both, which is the point:
+      // it reports whether anyone read the section's NEW content, not just that they scrolled past once.
+      track("theory_section_seen", { section, framework_version: FRAMEWORK_VERSION });
       return next;
     });
   }, []);

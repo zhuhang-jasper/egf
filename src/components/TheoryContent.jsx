@@ -519,7 +519,10 @@ function TheoryContent({
               variant="outline"
               size="sm"
               shape="pill"
-              onClick={() => window.print()}
+              onClick={() => {
+                track("theory_printed");
+                window.print();
+              }}
               aria-label="Print the framework"
               className={cn(TOOLBAR_SURFACE, "group relative gap-1")}
             >

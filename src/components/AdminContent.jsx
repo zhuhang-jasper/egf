@@ -1,5 +1,6 @@
 import { Image, Share2 } from "lucide-react";
 
+import { track } from "@/utils/analytics";
 import { hrefForRoute } from "@/utils/route";
 
 /**
@@ -92,6 +93,10 @@ export function AdminContent() {
           <a
             key={route}
             href={hrefForRoute(route)}
+            /* These are full page loads, so GA logs a page_view for the destination either way. This
+               records the ENTRY POINT, which the page_view can't: /poster and /social are also reachable
+               by typing the URL, and only the click says the cards are how people get there. */
+            onClick={() => track("admin_card_clicked", { route })}
             /* `select-none` — these are navigation targets, not prose. A card is a big tap area, so a slightly
                dragged click (or a long-press on touch) otherwise selects the label and description instead of
                following the link, and leaves the text highlighted afterwards. The same reason the bottom nav's

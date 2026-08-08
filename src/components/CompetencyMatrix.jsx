@@ -9,6 +9,7 @@ import { getClusterSurfaceBg, getClusterSurfaceHoverBg } from "@/constants";
 import { COMPETENCY_MATRIX, SENIORITY_LEVEL_DEFINITIONS, SKILL_TIERS } from "@/constants/theory-data";
 import { DOC_TEXT, WHATS_NEW_HIGHLIGHT_CLASS } from "@/styles/doc-typography";
 import { cn } from "@/utils";
+import { track } from "@/utils/analytics";
 import { glideElementBelowStickyHeader, holdElementInPlace, scrollBelowStickyHeaderUntilSettled } from "@/utils/scroll";
 import { getPillarCardElementId, persistExpandedPillar, THEORY_SECTIONS } from "@/utils/theory-url";
 
@@ -378,6 +379,9 @@ function CompetencyMatrix({ expandedPillar, onExpandedPillarChange, scrollNav, s
     if (collapsing) {
       holdCardWhileCollapsing(pillarId);
     } else {
+      // Expand only. A collapse is how you get back to the list rather than an interest signal, so
+      // tracking both would double every read and bury the one event that means "opened this pillar".
+      track("matrix_pillar_expanded", { pillar: pillarId });
       // Hand off to the layout effect above, which starts the glide once this state change has committed
       // and the card can be measured against the layout it is animating toward.
       pendingExpandRef.current = pillarId;

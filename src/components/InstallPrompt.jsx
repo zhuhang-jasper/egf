@@ -107,11 +107,19 @@ function InstallPrompt() {
     if (canInstall) {
       autoOpenedRef.current = true;
       openBanner();
-      track("install_prompt_shown", { method: "native", source: "banner" });
+      track("install_banner_shown", { method: "native", source: "banner" });
     } else if (iosHint) {
       autoOpenedRef.current = true;
       openBanner();
-      track("install_prompt_shown", { method: "ios", source: "banner" });
+      // A DIFFERENT EVENT NAME, NOT `install_banner_shown` WITH A `method`, because on iOS this banner is
+      // not an offer — it is documentation. There is no Install button to accept (see the `canInstall`
+      // guard on it), so nothing here can convert and no accept/decline pair exists to compare.
+      //
+      // Naming it apart is what stops the two being summed by accident: `install_banner_shown` now means
+      // "an install offer with a working accept path was presented", which is true on Android and desktop
+      // and false here. A shared name separated only by a param relies on every future reader remembering
+      // to segment, and one unsegmented chart would quietly report iOS as a wall of refusals.
+      track("install_instructions_shown", { source: "banner" });
     }
   }, [installed, canInstall, iosHint, openBanner]);
 
@@ -123,10 +131,36 @@ function InstallPrompt() {
       // Storage unavailable (private mode). The banner still closes for this session; it just will
       // not remember, so it may be offered again on the next load.
     }
-    track("install_prompt_dismissed", { method: iosHint ? "ios" : "native", source: "banner" });
+    // NOT TRACKED ON iOS, deliberately, which is why this is guarded rather than carrying a `method`.
+    //
+    // On native the X is a real decline: an Install button sits beside it, so closing is a choice made
+    // against a visible alternative, and this is the other branch of `install_banner_clicked`.
+    //
+    // On iOS the X is the ONLY control on the banner, so it fires on virtually every impression and is
+    // very nearly a duplicate of `install_instructions_shown`. It is also ambiguous in the wrong
+    // direction: it is pressed just as readily by someone tidying away steps they have already followed
+    // as by someone refusing. An event that is both near-constant and unreadable is worse than absent,
+    // because it invites a dismissal rate to be computed from it.
+    //
+    // Nothing on this banner can observe an iOS install anyway — Safari fires neither
+    // `beforeinstallprompt` nor `appinstalled` (see useInstallPrompt). Installed iOS users are counted
+    // instead by `app_open` reporting `display_mode: "ios-standalone"`, read on its own as a user count
+    // rather than joined back to this banner.
+    if (!iosHint) {
+      track("install_banner_dismissed", { method: "native", source: "banner" });
+    }
   }, [iosHint, closeBanner]);
 
   const onInstall = useCallback(async () => {
+    // The CLICK, not the outcome — `install_os_accepted` / `install_os_declined` already report what the
+    // browser's sheet returned. Fired here so the banner's two buttons can be compared directly against
+    // each other (this vs `install_banner_dismissed` on the X), and so the drop-off between pressing
+    // Install and completing the OS dialog is visible as its own step:
+    // install_banner_shown → install_banner_clicked → install_os_accepted → install_completed.
+    //
+    // Before `await`, because the native prompt hands control to the browser and an event queued after it
+    // is at the mercy of whatever the user does to the tab while the sheet is up.
+    track("install_banner_clicked", { method: "native", source: "banner" });
     const outcome = await install();
     // Only close on acceptance. A user who cancels the native sheet has not asked to stop being
     // offered, and `appinstalled` will hide this anyway if they change their mind and use the
@@ -379,20 +413,15 @@ function InstallPill() {
   const bannerOpen = useInstallBannerOpen();
   const openBanner = useOpenInstallBanner();
 
-  // `bannerOpen` IS PART OF THE CONDITION, not just of the render below: the event is named "shown", so
-  // firing it while the banner is hiding this pill would count an impression the user never had — and
-  // double-count the offer, since the banner logs its own. It re-fires when the banner is dismissed and the
-  // pill actually appears, which is the moment it was meant to record.
-  useEffect(() => {
-    if (installed || bannerOpen) {
-      return;
-    }
-    if (canInstall) {
-      track("install_prompt_shown", { method: "native", source: "header_pill" });
-    } else if (iosHint) {
-      track("install_prompt_shown", { method: "ios", source: "header_pill" });
-    }
-  }, [installed, canInstall, iosHint, bannerOpen]);
+  // NO IMPRESSION EVENT FOR THE PILL, deliberately — it is the CLICK that is tracked, below.
+  //
+  // There used to be an `install_banner_shown` { source: "header_pill" } effect here, and its counts were
+  // not comparable with the banner's. The banner logs one impression per mount (guarded by
+  // `autoOpenedRef`), whereas this fired on every page load AND again each time the banner was dismissed
+  // and the pill reappeared. Since /poster and /social are full page loads rather than SPA routes, simply
+  // moving around the app re-fired it. The pill is permanent chrome on every tab at every scroll depth, so
+  // "was it on screen" is very nearly a constant anyway and was never the question worth asking of it.
+  // "Did anyone press it" is, and that is one unambiguous event per deliberate tap.
 
   // HIDDEN WHILE THE BANNER IS UP, so the same offer is not made twice at once. Last of the three
   // conditions because it is the only transient one: the other two are facts about the browser that hold
@@ -426,7 +455,18 @@ function InstallPill() {
       // INSTALL DIRECTLY WHERE THERE IS A PROMPT TO FIRE, otherwise open the banner and let its instructions
       // do the work. `canInstall` is the capability test, not the platform — a Chrome that never fired
       // `beforeinstallprompt` falls to the banner too, which is the right fallback rather than a dead tap.
-      onClick={canInstall ? install : openBanner}
+      // `method` records WHICH BRANCH the tap took, because they are two different outcomes wearing one
+      // label: `native` fires the OS prompt (so it can go on to `install_os_accepted`), while `ios` only opens
+      // the banner and the install still depends on a manual Share-sheet gesture we cannot observe. Without
+      // it the two would be averaged into a single meaningless conversion rate.
+      onClick={() => {
+        track("install_banner_clicked", { method: canInstall ? "native" : "ios", source: "header_pill" });
+        if (canInstall) {
+          install();
+        } else {
+          openBanner();
+        }
+      }}
       // NOT `aria-expanded`. It was a disclosure while it toggled its own inline popover; that popover is gone,
       // and neither branch is a disclosure now — one installs, the other opens a surface elsewhere in the
       // document.

@@ -493,7 +493,8 @@ export const useAppStore = create((set, get) => ({
   // Returns one of:
   //   { status: "saved" }                    — written successfully (carries `backupReminder` when
   //                                            this write CREATED a profile and the device's running
-  //                                            creation total hit a milestone — see storage.js)
+  //                                            creation total hit a milestone — see storage.js, and
+  //                                            `mode`: "created" | "updated" | "renamed", for analytics)
   //   { status: "add-title" }                — blank title, nothing written
   //   { status: "error" }                    — payload failed to normalize
   //   { status: "collision", name, badge }   — name+badge clash; caller must decide
@@ -564,6 +565,13 @@ export const useAppStore = create((set, get) => ({
     const overwrote = replaceIdx >= 0 ? existing[replaceIdx] : null;
     const undo = overwrote || removedSource ? { profiles: existing, activeSavedProfileId: get().activeSavedProfileId } : null;
 
+    // Which KIND of save this was, for analytics only — every path below lands on the same
+    // `profile_saved` event, which otherwise can't tell a first save from an in-place edit. Derived
+    // from the same `replaceIdx` the backup-reminder count uses: no row replaced means a new profile,
+    // and a replaced row whose title moved is a rename rather than a value update. The caller's
+    // `overwrite` / `copy` flags stay separate — they describe how the save was reached, not what it did.
+    const mode = replaceIdx < 0 ? "created" : overwrote.title !== state.title ? "renamed" : "updated";
+
     // Count only writes that ADD a row. `replaceIdx < 0` is exactly that test: an update to the linked
     // profile and an "Overwrite it" both resolve to an existing index and leave the total alone, so the
     // backup reminder tracks how many profiles the user has accumulated, not how often they hit Save.
@@ -581,7 +589,7 @@ export const useAppStore = create((set, get) => ({
       saveFeedback: "saved",
     });
     get().persistDraft();
-    return { status: "saved", savedTitle: state.title, overwroteTitle: overwrote?.title ?? null, undo, backupReminder };
+    return { status: "saved", savedTitle: state.title, overwroteTitle: overwrote?.title ?? null, undo, backupReminder, mode };
   },
 
   // Save/Update the current draft. Updates the linked profile in place (renaming it if the title

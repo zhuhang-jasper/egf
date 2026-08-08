@@ -149,7 +149,12 @@ export function useInstallPrompt(source) {
     const onInstalled = () => {
       setInstalled(true);
       setDeferredPrompt(null);
-      track("install_accepted", { method: "appinstalled_event", source });
+      // `install_completed`, NOT the OS-sheet event, because this fires for an install by ANY route —
+      // including the browser's own menu, which never touches our banner or pill. It is the only event
+      // that means the app is actually installed, so it is the one to count installs by; `install_os_*`
+      // only reports what our prompt was answered. `source` is the surface that was MOUNTED, not
+      // necessarily the one used, so don't attribute installs with it.
+      track("install_completed", { method: "appinstalled_event", source });
     };
     window.addEventListener("appinstalled", onInstalled);
 
@@ -169,7 +174,11 @@ export function useInstallPrompt(source) {
     }
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    track(outcome === "accepted" ? "install_accepted" : "install_dismissed", { method: "native_choice", source });
+    // `install_os_*` — the BROWSER'S sheet, not ours. Distinct from `install_banner_dismissed`, which is
+    // our own X and means the user never got this far. Accepting here is normally followed by
+    // `install_completed` from the `appinstalled` listener above, so count installs with that one and use
+    // these two for the prompt's own accept/decline rate.
+    track(outcome === "accepted" ? "install_os_accepted" : "install_os_declined", { method: "native_choice", source });
     // A captured prompt is SINGLE-USE: the spec forbids calling `prompt()` twice on the same event,
     // so clearing it is what stops a second tap failing silently. The browser fires a fresh
     // `beforeinstallprompt` on the next page load if the app is still uninstalled.

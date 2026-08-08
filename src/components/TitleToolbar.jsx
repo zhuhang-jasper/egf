@@ -258,7 +258,9 @@ export function TitleToolbar() {
       return;
     }
     if (result?.status === "saved") {
-      trackSaved(analytics);
+      // `mode` comes from the store (created / updated / renamed) — the caller's flags only say how the
+      // save was reached, so without it every path looks like the same event in GA.
+      trackSaved({ ...analytics, mode: result.mode });
       if (result.backupReminder) {
         setBackupReminderOpen(true);
         track("backup_reminder_shown", { count: readProfileCreateCount() });

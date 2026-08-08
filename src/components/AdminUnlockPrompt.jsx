@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { SimpleModal } from "@/components/ui/Modal";
 
 import { ADMIN_PASSWORD_REQUESTED, unlockAdmin } from "@/constants";
+import { track } from "@/utils/analytics";
 
 /**
  * The password question for `?admin=1`, as an in-app form.
@@ -40,8 +41,17 @@ export function AdminUnlockPrompt() {
 
   const submit = (event) => {
     event.preventDefault();
+    // Two events rather than one with an `outcome` param, because a SUCCESS never gets to report itself:
+    // `unlockAdmin` reloads the page, and an event queued on the way out is unlikely to leave the tab.
+    // So the attempt is recorded up front (always sends) and only the failure is recorded after — the
+    // success count is attempts minus failures. The password is never sent as a param.
+    track("admin_unlock_attempt");
     // `unlockAdmin` returning at all means the password was wrong — on success the page reloads.
-    setWrong(!unlockAdmin(password));
+    const failed = !unlockAdmin(password);
+    if (failed) {
+      track("admin_unlock_failed");
+    }
+    setWrong(failed);
   };
 
   return (
