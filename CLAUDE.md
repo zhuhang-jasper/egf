@@ -64,6 +64,7 @@ Chart.js radar lives under [src/chart/](src/chart/), driven by React hooks in `s
 - Import alias `@/` → `src/` (configured in `vite.config.js`, `jsconfig.json`, `components.json`).
 - JS + JSX only (no TS files despite `typescript` being installed for jsconfig). `components.json` is shadcn-style (new-york, lucide icons); `src/components/ui/` holds the primitives.
 - `src/constants/index.js` is the barrel for the constants — prefer importing from `@/constants`.
+- `jsx-a11y/prefer-tag-over-role` is **off** in `.oxlintrc.json` (JSON, so the reason lives here). Every `role` in this app is one with no native tag behind it — `combobox`/`listbox`/`option` are the WAI-ARIA combobox pattern, `role="img"` marks a CSS-drawn dot with no `src`, and `role="dialog"` avoids `<dialog>`'s `showModal()` + ref dance for semantics three attributes already give. The rule fired on all of them and caught nothing real, so it cost a `oxlint-disable-next-line` per correct usage. Other `jsx-a11y` rules stay on.
 - App version is injected at build time as `import.meta.env.VITE_APP_VERSION` from `package.json` (see `vite-plugins/resolve-app-version.js`); `generate-meta.plugin.js` writes `dist/meta.json`.
 - Production chunk splitting is rule-based in `vite.chunksplit.js` — add a `CHUNK_RULES` entry when adding a vendor dep you want isolated.
 

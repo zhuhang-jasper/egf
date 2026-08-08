@@ -42,6 +42,7 @@
     "import/no-unassigned-import": "off",
     "import/prefer-default-export": "off",
     "jsx-a11y/alt-text": "warn",
+    "jsx-a11y/prefer-tag-over-role": "off",
     "max-params": "off",
     "react/display-name": "off",
     "react/exhaustive-deps": "warn",

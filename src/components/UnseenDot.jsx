@@ -16,7 +16,7 @@ import { cn } from "@/utils";
  * explain it, and it would still be there long after the reader had caught up.
  */
 export function UnseenDot({ className, label = "New updates" }) {
-  // A CSS-drawn dot has no `src`, so the lint rule's suggested <img> doesn't apply here.
-  // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role
+  // `role="img"` on a CSS-drawn dot: there is no `src`, so a real <img> is not an option — the shape is
+  // the background, and the role is what gives `aria-label` something to name.
   return <span role="img" aria-label={label} className={cn("shrink-0 rounded-full bg-[#FF3B30] print:hidden", className)} />;
 }

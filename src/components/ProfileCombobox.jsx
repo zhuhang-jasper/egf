@@ -382,9 +382,8 @@ export function ProfileCombobox({ titleError = false }) {
               type="text"
               value={query}
               placeholder="Search profiles…"
-              // Native <input> with role="combobox" is the WAI-ARIA pattern; the listbox can't be a
-              // native <select>, so prefer-tag-over-role doesn't apply.
-              // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role
+              // Native <input> with role="combobox" IS the WAI-ARIA combobox pattern — there is no tag
+              // that supplies it, and the listbox below cannot be a native <select>.
               role="combobox"
               aria-expanded="true"
               aria-controls="profile-combobox-list"
@@ -405,7 +404,7 @@ export function ProfileCombobox({ titleError = false }) {
               ref={listRef}
               // ARIA listbox: a <ul>/<li> carrying listbox/option roles, since a native
               // <select>/<option> can't hold the badge + name + delete-button row layout.
-              // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role, jsx-a11y/no-noninteractive-element-to-interactive-role
+              // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-to-interactive-role
               role="listbox"
               id="profile-combobox-list"
               aria-label="Saved profiles"
@@ -420,7 +419,7 @@ export function ProfileCombobox({ titleError = false }) {
                   <li
                     key={pr.id}
                     id={`profile-option-${i}`}
-                    // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role, jsx-a11y/no-noninteractive-element-to-interactive-role
+                    // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-to-interactive-role
                     role="option"
                     aria-selected={isHighlighted}
                     aria-current={isActive ? "true" : undefined}
