@@ -50,6 +50,23 @@
 }
 
 @layer base {
+  /* Width the vertical scrollbar gave up when a modal locked scrolling — 0 at rest, set by useScrollLock
+     while a dialog is open, so the page does not shift sideways as the scrollbar goes.
+
+     ONLY THE CHROME THAT BELONGS TO THE PAGE USES IT. `#root` takes it as a margin (in the hook), and
+     AppBottomNav pulls its right EDGE in by it — the bar is the page's own footer and reads as part of
+     the column above it, so it has to end where that column ends. A fixed box is laid out against the
+     viewport and never sees the column's margin, which is why it needs the value at all.
+
+     The genuinely viewport-level overlays deliberately DO NOT: toasts, the install prompt and the modal
+     scrim float over whatever is beneath them rather than aligning to the page, so pinning them to the
+     column's edge would be the wrong relationship, not a fix.
+
+     Declared here so `var(--scroll-lock-gutter)` resolves to `0px`, not to nothing, when no modal is open. */
+  :root {
+    --scroll-lock-gutter: 0px;
+  }
+
   * {
     @apply border-border;
   }

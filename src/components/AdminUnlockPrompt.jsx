@@ -4,7 +4,7 @@ import { Lock } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Modal } from "@/components/ui/Modal";
+import { SimpleModal } from "@/components/ui/Modal";
 
 import { ADMIN_PASSWORD_REQUESTED, unlockAdmin } from "@/constants";
 
@@ -24,7 +24,7 @@ import { ADMIN_PASSWORD_REQUESTED, unlockAdmin } from "@/constants";
  * parent — everything gated on IS_ADMIN is computed at module-eval, and the reload is what applies it.
  * See its docblock.
  *
- * Shell comes from {@link Modal}, with three deviations it takes as props: the panel is a `form`
+ * Shell comes from {@link SimpleModal}, with three deviations it takes as props: the panel is a `form`
  * (`as="form"`), the backdrop does not dismiss, and it is not portalled.
  */
 export function AdminUnlockPrompt() {
@@ -41,7 +41,7 @@ export function AdminUnlockPrompt() {
   };
 
   return (
-    <Modal
+    <SimpleModal
       open={ADMIN_PASSWORD_REQUESTED && !dismissed}
       title="Admin access"
       icon={Lock}
@@ -106,6 +106,6 @@ export function AdminUnlockPrompt() {
           </p>
         ) : null}
       </div>
-    </Modal>
+    </SimpleModal>
   );
 }

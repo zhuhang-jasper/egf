@@ -1,11 +1,11 @@
 import { useRef } from "react";
 
 import { Button } from "@/components/ui/button";
-import { DESTRUCTIVE_CONFIRM_CLASS, ExclamationMark, Modal } from "@/components/ui/Modal";
+import { DESTRUCTIVE_CONFIRM_CLASS, ExclamationMark, SimpleModal } from "@/components/ui/Modal";
 
 /**
  * Generic confirm dialog: a question, a confirm and a cancel. The shell (scrim, panel, Escape, scroll
- * lock, title row) comes from {@link Modal} — this file is only the two buttons and the copy.
+ * lock, title row) comes from {@link SimpleModal} — this file is only the two buttons and the copy.
  *
  * Focus lands on CANCEL, not confirm, and that matters most for the destructive uses: a stray Enter on
  * an unread dialog should do the harmless thing.
@@ -14,7 +14,7 @@ import { DESTRUCTIVE_CONFIRM_CLASS, ExclamationMark, Modal } from "@/components/
  *   - open              — whether the dialog is shown.
  *   - title / message   — heading + body copy. `message` takes a node, so a dialog can emphasise part
  *                         of its sentence (see SaveCollisionDialog).
- *   - icon              — lucide component for the title row (see Modal). IGNORED when `destructive`.
+ *   - icon              — lucide component for the title row (see SimpleModal). IGNORED when `destructive`.
  *   - confirmLabel      — confirm button text (default "Confirm").
  *   - cancelLabel       — cancel button text (default "Cancel").
  *   - destructive       — the whole high-risk treatment: exclamation icon + red outline confirm.
@@ -34,7 +34,7 @@ export function ConfirmDialog({
   const cancelButtonRef = useRef(null);
 
   return (
-    <Modal
+    <SimpleModal
       open={open}
       title={title}
       // `destructive` CARRIES THE WHOLE TREATMENT — the exclamation icon AND the red confirm, together —
@@ -75,6 +75,6 @@ export function ConfirmDialog({
       <p id="confirm-dialog-desc" className="text-sm leading-snug text-slate-600">
         {message}
       </p>
-    </Modal>
+    </SimpleModal>
   );
 }

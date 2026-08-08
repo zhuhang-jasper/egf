@@ -127,7 +127,12 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
     <nav
       id="app-bottom-nav"
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-40 bg-slate-100 shadow-[0_-1px_3px_0_rgb(0_0_0/0.1),0_-1px_2px_1px_rgb(0_0_0/0.1)] pb-[env(safe-area-inset-bottom)] print:hidden"
+      // `right-[…gutter]` (not padding) keeps the bar in register with the page when a modal hides the
+      // scrollbar. The in-flow column gets that width back as a margin, but this box is fixed to the
+      // viewport and does not see it. It has to be the RIGHT EDGE that moves: padding would inset only
+      // the row inside while `bg-slate-100` kept painting to the viewport edge, so the bar still visibly
+      // overhung the page. Moving the edge narrows the painted box itself. 0px at rest.
+      className="fixed left-0 right-[var(--scroll-lock-gutter)] bottom-0 z-40 bg-slate-100 shadow-[0_-1px_3px_0_rgb(0_0_0/0.1),0_-1px_2px_1px_rgb(0_0_0/0.1)] pb-[env(safe-area-inset-bottom)] print:hidden"
     >
       {/* FULL-WIDTH AND CENTRED. The row always spans the viewport; what bounds it on a wide screen is the PER-ITEM
           cap on the buttons below, not a cap here. `justify-center` is what that cap needs to be usable: once the

@@ -3,7 +3,7 @@ import { useRef } from "react";
 import { GlobeX, Wrench } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Modal } from "@/components/ui/Modal";
+import { SimpleModal } from "@/components/ui/Modal";
 
 /**
  * "Your profiles live in this browser" notice, shown after the 1st profile is created and then every
@@ -16,7 +16,7 @@ import { Modal } from "@/components/ui/Modal";
  * would do the export once and leave the user still not knowing where it is. So the dialog names the
  * path (Manage → Export) instead of shortcutting it.
  *
- * Shell (scrim, panel, Escape, scroll lock, title row) comes from {@link Modal}.
+ * Shell (scrim, panel, Escape, scroll lock, title row) comes from {@link SimpleModal}.
  *
  * A CROSSED-OUT GLOBE = "not on the network", which is the actual subject: the profiles are here and
  * nowhere else. A disk or download glyph would picture the backup instead, and the backup is the remedy
@@ -26,7 +26,7 @@ export function BackupReminderDialog({ open, onClose }) {
   const closeButtonRef = useRef(null);
 
   return (
-    <Modal
+    <SimpleModal
       open={open}
       title="Saved on this device only"
       icon={GlobeX}
@@ -63,6 +63,6 @@ export function BackupReminderDialog({ open, onClose }) {
         below the chart form and choose <span className="font-semibold text-slate-900">Export profiles</span> to save them all to a file. You can
         import that file again any time.
       </p>
-    </Modal>
+    </SimpleModal>
   );
 }
