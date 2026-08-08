@@ -13,6 +13,9 @@ import { track } from "@/utils/analytics";
 /**
  * The colored pill for a badge id — the same rounded FE/BE chip shown on the chart, in miniature.
  * `none` renders its em-dash as muted plain text (no pill) so "no badge" reads as an absence.
+ *
+ * Keep the box in step with {@link TrackBadge}'s sm size — these two render the same chip in
+ * different places and drift between them reads as a bug.
  */
 function BadgePill({ id }) {
   const ui = TRACK_BADGE_UI[id];
@@ -22,7 +25,7 @@ function BadgePill({ id }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none tracking-wide",
+        "inline-flex min-w-[2.75em] items-center justify-center rounded px-[0.85em] py-[2px] text-[10px] font-semibold leading-[1.4]",
         ui.pillClass,
       )}
     >
