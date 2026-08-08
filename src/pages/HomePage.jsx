@@ -61,19 +61,110 @@ const VALID_TABS = IS_ADMIN ? ["tool", "theory", "admin"] : ["tool", "theory"];
  * that should be able to escape its box (tooltips, dropdowns) is affected, and a hidden panel has nothing to show
  * anyway. Fixing it here rather than by clipping `body` matters — `body` must keep `overflow-x: auto` so the 350px
  * min-width floor stays reachable at narrow viewports (see index.css).
+ *
+ * THE TAB TRANSITION (`leaving` / `animating` / `direction`) IS ONE-SIDED: the arriving tab slides and fades in,
+ * and the departing one is not animated at all, just hidden. It started as a cross-fade and that GHOSTED — two
+ * semi-transparent copies of the app overlaid, the old tab's headings legible through the new one's. Cross-fading
+ * two opaque full-page layouts always does; no pair of intermediate opacities shows only one of them. See the
+ * keyframes note in index.css. Do not reintroduce an exit animation to "balance" the entrance.
+ *
+ * IT IS ALSO A THIRD WAY INTO THAT SAME SCROLLBAR BUG, and it is worth reading the two notes above before
+ * touching it. The enter animation starts at a horizontal offset, i.e. content pushed to the side of where it
+ * will rest — on a full-width panel that is horizontal overflow by construction, and it made the nav hop on
+ * every single switch rather than only on the first frame after one.
+ *
+ * Two things keep it contained, and both are needed. The transform is on an INNER WRAPPER rather than on the
+ * panel, so what moves is inside a box that can be clipped (a clip never crops the box it is declared on — the
+ * lesson already learned above). And the panel takes `overflow-x-clip` FOR THE DURATION of the entrance, which is
+ * the one window where the visible panel cannot keep `visible` overflow. It is given back immediately after, so
+ * the steady-state guarantee that tooltips and dropdowns can escape their box is unchanged.
+ *
+ * `animating` IS WHAT KEEPS THIS OFF THE FIRST PAINT. It is true only while a switch is in flight, so the
+ * entrance does not run when a panel first mounts — the app would otherwise slide in on every cold load, and
+ * the prefit pass (which lays the inactive panel out for real) would animate an invisible panel for nothing.
  */
-function TabPanel({ label, active, prefit = false, widthStyle, children }) {
+function TabPanel({
+  label,
+  active,
+  prefit = false,
+  leaving = false,
+  animating = false,
+  direction = "left",
+  widthStyle,
+  children,
+}) {
+  // THE LEAVING PANEL IS INVISIBLE AND ZERO-HEIGHT, WHICH IS WHY THERE IS SO LITTLE MACHINERY HERE. An earlier
+  // version faded it out, and to do that correctly it had to be `fixed` at a viewport offset measured in a
+  // layout effect, with a `maxHeight` clipping it to the visible region, so that the incoming panel did not
+  // stack below it and the per-tab scroll restore did not drag it mid-fade.
+  //
+  // All of that existed to make a VISIBLE exit behave, and the visible exit is exactly what caused the
+  // ghosting (see the keyframes note in index.css). With nothing painted there is nothing to mis-position,
+  // drag, or overlap, so what remains is only the two things a still-mounted panel must not do: be seen
+  // (`opacity: 0`) and take up space (`h-0`, see the class list). It stays displayed rather than
+  // `display: none` — see the `hidden` note below for why that distinction is still load-bearing.
   return (
     <div
       className={cn(
         "w-full self-center px-3",
-        // `h-0` instead of the margins during a prefit pass: `hidden` contributes no height, and this mode
-        // must not either, or the document would grow by the margins alone while it lasts.
-        prefit ? "h-0 overflow-hidden" : "mt-3 mb-0",
+        // `h-0` INSTEAD OF THE MARGINS whenever the panel is laid out but must occupy no height — which is two
+        // distinct cases with one requirement. `prefit` is the first-paint preload (see the class doc), and
+        // `leaving` is the outgoing panel during a tab switch (see its positioning note below). In both, the
+        // panel is displayed so its contents lay out for real, while `hidden`'s zero footprint is what the
+        // document must actually see. The margins have to go with the height: 12px of margin on a zero-height
+        // box still grows the document, which is the whole thing these two modes exist to avoid.
+        prefit || leaving ? "h-0 overflow-hidden" : "mt-3 mb-0",
 
         // `overflow-x: clip` ON THE INACTIVE PANEL. It contains what is INSIDE the box; the box itself is capped
         // by `maxWidth` in the style object below, which is where that has to happen — see the note there.
+        //
+        // KEYED OFF `active`, AND IT MUST STAY THAT WAY. This was briefly widened to "active OR leaving", to
+        // stop the clip cropping anything that overhangs the panel while it animates out — which reintroduced
+        // the one-frame horizontal scrollbar that makes the fixed bottom nav jump (see AppBottomNav's frame
+        // trace and the `overflow-x: auto` note on `body` in index.css). A leaving panel is still laid out at
+        // its own measure, so it has to keep the clip for exactly the same reason a hidden one does. The
+        // overhang concern was theoretical, the scrollbar is not.
+        //
+        // THE SLIDE ITSELF IS CLIPPED HERE TOO, and that is the other half of the same fix: the transform lives
+        // on the inner wrapper below rather than on this box, so `translateX` moves content INSIDE a clipped
+        // container instead of moving the container past the document's edge.
         !active && "overflow-x-clip",
+
+        // THE LEAVING PANEL MUST CONTRIBUTE NO HEIGHT, and `absolute` IS NOT ENOUGH TO ACHIEVE THAT.
+        //
+        // It was `absolute inset-x-0`, on the reasoning that out-of-flow means out of the layout. It does not:
+        // an absolutely-positioned box still extends the scrollable overflow of its containing block, which is
+        // `main` (the `relative` there). So switching from the many-screens-tall Theory tab to the short Tool
+        // tab left Theory's full height propping the document open for the whole transition window, and the
+        // scrollbar visibly stayed long and then snapped short when the timer dropped the panel — read as the
+        // scrollbar "growing at a delay".
+        //
+        // `h-0 overflow-hidden` is the fix, and it comes from the SAME TREATMENT `prefit` ALREADY USES — which
+        // is why both now share one branch at the top of this list rather than each declaring their own. The
+        // panel keeps a box (so its children are not torn down or reflowed while they wind down) and the
+        // document is sized by the incoming tab alone, from the first frame.
+        //
+        // What stays here is only what is specific to leaving: `absolute` so the zero-height box cannot affect
+        // the flex column's own sizing, `inset-x-0` so its width still resolves against `main` rather than
+        // shrink-wrapping, and `pointer-events-none` so it cannot swallow a tap aimed at the new tab.
+        leaving && "pointer-events-none absolute inset-x-0",
+
+        // THE ARRIVING PANEL IS CLIPPED FOR THE LENGTH OF ITS ENTRANCE, and this is the fix for the bottom nav
+        // jumping on tab switch. The enter animation starts offset horizontally — content pushed to the side of
+        // its resting place — and on any viewport where the panel already spans the full width, that pushed its
+        // right edge past the document's and raised a horizontal scrollbar for the frames it was in flight. A
+        // horizontal scrollbar shrinks the VISUAL viewport, which is what `bottom: 0` on the fixed nav resolves
+        // against, so the bar hopped up by the scrollbar's height and back (see AppBottomNav).
+        //
+        // The transform is on the inner wrapper (below), so clipping here contains it without the clip itself
+        // being what moves. Temporary, and only while animating: the panel goes back to `visible` overflow the
+        // moment the entrance ends, so tooltips and dropdowns that need to escape their box are unaffected in
+        // the steady state — which is the same reason the inactive-panel clip above is safe.
+        //
+        // `overflow-x-clip` rather than `overflow-x-hidden`: `hidden` would make this a scroll CONTAINER, and an
+        // ancestor scroll container is what would stop the sticky header pinning to the viewport (see the note
+        // on `main` in HomePage). `clip` crops without creating one.
+        active && !prefit && animating && "overflow-x-clip",
       )}
       /* `min(measure, 100%)` rather than the measure raw, so the panel's own border-box can never be wider than
          its container and become the thing that overflows the document horizontally. Cheap belt-and-braces: the
@@ -84,14 +175,46 @@ function TabPanel({ label, active, prefit = false, widthStyle, children }) {
 
          INLINE, NOT A `max-w-full` CLASS: this is an inline style, and inline styles beat utility classes, so a
          Tailwind cap alongside it would be silently overridden. The clamp has to be in the same declaration. */
-      style={{ maxWidth: `min(${widthStyle.maxWidth}px, 100%)` }}
+      style={{
+        maxWidth: `min(${widthStyle.maxWidth}px, 100%)`,
+        // Feeds the `.tab-enter-*` / `.tab-leave-*` rules in index.css. The duration lives in JS because the
+        // same number drives the timer that decides how long a leaving panel stays mounted — see
+        // TAB_TRANSITION_MS. Only set while animating, so an idle panel carries no stray custom property.
+        ...(active && animating ? { "--tab-transition-ms": `${TAB_TRANSITION_MS}ms` } : null),
+      }}
       role="tabpanel"
-      hidden={!active && !prefit}
+      /* THE LEAVING PANEL IS DELIBERATELY NOT `hidden` FOR THE FEW FRAMES IT LINGERS, even though it is
+         invisible and `display: none` would look identical. Flipping display on the outgoing panel in the same
+         commit that mounts the incoming one is a layout change on both halves at once, in the exact frame the
+         switch is trying to keep smooth — and it is what the whole `hidden`-vs-mounted design above exists to
+         avoid. It stays displayed, out of flow, at `opacity: 0`, and returns to `hidden` once the phase timer
+         clears the flag and nothing else is in flight. */
+      hidden={!active && !prefit && !leaving}
+      /* Both stay keyed to `active`, NOT to whether the panel is painted. The leaving panel is an invisible
+         remnant of a tab the user has already navigated away from: it must not be reachable by tab order,
+         pointers, or a screen reader while it lingers, or the switch would briefly expose two tabpanels. */
       aria-hidden={!active}
       inert={!active}
       aria-label={label}
     >
-      {children}
+      {/* THE ENTRANCE ANIMATION LIVES HERE, ONE LEVEL IN FROM THE PANEL — deliberately not on the panel itself.
+          A `translateX` on the panel moves the panel's own border-box, and a box moved sideways of its resting
+          place extends the document's scrollable width: that is what raised a horizontal scrollbar mid-switch
+          and made the fixed bottom nav hop (see the clip notes above). Moving the transform inside means the
+          panel stays exactly where it is and only its CONTENTS slide, so the panel's `overflow-x-clip` can
+          contain the movement — a clip cannot crop the box it is declared on, only what is inside it.
+
+          A PLAIN WRAPPER WITH NO CLASSES WHEN IDLE, which is the overwhelmingly common case. It adds a div to
+          the tree but no styles, so it creates no containing block, no stacking context, and no layout of its
+          own — the panel's children lay out against the panel exactly as they did before this existed. */}
+      <div
+        className={cn(
+          leaving && (direction === "left" ? "tab-leave-left" : "tab-leave-right"),
+          active && !prefit && animating && (direction === "left" ? "tab-enter-left" : "tab-enter-right"),
+        )}
+      >
+        {children}
+      </div>
     </div>
   );
 }
@@ -115,6 +238,41 @@ const TAB_WIDTH_STYLE = {
  * invisible and zero-height throughout, so this is deliberately generous rather than tight.
  */
 const PREFIT_WINDOW_MS = 300;
+
+/**
+ * How long a tab switch's cross-slide runs. Drives BOTH the CSS animation (passed down as
+ * `--tab-transition-ms`, see TabPanel and index.css) and the timer that keeps the outgoing panel mounted,
+ * which is why it is one constant here rather than a value in the stylesheet: if the timer were shorter the
+ * exit would be cut off mid-flight, and if it were longer the panel would sit on a finished frame.
+ *
+ * Short on purpose. This fires on every navigation between two tabs the user moves between constantly, and a
+ * transition long enough to notice as an animation is long enough to be in the way by the tenth time. It is
+ * meant to convey which direction you moved, not to be watched.
+ *
+ * WAS 220ms, WHICH READ AS A DELAY rather than as motion. The duration was only half of why (see the easing
+ * note in index.css — the entrance also used to start fully transparent, which withheld a page that was
+ * already laid out); but at 220ms the tail of the settle was still perceptible as waiting for the page to
+ * arrive when the page was demonstrably already there. 160ms with the exit at 60% of it puts the whole switch
+ * inside the window where it registers as a transition having happened rather than as one being watched.
+ *
+ * Do not raise this to make the slide more visible. If the motion needs more presence, the distance in the
+ * keyframes is the knob — time is the part the user feels as lag.
+ */
+const TAB_TRANSITION_MS = 160;
+
+/**
+ * Nav order, used ONLY to derive which way a switch slides — matched to NAV_ITEMS in AppBottomNav, so the
+ * content moves the same direction as the item you tapped. Moving to a later tab pushes the old content left
+ * ("left"); moving back pushes it right. Admin is included unconditionally: it is only ever the active tab
+ * when IS_ADMIN, and an index for a tab that cannot be selected costs nothing.
+ *
+ * Deliberately separate from VALID_TABS, which answers a different question (may this tab be selected at all).
+ */
+const TAB_ORDER = ["tool", "theory", "admin"];
+
+function slideDirection(fromTab, toTab) {
+  return TAB_ORDER.indexOf(toTab) >= TAB_ORDER.indexOf(fromTab) ? "left" : "right";
+}
 
 function scheduleIdle(callback) {
   if (typeof requestIdleCallback === "function") {
@@ -155,6 +313,41 @@ export default function HomePage() {
   // Cross-tab jump from a tool-form pillar's help icon into the theory matrix. The `seq` bump makes
   // repeated clicks on the same pillar re-trigger the expand + scroll even when the tab is already open.
   const [matrixNav, setMatrixNav] = useState(null);
+
+  // THE CROSS-SLIDE'S ONLY STATE: which tab is on its way out, and which way the pair is moving. Null when
+  // nothing is animating, which is the overwhelmingly common case — every panel then renders exactly as it
+  // did before this existed.
+  //
+  // It is a single object rather than two pieces of state so the tab and its direction can never be applied
+  // on different renders, which would show one frame of the outgoing panel sliding the wrong way.
+  const [tabExit, setTabExit] = useState(null);
+  const exitTimerRef = useRef(0);
+
+  // Clear the timer if the component unmounts mid-transition, so a stale callback can't set state on a
+  // torn-down tree. (Re-entrant switches clear it in `goToTab` itself — see there.)
+  useEffect(() => () => clearTimeout(exitTimerRef.current), []);
+
+  /**
+   * The one place a tab actually changes. Both entry points (a nav tap, and the pillar help icon's jump into
+   * the theory matrix) go through here so the transition is identical either way and the bookkeeping — saving
+   * the outgoing scroll, the URL, the exit phase — can't drift between them.
+   *
+   * The caller is responsible for the no-op check; by the time we're here the tab IS changing.
+   */
+  const goToTab = (nextTab) => {
+    saveActiveTabScroll();
+
+    // A SWITCH DURING A SWITCH REPLACES THE ONE IN FLIGHT rather than queueing behind it. Tapping Tool →
+    // Theory → Tool quickly is a normal thing to do on a bottom bar, and the second tap's outgoing panel is
+    // the first tap's incoming one. Clearing the pending timer and overwriting `tabExit` means the panel that
+    // was arriving starts leaving from wherever it had got to, and only ever one panel is exiting at a time.
+    clearTimeout(exitTimerRef.current);
+    setTabExit({ tab: activeTab, direction: slideDirection(activeTab, nextTab) });
+    exitTimerRef.current = setTimeout(() => setTabExit(null), TAB_TRANSITION_MS);
+
+    setActiveTab(nextTab);
+    syncTabInUrl(nextTab);
+  };
 
   // THE INACTIVE TAB'S CONTENT IS NOT ON THE FIRST-PAINT PATH. The theory tab holds eight radar charts
   // (a hero, three career tracks, and the foundational phase's carousel plus its desktop 3-up grid), and
@@ -212,10 +405,8 @@ export default function HomePage() {
       // the wrong thing to put there — on touch there is no hover, so nothing advertises it either.
       return;
     }
-    saveActiveTabScroll();
     track("tab_view", { tab: nextTab });
-    setActiveTab(nextTab);
-    syncTabInUrl(nextTab);
+    goToTab(nextTab);
   };
 
   const handleOpenPillarInMatrix = (pillarId) => {
@@ -225,9 +416,10 @@ export default function HomePage() {
     if (activeTab !== "theory") {
       // Let the theory tab restore its remembered scroll; the matrix jump (below) takes over once it
       // scrolls to the pillar card. No header anchor to carry — collapse is a shared boolean now.
-      saveActiveTabScroll();
-      setActiveTab("theory");
-      syncTabInUrl("theory");
+      //
+      // Cross-slides like any other switch. The jump's own scroll to the pillar card runs alongside it and
+      // is unaffected: the slide is a transform on the panel, so it moves no scroll coordinates.
+      goToTab("theory");
     }
     setMatrixNav((prev) => ({ pillarId, seq: (prev?.seq ?? 0) + 1, cancelRestoreRef }));
   };
@@ -300,7 +492,19 @@ export default function HomePage() {
 
           `print:pb-0`: the bar is `print:hidden`, so on paper there is nothing to reserve for. */}
       <main
-        className="flex w-full flex-1 flex-col bg-white pb-[calc(3.5rem+env(safe-area-inset-bottom))] print:max-w-none print:p-0 print:pb-0 print:shadow-none"
+        /* `relative` IS THE ANCHOR FOR A LEAVING TAB PANEL, which goes `position: absolute` for the few frames
+           it stays mounted after a tab switch so it does not stack below the incoming one (see TabPanel).
+           Without a positioned ancestor here it would resolve against the initial containing block instead and
+           take its width from the viewport rather than from this column.
+
+           NOTE THAT `absolute` ALONE DOES NOT KEEP IT OUT OF THE LAYOUT: an out-of-flow box still extends the
+           scrollable overflow of its containing block, which is this element. That is why the leaving panel is
+           also `h-0 overflow-hidden` — see TabPanel, where getting this wrong left the tall Theory tab propping
+           the scrollbar open after switching to the short Tool tab.
+
+           It creates NO stacking context of its own (no z-index), so nothing that overlays this subtree —
+           tooltips, dialogs, the fixed bottom nav outside it — changes behaviour. */
+        className="relative flex w-full flex-1 flex-col bg-white pb-[calc(3.5rem+env(safe-area-inset-bottom))] print:max-w-none print:p-0 print:pb-0 print:shadow-none"
         style={{ minWidth: FE_UI.page.minWidthPx }}
       >
         {/* The sticky app header: the brand lockup and the scroll-to-top button, which the stack positions in
@@ -321,9 +525,15 @@ export default function HomePage() {
           label="Tool"
           active={activeTab === "tool"}
           prefit={inactivePhase === "prefit" && activeTab !== "tool"}
+          leaving={tabExit?.tab === "tool"}
+          animating={tabExit !== null}
+          direction={tabExit?.direction ?? "left"}
           widthStyle={TAB_WIDTH_STYLE.tool}
         >
           {activeTab === "tool" || inactiveMounted ? (
+            /* `isVisible` STAYS TIED TO `active`, not to whether the panel is painted. It is what the children
+               use to skip work while off screen, and a tab the user has just left should go idle immediately —
+               the exit animation is a transform on an already-rendered tree and needs no updates to run. */
             <ToolContent isVisible={activeTab === "tool"} onOpenPillarInMatrix={handleOpenPillarInMatrix} />
           ) : null}
         </TabPanel>
@@ -331,6 +541,9 @@ export default function HomePage() {
           label="Theory"
           active={activeTab === "theory"}
           prefit={inactivePhase === "prefit" && activeTab !== "theory"}
+          leaving={tabExit?.tab === "theory"}
+          animating={tabExit !== null}
+          direction={tabExit?.direction ?? "left"}
           widthStyle={TAB_WIDTH_STYLE.theory}
         >
           {activeTab === "theory" || inactiveMounted ? (
@@ -355,8 +568,18 @@ export default function HomePage() {
             two static link cards, so there is nothing to preserve and nothing to prefit. It also never renders
             at all for a non-admin, since the tab cannot be selected (see VALID_TABS). */}
         {IS_ADMIN ? (
-          <TabPanel label="Admin" active={activeTab === "admin"} widthStyle={TAB_WIDTH_STYLE.admin}>
-            {activeTab === "admin" ? <AdminContent /> : null}
+          <TabPanel
+            label="Admin"
+            active={activeTab === "admin"}
+            leaving={tabExit?.tab === "admin"}
+            animating={tabExit !== null}
+            direction={tabExit?.direction ?? "left"}
+            widthStyle={TAB_WIDTH_STYLE.admin}
+          >
+            {/* Mounted while LEAVING as well as while active, unlike the `active`-only test its siblings' unmount
+                rule would suggest — there has to be something in the box for the exit animation to slide, or
+                switching away from Admin would animate an empty panel. It unmounts when the exit finishes. */}
+            {activeTab === "admin" || tabExit?.tab === "admin" ? <AdminContent /> : null}
           </TabPanel>
         ) : null}
 

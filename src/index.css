@@ -205,6 +205,101 @@
   }
 }
 
+/* TAB CROSS-SLIDE — see the transition notes in src/pages/HomePage.jsx for the phase machine that
+   applies these classes, and why the outgoing panel has to stay laid out while it runs.
+
+   EACH PANEL ANIMATES IN PLACE rather than the two sliding as one track. A track would need both tabs
+   laid out side by side for the duration, which here means the document holding both tabs' full height
+   at once while the WINDOW is the scroller and each tab has its own remembered scroll position (see
+   useTabScrollMemory) — the outgoing panel's height would move the incoming one's scroll coordinates
+   mid-animation. Animating in place keeps each panel in its normal position in flow, so scroll restore
+   is untouched: it runs on the switch exactly as it did before, and the transform is purely visual.
+
+   TRANSFORM AND OPACITY ONLY. Both are compositor properties, so neither triggers layout — which matters
+   because the outgoing panel is on screen next to eight radar charts' worth of settling content, and a
+   width- or height-animating transition here would fight the fit passes.
+
+   ONLY THE ARRIVING TAB ANIMATES. THERE IS NO EXIT ANIMATION, and that is the whole design.
+
+   This was a cross-fade — outgoing panel fading 1 → 0 while the incoming one came up underneath it — and it
+   GHOSTED: two semi-transparent copies of the app overlaid for the length of the overlap, with the old tab's
+   headings legible through the new tab's. That is not a tuning problem, it is what cross-fading two opaque
+   full-page layouts *is*. Any pair of intermediate opacities shows both. Slowing it down, offsetting the
+   timings, or easing differently only changes how long the double-image lasts.
+
+   So the outgoing panel is not faded at all. It is simply gone on the frame the tab changes (HomePage keeps it
+   mounted a few frames longer for reasons unrelated to opacity — see TAB_TRANSITION_MS), and the arriving tab
+   plays a short slide-and-lift on its own, over the page background rather than over its predecessor. One
+   layer is visible at any instant, so there is nothing to ghost against.
+
+   It also fixes the earlier complaint that the switch felt delayed, and for the same reason: nothing is
+   withheld waiting for something else to finish leaving.
+
+   THE DISTANCE IS A PERCENTAGE OF THE PANEL, not a fixed px, so it reads the same at the 350px floor as at
+   the 900px theory measure. Deliberately small (3%): a full-width slide would leave the incoming tab
+   off-screen for most of the duration, which reads as a delay rather than as motion. A hint of direction,
+   not a carousel.
+
+   Direction comes from the tabs' index in the bottom nav, so going Tool → Theory pushes left and
+   Theory → Tool pushes right. */
+@keyframes tab-slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(3%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes tab-slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(-3%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* `--tab-transition-ms` IS SET INLINE BY TabPanel, from the same JS constant that drives the phase timer
+   (TAB_TRANSITION_MS in HomePage). Deliberately not a value declared here: that timer decides how long the
+   outgoing panel stays mounted, so if the two numbers drifted the entrance would be cut off mid-flight or
+   hold a finished frame. One constant, passed in. The `160ms` in each `var()` below is only a fallback for
+   the class being applied without the property, and is not the live value.
+
+   `ease-out` (not `ease-in-out`): the arriving tab covers most of its distance in the first third and settles
+   into place, which is what makes a short transition feel like it resolved rather than like it ran out. */
+.tab-enter-left {
+  animation: tab-slide-in-left var(--tab-transition-ms, 160ms) cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tab-enter-right {
+  animation: tab-slide-in-right var(--tab-transition-ms, 160ms) cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* THE OUTGOING PANEL IS HIDDEN OUTRIGHT, NOT ANIMATED — see the keyframes note above for why fading it is
+   what caused the ghosting. It cannot use `hidden`/`display: none` for the few frames it is still mounted
+   (that is the very thing HomePage keeps it mounted to avoid mid-switch layout churn), so it is made
+   invisible instead: no opacity ramp, no transform, nothing to see through. */
+.tab-leave-left,
+.tab-leave-right {
+  opacity: 0;
+}
+
+/* Reduced motion gets the switch with NO animation at all, rather than a shortened one — the new tab is
+   simply there. The JS phase timer still runs its full duration either way (it is a timer, not an animation
+   event), which changes nothing visible: the leave rule above is plain CSS rather than an animation, so the
+   outgoing panel is already invisible for that window regardless of this preference. */
+@media (prefers-reduced-motion: reduce) {
+  .tab-enter-left,
+  .tab-enter-right {
+    animation: none;
+  }
+}
+
 /* PRINT: let each radar scale to its frame instead of trusting the px size JS gave it.
    
    Every radar is sized imperatively. Chart.js writes explicit `width`/`height` px onto the canvas from
