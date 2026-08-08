@@ -109,25 +109,48 @@ function Modal({
   // freed is handed back — see useScrollLock.
   useScrollLock(open);
 
-  // Escape + initial focus, both scoped to while the dialog is open. Escape is bound to the document
-  // rather than the panel so it works before focus has landed anywhere inside.
+  // Escape, bound to the document rather than the panel so it works before focus has landed anywhere
+  // inside. `onCloseRef` keeps this from re-subscribing when the caller passes a fresh arrow each render.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
   useEffect(() => {
     if (!open) {
       return undefined;
     }
     const onKeyDown = (event) => {
       if (event.key === "Escape") {
-        onClose?.();
+        onCloseRef.current?.();
       }
     };
     document.addEventListener("keydown", onKeyDown);
-    // Prefer the caller's element (a cancel button, a text field); fall back to the panel so focus is
-    // inside the dialog either way and Escape/Tab behave.
-    (initialFocusRef?.current ?? panelRef.current)?.focus?.();
     return () => {
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [open, onClose, initialFocusRef]);
+  }, [open]);
+
+  /**
+   * Initial focus, DELIBERATELY KEYED ON `open` ALONE.
+   *
+   * This used to share the effect above, whose deps included `onClose` and `initialFocusRef`. Callers
+   * routinely pass an inline arrow for `onClose` (`() => setDismissed(true)`), which is a new identity on
+   * every render — so ANY state change in the caller re-ran the effect and re-fired `.focus()`. In
+   * AdminUnlockPrompt that meant every keystroke pulled focus out of the password field and onto the
+   * panel, since typing calls `setPassword` and the panel is the fallback target. Focus-on-open must
+   * happen exactly once per opening, so `open` is the only thing it can depend on.
+   *
+   * `initialFocusRef` is read through a ref for the same reason: a ref object is usually stable, but it
+   * is the caller's to create and nothing guarantees it.
+   */
+  const initialFocusRefRef = useRef(initialFocusRef);
+  initialFocusRefRef.current = initialFocusRef;
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    // Prefer the caller's element (a cancel button, a text field); fall back to the panel so focus is
+    // inside the dialog either way and Escape/Tab behave.
+    (initialFocusRefRef.current?.current ?? panelRef.current)?.focus?.();
+  }, [open]);
 
   if (!open) {
     return null;
@@ -138,7 +161,6 @@ function Modal({
       className="fixed inset-0 z-[100] flex items-center justify-center p-4 print:hidden"
       // A real <dialog> would need showModal() and a ref+effect to open it, to get semantics these
       // three attributes already provide for a component that is conditionally rendered anyway.
-      // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role
       role={role}
       aria-modal="true"
       aria-labelledby={titleId}
@@ -209,9 +231,7 @@ function SimpleModal({ title, icon: Icon = null, compactIcon = false, titleId, a
             around the icon, not as a filled circle that happens to contain one. */}
         <div className="flex items-center gap-2">
           {Icon ? (
-            <span
-              className={cn("flex shrink-0 items-center justify-center rounded-full bg-slate-900 text-white", compactIcon ? "size-6" : "size-8")}
-            >
+            <span className={cn("flex shrink-0 items-center justify-center rounded-full bg-slate-900 text-white", compactIcon ? "size-6" : "size-8")}>
               <Icon className={compactIcon ? "size-4.5" : "size-5"} aria-hidden />
             </span>
           ) : null}
