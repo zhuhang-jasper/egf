@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Printer, ScrollText, Share2 } from "lucide-react";
 
+import { AdminLockBadge } from "@/components/AdminLockBadge";
 import { CareerTracks } from "@/components/CareerTracks";
 import { ChangelogModal } from "@/components/ChangelogModal";
 import { CompetencyMatrix } from "@/components/CompetencyMatrix";
@@ -528,6 +529,19 @@ function TheoryContent({
             >
               <Printer className="size-3.5 shrink-0" aria-hidden />
               Print
+              {/* BADGED ON THE PILL'S OWN CORNER, using the `relative` the Tooltip beside it already requires —
+                  and `-top-1.5 -right-1.5` rather than the nav's `-right-1.5 -bottom-1` because a pill's corner
+                  is a curve, not a right angle: the same offsets that sit on a square glyph's corner would sit
+                  in the empty space outside the radius here.
+
+                  TOP-RIGHT, WHICH IS WHERE THE TOOLTIP IS NOT. The tooltip opens BELOW this button (`placement`
+                  above — the toolbar sits under a sticky header, so a top tooltip would render into it), so the
+                  bottom corners are the ones that would be crossed on hover.
+
+                  UNLIKE THE MENU ROWS, THIS ONE KEEPS ITS `label`. There is no wrapping <label> element whose
+                  accessible name would absorb it, and the button's own `aria-label` says what the action does
+                  rather than who can reach it, so the badge is again the only carrier of that fact. */}
+              <AdminLockBadge className="-top-0.5 -right-1" />
               <Tooltip text="Print the framework" placement="bottom" />
             </Button>
           ) : null}

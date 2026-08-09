@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 // shadowing it at module scope is a trap for anything later in this file that wants the real one.
 import { Image as ImageIcon, Settings, Share2 } from "lucide-react";
 
+import { AdminLockBadge } from "@/components/AdminLockBadge";
 import { ChartScores } from "@/components/ChartScores";
 import { ClusterLegend } from "@/components/ClusterLegend";
 import { TrackBadge } from "@/components/TrackBadge";
@@ -24,7 +25,14 @@ import { copyChartAsImageToClipboard, shareChartAsImage } from "@/utils/copy-cha
 
 // select-none: these rows get clicked repeatedly to flip a setting, and a double-click would
 // otherwise select the label text.
-function DisplayCheckbox({ label, checked, onChange }) {
+//
+// `adminOnly` BADGES THE ROW as absent from the public build (see AdminLockBadge). This menu is where the
+// mark earns the most: four of its eight toggles are admin-gated and four are not, interleaved, so the row
+// order alone says nothing about which of them a colleague opening the same page would find. The caller
+// passes the flag rather than this component reading the FEATURE_* constants itself — those constants are
+// what decide whether the row RENDERS AT ALL, and a row that is rendered under one flag but badged from
+// another could disagree with itself.
+function DisplayCheckbox({ label, checked, onChange, adminOnly = false }) {
   return (
     <label className="flex cursor-pointer select-none items-center gap-2.5 rounded-md px-3 py-1.5 text-xs hover:bg-muted/60">
       <input
@@ -34,7 +42,51 @@ function DisplayCheckbox({ label, checked, onChange }) {
         onChange={(e) => onChange(e.target.checked)}
         className="size-3.5 shrink-0 rounded border border-input accent-foreground"
       />
-      <span>{label}</span>
+      {/* THE BADGE FOLLOWS THE LABEL TEXT, INLINE — the one site that does not corner-badge its control (see
+          AdminLockBadge, whose default is absolute). It hung off the checkbox's corner first, which is the
+          convention the nav and the Print pill use, and it was wrong here for a reason those two do not have:
+          a menu row is a LIST of near-identical rows, so badges pinned to the checkboxes stack into a column
+          of padlocks down the left edge that has to be read against the rows to be attributed to any of them.
+          After the words it is unambiguously part of that row and is read in the same pass as the label.
+
+          `static` IS WHAT SWITCHES THE MODE. The component is `absolute` by default and every other caller
+          wants that; overriding it here is why the badge needs no positioning context on this row — and it is
+          also why this className carries no offsets, unlike the other two sites.
+
+          THE ROW'S `gap-2.5` DOES NOT APPLY — it spaces the flex CHILDREN, and the badge is inside the label
+          span, so the 2px `ml-0.5` is its own. Deliberately much tighter than the row's gap: the lock qualifies
+          the words it trails, so it has to read as attached to them rather than as the next item along. At a
+          superscript's height a wider gap also leaves it stranded in the whitespace above the row below.
+
+          RAISED TO THE LABEL'S TOP-RIGHT, i.e. set as a superscript rather than centred on the text. It was
+          `align-middle` alone, which centres the disc on the line — correct if the badge were part of the
+          phrase, and it is not: it QUALIFIES the phrase, the same relationship a footnote marker has, and the
+          same top-right corner the badge takes at the other two sites. Sitting on the text's centre line it
+          read as a third word in the label.
+
+          `-translate-y-1` (4px up) ON TOP OF `align-middle`, not `align-super`. The CSS keyword raises by a
+          font-relative amount that assumes a glyph being set in the same type as the surrounding text, which
+          over-lifts a graphic of a fixed size and leaves it floating clear of the line box. Centring first and
+          then nudging by a fixed 4px puts the disc's bottom edge just above the x-height, which is where a
+          superscript sits, and it stays put if the row's type size changes.
+
+          NO `size-*` HERE — the disc comes from AdminLockBadge itself, which is what stops this site and the
+          other two drifting apart as they had (12px here against 14px on the nav). The 4px nudge above IS tied
+          to that size, though: it is a fixed offset, not a proportion, so re-judge it if the component's disc
+          ever changes.
+
+          `inline-flex` OVERRIDES THE COMPONENT'S `flex`, which is a BLOCK-level box — fine for an absolutely
+          positioned badge, but it would break out of the line here instead of flowing after the words. The
+          inline variant keeps the flex centring that holds the glyph in the middle of the disc.
+
+          THE ACCESSIBLE LABEL IS SUPPRESSED — the row's own `aria-label` is the checkbox's accessible name, and
+          a `role="img"` inside the same <label> would be announced as a second, unrelated item mid-control. The
+          visible mark is for sighted scanning of a menu that mixes gated and public rows; a screen-reader user
+          is not choosing between them at a glance. */}
+      <span>
+        {label}
+        {adminOnly ? <AdminLockBadge label="" className="static ml-0.5 inline-flex -translate-y-1 align-middle" /> : null}
+      </span>
     </label>
   );
 }
@@ -107,21 +159,24 @@ function ChartDisplayMenu() {
         >
           <DisplayCheckbox label="Title" checked={!chartTitleHidden} onChange={(v) => setChartTitleHidden(!v)} />
           <DisplayCheckbox label="Badge" checked={!chartBadgeHidden} onChange={(v) => setChartBadgeHidden(!v)} />
+          {/* `adminOnly` ON EVERY ROW INSIDE A FEATURE_* TEST, and only on those — the flag and the gate are the
+              same decision written twice, once to decide whether the row exists and once to mark it. Adding a
+              row here means setting both. */}
           {FEATURE_CHART_STRUCTURE_SETTINGS ? (
             <>
-              <DisplayCheckbox label="Chart" checked={!levelsPolygonHidden} onChange={(v) => setLevelsPolygonHidden(!v)} />
-              <DisplayCheckbox label="Level labels" checked={!chartLevelTicksHidden} onChange={(v) => setChartLevelTicksHidden(!v)} />
+              <DisplayCheckbox adminOnly label="Chart" checked={!levelsPolygonHidden} onChange={(v) => setLevelsPolygonHidden(!v)} />
+              <DisplayCheckbox adminOnly label="Level labels" checked={!chartLevelTicksHidden} onChange={(v) => setChartLevelTicksHidden(!v)} />
             </>
           ) : null}
           {FEATURE_CHART_LEGEND_SETTING ? (
-            <DisplayCheckbox label="Legend" checked={!chartLegendHidden} onChange={(v) => setChartLegendHidden(!v)} />
+            <DisplayCheckbox adminOnly label="Legend" checked={!chartLegendHidden} onChange={(v) => setChartLegendHidden(!v)} />
           ) : null}
           {/* Appearance of the pillar labels themselves, as opposed to the show/hide toggles above. */}
           <hr className="my-1 border-t border-border" />
           <DisplayCheckbox label="Colored pillar labels" checked={clusterLabelColors} onChange={setClusterLabelColors} />
           <DisplayCheckbox label="Pillar emoji" checked={!pillarEmojiHidden} onChange={(v) => setPillarEmojiHidden(!v)} />
           {FEATURE_SCORES_SETTINGS ? (
-            <DisplayCheckbox label="Scores" checked={!footerScoresHidden} onChange={(v) => setFooterScoresHidden(!v)} />
+            <DisplayCheckbox adminOnly label="Scores" checked={!footerScoresHidden} onChange={(v) => setFooterScoresHidden(!v)} />
           ) : null}
         </div>
       ) : null}

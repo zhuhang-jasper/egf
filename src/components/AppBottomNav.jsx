@@ -1,5 +1,6 @@
 import { FileText, Radar, Wrench } from "lucide-react";
 
+import { AdminLockBadge } from "@/components/AdminLockBadge";
 import { UnseenDot } from "@/components/UnseenDot";
 
 import { FRAMEWORK_VERSION, IS_ADMIN } from "@/constants";
@@ -13,11 +14,15 @@ import { cn } from "@/utils";
  * ADMIN IS APPENDED, NOT CONDITIONALLY RENDERED IN THE ROW BELOW, so the map stays a plain list and the items'
  * `flex-1` does the rest: two tabs split the bar in half, three split it in thirds, and nothing else changes.
  * This list and HomePage's VALID_TABS are the two places the tab is gated — see AdminContent.
+ *
+ * `adminOnly` IS A PROPERTY OF THE ITEM, not a test on `id === "admin"` at the render site. It marks the tab as
+ * absent from the public build (see AdminLockBadge), which is a fact about how it is gated rather than about
+ * which tab it happens to be — so a second gated tab is one more flag here and nothing else.
  */
 const NAV_ITEMS = [
   { id: "tool", label: "Tool", icon: Radar },
   { id: "theory", label: "Theory", icon: FileText, version: `v${FRAMEWORK_VERSION}` },
-  ...(IS_ADMIN ? [{ id: "admin", label: "Admin", icon: Wrench }] : []),
+  ...(IS_ADMIN ? [{ id: "admin", label: "Admin", icon: Wrench, adminOnly: true }] : []),
 ];
 
 /**
@@ -160,7 +165,7 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
           Above `xs`, the empty tint either side of the capped group is bar, not dead target — the same as the
           space beside the header's brand mark. Only space INSIDE a button's own width would be dead. */}
       <div className="mx-auto flex w-full items-stretch justify-center">
-        {NAV_ITEMS.map(({ id, label, icon: Icon, version }) => {
+        {NAV_ITEMS.map(({ id, label, icon: Icon, version, adminOnly }) => {
           const selected = activeTab === id;
           // Lit whether or not the Theory tab is active: opening the tab does not clear it. It is the aggregate
           // of the per-section dots and stays lit until every changed section has been scrolled to.
@@ -390,6 +395,49 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
                   // Tailwind's `--color-ring` (a mid grey, see src/index.css) and draws exactly the halo above.
                   <UnseenDot label="New framework updates" className={cn("absolute top-0 -right-2 size-2")} />
                 ) : null}
+                {/* ON THE WRENCH'S TOP-RIGHT, CLEAR OF THE GLYPH — the app-icon badge position, and the same
+                    corner and the same relationship the unseen dot has to its own icon.
+
+                    The wrapper span is exactly the 24px glyph's box (it is what the dot is measured against
+                    too), so these offsets are read against the GLYPH and not against the 56px segment around
+                    it. That is the whole reason the badge lives inside this span rather than on the button:
+                    anchored to the button it would sit at the corner of a full-width bar segment and read as
+                    decorating the bar, not the tab.
+
+                    `-top-1 -right-4` CLEARS THE CORNER RATHER THAN SITTING ON IT, AND THE HORIZONTAL VALUE IS THE
+                    ONE THAT NEEDED EYES ON IT. Several earlier values each missed differently: `-bottom-1
+                    -right-1.5` was on the wrong corner entirely; `-bottom-0.5 -right-0.5` tucked into the corner
+                    and overlapped the strokes; `-top-1.5 -right-1.5` reached the right corner but still sat over
+                    the glyph, because the wrench's HEAD is its top-right mass — the shaft runs down-left from it
+                    — so a badge a few px out was landing on the head rather than beside it. `-right-4` (16px) is
+                    what actually clears the head.
+
+                    THE NUMBERS ARE NOT SYMMETRIC AND SHOULD NOT BE MADE SO. Clearing a glyph means clearing the
+                    ink that is actually at that corner, and lucide's icons do not fill their box evenly — the
+                    vertical offset stays much smaller than the horizontal one because there is little wrench near
+                    the top edge and a lot near the right. A badge that clears the shape needs no ring to separate
+                    it, and stays legible if the glyph beneath it is ever swapped for a busier one.
+
+                    THE OFFSETS ARE FIXED px AND THE DISC'S SIZE NOW LIVES IN AdminLockBadge, so the two can move
+                    independently — which they have: these were set while the badge was 14px and it is 12px now.
+                    A smaller disc at the same offset sits further out relative to its own width, so re-judge
+                    both numbers if the component's size changes rather than assuming they scale.
+
+                    IT SHARES THE DOT'S CORNER, WHICH IS A REAL CONSTRAINT AND NOT AN OVERSIGHT. The dot is
+                    `top-0 -right-2` on this same box, so a tab carrying both marks would stack them. None does:
+                    the dot is Theory's (framework updates) and the lock is Admin's, and the Admin tab has no
+                    changelog to be unread. Top-right is the correct position for BOTH — it is where a badge goes
+                    — so the resolution if that ever changes is to displace one along the top edge, not to bump
+                    this one to a corner where it reads as a second icon.
+
+                    BOTH NUMBERS ARE MEASURED AGAINST `size-6` AND DO NOT SURVIVE IT CHANGING, the same caveat
+                    the dot's note carries: an offset that clears a 24px box sits somewhere else on a 20px one.
+
+                    NO RING, AND NO FILL MATCHED TO THIS BAR — inherited from AdminLockBadge, see its note. It
+                    matters here specifically because this tab's background is the one that MOVES: `bg-slate-200`
+                    when selected, the bar's `bg-slate-100` when not. Any value copied from either would be right
+                    in one state and wrong in the other, so the badge stays a flat slate disc in both. */}
+                {adminOnly ? <AdminLockBadge className="-top-1 -right-4" /> : null}
               </span>
               {/* `items-baseline`, NOT `items-start`, which is what this was. Top-aligning two inline spans lines
                   up their LINE BOXES, and a line box's top is only where the text starts if both spans are the
