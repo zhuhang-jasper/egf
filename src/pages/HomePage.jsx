@@ -458,7 +458,14 @@ export default function HomePage() {
        `mt-auto` a floor to push against without `main` itself doing viewport arithmetic (see the note on its
        padding for why any `calc()` on a viewport unit there made the fixed nav jump). `min-h-dvh` as a bare unit
        is fine; it is the arithmetic that was the problem. */
-    <div className="flex min-h-dvh flex-col bg-black print:block print:min-h-0 print:bg-white print:p-0">
+    /* `bg-slate-100` MATCHES `body` (index.css), AND THAT PAIRING IS THE POINT. This wrapper paints the
+       surround visible down both sides once the viewport is wider than the content measure; `body`'s
+       identical value propagates to the canvas and is what an over-pull past either end of the document
+       reveals. Both were `bg-black` — one decision, split across two files — and the over-pull was the
+       half that failed: a black gap opening above the `bg-slate-100` header read as a hole behind the
+       chrome. Changing only `body` would have fixed the rubber-band and left a black column beside the
+       page, so the two move together. */
+    <div className="flex min-h-dvh flex-col bg-slate-100 print:block print:min-h-0 print:bg-white print:p-0">
       {/* THE BOTTOM NAV'S HEIGHT IS RESERVED WITH PADDING ALONE — `pb-[…]`, and deliberately NOT paired with a
           `min-h-[calc(100dvh - …)]` to match.
 
@@ -603,8 +610,16 @@ export default function HomePage() {
             nav still bounds the bottom; this is passive legal text, and it reads as the end of the content rather
             than as a band of UI, which is what it actually is.
 
-            The black survives where it still means something: the page wrapper outside `main`, which shows down
-            both sides once the viewport is wider than the content measure.
+            The surround survives where it still means something: the page wrapper outside `main`, which shows
+            down both sides once the viewport is wider than the content measure. That wrapper is no longer black
+            either — it now carries the chrome's own `bg-slate-100` so an over-pull at either end of the document
+            does not open a black gap above the header or below the nav (see the wrapper's own note).
+
+            THAT DOES NOT REOPEN THE TINT QUESTION HERE. The objection to tinting this footer was never the
+            particular colour; it was that the nav's upward shadow already draws this boundary, and a tint needs a
+            `border-t` to stay crisp, putting a second separator 56px from the first. Both still hold. This element
+            keeps inheriting `main`'s white, and the shadow still falls on white, which is the case it was drawn
+            for.
 
             `text-slate-500` OUTLASTED BOTH BACKGROUNDS. It replaced `text-white/60` when the black went, and it is
             the same muted weight against white that it was against the tint — it needs no revisiting here.

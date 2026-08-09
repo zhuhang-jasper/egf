@@ -213,7 +213,9 @@ export default function SocialPage() {
   const downloadLabel = busy === "download" ? "Saving…" : { idle: "↓ Download", done: "✓ Saved", error: "Save failed" }[downloadState];
 
   return (
-    <div className="flex w-full flex-col items-center overflow-x-hidden overflow-y-auto bg-black p-4">
+    /* `min-h-dvh` for the same reason as PosterPage's stage — see the note there. Without it this box stops at
+       the canvas and the app's `bg-slate-100` body shows through below. */
+    <div className="flex min-h-dvh w-full flex-col items-center overflow-x-hidden overflow-y-auto bg-black p-4">
       {/* Top chrome row: back link left, canvas size right. See the matching note in PosterPage for why the row
           lives here, why the label is outside the canvas, and why the numbers come off the constants. */}
       <div className="mb-4 flex w-full items-center justify-between gap-3">

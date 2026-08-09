@@ -54,6 +54,13 @@ import { clearStickyScrollOffset, setStickyScrollOffset } from "@/utils/scroll";
  * both, plus the four values that are read AGAINST it: the scroll-top button here, and the bottom nav's active
  * segment, inactive hover and unseen-dot rings.
  *
+ * AND THE PAGE SURROUND NOW TAKES IT TOO — `body` (index.css) and HomePage's wrapper, which were `bg-black`.
+ * `body`'s background propagates to the canvas, so it is what an over-pull past either end of the document
+ * reveals: a black gap opening above this header read as a hole behind the chrome rather than as the bar simply
+ * continuing. Matching it means the rubber-band shows more of this same surface. So this value now has SIX
+ * dependents, not four — the two above plus these — and the two new ones want the tint IDENTICAL rather than
+ * merely legible against it. If it changes, they change with it.
+ *
  * THE FOOTER IS NOT PART OF IT ANY MORE. It carried this tint for a while and gave it up — it is in flow, so it is
  * content, and its band plus hairline only duplicated the boundary the nav's shadow already draws. See HomePage.
  *

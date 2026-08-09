@@ -634,7 +634,13 @@ export default function PosterPage() {
   const downloadLabel = busy === "download" ? "Saving…" : { idle: "↓ Download", done: "✓ Saved", error: "Save failed" }[downloadState];
 
   return (
-    <div className="flex w-full flex-col items-center overflow-x-hidden overflow-y-auto bg-black p-4">
+    /* `min-h-dvh` IS WHAT KEEPS THE BLACK GOING PAST THE CANVAS. This box is `w-full` with no height of its
+       own, so it stops at its content — and a portrait canvas scaled to fit a wide window leaves real space
+       below it. That used to look fine only because `body` was ALSO black (index.css) and filled the gap; now
+       that `body` carries the app's `bg-slate-100` surround, the leftover showed as a pale slab under the
+       poster. The stage owns its own height rather than leaning on what happens to be behind it.
+       `min-h`, not `h`: a canvas taller than the viewport still has to grow this box and scroll. */
+    <div className="flex min-h-dvh w-full flex-col items-center overflow-x-hidden overflow-y-auto bg-black p-4">
       {/* TOP CHROME ROW: the back link at the left, the settings button centred, the canvas size at the right.
           Three unrelated things that happen to share a row, which is why the row lives here and none of them
           owns the others.

@@ -11,13 +11,15 @@ const SCROLLBAR_WIDTH_CSS_VAR = "--scroll-lock-gutter";
  * different amount again. The width has to be given back — but WHICH ELEMENTS GET IT IS THE WHOLE
  * PROBLEM, and three narrower attempts each failed in an instructive way:
  *
- *   `padding-right` on `body` — `body` carries `bg-black` (index.css) as the surround the app sits on,
- *      and a background on `body` PROPAGATES TO THE CANVAS when `html` has none, as here. The reserved
- *      strip paints black across the full viewport, outside the modal's `fixed inset-0` scrim, reading
- *      as a black bar down the right edge.
+ *   `padding-right` on `body` — `body` carries the app's surround tint (index.css), and a background on
+ *      `body` PROPAGATES TO THE CANVAS when `html` has none, as here. The reserved strip paints that
+ *      tint across the full viewport, outside the modal's `fixed inset-0` scrim, reading as a bar down
+ *      the right edge. This was the more obvious failure when the tint was `bg-black`; it is the same
+ *      bug at `bg-slate-100`, just quieter against the scrim, so do not read the softer colour as a
+ *      licence to revisit it.
  *   `margin-right` on `body` — identical, for the same reason: what shows in the gap is the propagated
  *      canvas background, which nothing done to `body`'s own box can avoid.
- *   `margin-right` on `#root` alone — no black, but it insets only the in-flow column, so AppBottomNav
+ *   `margin-right` on `#root` alone — no stray strip, but it insets only the in-flow column, so AppBottomNav
  *      (fixed, and therefore laid out against the viewport) stayed full-width while the page it belongs
  *      to pulled in beneath it.
  *

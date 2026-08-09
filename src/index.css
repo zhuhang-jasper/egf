@@ -88,8 +88,21 @@
     letter-spacing: -0.011em;
   }
 
+  /* `bg-slate-100` IS THE HEADER'S AND THE BOTTOM NAV'S TINT, and it is here for one reason: this
+     background propagates to the canvas (`html` has none), so it is what an over-pull past either end
+     of the document reveals. It was `bg-black`, chosen as the surround the app's white card sits on
+     down both sides at wide viewports — but the same value also paints the rubber-band gap, and a
+     black flash appearing above a `bg-slate-100` header (or below the matching nav) read as a hole
+     behind the chrome rather than as the page continuing.
+     The tint is the value both pieces of chrome already carry (AppShellHeader, AppBottomNav), so the
+     over-pull now looks like the bar simply extending, and the surround at wide viewports still reads
+     as a distinct plane behind `main`'s white. Keep the three in step: see AppShellHeader's docblock,
+     which owns the decision.
+
+     THE TOOL'S VALUE, THOUGH — the poster and social routes put it back to black just below, because their
+     stage is black and the over-pull has to match whatever is on screen. */
   body {
-    @apply bg-black text-foreground font-medium antialiased;
+    @apply bg-slate-100 text-foreground font-medium antialiased;
     /* PWA: kill double-tap-to-zoom and pinch-zoom gestures. The viewport meta
        handles most browsers; this covers iOS Safari which ignores user-scalable=no. */
     touch-action: pan-x pan-y;
@@ -123,6 +136,20 @@
        out at its own (wider) measure for the frame after a switch. See `overflow-x: clip` on the hidden panel in
        HomePage. Fix the thing that overflows, not the thing that scrolls. */
     overflow-x: auto;
+  }
+
+  /* THE EXPORT CANVASES OVERSHOOT BLACK, NOT SLATE. `/poster` and `/social` are black stages (see PosterPage),
+     and `body`'s background is what the rubber-band gap paints — so on those two routes the tool's tint would
+     flash pale above and below a full-bleed black page, which is the same "hole behind the page" that moved the
+     tool off black in the first place, just inverted.
+     The flag is set on `documentElement` at module-eval time in App.jsx, so this is painted on the first frame;
+     the routes never change at runtime, so nothing has to clear it.
+     `html` ITSELF STAYS UNPAINTED, deliberately — `body`'s background only propagates to the canvas while `html`
+     has none of its own, and that propagation is the entire mechanism being used here. Setting the black on
+     `html` instead would work by accident today and break the useScrollLock reasoning that depends on `body`
+     being the painted one. */
+  html[data-export-canvas] body {
+    @apply bg-black;
   }
 }
 
@@ -377,14 +404,18 @@
     max-height: none !important;
   }
 
-  /* The page itself is WHITE on paper. `body` is `bg-black` (see @layer base) because on screen that
-     black is the surround the app's white card sits on, visible down both sides once the viewport is
-     wider than the content measure. On paper there is no surround to show — but the black was still
-     being painted, and it filled whatever was left of the final sheet below the footer, because
-     HomePage's wrapper carries `print:min-h-0` and so stops at its content.
+  /* The page itself is WHITE on paper. `body` is tinted (`bg-slate-100`, see @layer base) because on
+     screen that tint is the surround the app's white card sits on, visible down both sides once the
+     viewport is wider than the content measure, and it is what an over-pull reveals. On paper there is
+     no surround to show — but the tint was still being painted, and it filled whatever was left of the
+     final sheet below the footer, because HomePage's wrapper carries `print:min-h-0` and so stops at
+     its content.
      `html` too: only `body` was ever painted, so past the end of body's box the sheet fell back to the
-     default white and printed as a stray pale strip under the black. Setting both makes the whole sheet
-     one surface regardless of where the content happens to end. */
+     default white and printed as a stray strip of a second shade. Setting both makes the whole sheet
+     one surface regardless of where the content happens to end.
+     THIS OVERRIDE IS STILL LOAD-BEARING NOW THAT THE SURROUND IS PALE RATHER THAN BLACK — a slate wash
+     over the unused part of a sheet is less startling than a black one, but it is still ink nobody asked
+     to spend. Do not drop it on the grounds that the colour got quieter. */
   html,
   body {
     background: #fff !important;

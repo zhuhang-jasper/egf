@@ -56,6 +56,20 @@ if (isGatedRoute && !ADMIN_PASSWORD_REQUESTED) {
 // `isGatedRoute` fall-through, and would silently start disagreeing the moment a third route existed.
 const exportCanvasRoute = !isGatedRoute && (route === "poster" || route === "social") ? route : null;
 
+// The export canvases sit on a BLACK stage, the tool on the app's `bg-slate-100` surround — and `body` has to
+// agree with whichever is on screen, because a background on `body` propagates to the canvas and is therefore
+// what an over-pull past either end of the document reveals. The stages set their own black (see PosterPage),
+// which covers the document; it is only the rubber-band gap outside it that needs this.
+//
+// STAMPED ON `documentElement`, NOT `body`, and at module scope: `html` having no background of its own is the
+// precondition for `body`'s propagating at all (see index.css and useScrollLock), so the flag goes on the
+// element that must stay unpainted, and the paint stays in CSS. Module scope rather than an effect because the
+// route is read once at module-eval time and never changes — an effect would leave the wrong colour painted for
+// the first frame, which on this page is the one being looked at.
+if (exportCanvasRoute !== null) {
+  document.documentElement.dataset.exportCanvas = "";
+}
+
 function RoutedPage() {
   // A gated route falls through to the tool rather than showing an error: there is nothing here a
   // visitor did wrong, and "this page does not exist for you" would only advertise that it exists.
