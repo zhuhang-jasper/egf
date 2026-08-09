@@ -77,16 +77,12 @@ function PillarMatrixLevels({ levels, showLatestChanges }) {
 }
 
 /**
- * The pillar's focus areas as three cumulative skill tiers (framework v4.0). Rendered in the always
- * visible card header, so the tiers read without expanding the pillar.
+ * The pillar's focus areas as three cumulative skill tiers, in the always-visible card header so they read
+ * without expanding the pillar. Each pill carries its band's tint from the Skill Tiers card above, so the
+ * key and the nine cards that use it read as one system.
  *
- * Each tier is labelled with a colored pill carrying the same tint as its band in the Skill Tiers card
- * at the head of this section, so the key and the nine cards that use it read as one system — which is
- * why that card sits directly above these rather than in the section before. The list is a two-column
- * grid
- * whose first track is `max-content`: the pill column sizes itself to the longest label, so the three
- * pills share one width and the focus-area text starts on a common edge, with no hardcoded width to
- * outgrow (a wider label at a smaller breakpoint just widens the track).
+ * The first grid track is `max-content`, so the pill column sizes to the longest label and the focus-area
+ * text starts on a common edge with no hardcoded width to outgrow.
  */
 function FocusTierList({ focusTiers }) {
   const tiers = SKILL_TIERS.filter(({ id }) => focusTiers?.[id]);
@@ -310,41 +306,22 @@ function CompetencyMatrix({ expandedPillar, onExpandedPillarChange, scrollNav, s
     cancelScrollRef.current = null;
   };
 
-  // EXPANDING GLIDES ON THE ANIMATION'S OWN CLOCK, starting with it rather than after it.
-  //
-  // This used to wait MATRIX_ANIM_MS and then smooth-scroll, which forced the two halves of one gesture to
-  // happen in sequence: the new levels animated open wherever the reader happened to be standing — a flash
-  // of content far down the page — and only then did the view travel up to meet them. Running the glide on
-  // the same 300ms budget as the panels makes it a single movement: the card rises into place as its levels
-  // open, and there is no interval during which the matrix is visible but misplaced.
+  // Expanding glides on the animation's own clock, starting with it rather than after it. See
+  // docs/DECISIONS.md#matrix-expand-glide.
   //
   // The glide must not begin until the panel's `grid-rows` change is COMMITTED, or the first frame measures
-  // the old layout (collapsing card still at full height) and aims at a destination that never existed. So
-  // the click records its intent here and a `useLayoutEffect` below starts the glide post-commit.
+  // the old layout and aims at a destination that never existed. So the click records intent here and a
+  // `useLayoutEffect` below starts the glide post-commit.
   //
-  // A ref, rather than a `useLayoutEffect` keyed on `expandedPillar` alone: only a click may scroll. Keying
-  // on the value would also fire on mount and on refresh — yanking the scroll position the theory tab had
-  // just restored — and twice under StrictMode. Consuming the ref makes the effect inert unless a toggle
-  // actually set it.
+  // A ref rather than an effect keyed on `expandedPillar`, because only a click may scroll: keying on the
+  // value would also fire on mount and refresh (yanking the position the tab just restored) and twice under
+  // StrictMode.
   const pendingExpandRef = useRef(null);
 
-  // COLLAPSING PINS THE CARD INSTEAD OF CHASING IT, and starts NOW rather than after the animation.
-  //
-  // The close control sits at the FOOT of the matrix, so it is normally clicked from the far end of
-  // several screens of levels — all of which are ABOVE the viewport and all of which vanish. Waiting
-  // MATRIX_ANIM_MS and then gliding produced two separate movements for one click: first the page
-  // lurched upward on its own (the browser clamping `scrollY` to a document that just lost several
-  // screens of height), then our smooth scroll travelled back to the card. The lurch was never a scroll
-  // we asked for, so there was no way to make it graceful — only to stop it happening.
-  //
-  // Holding the card still for the duration of the collapse absorbs the clamp frame by frame: the card does
-  // not move at all, the levels concertina shut into it, and there is nothing left to recover from afterwards.
-  //
-  // WHERE it holds is the card's own current position, not the top of the page (see holdElementInPlace, which
-  // floors it at the sticky inset). That distinction covers the other two ways this gets clicked without a
-  // special case for either: from the HEADER, the card's top is already at the inset, so every correction is
-  // zero and the pin is invisible; scrolled UP with the card mid-viewport, the card is already in view, so the
-  // right amount of scrolling is none and the pin holds it exactly where the reader left it.
+  // Collapsing PINS the card instead of chasing it, and starts now rather than after the animation, so the
+  // browser's `scrollY` clamp is absorbed frame by frame instead of being recovered from. Where it holds is
+  // the card's own position, floored at the sticky inset, which covers all three ways this is clicked
+  // without a special case. See docs/DECISIONS.md#matrix-collapse-pin.
   const holdCardWhileCollapsing = (pillarId) => {
     cancelPendingScroll();
     const card = cardRefs.current[pillarId];
@@ -388,15 +365,10 @@ function CompetencyMatrix({ expandedPillar, onExpandedPillarChange, scrollNav, s
     }
   };
 
-  // Cross-tab jump from a tool-form pillar's help icon. Keyed on `scrollNav.seq` (bumps every click)
-  // so it always scrolls the card to the top — even when the pillar was already expanded. (Expansion
-  // for this path is driven by TheoryContent's matrixNav handler, not openPillar.)
-  //
-  // Gate on `expandedPillar === pillarId`: TheoryContent expands the target via a state update in a
-  // post-paint `useEffect`, which commits a render *after* this sibling effect would first fire on
-  // the seq bump. If we scrolled on that first commit (card still collapsed, height 0), the measured
-  // top would be wrong and the scroll would be lost — the bug seen when no pillar was expanded yet.
-  // Waiting until the expansion has committed makes the measurement reliable in both cases.
+  // Cross-tab jump from a tool-form pillar's help icon, keyed on `scrollNav.seq` so it re-scrolls even when
+  // the pillar was already expanded. The `expandedPillar === pillarId` gate is required: TheoryContent
+  // expands the target in a post-paint effect that commits AFTER this one would first fire, so scrolling on
+  // that first commit measures a collapsed, zero-height card and the scroll is lost.
   const scrollNavSeq = scrollNav?.seq;
   useLayoutEffect(() => {
     const pillarId = scrollNav?.pillarId;

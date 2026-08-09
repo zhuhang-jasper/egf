@@ -75,22 +75,14 @@ export const TRACK_BADGE_UI = {
 };
 
 /**
- * Max characters allowed in a profile name. Enforced at the input and when parsing to canonical state, so
- * typed, imported, and any other write path all stay bounded.
+ * Max characters in a profile name, enforced at the input and when parsing to canonical state so every write
+ * path stays bounded.
  *
- * NO LONGER A LAYOUT CONSTRAINT. It briefly was: the chart title wrapped, so this was tuned to whatever fit on
- * one line at the app's 350px floor (28, from a ~29 character estimate). That made a data limit hostage to a
- * font size, and it could never be right anyway — a character budget cannot bound a rendered width when
- * capitals are roughly twice the width of lowercase, so 28 of "WWWW…" wrapped where 28 of ordinary text did
- * not.
+ * A sanity bound on stored data, NOT a layout constraint: the title truncates in the middle by measurement
+ * (see useMiddleEllipsis), so fitting is enforced where it can be observed. It was briefly tuned to what fit
+ * on one line, which a character budget cannot express when capitals are twice the width of lowercase.
  *
- * The title now truncates in the MIDDLE by measurement instead (see useMiddleEllipsis), so any length renders
- * on one line with both ends visible, and fitting is enforced where it can actually be observed. That frees
- * this to be what it should be: a sanity bound on stored data.
- *
- * 50 rather than the original 60 — long enough that the ellipsis is rare in practice for real profile names,
- * short enough to keep names legible in the profile list and to leave room for the `Copy of ` prefix that
- * duplication prepends (see useAppStore.duplicateDraft, which slices to this).
+ * 50 leaves room for the `Copy of ` prefix duplication prepends (useAppStore.duplicateDraft slices to this).
  */
 export const MAX_PROFILE_NAME_LENGTH = 50;
 

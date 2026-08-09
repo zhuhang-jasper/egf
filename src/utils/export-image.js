@@ -8,15 +8,9 @@ import interLatinItalicUrl from "@fontsource-variable/inter/files/inter-latin-op
 import interLatinNormalUrl from "@fontsource-variable/inter/files/inter-latin-opsz-normal.woff2?url";
 
 /**
- * Shared PNG-export pipeline for the fixed-canvas share pages (PosterPage, SocialPage).
- *
- * Both pages render a pixel-exact <article> at a fixed CANVAS_W×CANVAS_H size, visually scaled
- * with a CSS transform, and rasterize it to a PNG via snapdom. The capture logic is identical
- * apart from the canvas size and the download filename, so it lives here once instead of being
- * copy-pasted per page.
- *
- * snapdom (unlike html2canvas) natively understands Tailwind v4's oklch()/oklab() colours and
- * clones + inlines styles internally, so there's no colour conversion to maintain.
+ * Shared PNG-export pipeline for the fixed-canvas share pages (PosterPage, SocialPage), which differ only in
+ * canvas size and filename. snapdom rather than html2canvas because it natively understands Tailwind v4's
+ * oklch()/oklab() colours and inlines styles itself, so there is no colour conversion to maintain.
  */
 
 // The bundled Inter weights/styles the share pages use. snapdom only rasterizes glyphs that are
@@ -87,11 +81,9 @@ export async function ensureInterFontsLoaded() {
 /**
  * Rasterize a fixed-canvas share <article> to a high-res PNG via snapdom.
  *
- * To avoid the visible "jump" that mutating the live node would cause (the preview is shrunk by a
- * `transform: scale()`, and capturing it at full size means temporarily un-scaling on screen), we
- * deep-clone the article into a detached container parked off-screen at its true size, mirror the
- * live chart <canvas> pixels into the clone, capture the clone, then discard it. The on-screen
- * preview is never touched, so the user sees no flicker.
+ * The article is deep-cloned into a detached off-screen container at its true size, the live chart canvas
+ * pixels mirrored in, and the clone captured then discarded. Mutating the live node instead would mean
+ * temporarily un-scaling the preview on screen, which the user would see as a jump.
  *
  * @param node     the live share <article> element
  * @param width    fixed canvas width in px (the article's true, un-scaled width)

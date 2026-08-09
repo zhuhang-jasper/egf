@@ -17,30 +17,19 @@ const MIN_TRUNCATABLE = TAIL_CHARS + 3;
  * Fit `text` onto ONE line inside `ref` by dropping characters from its MIDDLE, returning the string to
  * render. Returns `text` unchanged whenever it already fits, or whenever the element cannot be measured.
  *
- * NOT EXPRESSIBLE IN CSS. `text-overflow: ellipsis` only ever truncates at the end, so keeping both ends
- * visible means measuring the rendered text and cutting it ourselves. Everything awkward here follows from
- * that: the answer depends on the laid-out width and the resolved font, neither of which is known until after
- * layout, and both of which change under us.
+ * `text-overflow: ellipsis` only truncates at the end, so keeping both ends means measuring and cutting.
  *
- * MEASURED ON THE REAL ELEMENT, NOT A PROBE. See the note in useFitsOneLine: an out-of-flow probe inside a
- * flex row takes its width from the containing block rather than from the flex negotiation the visible text is
- * subject to, and then reports "fits" for text that visibly overflows. Its one caller sits in a column where
- * that is safe; THIS one is `flex-1` beside the track badge (see ChartSection), which is precisely the case
- * that broke the install banner. So the fitting runs by writing candidates into the element itself and reading
- * `scrollWidth` back — the element is its own probe, under the exact constraints it will be rendered with.
+ * Measured on the REAL ELEMENT, not a probe: an out-of-flow probe inside a flex row reports "fits" for text
+ * that overflows, and this caller is `flex-1` beside the track badge. Candidates are written into the element
+ * and `scrollWidth` read back, so it is its own probe under the constraints it will render with.
  *
- * `active` IS A DEPENDENCY, NOT AN OPTIMISATION, for the same reason it is one there: the tool tab is
- * `display: none` while Theory is open, every descendant has no box, and a measurement taken then would
- * truncate against a width of zero. The zero-width guard below bails instead of recording that, so the last
- * good answer survives the hide/show cycle — and re-running as a LAYOUT effect when the tab is revealed means
- * the correction lands in the same commit, before paint, rather than flashing the wrong string for a frame.
+ * `active` is a dependency, not an optimisation (see useFitsOneLine): a hidden tab's descendants have no box,
+ * so measuring then truncates against zero width.
  *
- * `ref` MUST POINT AT AN ELEMENT REACT DOES NOT RENDER CHILDREN INTO. The fitting loop writes candidate
- * strings straight into `textContent` and reads `scrollWidth` back, which is a lie React does not know about:
- * pointed at a node React also fills, the two would each believe they own the text, and React would restore
- * the full string on its next commit without re-running this. The caller therefore renders the RESULT into a
- * child and hands this an empty measuring element — see ChartSection, where the <h2> holds a measuring span
- * plus the visible text.
+ * `ref` MUST POINT AT AN ELEMENT REACT DOES NOT RENDER CHILDREN INTO. The loop writes into `textContent`
+ * behind React's back, so pointed at a node React also fills, React would restore the full string on its next
+ * commit without re-running this. Callers render the result into a child and hand this an empty measuring
+ * element (see ChartSection).
  */
 export function useMiddleEllipsis(ref, text, active) {
   const [display, setDisplay] = useState(text);

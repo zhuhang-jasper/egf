@@ -10,23 +10,15 @@ import { ADMIN_PASSWORD_REQUESTED, unlockAdmin } from "@/constants";
 import { track } from "@/utils/analytics";
 
 /**
- * The password question for `?admin=1`, as an in-app form.
+ * The password question for `?admin=1`, as an in-app form rather than a `window.prompt`, which is the whole
+ * point of this file: a native prompt at module-eval blocks the import path, so any context that suppresses
+ * modals never boots the app at all. See the note in constants/features.js.
  *
- * IT IS NOT A `window.prompt`, AND THAT IS THE WHOLE POINT OF THIS FILE. The unlock was a native prompt
- * called from constants/features.js at module-eval, which blocks the import path — so in any context that
- * suppresses modal dialogs (VS Code's Simple Browser, a sandboxed iframe without `allow-modals`, some
- * in-app webviews) the dialog was never shown, never dismissed, and the app never finished booting: a
- * blank white page. Ordinary UI has no such failure mode; it is just markup that renders after mount.
+ * Rendered alongside the app rather than instead of it, so a dismissed question leaves a working tool.
+ * `unlockAdmin` reloads on success, so there is no success state here and nothing to tell the parent.
  *
- * Rendered ALONGSIDE the app rather than instead of it (see App.jsx), so a suppressed or dismissed
- * question leaves a working tool underneath rather than a dead end.
- *
- * `unlockAdmin` RELOADS on success, so there is no success state to render here and nothing to tell the
- * parent — everything gated on IS_ADMIN is computed at module-eval, and the reload is what applies it.
- * See its docblock.
- *
- * Shell comes from {@link SimpleModal}, with three deviations it takes as props: the panel is a `form`
- * (`as="form"`), the backdrop does not dismiss, and it is not portalled.
+ * Shell from {@link SimpleModal}, with three deviations passed as props: the panel is a `form`, the backdrop
+ * does not dismiss, and it is not portalled.
  */
 export function AdminUnlockPrompt() {
   // Dismissal is local and deliberately not persisted: the question is only asked when `?admin=1` is in

@@ -3,33 +3,16 @@ import { COMPETENCY_LEVEL_COPY } from "@/constants/competency-matrix-data";
 import { THEORY_SECTIONS } from "@/utils/theory-url";
 
 /**
- * Heading + intro for each of the four Theory sections, keyed by the same ids the deep-link and
- * unseen-dot machinery uses (see `THEORY_SECTIONS`). ONE OBJECT rather than four loose constants
- * scattered beside the data they head: the tab's outline is then readable in one place, and a future
- * table of contents has a single source for the labels instead of scraping them out of JSX.
+ * Heading + intro for each of the four Theory sections, keyed by the ids the deep-link and unseen-dot
+ * machinery uses. One object rather than four loose constants, so the tab's outline reads in one place.
  *
- * THE HEADINGS ARE QUESTIONS, AND THEY KEEP THEIR NUMERALS. The question is what a reader actually
- * arrives with; the numeral is what the printed document and the changelog's prose bullets refer back
- * to. Both earn their place, so neither is dropped.
+ * Headings are questions and keep their numerals: the question is what a reader arrives with, the numeral
+ * is what the printed document and the changelog refer back to.
  *
- * II AND III ARE DELIBERATELY WORDED APART. "How do the 5 levels work" is the abstract scale; "what
- * does each level look like in practice" is that scale spelled out cell by cell. Phrased any closer
- * together the two collapse into the same question and the matrix stops looking like the payoff of
- * the section above it.
- *
- * `matrix` HAS NO INTRO, because the thing directly under the heading already introduces itself and a
- * paragraph above it would say so twice: the section is two blocks, each with its own lead-in
- * (`SKILL_TIERS_INTRO` above the tier diagram, then `COMPETENCY_MATRIX_INTRO` above the nine pillar
- * cards). A subtitle here would be introducing an introduction — and when the matrix lead-in did sit in
- * this slot, it described cards two blocks below and read as a caption for the diagram in between.
- *
- * `tracks` WAS ALSO INTRO-LESS on that reasoning, since it opens with the "From Junior to Senior"
- * subsection and its own framing (JUNIOR_TO_SENIOR). Its intro earns the slot by doing something that
- * framing does not: it disambiguates the S1-S5 notation the whole section is written in from the L1-L5
- * of Section II. That has to land before the first "S1-S3" the reader meets, which is JUNIOR_TO_SENIOR's
- * own title, so it cannot wait for the subsection to make the point in passing.
- *
- * TheoryContent spaces both headings to suit — see the notes at each.
+ * `matrix` has no intro because its section is two blocks that each carry their own lead-in
+ * (`SKILL_TIERS_INTRO`, `COMPETENCY_MATRIX_INTRO`), so a subtitle here would introduce an introduction.
+ * `tracks` keeps one only because it must disambiguate S1-S5 from Section II's L1-L5 before the reader
+ * meets the first "S1-S3", which is in the subsection's own title.
  */
 export const THEORY_SECTION_COPY = {
   [THEORY_SECTIONS.pillars]: {
@@ -57,21 +40,9 @@ function buildLevels(scores) {
 }
 
 /**
- * The three cumulative skill tiers introduced in framework v4.0 (Foundational → Core → Advanced).
- * The matrix cards render these as three labelled bullets; the Section I pillar grid flattens them
- * back into one prose line (see `flattenFocusTiers`) to keep the nine cards compact.
- *
- * `endPct` is how far the band reaches across the L1-L5 track (0% = left edge of L1, 100% = right
- * edge of L5). A band's start is normally derived — a tier begins at the MIDPOINT of the one before
- * it, so the bands chain off each other rather than snapping to the level columns. That staggered
- * overlap is the point: the tiers are cumulative, and you start picking up the next one about
- * halfway through the current. A tier may author its own `startPct` to break out of that chain; see
- * `getSkillTierBands`.
- *
- * These are APPROXIMATE by intent — "Foundational fades out somewhere mid-L2" — not exact fractions
- * of the ruler. The ruler is five equal 20% cells, so mid-L2 is 30% on the nose, but Foundational is
- * authored at 35%: the extra 5% is what keeps its label from truncating in the narrowest cards, and
- * it still reads as mid-L2. Prefer widening a band over shrinking its type if a label stops fitting.
+ * The three cumulative skill tiers. `endPct` is how far a band reaches across the L1-L5 track; its start
+ * is derived from the MIDPOINT of the band before it, so the bands chain and overlap rather than snapping
+ * to level columns. A tier may author its own `startPct` to break the chain (see `getSkillTierBands`).
  *
  *     L1        L2        L3        L4        L5
  *     |███████████████|                            Foundational    0% →  35%
@@ -79,18 +50,14 @@ function buildLevels(scores) {
  *            |█████████████████████████|          Core         17.5% →  65%
  *                         |███████████████████|   Advanced     40.5% → 100%  (start pinned)
  *
- * Core's midpoint is 41.25%, but Advanced pins its start to 40.5% so the two stay independent:
- * how far Core carries you and when Advanced begins are separate claims about the framework.
- *
- * `bandClass` is the tier's fill/border/text tint, shared by the bands here and the pills labelling
- * each tier in the competency matrix, so the two places tiers surface read as one system.
+ * The percentages are APPROXIMATE by intent, not exact fractions of the ruler: Foundational is 35% rather
+ * than mid-L2's exact 30% so its label does not truncate in the narrowest cards. Prefer widening a band
+ * over shrinking its type. Advanced pins its start rather than taking Core's 41.25% midpoint, so how far
+ * Core carries you and when Advanced begins stay separate claims.
  */
-// The border is the tier's DARKEST shade at very low alpha, not a light shade at high alpha. A light
-// tint composites to a brighter, higher-chroma line than the fill it outlines (green-200/35 over
-// green-100 lands on a neon mint); the same hue's -900 at 20% instead darkens the fill slightly, so
-// the edge reads as a soft shadow that recedes. It exists only to keep the pill from dissolving into
-// the cluster surface tint behind it. Foundational uses `green`, not `emerald`, which goes neon
-// against those tints.
+// The border is the tier's DARKEST shade at very low alpha, not a light shade at high alpha: a light tint
+// composites to a brighter, higher-chroma line than the fill it outlines. Foundational uses `green`, not
+// `emerald`, which goes neon against the cluster surface tints.
 export const SKILL_TIERS = [
   { id: "foundational", label: "Foundational", endPct: 35, bandClass: "border border-green-900/20 bg-green-100/80 text-green-900" },
   { id: "core", label: "Core", endPct: 65, bandClass: "border border-amber-900/20 bg-amber-100/80 text-amber-900" },
@@ -315,32 +282,14 @@ export const SENIORITY_LEVEL_DEFINITIONS = [
 export const SENIORITY_LEVELS = SENIORITY_LEVEL_DEFINITIONS;
 
 /**
- * Lead-in for the nine pillar cards, and NOT the section's intro — it renders directly above the first
- * card rather than under the heading, because the tier diagram sits between the two and a paragraph
- * announcing the matrix landed above a figure that is not the matrix.
+ * Lead-in for the nine pillar cards, NOT the section intro: it renders above the first card because the
+ * tier diagram sits between the two, and a paragraph announcing the matrix above a different figure reads
+ * as that figure's caption.
  *
- * IT OPENS BY POINTING AT WHAT FOLLOWS. "Below is the full behavioral matrix" tells the reader that the
- * nine cards under this paragraph ARE the matrix, which is the one thing the cards themselves cannot say:
- * collapsed, they look like the Section I pillar grid. (The cards now help too, via the "View matrix"
- * control on each header.)
- *
- * WRITTEN AS SENTENCES. This began life as a section subtitle and opened like one, "The full behavioral
- * matrix: 9 pillars across 5 levels", a noun phrase and a colon, which reads as a title. That is fine
- * hanging off a heading and wrong as body copy standing beside `SKILL_TIERS_INTRO`, which opens with a
- * plain declarative sentence. Both paragraphs in this section now do.
- *
- * THE INSTRUCTION GOES LAST, and says "any". It used to be sandwiched mid-paragraph, where it interrupted
- * the description with a mechanic, and it used to say "expand a pillar", which read oddly once the first
- * pillar started out open (see DEFAULT_EXPANDED_PILLAR): the sentence would be asking for something already
- * done directly below it. "Open any pillar" covers the other eight, and "open" is the verb the card's own
- * control uses.
- *
- * It no longer restates that the focus areas are grouped into tiers: the diagram immediately above says so,
- * and every collapsed pillar card shows the three pills anyway.
- *
- * "45 cells" carries the number the section heading used to ("III. The 45-Point Competency Matrix"), which
- * the question form dropped, and "matrix" is here because the heading no longer names it either. Both are
- * how the framework is described elsewhere (see SITE_COPY.detail), so each should be said once in the tab.
+ * It opens by pointing at what follows, which is the one thing the cards cannot say for themselves, since
+ * collapsed they look like the Section I pillar grid. "Open ANY pillar" because the first one starts open
+ * (see DEFAULT_EXPANDED_PILLAR), and "open" matches the card control's own verb. "45 cells" and "matrix"
+ * carry numbers the question-form heading dropped.
  */
 export const COMPETENCY_MATRIX_INTRO =
   "Below is the full behavioral matrix: 9 pillars across 5 levels, 45 cells in total. Each cell describes the observable behaviors expected at that level. Open any pillar to read its five.";

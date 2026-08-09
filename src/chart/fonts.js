@@ -10,16 +10,12 @@ export function getChartWidthUnit(chartWidthPx) {
 }
 
 /**
- * The chrome label size BEFORE rounding — the continuous curve that getChartPointLabelSizePx samples.
+ * The chrome label size BEFORE rounding: the continuous curve getChartPointLabelSizePx samples.
  *
- * Split out because the two consumers want different things from the same ramp. The track badge and cluster
- * legend want whole pixels: they are small text where a fractional size is a blurrier glyph for no gain. The
- * chart title wants the curve itself, so it can scale smoothly with the chart instead of stepping 1.4px at a
- * time as the rounded label ticks over — at title sizes the sub-pixel value is what keeps it in proportion at
- * every width rather than only at the four widths the rounding lands on.
- *
- * The clamps stay here rather than at the call sites, so both forms share the same floor and ceiling and the
- * mobile plateau (the `pointLabelMinPx` floor) is identical for everything that reads this.
+ * Split out because the consumers want different things from one ramp. The badge and legend want whole
+ * pixels, being small text where a fractional size is just a blurrier glyph; the title wants the curve, so it
+ * scales smoothly rather than stepping as the rounded label ticks over. The clamps stay here so both forms
+ * share one floor and ceiling.
  */
 export function getChartPointLabelSizeExactPx(chartWidthPx) {
   const cf = FE_UI.chartFonts;
@@ -76,30 +72,16 @@ export function getClusterLegendSwatchPx(chartWidthPx) {
 }
 
 /**
- * NOT ROUNDED, deliberately — this returns a fractional px size and both the tool's chart title and the
- * theory tab's framework title set it straight onto `font-size`.
+ * NOT ROUNDED, deliberately: this returns a fractional px size that both the tool's chart title and the
+ * theory tab's framework title set straight onto `font-size`.
  *
- * It reads the EXACT label curve rather than the rounded label the badge and legend use. Going through the
- * rounded one made the title a step function of a step function: it held one size across a whole band of
- * widths and then jumped by a full `labelMultiplier` px when the label ticked over, which is visible as the
- * title snapping while the chart beside it resizes smoothly. Browsers lay out fractional font sizes fine and
- * the glyphs are hinted to the device pixel grid, so the only thing rounding bought here was that jump.
+ * It reads the EXACT label curve rather than the rounded label the badge and legend take. Going through the
+ * rounded one made the title a step function of a step function, snapping by a full multiplier while the
+ * chart beside it resized smoothly.
  */
 export function getChartTitleSizePx(chartWidthPx) {
-  // NO CLAMPS OF ITS OWN, and none can do anything — the bounds it would need are all inherited:
-  //
-  //   floor    `chartFonts.pointLabelMinPx` (12) clamps the label, so the title floors at 12 × 1.4 = 16.8.
-  //   ceiling  `page.chartMaxWidthPx` (526) caps the CANVAS, so the label tops out at 15.23 and the title at
-  //            ~21.3. The label's own `pointLabelMaxPx` (18) would allow 25.2, but no chart ever gets wide
-  //            enough to reach it.
-  //
-  // This carried a `minPx: 14` and a `maxPx: 22`. Both were dead, and in the same way: each sat on the far
-  // side of a bound that applies first, so no input could reach either. `maxPx` in particular looked live —
-  // it is BELOW the label-clamp ceiling of 25.2 — but it sits ABOVE the 21.3 the canvas cap allows, which is
-  // the only ceiling that ever runs. Setting it to 30 changed nothing at any width, which is the test.
-  //
-  // The size ceiling here is therefore the canvas width, not a font clamp. To change it, move
-  // `page.chartMaxWidthPx` or `labelMultiplier` — adding a clamp back will not do it.
+  // No clamps of its own, and none would do anything: both bounds are inherited from the label clamp and the
+  // canvas cap. See docs/DECISIONS.md#chart-type-scale.
   const { labelMultiplier } = FE_UI.chart.title;
   return getChartPointLabelSizeExactPx(chartWidthPx) * labelMultiplier;
 }

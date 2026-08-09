@@ -47,26 +47,13 @@ function persistScroll(tab, y) {
 /**
  * Remember per-tab window scroll in sessionStorage; persists across page refresh.
  *
- * Values are a plain `window.scrollY`, which is only safe because THE HEADER IS STICKY. Worth spelling out,
- * because it was not always true and the trap is easy to walk back into.
+ * Values are a plain `window.scrollY`, which is ONLY safe because the header is sticky. Do not reintroduce a
+ * document-flow header without also reintroducing an anchor-relative offset. See
+ * docs/DECISIONS.md#tab-scroll-memory-uses-plain-scrolly.
  *
- * The header state is one boolean shared by both tabs and can be toggled while a tab is inactive. While the
- * header sat in document flow at position 0, expanding it inserted ~120px of document above every position
- * in both tabs at once, so a raw `scrollY` recorded before the toggle named different content afterwards:
- * scroll Tool to the bottom, switch to Theory, expand the header there, come back — and Tool restored to its
- * old number, now 120px short of the bottom. That bug was worked around by storing `scrollY - anchor`
- * instead, measuring from the tab bar.
- *
- * A sticky header occupies viewport space rather than document space above the scroll position, so its height
- * is no longer part of any scroll coordinate and a toggle cannot move a sleeping tab's numbers at all. The
- * cause is gone rather than corrected for, which is why the plain unit is correct again.
- *
- * `cancelRestoreRef` lets a later in-tab scroll take over from the restore loop. The restore always runs
- * (so the tab lands at its remembered position), but a scroll that owns its own target — a cross-tab matrix
- * jump, or a deep-link gliding to its section/pillar — flips this ref the instant it scrolls. The burst
- * checks it each frame and stops, so that scroll's final position isn't re-asserted away. It's a
- * programmatic equivalent of the wheel/touch/keydown gestures that already stop restore. Reset to false at
- * the start of each switch.
+ * `cancelRestoreRef` lets a later in-tab scroll take over: restore always runs, but a scroll that owns its
+ * own target (a matrix jump, a deep-link glide) flips the ref and the burst stops re-asserting. The
+ * programmatic equivalent of the wheel/touch/keydown gestures that already stop restore.
  */
 export function useTabScrollMemory(activeTab, cancelRestoreRef = null) {
   const saveActiveTabScroll = () => {

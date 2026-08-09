@@ -474,30 +474,15 @@ export const useAppStore = create((set, get) => ({
     return { undo, hadUnsavedChanges };
   },
 
-  // Shared writer for the save paths. Identity is tracked by uuid (`activeSavedProfileId`), never by
-  // name, so name collisions are surfaced as an explicit confirm rather than silently overwriting.
+  // Shared writer for the save paths. Identity is by uuid, never by name, so name collisions surface as an
+  // explicit confirm rather than a silent overwrite.
   //
-  // Target resolution:
-  //   - `overwriteId` set → write into that exact profile (the "Overwrite it" collision path).
-  //   - `forceNew` true   → always insert a new row, ignoring the link ("Save new" — save a copy
-  //                         under the already-changed name, leaving the source untouched).
-  //   - otherwise         → update the linked profile (`activeSavedProfileId`), else insert new.
+  // Target: `overwriteId` writes into that exact profile; `forceNew` always inserts; otherwise it updates
+  // the linked profile or inserts. `removeId` drops another row in the same write, which is how overwriting
+  // resolves a rename collision (the renamed source merges into the clash target).
   //
-  // `removeId` deletes another profile in the same write — used when overwriting resolves a rename
-  // collision: the renamed source is merged into the clash target, so the source row is dropped.
-  //
-  // Before writing, unless `overwriteId` is set, it checks for a *different* stored profile with the
-  // same name+badge and, if found, returns a `collision` result instead of writing so the UI can
-  // prompt (Overwrite / Cancel).
-  //
-  // Returns one of:
-  //   { status: "saved" }                    — written successfully (carries `backupReminder` when
-  //                                            this write CREATED a profile and the device's running
-  //                                            creation total hit a milestone — see storage.js, and
-  //                                            `mode`: "created" | "updated" | "renamed", for analytics)
-  //   { status: "add-title" }                — blank title, nothing written
-  //   { status: "error" }                    — payload failed to normalize
-  //   { status: "collision", name, badge }   — name+badge clash; caller must decide
+  // Returns { status: "saved" | "add-title" | "error" | "collision" }. "saved" carries `mode` for analytics
+  // and `backupReminder` when this write CREATED a profile and hit a milestone (see storage.js).
   writeProfile: ({ overwriteId = null, forceNew = false, removeId = null } = {}) => {
     const trimmed = String(get().title).trim();
     if (!trimmed) {

@@ -237,15 +237,11 @@ export function getRadarContentHeightPx(chart) {
 }
 
 /**
- * Linearly interpolate a point-label size (px) across chart width for a
- * `pointLabelPxRange = { minPx, maxPx, minWidthPx, maxWidthPx }`. Below minWidthPx the size is
- * minPx, above maxWidthPx it is maxPx, and it ramps linearly between — so the labels scale with the
- * chart the same way its overall size does. This is how EVERY radar sizes its axis labels: the tool
- * chart and hero off FE_UI's ramp, the career-track charts off THEORY_CHART_UI's.
+ * Linearly interpolate a point-label size across chart width for a `pointLabelPxRange`, clamping outside the
+ * width bounds. This is how EVERY radar sizes its axis labels.
  *
- * The result is intentionally NOT rounded: an integer font size can only reach the max via the
- * intermediate integers (12→13→14), and each crossing is a visible 1px pop as the chart scales.
- * Returning a fractional px (canvas renders these fine) makes the label track the chart continuously.
+ * Intentionally NOT rounded: an integer size reaches its max through the intermediate integers, and each
+ * crossing is a visible 1px pop as the chart scales. Canvas renders fractional sizes fine.
  */
 function getPointLabelSizePxFromRange(chartWidthPx, range) {
   const { minPx, maxPx, minWidthPx, maxWidthPx } = range;
@@ -284,15 +280,9 @@ export function syncFontsForChart(chart) {
   const ch = ui.chart;
   const tickSize = Math.max(cf.tickMinPx, Math.round(w / cf.tickWidthDivisor));
   const cc = chart?.options?.plugins?.competencyChart;
-  // Label-size precedence, most specific first:
-  //   1. a per-chart pointLabelPxRange — used by the theory HERO radar to borrow the tool chart's
-  //      ramp instead of its own preset's much smaller one.
-  //   2. a per-chart pointLabelPx — a fixed px that pins the label regardless of chart width.
-  //   3. the preset's own pointLabelPxRange — the normal path for every chart (FE_UI's for the tool
-  //      chart, THEORY_CHART_UI's for the career-track radars).
-  //
-  // All three end up fractional. There is deliberately no rounded/stepped fallback any more: the
-  // preset ramp is the floor of this chain, and both presets define one.
+  // Label-size precedence, most specific first: a per-chart range (how the theory hero borrows the tool
+  // chart's ramp), then a per-chart fixed px, then the preset's own range. All three are fractional, and
+  // there is deliberately no stepped fallback: the preset ramp is the floor and both presets define one.
   let labelSize;
   if (cc?.pointLabelPxRange) {
     labelSize = getPointLabelSizePxFromRange(w, cc.pointLabelPxRange);

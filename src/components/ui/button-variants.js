@@ -12,14 +12,9 @@ export const buttonVariants = cva(
   {
     variants: {
       variant: {
-        // `disabled:bg-primary/50` on top of the shared `disabled:opacity-50`, because opacity alone is
-        // not enough on a near-black fill: half-strength black is still a confident mid-grey button, so
-        // the disabled Unlock read as "solid, just a lighter shade" rather than as unavailable. Fading
-        // the FILL as well drops it back toward the page, leaving the label to carry the shape.
-        //
-        // TUNED BY EYE, downward from full strength and back up again: 25 dissolved the button into the
-        // panel almost entirely, which reads as absent rather than as a control that is currently
-        // unavailable. 50 keeps it present and still clearly inert.
+        // Fades the FILL on top of the shared `disabled:opacity-50`, because opacity alone leaves a
+        // near-black button reading as solid-but-lighter rather than unavailable. Tuned by eye: 25
+        // dissolves it into the panel, which reads as absent instead of inert.
         default: "bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-primary/50",
         outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
         ghost: "hover:bg-accent hover:text-accent-foreground",

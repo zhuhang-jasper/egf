@@ -6,21 +6,14 @@ import { Button } from "@/components/ui/button";
 import { SimpleModal } from "@/components/ui/Modal";
 
 /**
- * "Your profiles live in this browser" notice, shown after the 1st profile is created and then every
- * 10th (see BACKUP_REMINDER_FIRST / BACKUP_REMINDER_EVERY in constants/storage.js). There is no
- * account and no server, so a cleared browser takes the profiles with it — this is the only place the
- * app says so, at the one moment the user has something to lose.
+ * "Your profiles live in this browser" notice, shown at the milestones in constants/storage.js. The only
+ * place the app says there is no server, at the moment the user first has something to lose.
  *
- * INFORMATIONAL, WITH NO EXPORT BUTTON, on purpose. Export lives in the Manage menu next to Import and
- * Delete all, and pointing at it teaches where backup lives for every future time; a shortcut here
- * would do the export once and leave the user still not knowing where it is. So the dialog names the
- * path (Manage → Export) instead of shortcutting it.
+ * Informational with NO export button on purpose: naming the path (Manage → Export) teaches where backup
+ * lives every future time, where a shortcut would do it once and leave the user still not knowing.
  *
- * Shell (scrim, panel, Escape, scroll lock, title row) comes from {@link SimpleModal}.
- *
- * A CROSSED-OUT GLOBE = "not on the network", which is the actual subject: the profiles are here and
- * nowhere else. A disk or download glyph would picture the backup instead, and the backup is the remedy
- * in the last paragraph, not the thing being announced.
+ * The crossed-out globe means "not on the network", which is the subject; a disk glyph would picture the
+ * remedy instead of the thing being announced. Shell from {@link SimpleModal}.
  */
 export function BackupReminderDialog({ open, onClose }) {
   const closeButtonRef = useRef(null);

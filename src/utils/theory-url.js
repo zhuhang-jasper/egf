@@ -19,13 +19,9 @@ const EXPANDED_PILLAR_SESSION_KEY = "app:expandedPillar";
  *   ""         nothing is open, and the user closed it
  *   null       nothing is open, and the user has not touched the matrix this session
  *
- * The last two used to be one value — closing everything called `removeItem`, so it was
- * indistinguishable from a fresh session. That is fine when the default is "all collapsed" and stops
- * being fine the moment there IS a default: the matrix opens its first pillar on a fresh visit (see
- * TheoryContent), which must not quietly undo a collapse the user performed and then reloaded into.
- *
- * So a deliberate none is STORED as the empty string, and only an absent key means "never chosen".
- * Callers wanting the plain two-state answer can read `getPersistedExpandedPillar() || null`.
+ * The last two must stay distinct because the matrix opens its first pillar on a fresh visit (see
+ * DEFAULT_EXPANDED_PILLAR), which must not undo a collapse the user performed and then reloaded into. So a
+ * deliberate none is STORED as the empty string. Callers wanting two states read `… || null`.
  */
 export function getPersistedExpandedPillar() {
   try {

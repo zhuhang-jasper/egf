@@ -11,20 +11,13 @@ export const THEORY_CHART_UI = {
     radarLabelReserved: { minPx: 10, maxPx: 18 },
     layoutPaddingHorizontal: { minPx: 2, maxPx: 5 },
     /**
-     * Axis-label size ramp for the small career-track radars — the same fractional interpolation the
-     * tool chart and hero use (see FE_UI.chart.pointLabelPxRange), just over this preset's much
-     * narrower size band.
+     * Axis-label ramp for the small career-track radars: the same fractional interpolation the tool chart
+     * uses, over this preset's narrower band. It replaces a stepped scale that only produced 8, 9 or 10, so
+     * dragging a desktop window popped every radar's labels a whole pixel at two thresholds and the measured
+     * label span jumped with them.
      *
-     * REPLACES A STEPPED SCALE. These charts used to size labels as
-     * `clamp(round(9 × width / 220), 8, 10)`, which only ever produced 8, 9 or 10 — so dragging a
-     * desktop window popped every career radar's labels a whole pixel at two thresholds, and the
-     * measured label span (hence the frame fit) jumped with them.
-     *
-     * The width bounds are the band these charts actually occupy in the COLUMNED view, which is
-     * where the pop was visible — the 3-up career cards run 176px (at the `sm` breakpoint) to 263px
-     * (at the 900px panel cap), and the foundational phase's 3-up cells run 171px to 257px inside
-     * their extra `px-2`. Below/above that the ramp clamps, which is what keeps the full-width
-     * mobile charts (~300–590px) at the flat 10px they already rendered at.
+     * The width bounds are the band these charts occupy in the COLUMNED view, where the pop was visible.
+     * Outside it the ramp clamps, keeping the full-width mobile charts at the flat 10px they already had.
      */
     pointLabelPxRange: { minPx: 8, maxPx: 10, minWidthPx: 172, maxWidthPx: 264 },
   },
@@ -56,13 +49,9 @@ export function isHeroChart(chart) {
 }
 
 /**
- * Emoji-only spokes (icons, no text) vs. full text labels.
- *
- * A plain flag the caller owns. It used to have a width-responsive mode as well — `emojiMaxWidthPx`,
- * compared against the chart's own canvas width — which the career-track radars used, but charts that
- * belong to one layout are not all the same width, so they crossed the threshold at different
- * viewports. That decision is now made once from a media query (see CareerTracks), which also keeps
- * the label set independent of `chart.width` and therefore stable across the frame-fit's resize passes.
+ * Emoji-only spokes vs. full text labels. A plain flag the caller owns, decided once from a media query (see
+ * CareerTracks): a per-chart width threshold made charts in one layout cross at different viewports, and it
+ * also kept the label set dependent on `chart.width` across the frame-fit's resize passes.
  */
 export function isEmojiMode(chart) {
   return Boolean(chart?.options?.plugins?.competencyChart?.emojiOnlyLabels);

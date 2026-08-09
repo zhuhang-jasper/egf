@@ -23,15 +23,9 @@ import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
 import { copyChartAsImageToClipboard, shareChartAsImage } from "@/utils/copy-chart-image";
 
-// select-none: these rows get clicked repeatedly to flip a setting, and a double-click would
-// otherwise select the label text.
-//
-// `adminOnly` BADGES THE ROW as absent from the public build (see AdminLockBadge). This menu is where the
-// mark earns the most: four of its eight toggles are admin-gated and four are not, interleaved, so the row
-// order alone says nothing about which of them a colleague opening the same page would find. The caller
-// passes the flag rather than this component reading the FEATURE_* constants itself — those constants are
-// what decide whether the row RENDERS AT ALL, and a row that is rendered under one flag but badged from
-// another could disagree with itself.
+// `adminOnly` is passed by the caller rather than read from the FEATURE_* constants here: those decide
+// whether the row renders at all, and a row rendered under one flag but badged from another could disagree
+// with itself. `select-none` because these rows get clicked repeatedly to flip a setting.
 function DisplayCheckbox({ label, checked, onChange, adminOnly = false }) {
   return (
     <label className="flex cursor-pointer select-none items-center gap-2.5 rounded-md px-3 py-1.5 text-xs hover:bg-muted/60">
@@ -42,47 +36,10 @@ function DisplayCheckbox({ label, checked, onChange, adminOnly = false }) {
         onChange={(e) => onChange(e.target.checked)}
         className="size-3.5 shrink-0 rounded border border-input accent-foreground"
       />
-      {/* THE BADGE FOLLOWS THE LABEL TEXT, INLINE — the one site that does not corner-badge its control (see
-          AdminLockBadge, whose default is absolute). It hung off the checkbox's corner first, which is the
-          convention the nav and the Print pill use, and it was wrong here for a reason those two do not have:
-          a menu row is a LIST of near-identical rows, so badges pinned to the checkboxes stack into a column
-          of padlocks down the left edge that has to be read against the rows to be attributed to any of them.
-          After the words it is unambiguously part of that row and is read in the same pass as the label.
-
-          `static` IS WHAT SWITCHES THE MODE. The component is `absolute` by default and every other caller
-          wants that; overriding it here is why the badge needs no positioning context on this row — and it is
-          also why this className carries no offsets, unlike the other two sites.
-
-          THE ROW'S `gap-2.5` DOES NOT APPLY — it spaces the flex CHILDREN, and the badge is inside the label
-          span, so the 2px `ml-0.5` is its own. Deliberately much tighter than the row's gap: the lock qualifies
-          the words it trails, so it has to read as attached to them rather than as the next item along. At a
-          superscript's height a wider gap also leaves it stranded in the whitespace above the row below.
-
-          RAISED TO THE LABEL'S TOP-RIGHT, i.e. set as a superscript rather than centred on the text. It was
-          `align-middle` alone, which centres the disc on the line — correct if the badge were part of the
-          phrase, and it is not: it QUALIFIES the phrase, the same relationship a footnote marker has, and the
-          same top-right corner the badge takes at the other two sites. Sitting on the text's centre line it
-          read as a third word in the label.
-
-          `-translate-y-1` (4px up) ON TOP OF `align-middle`, not `align-super`. The CSS keyword raises by a
-          font-relative amount that assumes a glyph being set in the same type as the surrounding text, which
-          over-lifts a graphic of a fixed size and leaves it floating clear of the line box. Centring first and
-          then nudging by a fixed 4px puts the disc's bottom edge just above the x-height, which is where a
-          superscript sits, and it stays put if the row's type size changes.
-
-          NO `size-*` HERE — the disc comes from AdminLockBadge itself, which is what stops this site and the
-          other two drifting apart as they had (12px here against 14px on the nav). The 4px nudge above IS tied
-          to that size, though: it is a fixed offset, not a proportion, so re-judge it if the component's disc
-          ever changes.
-
-          `inline-flex` OVERRIDES THE COMPONENT'S `flex`, which is a BLOCK-level box — fine for an absolutely
-          positioned badge, but it would break out of the line here instead of flowing after the words. The
-          inline variant keeps the flex centring that holds the glyph in the middle of the disc.
-
-          THE ACCESSIBLE LABEL IS SUPPRESSED — the row's own `aria-label` is the checkbox's accessible name, and
-          a `role="img"` inside the same <label> would be announced as a second, unrelated item mid-control. The
-          visible mark is for sighted scanning of a menu that mixes gated and public rows; a screen-reader user
-          is not choosing between them at a glance. */}
+      {/* The one site that badges inline rather than at a corner, because a column of padlocks down a list of
+          near-identical rows cannot be attributed to any of them. `static` switches AdminLockBadge out of its
+          absolute default; `-translate-y-1` is a fixed nudge tied to its disc size, so re-judge it if that
+          changes. `label=""` because the row's own `aria-label` is already the checkbox's accessible name. */}
       <span>
         {label}
         {adminOnly ? <AdminLockBadge label="" className="static ml-0.5 inline-flex -translate-y-1 align-middle" /> : null}
@@ -185,15 +142,9 @@ function ChartDisplayMenu() {
 }
 
 /**
- * Whether the Web Share API can share files here. True on mobile Safari/Chrome (and a few
- * desktop browsers like Safari/Edge); false on desktop Chrome-macOS / Firefox. We probe with a
- * tiny dummy file because canShare gates on the files payload specifically. Computed once.
- *
- * THE STRICT FILE PROBE, and deliberately stricter than the theory tab's share gate (see
- * TheoryContent's CAN_SHARE_LINK, which only asks for `navigator.share`). The asymmetry is the point:
- * THIS share exists to send the user's chart, so a share sheet that cannot carry the image cannot do the
- * job and the button should not appear. The theory share sends a LINK with an image attached as a bonus,
- * so it still works — degraded — without file support. Same API, different payload, different gate.
+ * Whether the Web Share API can share FILES here, probed with a dummy file because `canShare` gates on the
+ * payload specifically. Computed once. Deliberately stricter than TheoryContent's CAN_SHARE_LINK: see
+ * docs/DECISIONS.md#share-gates-are-deliberately-asymmetric.
  */
 const CAN_SHARE_FILES = (() => {
   try {
@@ -208,24 +159,14 @@ const CAN_SHARE_FILES = (() => {
 })();
 
 /**
- * Image-export controls, as two standalone buttons: "Copy image" is always shown (copies to the
- * clipboard, or downloads as a fallback). "Share" is shown additionally only where the Web Share
- * API can share files (e.g. mobile Safari/Chrome), opening the OS share sheet.
+ * Image-export controls. "Copy image" is always shown (clipboard, falling back to a download); "Share"
+ * appears only where the Web Share API can carry files. Share comes first, being the primary action where
+ * it exists.
  *
- * LABELLED, in the theory tab's toolbar surface (see styles/toolbar.js). These two are the same kind of
- * page-level action as that tab's print/share icons and sit in the same place on the page, so they take
- * the same muted-slate surface instead of the default `outline` button they used to wear — switching tabs
- * should not restyle the chrome. They keep their text because neither glyph is self-explanatory here:
- * `Image` names the SUBJECT of the action without saying what is done to it, and `Share2` is a generic
- * share mark, so the word is what says which action this is.
- *
- * IT WAS `ImageDown` (an image with a download arrow), and that glyph advertised the wrong path: the arrow
- * says "save to disk", which is only this button's FALLBACK for browsers without clipboard-image support —
- * the primary behaviour is a clipboard copy (see handleCopy). A plain `Image` makes no claim about the
- * verb and leaves that to the label, which is the honest split when one button has two possible outcomes.
- *
- * Share comes FIRST: it is the primary action where it exists, and copy is the fallback for everywhere
- * else. Reading order matches that.
+ * Both take the theory tab's toolbar surface (see styles/toolbar.js) rather than a default button, so
+ * switching tabs does not restyle the chrome. They keep their text because neither glyph is
+ * self-explanatory: a plain `Image` deliberately makes no claim about the verb, since this button has two
+ * possible outcomes and the earlier `ImageDown` advertised the fallback rather than the primary path.
  */
 function ExportMenu({ onCopy, onShare }) {
   return (
@@ -302,24 +243,10 @@ export function ChartSection({ isVisible }) {
   // the part that usually tells two profiles apart). `isVisible` is passed through because the tool tab is
   // `display: none` when Theory is open and nothing can be measured there — see the hook.
   const fittedTitle = useMiddleEllipsis(titleMeasureRef, displayTitle, isVisible);
-  // THE ROW'S HEIGHT IS A FUNCTION OF CHART WIDTH ALONE — deliberately NOT of what is currently in it.
-  //
-  // It briefly keyed off `showVisibleTitle`, falling back to the badge's intrinsic height when the title was
-  // hidden. That made the row (and so everything below it, the chart included) jump every time the title was
-  // toggled in the display menu, which is a visible shift for a control that is only meant to hide one label.
-  // Both toggles live in the same menu and either can be off, so the row has to be the same height in all four
-  // combinations or one of them moves the chart.
-  //
-  // `max()` OF THE TWO CANDIDATES, IN CSS RATHER THAN JS: the title's line box, and the badge's own intrinsic
-  // height. Taking the larger means the row always fits whichever is shown and stays put when either is
-  // hidden. The title is the taller of the two at every width today, so this resolves to the line box in
-  // practice — the badge term is what keeps it honest if that ever stops being true.
-  //
-  // The line-box term is `1.25em` AGAINST THE ROW'S OWN `fontSize`, which is set to the title's size below.
-  // `leading-tight` IS 1.25 — a ratio, always relative to font size — so expressing the row's floor in `em`
-  // lets the browser resolve exactly what the class resolves, from the same font size, in the same layout
-  // pass. That removes the JS mirror of the ratio entirely: nothing in JS has to know what `leading-tight`
-  // means, and the two cannot drift when the class changes.
+  // A function of chart width ALONE, never of what is currently in the row: the title and badge toggles are
+  // independent, so the row must be the same height in all four combinations or toggling one moves the chart.
+  // `max()` in CSS rather than JS so the `1.25em` term resolves `leading-tight` from the same font size in the
+  // same layout pass, leaving no JS mirror of the ratio to drift. See docs/DECISIONS.md#chart-type-scale.
   const titleRowMinHeight = `max(1.25em, ${getTrackBadgeMdHeightPx(layoutWidth)}px)`;
 
   useLayoutEffect(() => {

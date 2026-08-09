@@ -8,36 +8,23 @@ import { useScrollLock } from "@/hooks/useScrollLock";
 import { cn } from "@/utils";
 
 /**
- * The confirm button of a high-risk dialog: red outline and red text on the panel's white, never a
- * filled red block. Destructive is the one action a filled button must not advertise — fill is what the
- * app uses to mean "this is the way forward" (see the near-black `default` on Got it / Unlock), and
- * pointing that at Delete all would recommend it. Outline keeps it clearly available and clearly not
- * encouraged, while red carries the consequence.
+ * The confirm button of a high-risk dialog: red outline and red text, never a filled red block. Fill is what
+ * the app uses to mean "this is the way forward", so pointing it at Delete all would recommend it. Outline
+ * keeps the action clearly available and clearly not encouraged, while red carries the consequence.
  *
- * SHARED SO THE HIGH-RISK DIALOGS CANNOT DRIFT: these exact classes were pasted in ConfirmDialog and
- * SaveCollisionDialog, which is how two dialogs for the same category of decision end up subtly unlike
- * each other. Pair it with `destructive` on ConfirmDialog rather than reaching for it directly.
+ * Shared so the high-risk dialogs cannot drift. Pair it with `destructive` on ConfirmDialog rather than
+ * reaching for it directly.
  */
 const DESTRUCTIVE_CONFIRM_CLASS = "justify-center border-red-500/50 text-red-600 hover:bg-red-50 hover:text-red-700";
 
 /**
- * A bare exclamation mark, for the high-risk dialogs.
+ * A bare exclamation mark for the high-risk dialogs, hand-rolled because every lucide alert icon wraps the
+ * mark in an enclosing shape and this one already sits on a black disc. These are exactly CircleAlert's two
+ * strokes with its `circle` dropped, on lucide's grid and cap style so it sits with the real icons.
  *
- * HAND-ROLLED BECAUSE LUCIDE HAS NO BARE ONE. Every alert icon it ships (CircleAlert, TriangleAlert,
- * OctagonAlert…) wraps the mark in an enclosing shape, and the icon here already sits on a black disc —
- * so CircleAlert draws a ring inside a ring, and TriangleAlert crams a triangle into a circle. The disc
- * IS the enclosure; this supplies only what goes inside it. These are exactly CircleAlert's two strokes
- * with its `circle` dropped, on lucide's 24px grid with its cap and join style, so it sits with the real
- * lucide icons the other dialogs use.
- *
- * Much heavier than lucide's own proportions (stroke 3.5 rather than 2) because without the enclosure
- * it has the whole disc to fill: at lucide's weight the mark reads as a thin speck in a black circle.
- *
- * THE MARK IS INSET (6→18) RATHER THAN RUN TO THE EDGES, which looks backwards next to the "fill the
- * disc" sizing above but is what pays for the weight. A round cap projects half the stroke width past
- * its endpoint, so at stroke 3.5 the drawn mark already overhangs its endpoints by ~1.75 each way —
- * the visible ink runs roughly 4.2→19.8 of 24, which is edge to edge once the glyph box itself is
- * scaled up close to the disc. Extending the endpoints too would push the caps under the disc's rim.
+ * Stroke 3.5 rather than lucide's 2, because without the enclosure it has the whole disc to fill. The
+ * endpoints stay inset (6→18) despite that: a round cap projects half the stroke past its endpoint, so the
+ * visible ink already runs ~4.2→19.8 of 24. Extending them too would push the caps under the disc's rim.
  */
 function ExclamationMark(props) {
   return (
@@ -49,28 +36,17 @@ function ExclamationMark(props) {
 }
 
 /**
- * THE BASE EVERY DIALOG IS BUILT ON: the machinery (portal, scrim, Escape-to-close, initial focus,
- * body-scroll lock, dialog aria) plus the panel chrome those dialogs share (radius, border, white,
- * shadow). It renders NO header, NO footer and NO width — those are a design decision, and the two
- * designs that make it live one level up as {@link SimpleModal} and {@link FullModal}.
+ * The machinery every dialog is built on (portal, scrim, Escape, initial focus, scroll lock, aria) plus the
+ * shared panel chrome. It renders no header, footer or width: those are the two designs one level up.
  *
- * PICK A SIBLING, NOT THIS, at a call site. This is the thing they are made of:
+ * PICK A SIBLING, NOT THIS, at a call site:
  *
  *   Modal ── SimpleModal   short question, icon-disc title, stacked buttons  (ConfirmDialog,
  *         │                SaveCollisionDialog, BackupReminderDialog, AdminUnlockPrompt)
  *         └─ FullModal     wide, bordered header + close ✕, scrolling body   (ChangelogModal)
  *
- * IT EXISTS BECAUSE HAND-BUILT COPIES DRIFT, and that has now happened twice. First among four
- * dialogs, whose scrim, `z-[100]`, panel radius, padding and title type were duplicated verbatim —
- * which is how one ended up without `aria-describedby` and another without an icon. Then again with
- * ChangelogModal, which needed a wider scrolling panel, could not get it from a shell hardcoded to
- * `max-w-sm` with an icon title, and so re-implemented the portal, scrim, Escape and aria from
- * scratch. That second copy is why a body-scroll-lock bug had to be fixed in two files.
- *
- * The split is drawn where it is BECAUSE THE MACHINERY IS WHAT WAS ACTUALLY SHARED. The two panels
- * genuinely differ (a decision box vs a document), and bending one into the other would have meant
- * `size`/`maxHeight`/`hideActions` props that exist for a single caller while every dialog carries
- * them. Behaviour is common; layout is not; so only behaviour lives here.
+ * The split is at the machinery because that is what was actually shared: merging the two panels would mean
+ * `size`/`maxHeight`/`hideActions` props that serve one caller while every dialog carries them.
  *
  * Props:
  *   - open           — render nothing when false.
@@ -129,17 +105,11 @@ function Modal({
   }, [open]);
 
   /**
-   * Initial focus, DELIBERATELY KEYED ON `open` ALONE.
-   *
-   * This used to share the effect above, whose deps included `onClose` and `initialFocusRef`. Callers
-   * routinely pass an inline arrow for `onClose` (`() => setDismissed(true)`), which is a new identity on
-   * every render — so ANY state change in the caller re-ran the effect and re-fired `.focus()`. In
-   * AdminUnlockPrompt that meant every keystroke pulled focus out of the password field and onto the
-   * panel, since typing calls `setPassword` and the panel is the fallback target. Focus-on-open must
-   * happen exactly once per opening, so `open` is the only thing it can depend on.
-   *
-   * `initialFocusRef` is read through a ref for the same reason: a ref object is usually stable, but it
-   * is the caller's to create and nothing guarantees it.
+   * Initial focus, deliberately keyed on `open` alone. Callers routinely pass an inline arrow for
+   * `onClose`, so including it in the deps meant any caller state change re-fired `.focus()` — which pulled
+   * focus out of AdminUnlockPrompt's password field on every keystroke. Focus-on-open must happen exactly
+   * once per opening. `initialFocusRef` is read through a ref for the same reason: nothing guarantees the
+   * caller's ref object is stable.
    */
   const initialFocusRefRef = useRef(initialFocusRef);
   initialFocusRefRef.current = initialFocusRef;
@@ -197,13 +167,9 @@ function Modal({
  * the bottom. Every dialog that asks a short question is this one (ConfirmDialog, SaveCollisionDialog,
  * BackupReminderDialog, AdminUnlockPrompt).
  *
- * This is the shape {@link Modal} used to be before the machinery was pulled out beneath it; the props
- * below are unchanged, so its call sites did not move.
- *
- * WHAT IT DOES NOT DECIDE: which buttons. Each dialog's actions differ in count, order, label, emphasis
- * and destructiveness, and a prop general enough to express all of that would be harder to read at each
- * call site than the two lines of JSX it replaced. So `actions` takes finished <Button>s and only owns
- * where they sit; the caller owns what they are.
+ * What it does NOT decide is which buttons: each dialog's actions differ in count, order, label, emphasis
+ * and destructiveness, and a prop general enough for all of that reads worse at the call site than the JSX
+ * it would replace. `actions` takes finished <Button>s and owns only where they sit.
  *
  * Props: everything {@link Modal} takes, plus
  *   - title          — heading text (required; it is what labels the dialog).
@@ -217,18 +183,13 @@ function SimpleModal({ title, icon: Icon = null, compactIcon = false, titleId, a
   return (
     <Modal titleId={titleId} panelClassName="max-w-sm gap-4 p-5" {...modalProps}>
       <div className="flex flex-col gap-1.5">
-        {/* Title row. The icon disc is monochrome for every dialog on purpose: colour here would rank
-            one dialog above another, and the copy is what carries urgency.
+        {/* The icon disc is monochrome for every dialog on purpose: colour would rank one dialog above
+            another, and the copy is what carries urgency.
 
-            TWO DISC SIZES, CHOSEN BY `compactIcon` RATHER THAN BY THE CALLER. The high-risk dialogs draw
-            a bare exclamation that fills its box edge to edge, so a large disc around it reads as a
-            heavy black blob; the informational ones (GlobeX, Lock) are detailed lucide glyphs with
-            built-in margin, and shrinking them to match made the detail illegible. Same reason, two
-            answers. Tying it to the glyph's own weight keeps a third size from appearing later.
-
-            THE GLYPH RUNS CLOSE TO THE DISC EDGE in both (4.5-in-6, 5-in-8), leaving a thin ring of black
-            rather than a badge with a small mark adrift in it — the disc is meant to read as an outline
-            around the icon, not as a filled circle that happens to contain one. */}
+            Two disc sizes, chosen by `compactIcon` rather than by the caller, so a third cannot appear
+            later. The bare exclamation fills its box edge to edge and needs the smaller disc; lucide's own
+            detailed glyphs have built-in margin and go illegible if shrunk to match. In both the glyph runs
+            close to the disc edge, so it reads as an outline around the icon rather than a filled circle. */}
         <div className="flex items-center gap-2">
           {Icon ? (
             <span className={cn("flex shrink-0 items-center justify-center rounded-full bg-slate-900 text-white", compactIcon ? "size-6" : "size-8")}>
@@ -254,12 +215,10 @@ function SimpleModal({ title, icon: Icon = null, compactIcon = false, titleId, a
  * THE DOCUMENT DIALOG: a wider panel with a bordered header, a close ✕, and a body that SCROLLS INSIDE
  * the panel rather than growing it. For content that is read rather than answered (ChangelogModal).
  *
- * THE SCROLL IS THE WHOLE POINT, and it is why this cannot be {@link SimpleModal} with a bigger width.
- * Three things have to agree for a panel to scroll internally: a bounded height (`max-h-[85vh]`),
- * `overflow-hidden` on the panel so the rounded corners clip the moving content, and `min-h-0` on the
- * body so it is allowed to shrink below its content — a flex child defaults to `min-height: auto` and
- * would otherwise refuse to, pushing the panel past its max-height and scrolling the PAGE instead.
- * The header and footer stay put because only the middle is the scroll port.
+ * The scroll is why this cannot be {@link SimpleModal} at a bigger width. Three things must agree for a panel
+ * to scroll internally: a bounded height, `overflow-hidden` on the panel so the rounded corners clip the
+ * moving content, and `min-h-0` on the body so it may shrink below its content. Without the last, a flex
+ * child's `min-height: auto` pushes the panel past its max-height and scrolls the PAGE instead.
  *
  * `role="dialog"` by default, not SimpleModal's "alertdialog": this is browsable content, and an
  * alertdialog tells a screen reader to expect an urgent message with limited interaction.

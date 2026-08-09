@@ -1,18 +1,12 @@
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 /**
- * Confirm dialog shown when a save would create a second profile sharing another profile's
- * name+badge. Identity is tracked by uuid, so a duplicate name is allowed — the user just has to
- * choose intent:
+ * Shown when a save would create a second profile sharing another's name+badge. Identity is by uuid, so a
+ * duplicate name is allowed and the user only has to choose intent: overwrite the clashing profile, or
+ * cancel and rename.
  *
- *   - Overwrite it  → write into the existing (clashing) profile.
- *   - Cancel        → back out and edit the name.
- *
- * A `destructive` {@link ConfirmDialog}, which is what gives it the exclamation icon and red outline
- * confirm shared by every high-risk dialog. It stays its own component only to hold the interpolated
- * message (the clashing name, emphasised) and to name what it is at the call site.
- *
- * `collision` is the pending result from the store's writeProfile ({ id, name, badge }); null hides it.
+ * Its own component only to hold the interpolated message and name itself at the call site. `collision` is
+ * writeProfile's pending result; null hides it.
  */
 export function SaveCollisionDialog({ collision, onOverwrite, onCancel }) {
   return (

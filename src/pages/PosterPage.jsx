@@ -12,16 +12,12 @@ import { CAREER_TRACK_PROFILES, PILLAR_CLUSTER_GROUPS } from "@/constants/theory
 import { track } from "@/utils/analytics";
 import { copyShareToClipboard, downloadSharePng } from "@/utils/export-image";
 
-// Design canvas WIDTH — 1080px. Wider than a phone-screen 9:16 so it reads well in the LinkedIn
-// feed, and wide enough for large, poster-scale type. The canvas renders at this exact pixel width
-// (the page scrolls if the window is smaller) so the export is 1:1.
+// Design canvas WIDTH. Wide enough for poster-scale type and to read well in a LinkedIn feed. Rendered at
+// this exact pixel width (the page scrolls if the window is smaller) so the export is 1:1.
 //
-// THE HEIGHT IS NOT A CONSTANT. It used to be a fixed 1620 (a 2:3 portrait), which only worked while
-// the poster always carried the same two bands. Now that either band can be switched off, a fixed
-// frame would leave a tall blank strip below the content — and no table of per-combination heights
-// would survive an edit to any band's contents. So the article's height is `auto`: the bands stack
-// from the top and the paper ends where they end. `useMeasuredHeight` reads the resulting height back
-// out for the two things that need a number — the scaled preview footprint and the export.
+// There is deliberately no matching height constant: either band can be switched off, so a fixed frame
+// would leave a blank strip, and no table of per-combination heights would survive editing a band. The
+// article's height is `auto` and `useMeasuredHeight` reads the result back out.
 const CANVAS_W = 1080;
 
 // A deliberately well-rounded-but-varied profile so the radar reads as a rich,
@@ -138,20 +134,15 @@ function useFitScale() {
 }
 
 /**
- * The article's own rendered height in CANVAS pixels — what the fixed 1620 used to assert.
+ * The article's own rendered height in CANVAS pixels.
  *
- * MEASURED, NOT COMPUTED. Summing band heights in JS would mean maintaining a second, parallel model
- * of the layout that silently drifts the first time a font metric, a wrap, or a padding changes; the
- * browser has already done this arithmetic exactly once, correctly, and `getBoundingClientRect` is how
- * we read the answer.
+ * Measured, not computed: summing band heights in JS would be a second model of the layout that drifts
+ * the first time a font metric, a wrap or a padding changes.
  *
- * `/ scale` converts back out of the preview transform: the rect is the SCALED box on screen, and every
- * consumer of this number (the stage footprint, the export size) wants the true unscaled height. Guard
- * on `scale > 0` so a degenerate scale can't produce Infinity.
- *
- * ResizeObserver rather than a one-shot measure: the height changes when a band is toggled, when fonts
- * finish loading, and when a chart canvas settles. Rounded UP — a fractional height would crop the last
- * device pixel off the export.
+ * `/ scale` converts back out of the preview transform, since consumers want the true unscaled height;
+ * the `scale > 0` guard keeps a degenerate scale from producing Infinity. ResizeObserver rather than a
+ * one-shot measure, because the height changes on band toggles, font load and chart settle. Rounded UP,
+ * or a fractional height crops the last device pixel off the export.
  */
 function useMeasuredHeight(ref, scale) {
   const [height, setHeight] = useState(null);
@@ -174,22 +165,9 @@ function useMeasuredHeight(ref, scale) {
   return height;
 }
 
-/**
- * Rasterize the poster to a high-res PNG via snapdom.
- *
- * snapdom (unlike html2canvas) natively understands Tailwind v4's oklch()/oklab() colours and
- * clones + inlines styles internally, so there's no colour conversion to maintain.
- *
- * To avoid the visible "jump" that mutating the live node would cause (the preview is shrunk by a
- * `transform: scale()`, and capturing it at full size means temporarily un-scaling on screen), we
- * deep-clone the article into a detached container parked off-screen at its true 1080×1620 size,
- * mirror the live chart <canvas> pixels into the clone, capture the clone, then discard it. The
- * on-screen preview is never touched, so the user sees no flicker.
- */
-// The poster's PNG export runs through the shared share-image pipeline (font embedding, the
-// off-screen clone, canvas mirroring, snapdom capture) — see src/utils/export-image.js.
-// Height is passed in per call rather than baked in, because it is now whatever the content came out
-// to (see useMeasuredHeight) instead of a build-time constant.
+// The poster's PNG export runs through the shared share-image pipeline (font embedding, the off-screen
+// clone, canvas mirroring, snapdom capture) — see src/utils/export-image.js. Height is passed per call
+// rather than baked in, since it is whatever the content came out to (see useMeasuredHeight).
 const POSTER_FILENAME = "9-pillar-engineer-growth-framework-poster.png";
 const copyPosterToClipboard = (node, height) => copyShareToClipboard(node, CANVAS_W, height, "poster");
 const downloadPosterPng = (node, height) => downloadSharePng(node, CANVAS_W, height, POSTER_FILENAME, "poster");
@@ -362,22 +340,16 @@ function PosterRadar({ levels, showClusters = false, showPolygon = true, showTic
 /**
  * Chart hub + ring of 9 floating pillar labels.
  *
- * TWO NESTED BOXES, because the ring's layout space and the space it actually fills are different
- * things. The inner box is the full `RING_W × RING_H` coordinate space every label's position is
- * computed against — it cannot shrink without moving the labels. The outer box is what the paper sees,
- * and it is clamped to `fit`: the measured union of the nine labels plus the radar hub.
+ * TWO NESTED BOXES, because the ring's layout space and the space it fills differ. The inner box is the full
+ * `RING_W × RING_H` coordinate space label positions are computed against and cannot shrink without moving
+ * them; the outer box is what the paper sees, clamped to the measured union of the labels and hub.
  *
- * WHY MEASURE INSTEAD OF DERIVING. The label positions are known in JS, but their heights are not:
- * each is a name row plus a signature question that wraps to one or two lines depending on the text and
- * the font metrics, and `translate(-50%, -50%)` centres each box on its point, so the topmost and
- * bottommost edges depend on those heights. The browser resolves all of that during layout; a
- * `getBoundingClientRect` sweep reads the answer instead of restating it as a second set of constants
- * that would drift the first time a question is reworded.
+ * Measured rather than derived because label HEIGHTS are not known in JS: each wraps to one or two lines
+ * depending on text and font metrics, and `translate(-50%, -50%)` makes the outer edges depend on that.
  *
- * `getBoundingClientRect` values are in SCALED screen pixels (the poster is under a CSS transform), so
- * every measurement is taken RELATIVE to the inner box's own rect and divided by its scale factor —
- * `rect.width / RING_W` recovers the scale without the component needing to know it. The result is in
- * ring coordinates, which is what the style below wants.
+ * Rects are in SCALED screen pixels (the poster is under a CSS transform), so measurements are taken
+ * relative to the inner box's rect and divided by `rect.width / RING_W`, recovering the scale without this
+ * component knowing it.
  */
 function PillarRing() {
   const innerRef = useRef(null);
@@ -522,18 +494,11 @@ function PosterToggle({ label, checked, onChange }) {
 }
 
 /**
- * Which bands the poster shows. Same interaction as the tool tab's chart-settings popover — an icon
- * button that opens a checkbox menu, dismissed by Escape or an outside click — but WITHOUT the tooltip:
- * the tool's icon sits among several others that need distinguishing, while this is the only settings
- * control on the row.
+ * Which bands the poster shows. Same interaction as the tool's chart-settings popover but without the
+ * tooltip, since this is the only settings control on its row.
  *
- * State is OWNED BY THE PAGE, not this menu and not the app store: it is view state for a single
- * admin-facing page with nothing to restore across sessions, unlike the tool's chart toggles which are
- * part of the persisted draft.
- *
- * `absolute` + `left-1/2 -translate-x-1/2` hangs the panel under the centred button. This is the only
- * control on the row that opens anything, so the panel has the full width of the black chrome to
- * itself and needs no edge-collision handling.
+ * State is owned by the PAGE, not this menu and not the app store: view state for one admin page with
+ * nothing to restore across sessions, unlike the tool's toggles, which are part of the persisted draft.
  */
 function PosterSettingsMenu({ showPillars, setShowPillars, showTracks, setShowTracks }) {
   const [open, setOpen] = useState(false);

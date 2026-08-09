@@ -186,17 +186,11 @@ export function isBackupReminderMilestone(count) {
 }
 
 /**
- * Delete keys this app wrote in a previous version and no longer reads (RETIRED_STORAGE_KEYS).
+ * Delete keys this app wrote previously and no longer reads. Called once per load from main.jsx.
  *
- * Called once per load from main.jsx. A bumped key otherwise leaves its predecessor in localStorage for
- * good — nothing here has ever swept, so the old value sits there until the user clears site data.
- *
- * IT DELETES ONLY WHAT THE LIST NAMES. See RETIRED_STORAGE_KEYS for why this is not a `:v1` pattern
- * sweep: one legacy `:v1` key is still deliberately read on every boot, and a pattern would eat it.
- *
- * Unconditional rather than guarded by a "migrated" marker: `removeItem` on an absent key is a no-op, so
- * for the overwhelming majority of loads this is a couple of lookups that find nothing. A marker would
- * cost its own key — one more thing to retire later — to save less than it costs.
+ * It deletes ONLY what RETIRED_STORAGE_KEYS names, never a `:v1` pattern: one legacy `:v1` key is still
+ * read on every boot, and a pattern sweep would eat it. Unconditional rather than guarded by a "migrated"
+ * marker, since `removeItem` on an absent key is a no-op and a marker would cost its own key.
  */
 export function retireLegacyKeys() {
   for (const key of RETIRED_STORAGE_KEYS) {

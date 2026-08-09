@@ -4,128 +4,47 @@ export const FE_UI = {
     minWidthPx: 350,
     theoryMaxWidthPx: 900,
     /**
-     * Desktop width ceiling for the radar canvas itself. The tool chart reaches this implicitly:
-     * `maxWidthPx` (550) minus the tab panel's px-3 gutters (12 each side) = 526. The theory hero
-     * radar's tab is 900 wide, so it caps its own wrapper at this value to land on the same canvas
-     * width and therefore the same rendered size.
+     * Desktop width ceiling for the radar canvas. The tool chart reaches it implicitly (550 − 2×12 of `px-3`);
+     * the theory hero radar's tab is 900 wide, so it caps its wrapper here to land on the same size.
      */
     chartMaxWidthPx: 526,
     /**
-     * The width the foundational 3-up row is LAID OUT AT while it sits off-screen on mobile, and therefore
-     * the width its three radars fit themselves to. See the note at the grid in CareerTracks for why that
-     * row is rendered out of flow rather than hidden.
+     * Layout width for the off-screen foundational 3-up row, and so the width its radars fit to. Must
+     * approximate the PRINTED content width: a radar's geometry is baked into the bitmap at fit time and print
+     * CSS can rescale it but not re-derive it.
      *
-     * IT MUST APPROXIMATE THE PRINTED CONTENT WIDTH, because a Chart.js radar's geometry — radius, axis-label
-     * font size, label padding — is derived from the width it fitted at and then baked into the drawn bitmap.
-     * Print CSS can rescale that bitmap but cannot re-derive it, so a row laid out at the phone's ~320px card
-     * width printed three ~100px radars with their pillar names clipped ("Archi", "unication"), while the
-     * track cards directly below it looked right for the only reason that matters: they are in normal flow,
-     * so they were laid out at the full card width all along.
-     *
-     * 762 is that width on A4 portrait, which is the narrower of the two common papers and so the safe one to
-     * target: 794px page − 24px of tab-panel `px-3` − 24px of card `p-3` = 746px of card content, then +16
-     * because this grid carries `-mx-2` and so is 16px WIDER than the content box it sits in. Getting that
-     * last term wrong is a silent 5px-per-column error, which is why the whole sum is written out.
-     *
-     * It works out to ~222px per chart, against ~219px for the three track cards below (their column is
-     * `(746 − 16 of gap) / 3`, less each card's `p-3`) — the two rows are meant to read as the same size, and
-     * that is the arithmetic that keeps them there.
-     *
-     * Letter is 816px and lands ~22px wider, which the bitmap rescale absorbs without visible loss. The
-     * theory panel's own 900px cap never binds here — paper is narrower than that, so the page box decides.
+     * A4 portrait: 794px page − 24px tab-panel `px-3` − 24px card `p-3` = 746, +16 because this grid carries
+     * `-mx-2`. See docs/DECISIONS.md#print-foundation-grid-width.
      */
     printFoundationGridWidthPx: 762,
   },
   chartFrame: {
     /**
-     * Height/width ratio (radar fits a wide rect, not a square). Seeds the PRE-measurement frame
-     * estimate only (getChartFrameEstimatedHeightPx). It is no longer a post-convergence floor:
-     * final height is the measured axis-label span, matching the theory hero radar so both charts
-     * render the same size radar. Raising this no longer enlarges the chart.
+     * Height/width ratio, seeding the pre-measurement frame estimate only (getChartFrameEstimatedHeightPx).
+     * Final height is the measured axis-label span, so raising this does not enlarge the chart.
      */
     heightWidthRatio: 0.55,
-    /** Safety pad around measured axis-label span — just enough to keep labels off the canvas edge; chrome spacing lives in CSS margins. */
+    /** Safety pad around the measured axis-label span; chrome spacing lives in CSS margins. */
     contentPadPx: 2,
     minChartHeightPx: 120,
   },
   chart: {
     /**
-     * Chart title size, as a multiple of the radar's axis-label size (see getChartTitleSizePx). Expressed
-     * that way ON PURPOSE: the title sits directly above the canvas and beside the track badge, both of which
-     * scale with chart width, so a fixed px size or a Tailwind `text-*` step would drift out of proportion at
-     * every width but the one it was picked at.
+     * Chart title size, as a multiple of the radar's axis-label size (see getChartTitleSizePx). A ratio rather
+     * than a px value or Tailwind step so the title, track badge and cluster legend stay in proportion at every
+     * chart width; the theory tab's framework title runs off the same number.
      *
-     * THE THEORY TAB'S FRAMEWORK TITLE RUNS OFF THIS SAME NUMBER (see TheoryContent), so the two are equal at
-     * every width by construction rather than by agreement. Theory used to carry its own Tailwind `text-*`
-     * ladder instead; that was dropped because the tool's breakpoints are not Tailwind's — the tool panel caps
-     * at 550, so the chart reaches full size around a 550px viewport while `sm:` does not fire until 640,
-     * which stepped the title for a reason unrelated to the chart it sits above.
-     *
-     * THE SIZE IS FRACTIONAL — getChartTitleSizePx does not round, and reads the exact label curve rather
-     * than the rounded label the badge and legend take (see chart/fonts.js). So this multiplier scales a
-     * continuous ramp, and the title tracks the chart at every width instead of holding a size across a band
-     * and then snapping when the rounded label ticks over.
-     *
-     * The floor is still a genuine plateau, but it comes from the LABEL's own `pointLabelMinPx` clamp rather
-     * than from rounding: below ~415px of chart width the label is pinned at 12, so the title is flat at
-     * `12 × 1.4 = 16.8` across every phone width. Above that it rises continuously to `15.23 × 1.4 ≈ 21.3` at
-     * the 526px chart.
-     *
-     * THERE IS NO `minPx`, ON PURPOSE. The floor is structural: the label is already clamped to
-     * `chartFonts.pointLabelMinPx` (12) before the multiplier, so the title cannot go below `12 × 1.4 = 16.8`.
-     * An explicit `minPx: 14` used to sit here and was dead — under the product, so nothing could ever reach
-     * it. Retune the floor via the multiplier (or that label clamp), not by reintroducing a second one.
-     *
-     * SHARING getChartPointLabelSizePx IS THE POINT, not an implementation detail. The track badge and the
-     * cluster legend take their size from the same call at `× 0.9` (see getChartSecondaryLabelSizePx), so the
-     * title, the badge and the legend are three fixed ratios of one number and cannot drift apart as the chart
-     * resizes. Anything that wants to move with the chart belongs on this function, not on a private ramp.
-     *
-     * THERE IS NO `maxPx` EITHER, AND ADDING ONE BACK WOULD DO NOTHING. It carried `maxPx: 22`, which was
-     * kept for a while on the argument that it guarded the size shared with the theory framework title. That
-     * argument was wrong: `page.chartMaxWidthPx` holds the canvas at 526, so the title tops out at ~21.3 and
-     * ANY ceiling above that is unreachable. Raising it to 30 produced identical output at every width.
-     *
-     * THE REAL CEILING IS THE CANVAS WIDTH. Both titles are a fixed multiple of a label that is a fixed
-     * multiple of the chart, and the chart stops growing at 526 — so that is what bounds the type. To change
-     * the largest the titles get, move `page.chartMaxWidthPx` or `labelMultiplier`. A font clamp cannot.
-     *
-     * LEADING IS NOT CONFIGURED HERE AT ALL — both titles take Tailwind's `leading-tight` and nothing in JS
-     * knows or needs to know what that resolves to. There was a `lineHeightMultiplier: 1.25` here mirroring
-     * the class so the title ROW could reserve the right height; it is gone, because a ratio duplicated in
-     * two languages is a ratio that eventually disagrees. The row now floors itself at `1.25em` against its
-     * own font size (see `titleRowMinHeight` in ChartSection), which is the same computation the class does,
-     * done once, by the browser.
-     *
-     * That `em` floor is also what holds the row's height when the TITLE IS HIDDEN and only the track badge
-     * is left: the font size sits on the ROW, not on the <h2>, so it is present whether or not the heading
-     * renders. The row is the same height in all four show/hide combinations.
-     *
-     * THE ROW IS SIZED BY THE TITLE AND THE BADGE FOLLOWS IT (see TrackBadge's `matchHeightPx`). The
-     * dependency used to run the other way — the row took the badge's intrinsic height and the title's
-     * `lineHeight` was pinned to it — which was backwards: the title is the row's primary content and the
-     * badge is chrome, and it meant a wrapped title (the name is `flex-1` and has no truncation) took its
-     * leading from a pill's padding, which at narrow widths came out as exactly `leading-none`.
-     *
-     * WRAPPING IS RARE BUT NOT IMPOSSIBLE. MAX_PROFILE_NAME_LENGTH is set to 28 precisely so an ordinary name
-     * stays on one line at the app's 350px floor — but that is a character budget, and capitals are far wider
-     * than lowercase, so an all-caps name at the limit can still take two lines. This leading has to be a real
-     * typographic value for those, not a pill's height.
+     * No `minPx`/`maxPx` on purpose: the floor comes from `chartFonts.pointLabelMinPx` and the ceiling from
+     * `page.chartMaxWidthPx`, so both would be unreachable. Retune via those, not a font clamp. Leading is
+     * Tailwind's `leading-tight` alone. See docs/DECISIONS.md#chart-type-scale.
      */
     title: { labelMultiplier: 1.4 },
     layoutPaddingHorizontal: { minPx: 2, maxPx: 5 },
     radarCenterFix: true,
     /**
-     * Horizontal space held back from the radar radius for the axis labels — applyRadarCenterFit
-     * subtracts it from the half-width to get a maxR cap.
-     *
-     * Matched to THEORY_CHART_UI (with layoutPaddingHorizontal above) so the tool chart and the
-     * theory hero radar compute the same maxR and therefore draw the same size radar.
-     *
-     * This DOES bind at narrow widths. Since the frame height is fit to the measured label span
-     * (~330px at a 375px viewport, so half ≈ 165), the old 38→54px reserve capped maxR at ~129
-     * while the hero's 10→18px gave ~163 — a visibly smaller radar on mobile even though both
-     * charts were otherwise identical. At desktop, height is the binding constraint instead.
+     * Horizontal space held back from the radar radius for axis labels; applyRadarCenterFit subtracts it from
+     * the half-width to cap maxR. Matched to THEORY_CHART_UI so the tool chart and theory hero radar draw the
+     * same size. Binds at narrow widths (height binds at desktop), so raising it shrinks the mobile radar.
      */
     radarLabelReserved: { minPx: 10, maxPx: 18 },
     /** Track badge + cluster legend — slightly below axis pillar labels, same width scaling. */
@@ -138,22 +57,15 @@ export const FE_UI = {
     legendSwatchLabelMultiplier: 1.2,
     pointLabelPaddingRange: { minPx: 4, maxPx: 8 },
     /**
-     * These two no longer size the radar's own axis labels — `pointLabelPxRange` below does, for
-     * every chart. They survive as the basis of the DOM chrome that scales WITH the chart: the track
-     * badge, cluster legend and chart title, via getChartPointLabelSizePx in chart/fonts.js. Tuning
-     * them moves that chrome, not the labels on the canvas.
+     * These size the DOM chrome that scales with the chart (track badge, cluster legend, title) via
+     * getChartPointLabelSizePx, NOT the canvas axis labels — `pointLabelPxRange` below does those.
      */
     pointLabelPx: 11,
     pointLabelScaleWithChart: true,
     /**
-     * Axis-label size ramp, shared by the tool chart and the theory hero radar so the two render at
-     * identical label sizes for a given chart width. Linearly interpolated (unrounded) by
-     * getPointLabelSizePxFromRange: minPx at/below minWidthPx, maxPx at/above maxWidthPx.
-     *
-     * Kept here rather than at the call sites so the two charts can't drift apart — the hero is a
-     * theory-preset chart and passes this range explicitly to override THEORY_CHART_UI's own
-     * (smaller) ramp. Every radar sizes its labels this way now; the small career-track charts have
-     * their own ramp on the theory preset.
+     * Axis-label size ramp, linearly interpolated by getPointLabelSizePxFromRange. Shared by the tool chart and
+     * the theory hero radar (which passes it explicitly to override THEORY_CHART_UI's smaller ramp) so the two
+     * cannot drift apart. The small career-track charts use the theory preset's own ramp.
      */
     pointLabelPxRange: { minPx: 12, maxPx: 15, minWidthPx: 300, maxWidthPx: 526 },
     pointLabelWeight: "bold",
@@ -163,9 +75,8 @@ export const FE_UI = {
     tickLabelColor: "rgba(0, 0, 0, 0.3)",
     centerPointLabels: false,
     tickInitialPx: 12,
-    /* Vertical padding stays tight: the backdrop is (tick font size + top/bottom) tall while the gap
-       between rings shrinks with the radius, so at the narrowest viewport a taller pill collides with
-       the one above. Also feeds radarTickBackdropHalf() → the scale's reserved layout space. */
+    /* Vertical padding stays tight or the pills collide at the narrowest viewport, where the gap between rings
+       has shrunk with the radius. Also feeds radarTickBackdropHalf() and so the scale's reserved layout space. */
     tickBackdropPad: { top: 1.5, bottom: 1.5, left: 2, right: 2 },
     tickBackdropColor: "rgba(255, 255, 255, 0.5)",
     exportImageCssScale: 8,

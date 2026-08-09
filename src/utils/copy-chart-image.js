@@ -8,23 +8,11 @@ const UNSUPPORTED_COLOR_RE = /(?:oklch|oklab|lab\(|lch\(|color\()/i;
 const PROFILE_SLUG_MAX_LENGTH = 30;
 
 /**
- * Normalize a profile name into a lower-kebab-case slug fit for a filename.
+ * Normalize a user-typed profile name into a lower-kebab slug safe for a filename on any OS.
  *
- * The name is free text the user typed — it can carry accents, emoji, punctuation, runs of spaces, or be
- * blank — and it ends up in a downloaded filename and a share-sheet attachment name, so it has to come out
- * as something every OS will accept.
- *
- * Steps, and why each is there:
- *   - NFKD + strip combining marks folds "Café" to "Cafe" rather than dropping the accented letter, which
- *     is what a bare a-z filter would do.
- *   - Everything outside a-z0-9 becomes a hyphen, so emoji, slashes, dots and quotes cannot reach the
- *     filesystem. Path separators and leading dots are the ones that actually matter here.
- *   - Runs collapse and edge hyphens are trimmed, so "  My  Chart!  " gives "my-chart" and not
- *     "--my--chart--".
- *   - Truncated to {@link PROFILE_SLUG_MAX_LENGTH}, then re-trimmed in case the cut landed on a hyphen.
- *
- * Returns "" for a name that is blank or contains nothing slug-able (e.g. "🎉"). Callers decide what an
- * empty slug means: see {@link buildChartFileName}, which substitutes an "untitled" segment.
+ * NFKD + stripping combining marks folds "Café" to "Cafe" rather than dropping the letter, as a bare a-z
+ * filter would. Everything outside a-z0-9 becomes a hyphen, which is what keeps path separators and leading
+ * dots out. Returns "" for a name with nothing slug-able (e.g. "🎉"); see {@link buildChartFileName}.
  */
 export function toProfileSlug(name) {
   return String(name ?? "")
@@ -52,21 +40,13 @@ function getLocalDateStamp() {
 }
 
 /**
- * The exported PNG's filename, filling `SITE_COPY.share.fileName`'s `{profileName}` and `{date}`
- * placeholders.
+ * The exported PNG's filename, filling `SITE_COPY.share.fileName`'s `{profileName}` and `{date}`.
  *
- * An UNNAMED profile falls back to `SITE_COPY.share.unnamedProfileSlug`, giving
- * "9-pillar-egf-untitled-2026-08-04.png". The segment stays occupied on purpose: a file whose name simply
- * skips from "egf" to the date reads like the naming broke, where "untitled" reads like a state the export
- * knew about. The date is never substituted this way — there is always a date, so it is a plain replace.
- *
- * The segment is only DROPPED if that fallback is itself blank, which is how `site.js` reverts to the
- * previous clean "9-pillar-egf-2026-08-04.png" without touching this code. Dropping swallows ONE neighbouring
- * separator with the placeholder, the leading one by preference: taking both sides would consume the hyphen
- * the NEXT segment needs, which on "…-egf-{profileName}-{date}.png" produced "…-egf2026-08-04.png".
- *
- * A template missing either placeholder is left as-is at that spot, so the filename can be simplified in
- * `site.js` (drop the date, revert to a fixed string) without touching this code.
+ * An unnamed profile falls back to `unnamedProfileSlug`, keeping the segment occupied so the name reads as
+ * a known state rather than as broken naming. Setting that fallback blank drops the segment instead, which
+ * swallows ONE neighbouring separator, the leading one by preference: taking both consumes the hyphen the
+ * next segment needs. A template missing a placeholder is left as-is, so `site.js` can simplify the
+ * filename without touching this code.
  */
 export function buildChartFileName(profileName) {
   const slug = toProfileSlug(profileName) || toProfileSlug(SITE_COPY.share.unnamedProfileSlug);
@@ -424,9 +404,7 @@ function buildShareMessage(linkOverride) {
  * Share the chart PNG (plus a message containing the tool link) via the Web Share API, opening the
  * native OS share sheet so the user can pick a target app (WhatsApp, LinkedIn, Messages, AirDrop…).
  *
- * Browser support is uneven: mobile Safari/Chrome and desktop Safari/Edge support file sharing;
- * desktop Chrome (macOS) and Firefox generally do not. When file-sharing is unsupported we fall
- * back to copying the image to the clipboard so the button never dead-ends.
+ * Falls back to a clipboard copy where file sharing is unsupported, so the button never dead-ends.
  *
  * @param {string} [url] Optional link override embedded in the message; defaults to the tool link.
  * @param {string} [profileName] Profile name, slugged into the attachment filename.
@@ -494,15 +472,10 @@ export async function shareChartAsImage({ exportRoot, canvas, chart, url, profil
  * Share the Theory tab: its deep link, plus the pre-rendered pillar poster from `public/` as an
  * attached image so the share lands with a visual instead of a bare URL.
  *
- * TWO PAYLOADS, ONE INTENT. Where a share sheet can take files, the recipient gets image + text; where it
- * cannot, they get the text (with the link in it) alone. The link is the point of this share, so a
- * browser that refuses files must still be able to complete it — which is why the no-files path shares
- * text rather than falling back to a clipboard copy or a PNG download the way {@link shareChartAsImage}
- * does. That function's image is generated on the spot and would be lost if not captured somewhere; this
- * one is a static asset the user can reach any time, so there is nothing to rescue.
- *
- * The fetch is deliberately not fatal: if the asset 404s or the network is down, we still share the text.
- * An image is an enhancement to this share, never its content.
+ * The link is the payload and the image is an enhancement, so the no-files path shares TEXT rather than
+ * falling back to a clipboard copy the way {@link shareChartAsImage} does: that function's image is
+ * generated on the spot and would be lost, whereas this one is a static asset. The fetch is deliberately
+ * non-fatal for the same reason.
  *
  * @param {string} url The theory link to embed in the message.
  * @returns {{ ok: boolean, method: "share" | "share-text" | null }}

@@ -5,27 +5,9 @@ import { create } from "zustand";
 import { track } from "@/utils/analytics";
 
 /**
- * WHETHER THE BANNER IS OPEN, OWNED HERE RATHER THAN BY THE BANNER ITSELF, because two components need to
- * write it: the banner opens itself when an install path first appears (and closes on dismiss), and the
- * header pill opens it on tap.
- *
- * THE PILL OPENS THE BANNER INSTEAD OF INSTALLING DIRECTLY, on every platform. It used to fire the native
- * prompt on Android and toggle its own little popover on iOS — two different behaviours behind one control,
- * and a second explanatory surface (the popover) that duplicated the banner's copy in a narrower box. Now
- * there is ONE explanatory surface and the pill is a way to summon it. What the user sees after tapping
- * Install is the same on both platforms, which is also what lets the popover be deleted outright.
- *
- * The pill still hides while the banner is up: the offer is on screen, so a control that re-opens it is
- * noise, and two calls to action for one action is what this whole arrangement exists to avoid.
- *
- * A STORE RATHER THAN PROPS, because the two components are in different trees: the banner mounts from
- * App, the pill from inside AppShellHeaderStack. Threading a prop down would mean giving the header stack
- * a parameter it otherwise has no use for, and that component is deliberately propless (see its
- * docblock) — its whole point is that it holds no state and takes none.
- *
- * NOT IN `useAppStore`, which is the persisted profile store: this is ephemeral view state that must
- * never reach localStorage, and it has no relationship to a profile. Its own tiny store keeps the
- * blast radius to this file and the two components that read it.
+ * Whether the banner is open. Owned here because two components in different trees write it (the banner
+ * itself and the header pill), so a store rather than props. Not in `useAppStore`: ephemeral view state that
+ * must never reach localStorage.
  */
 const useInstallBannerStore = create((set) => ({
   bannerOpen: false,
@@ -49,15 +31,9 @@ export function useCloseInstallBanner() {
 }
 
 /**
- * Already running as an installed app? Mirrors the display-mode checks in utils/analytics.js
- * (`getDisplayMode`), which is the same question asked for a different purpose: there it labels an
- * event, here it suppresses the whole install UI.
- *
- * NOT SHARED WITH ANALYTICS, deliberately. That function returns WHICH mode, as a string, so a
- * boolean here would have to compare against its vocabulary ("twa", "ios-standalone", the three
- * display-mode names) and would silently start returning the wrong answer if a mode were ever
- * renamed or added there. Two short predicates that each answer one question beat one that answers
- * neither cleanly.
+ * Already running as an installed app? Deliberately not shared with analytics' `getDisplayMode`, which
+ * answers the same question but returns WHICH mode as a string: a boolean derived from it would have to
+ * compare against that vocabulary and would silently go wrong if a mode were renamed or added.
  */
 function isStandalone() {
   if (typeof window === "undefined") {
@@ -73,26 +49,16 @@ function isStandalone() {
 }
 
 /**
- * iOS Safari never fires `beforeinstallprompt`, so there is no prompt to trigger and installs there
- * are manual: Share → Add to Home Screen. Detect it so the UI can show instructions instead of a
- * button that could not work.
+ * iOS Safari never fires `beforeinstallprompt`, so installs there are manual and the UI must show
+ * instructions rather than a button that cannot work.
  *
- * The WebKit test EXCLUDES the other iOS browsers and in-app webviews. Every browser on iOS is
- * WebKit underneath and they all report an iPad/iPhone UA, but only real Safari can add to the home
- * screen — Chrome/Firefox/Edge/Opera iOS have no such menu item, so telling their users to look for
- * one would be instructions for a thing that is not there.
- *
- * The `MacIntel` clause catches iPadOS, which requests desktop sites by default and reports itself as
- * a Mac; `maxTouchPoints > 1` is what separates it from an actual desktop Mac.
+ * The WebKit test excludes other iOS browsers, which are WebKit underneath and report an iPad/iPhone UA but
+ * have no Add to Home Screen item. `MacIntel` + `maxTouchPoints > 1` catches iPadOS, which requests desktop
+ * sites and reports itself as a Mac.
  */
-// TEMPORARY PREVIEW FLAG — REMOVE BEFORE COMMITTING. Flip to `true` to force the iOS Safari branch on every
-// platform, so the Share → Add to Home Screen copy can be inspected in a desktop browser. It also forces
-// `canInstall` off (see the hook's return), because a real iPhone can never have both — Safari does not fire
-// `beforeinstallprompt`, so showing the instructions AND a working Install button is a state that only exists
-// when this flag is on.
-//
-// LEFT AT `false` SO NOTHING SHIPS CHANGED. Shipping it on would show iOS instructions to Android and desktop
-// users, who have a working Install button and no Share menu to follow them with.
+// Dev preview flag: forces the iOS Safari branch on every platform so the Add-to-Home-Screen copy can be
+// inspected in a desktop browser. Also forces `canInstall` off, since a real iPhone can never have both.
+// MUST SHIP `false`, or Android and desktop users get iOS instructions they cannot follow.
 const FORCE_IOS_PREVIEW = false;
 
 function isIosSafari() {
@@ -118,9 +84,8 @@ function isIosSafari() {
  *  - iosHint    : iOS Safari, so show the manual Add-to-Home-Screen line instead of a button
  *  - install()  : fire the native prompt (no-op unless `canInstall`); resolves to the outcome string
  *
- * NO SERVICE WORKER IS INVOLVED, and none is needed: `beforeinstallprompt` requires a manifest with
- * icons and a `start_url` (see public/manifest.json, linked from index.html), not offline support.
- * There is nothing to cache here anyway — the app is a static bundle whose entire state lives in
+ * No service worker is involved or needed: `beforeinstallprompt` requires a manifest with icons and a
+ * `start_url`, not offline support, and there is nothing to cache in a static bundle whose state lives in
  * localStorage.
  *
  * `source` only tags analytics, so the banner and the card can be told apart in GA.
@@ -149,11 +114,10 @@ export function useInstallPrompt(source) {
     const onInstalled = () => {
       setInstalled(true);
       setDeferredPrompt(null);
-      // `install_completed`, NOT the OS-sheet event, because this fires for an install by ANY route —
-      // including the browser's own menu, which never touches our banner or pill. It is the only event
-      // that means the app is actually installed, so it is the one to count installs by; `install_os_*`
-      // only reports what our prompt was answered. `source` is the surface that was MOUNTED, not
-      // necessarily the one used, so don't attribute installs with it.
+      // The only event meaning the app is actually installed, since it fires for an install by ANY route
+      // including the browser's own menu; `install_os_*` only reports how our prompt was answered. Count
+      // installs by this. `source` is the surface that was MOUNTED, not necessarily the one used, so do
+      // not attribute installs with it.
       track("install_completed", { method: "appinstalled_event", source });
     };
     window.addEventListener("appinstalled", onInstalled);

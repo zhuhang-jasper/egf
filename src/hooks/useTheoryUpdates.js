@@ -145,13 +145,9 @@ function clearSectionProgress(section) {
  * Per-section tracking only exists from the version that shipped it onward. Everyone arriving from an
  * earlier build has just ONE stored string to go on, so it seeds all four sections uniformly.
  *
- * That legacy value means "the version the Theory tab was last OPENED at" — the old implementation
- * stamped it in an effect keyed on tab-active, with no scroll involved — and this migration
- * necessarily reads it as "read at". The two differ, and the error is one-directional: a user who
- * opened Theory at vX and immediately bounced is credited with having read all of vX, so their
- * unread vX material is silently baselined away. Only versions AFTER vX can still raise a dot for
- * them. Nothing better is recoverable, since per-section reads were never recorded; it self-corrects
- * from the next bump on, when every stamp comes from a real scroll.
+ * The legacy value means "last OPENED at" and is necessarily read here as "read at". The error is
+ * one-directional: someone who opened Theory at vX and bounced is credited with all of vX, so only later
+ * versions can raise a dot for them. Nothing better is recoverable, and it self-corrects from the next bump.
  */
 function readSeenSections() {
   const stored = readJson(THEORY_SEEN_SECTIONS_KEY);
@@ -169,19 +165,11 @@ function readSeenSections() {
   // Written back immediately, which CONSUMES the legacy key: from here on the map exists, the early
   // return above wins, and readLegacySeenVersion is never consulted again for this user.
   const persisted = writeSeenSections(migrated);
-  // DELETED AT THE POINT OF CONSUMPTION, not by the boot-time sweeper in utils/storage.js. Its whole
-  // value has just been transferred into the map above, so keeping it serves nothing — but the order is
-  // the reason this cannot be a retired key: `retireLegacyKeys()` runs before React mounts, so it would
-  // wipe the baseline BEFORE this function ever read it, and a returning user would be silently
-  // re-baselined to "caught up" and lose every dot the key exists to preserve.
-  //
-  // Doing it here also removes the waiting period that a sweep-based retirement would need. The
-  // migration keeps working for a browser that shows up years late, and still cleans up after itself.
-  //
-  // GATED ON THE WRITE HAVING LANDED, so a store that rejected the map (quota, private mode) does not
-  // also lose the baseline it was derived from: nothing is deleted, and the next load migrates again
-  // from the same legacy value. Deleting unconditionally would turn one failed write into a permanently
-  // re-baselined user.
+  // Deleted at the point of consumption, not by the boot sweeper: `retireLegacyKeys()` runs before React
+  // mounts, so it would wipe the baseline before this ever read it and silently re-baseline a returning
+  // user to "caught up". Doing it here also means the migration still works for a browser that shows up
+  // years late. Gated on the write having landed, so a rejected map (quota, private mode) does not also
+  // lose the value it was derived from.
   if (persisted) {
     dropLegacySeenVersion();
   }

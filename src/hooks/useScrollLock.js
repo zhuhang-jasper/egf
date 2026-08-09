@@ -6,53 +6,12 @@ const SCROLLBAR_WIDTH_CSS_VAR = "--scroll-lock-gutter";
 /**
  * Locks body scrolling while `locked` is true, WITHOUT the page behind shifting sideways.
  *
- * `overflow: hidden` alone removes the document's scrollbar, handing its ~15px back to the layout: the
- * app column widens, its centred content slides, and the fixed bottom nav's centred items slide by a
- * different amount again. The width has to be given back — but WHICH ELEMENTS GET IT IS THE WHOLE
- * PROBLEM, and three narrower attempts each failed in an instructive way:
+ * The scrollbar's width is published as a CSS variable, and consumers are decided by whether they belong to
+ * the PAGE or the VIEWPORT. `position: fixed` is not the test, and the compensation cannot go on `body`.
+ * See docs/DECISIONS.md#scroll-lock-gutter before changing any of it.
  *
- *   `padding-right` on `body` — `body` carries the app's surround tint (index.css), and a background on
- *      `body` PROPAGATES TO THE CANVAS when `html` has none, as here. The reserved strip paints that
- *      tint across the full viewport, outside the modal's `fixed inset-0` scrim, reading as a bar down
- *      the right edge. This was the more obvious failure when the tint was `bg-black`; it is the same
- *      bug at `bg-slate-100`, just quieter against the scrim, so do not read the softer colour as a
- *      licence to revisit it.
- *   `margin-right` on `body` — identical, for the same reason: what shows in the gap is the propagated
- *      canvas background, which nothing done to `body`'s own box can avoid.
- *   `margin-right` on `#root` alone — no stray strip, but it insets only the in-flow column, so AppBottomNav
- *      (fixed, and therefore laid out against the viewport) stayed full-width while the page it belongs
- *      to pulled in beneath it.
- *
- * So the compensation is published as a CSS variable, and the elements that take it are decided by ONE
- * QUESTION: does this belong to the page, or to the viewport?
- *
- *   The page — `#root` (margin, set below) and AppBottomNav (`right-[var(--scroll-lock-gutter)]`). The
- *      bar is the page's own footer and reads as the bottom of the column above it, so it must end where
- *      that column ends. Being `fixed` is why it needs the value explicitly rather than inheriting the
- *      margin; it is not why it qualifies.
- *   The viewport — toasts, the install prompt, the modal scrim. These float over whatever is beneath
- *      them and have no relationship to the page's edges, so the gutter is not theirs to take. The scrim
- *      especially: the modal is what CAUSED the lock, and an overlay that shifted in response to its own
- *      side effect would be reacting to itself. It covers the whole viewport, unconditionally.
- *
- * `position: fixed` is NOT the test — all of the above are fixed. Applying the gutter to everything
- * fixed was the wrong rule, and it coupled the floating overlays to a page edge they should never track.
- *
- * The variable is always defined (`0px` at rest), so `var(--scroll-lock-gutter)` resolves to a length
- * rather than to nothing when no modal is open, and on overlay scrollbars (macOS trackpad, touch) it
- * stays `0px` because there is no gutter to give back.
- *
- * `scrollbar-gutter: stable` would reserve the space in CSS alone, but permanently shrinks the content
- * box while fixed elements keep the full viewport — the same misalignment as the third attempt, standing
- * rather than transient.
- *
- * Vertical scroll position is preserved for free: `overflow: hidden` on `body` keeps the scroll offset
- * intact, unlike the `position: fixed` body trick, which needs an explicit save/restore and would break
- * the fixed bottom nav besides (a fixed element cannot opt out of the visual viewport — see
- * AppBottomNav's frame trace).
- *
- * Restores the exact previous inline values rather than clearing them, so this composes with anything
- * else that may have set them and with a second lock opening over the first.
+ * The variable is always defined (`0px` at rest) so `var()` resolves to a length. Previous inline values are
+ * restored rather than cleared, so this composes with a second lock opening over the first.
  */
 export function useScrollLock(locked) {
   useEffect(() => {

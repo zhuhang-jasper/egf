@@ -3,42 +3,22 @@ import { FE_UI, normalizeAttachedBadge, TRACK_BADGE_UI } from "@/constants";
 import { cn } from "@/utils";
 
 /**
- * `matchHeightPx` (md only) MAKES THE PILL TAKE A HEIGHT IT IS GIVEN rather than deriving its own from its
- * font and padding. It exists for the chart title row, where the badge sits beside the chart title: the title
- * is the primary content there and should set the row's height, with the pill sizing itself to match.
+ * `matchHeightPx` (md only) makes the pill take a height it is GIVEN rather than deriving one, for the chart
+ * title row where the title is the primary content and should set the row height. Only the box follows the
+ * title: the font stays on the chart's secondary scale so the badge reads as chrome, not a second title.
+ * Vertical padding is dropped when it is set, since `border-box` already lets the height win.
  *
- * The font size is deliberately NOT part of this — it stays on the chart's secondary scale, the same one the
- * cluster legend uses, so the badge still reads as chrome belonging to the chart rather than as a second
- * title. Only the BOX follows the title; the text inside it does not grow.
+ * sm is md at a smaller font, so the toolbar pill reads as the chart pill shrunk rather than a second design.
+ * md is the reference because its size is pinned to the chart. Shared ratios, all against font size:
  *
- * Vertical padding is dropped when this is set. Everything is `border-box`, so an explicit height already
- * wins over padding and keeping both would just be two sources for one number. `items-center` on the pill is
- * what then centres the label's LINE BOX in whatever height it was handed.
- *
- * CENTRING THE LINE BOX IS NOT THE SAME AS CENTRING THE INK, which is why the sm pill sets `leading-[1.4]`
- * rather than the `leading-none` it used to share with md. At `line-height: 1` the line box is exactly the
- * font size and there is no half-leading to balance the glyph inside it, so the ink lands wherever the font's
- * ascent/descent metrics put it. For the all-caps, descender-free "FE"/"BE" that is high in the box, leaving
- * a sliver of dead space below — visible as text sitting off-centre in the pill, and worse on mobile where
- * `system-ui` resolves to a font with different metrics than the desktop one. A line-height above 1 restores
- * the symmetric half-leading that centres the ink; the padding then sits on a box that is already balanced.
- *
- * sm IS md AT A SMALLER FONT — every proportion is md's, so the chart pill reads as the toolbar pill enlarged
- * rather than as a second design. md is the reference because its size is pinned to the chart (see below), so
- * it is the one that cannot move. The shared ratios, all against font size:
- *
- *   height  1.8x   md is `labelPx + 2 * round(labelPx * 0.4)`; sm is a 1.4 line box + 2px, both 18px at 10px
- *   pad-x   0.85em stated as `em` so it scales with sm's font instead of being pre-multiplied to px
+ *   height  1.8x   md is `labelPx + 2 * round(labelPx * 0.4)`; sm is a 1.4 line box + 2px
+ *   pad-x   0.85em in `em` so it scales with sm's font rather than being pre-multiplied
  *   min-w   2.75em `trackBadgeMdMinWidthEm`, so "FE" and "BE" are one width at both sizes
  *
- * These were NOT all shared before, and the gap was visible: sm had 0.6x side padding against md's 0.85x, so
- * the toolbar pill read as squarer and shorter while matching md's height exactly. sm also carried
- * `tracking-wide`, which md does not, widening the label inside an already-narrower box. Both are gone.
- * Changing the leading means re-deriving the padding, since the two together are what hold the height ratio.
- *
- * md keeps `leading-none` deliberately: its height comes from `matchHeightPx` (or the padding mirrored in
- * chart/fonts.js `getTrackBadgeMdHeightPx`), and a line box taller than the font size would fight that
- * measurement. Its glyphs are centred by the flex box instead, in a height that was computed for them.
+ * sm sets `leading-[1.4]` because centring the LINE BOX is not centring the INK: at `line-height: 1` there is
+ * no half-leading, so all-caps descender-free labels sit high, worse on mobile where `system-ui` resolves to
+ * different metrics. md keeps `leading-none` deliberately, since a taller line box would fight the height it
+ * is handed. Changing the leading means re-deriving the padding, as the two hold the height ratio together.
  */
 export function TrackBadge({ variant, className, size = "sm", hidden = false, chartWidth = 0, matchHeightPx = 0 }) {
   const badge = normalizeAttachedBadge(variant);

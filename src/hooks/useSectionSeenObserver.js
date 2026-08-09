@@ -40,43 +40,27 @@ const EDGE_DWELL_MS = 150;
  * Marks a Theory section as read once BOTH its head and tail have been in view AND the section has
  * stayed on screen for {@link SEEN_SETTLE_MS}, clearing that section's unseen dot.
  *
- * Both edges, in either order, because each one alone is defeatable:
+ * Both edges, in either order, because each alone is defeatable: tail alone clears the dot for a reader
+ * entering from below, who never saw the heading it hangs on, and head alone is just "the section appeared",
+ * which a flick satisfies. Requiring both means everything between them passed through the viewport.
  *
- *   - Tail alone misses the dot itself. Entering a section from below (scrolling up out of Career
- *     Paths into the Matrix) reaches the tail first, so the dot would clear without the heading it is
- *     attached to ever being on screen.
- *   - Head alone is just "the section appeared", which a fast flick past it satisfies.
+ * The edges are zero-height sentinels rather than the section box, whose own bottom edge is already on
+ * screen the moment a SHORT section appears, collapsing the two-edge test back into "it appeared".
  *
- * Requiring both means the scroll position has been at the top and has reached the bottom, so
- * everything between them has passed through the viewport. Order does not matter — reading upward is
- * still reading.
+ * The settle delay is timed against the SECTION, not each edge: timing edges individually would demand a
+ * pause at the head and again at the tail, making a read-through feel sticky. The timer starts when the
+ * pair completes and is cancelled if the section leaves the viewport first.
  *
- * The edges are zero-height sentinel nodes rather than the section box, because the box's own bottom
- * edge is already on screen the moment a SHORT section appears (anything shorter than the viewport),
- * which would collapse the two-edge test back into "it appeared". Sentinels make each edge exact and
- * independent of section height.
+ * Because the hook re-subscribes when `unseenSections` shrinks, the observer drains as the user reads and
+ * never attaches at all for a caught-up user.
  *
- * The settle delay is timed against the SECTION, not each edge. Timing the edges individually would
- * demand a pause at the head and again at the tail, which makes a normal read-through feel sticky at
- * the bottom of every section. Instead the timer starts when the pair completes and is cancelled if
- * the section leaves the viewport first, so scrolling clean past a section never clears it.
+ * `active` must be the Theory tab's live visible flag. A hidden panel cannot produce false reads on its own
+ * (a `hidden` element never intersects), but gating explicitly skips setup and re-runs the subscription on
+ * tab switch so sentinels already on screen are re-evaluated. Switching mid-settle cancels the timer while
+ * the completed EDGES survive in storage, so returning restarts only the settle.
  *
- * Because the hook re-subscribes when `unseenSections` shrinks, a section stops being observed the
- * moment it's marked. The observer drains as the user reads down the page and never attaches at all
- * for a caught-up user.
- *
- * `active` must be the Theory tab's live visible flag. The tab panel stays mounted while hidden and a
- * `hidden` element never intersects, so a hidden panel can't produce false reads on its own — but
- * gating explicitly skips setup while the Tool tab is open, and makes the subscription re-run on tab
- * switch so sentinels already on screen are re-evaluated. Switching tabs mid-settle tears the effect
- * down, which cancels the pending timer; the completed EDGES survive in storage, so returning to the
- * tab and putting the section back on screen restarts only the settle.
- *
- * BROWSER-tab visibility is deliberately NOT handled. Backgrounding the window doesn't change layout,
- * so no intersection callback fires and a pending timer isn't cancelled — but both delays are under a
- * second, so the only reachable case is switching away within ~600ms of reaching a section's end, which
- * nobody does deliberately. A `visibilitychange` listener plus the live intersection bookkeeping needed
- * to re-arm from it costs more (in code and in per-event work) than the sub-second window is worth.
+ * Browser-tab visibility is deliberately NOT handled: both delays are under a second, so the only reachable
+ * case is backgrounding the window within ~600ms of reaching a section's end.
  *
  * @param {boolean} active Whether the Theory tab is currently visible.
  * @param {Set<string>} unseenSections Section ids still carrying a dot (from `useTheoryUpdates`).
@@ -136,15 +120,10 @@ export function useSectionSeenObserver(active, unseenSections, markSectionEdgeSe
       }
     };
 
-    // Edge sentinels: latch head/tail into persistent storage, but only after the edge has been in
-    // view continuously for EDGE_DWELL_MS.
-    //
-    // The dwell is what makes a flick harmless. An edge write is PERMANENT, while the settle timer is
-    // in-memory and cancellable — so without this gate, flicking through a tall section wrote both
-    // edges (momentum scrolling carries the tail through the viewport on the way past), and returning
-    // later to look at just the top would find the pair already complete and clear the dot for content
-    // that was never read. Requiring the edge to linger means a scroll that blows past it records
-    // nothing at all.
+    // Edge sentinels latch head/tail into persistent storage, but only after EDGE_DWELL_MS continuously
+    // in view. The dwell is what makes a flick harmless: an edge write is permanent (the settle timer is
+    // merely in-memory), so without it, momentum scrolling through a tall section wrote both edges and a
+    // later glance at the top would clear the dot for content never read.
     const edgeObserver = new IntersectionObserver((entries) => {
       for (const entry of entries) {
         const { theorySection: section, theorySectionEdge: edge } = entry.target.dataset;

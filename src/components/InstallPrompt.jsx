@@ -26,27 +26,16 @@ function dismissedRecently() {
 }
 
 /**
- * The iOS "Share → Add to Home Screen" instruction line, shared by both surfaces.
+ * The iOS "Share → Add to Home Screen" instruction line, shared by both surfaces. Instructions only: the
+ * value sentence is shared with the other platforms' branch and this follows it, so the two read as one
+ * message with a platform-specific tail.
  *
- * IT IS ONLY THE INSTRUCTIONS NOW, not a whole message. It used to open with "It is just this page, nothing
- * to download", which made the iOS banner say something completely different from every other platform's.
- * The value sentence is now shared by both branches and this follows it, so the two read as one message with
- * a platform-specific tail rather than as two unrelated blurbs.
+ * The two glyphs are the point. iOS labels neither control with text, so showing the icon inline IS the
+ * instruction, where naming it in prose would ask the reader to map a name onto an unlabelled icon.
  *
- * THE TWO GLYPHS ARE THE POINT. iOS labels neither control with text, so naming them in prose ("tap the
- * share button") asks the reader to map a name onto an unlabelled icon; showing the icon inline IS the
- * instruction. `aria-label` on the Share glyph gives that mapping to a screen reader, where the icon conveys
- * nothing; the second glyph sits beside its own text label, so it is `aria-hidden` rather than announced
- * twice.
- *
- * IT HARDCODES NO COLOUR, and that is required rather than tidy: this renders on BOTH a dark ground (the
- * banner, `bg-slate-900`) and a light one (the header pill's popover, `bg-white`). It used to fix the
- * emphasis at `text-slate-900`, which was right on white and near-invisible on the dark card.
- *
- * `emphasisClass` IS THE ONE KNOB each surface passes: the colour its emphasis should take, brighter than the
- * body text around it. BOTH GLYPHS TAKE IT TOO, not just the `<b>` — they are the things the reader has to
- * go and find in the iOS UI, so they need to be at least as prominent as the words. The Share icon was
- * inheriting the muted body colour and reading as a grey smudge mid-sentence.
+ * HARDCODES NO COLOUR, which is required rather than tidy: this renders on both the banner's dark ground and
+ * the popover's light one. `emphasisClass` is the one knob each surface passes, and BOTH GLYPHS take it as
+ * well as the `<b>` — they are what the reader must find in the iOS UI, so they cannot be muted.
  */
 function IosHintText({ emphasisClass }) {
   return (
@@ -61,25 +50,15 @@ function IosHintText({ emphasisClass }) {
 }
 
 /**
- * The floating, dismissible install banner, pinned to the bottom of the viewport.
+ * The floating, dismissible install banner, pinned to the bottom of the viewport. Mounted from App.jsx
+ * because it is `fixed` and should be offerable on whichever route or tab the visitor is on.
  *
- * MOUNTED FROM App.jsx, alongside AdminUnlockPrompt and for the same reason: it is `fixed`, so its
- * position comes from the viewport rather than from any tab's flow, and it should be offerable on
- * whichever route or tab the visitor happens to be on.
+ * `4.25rem` is AppBottomNav's 3.5rem plus a 0.75rem gap, and `env(safe-area-inset-bottom)` is the term the
+ * bar itself carries, so the offset tracks its real painted height on a notched iPhone. The Toaster does the
+ * same arithmetic with its own figure; if the bar's height changes, all three move together.
  *
- * IT SITS ABOVE THE BOTTOM NAV RATHER THAN OVER IT, which is the same arithmetic the Toaster does —
- * see components/ui/Toaster.jsx. The nav is `fixed` at `bottom: 0` and `z-40` (see AppBottomNav), so
- * anchoring to the viewport's bottom edge would put this on top of the app's primary navigation.
- *
- * `4.25rem` is the bar's own 3.5rem (the height HomePage reserves with `pb-[calc(3.5rem+…)]`) plus a
- * 0.75rem gap, and `env(safe-area-inset-bottom)` is the same term the bar itself carries — so the
- * offset tracks the bar's real painted height on a notched iPhone instead of assuming zero. Written as
- * one figure rather than a three-term calc to match the Toaster's `4.5rem`; if the bar's height ever
- * changes, all three of these move together.
- *
- * `z-[100]` matches the Toaster and the dialogs: it must clear the `z-40` chrome and the `z-50`
- * popovers. A toast appearing while this is up will overlap it, which is correct — a toast is a
- * response to something the user just did, and this is an unprompted offer.
+ * `z-[100]` matches the Toaster and the dialogs, clearing the `z-40` chrome and `z-50` popovers. A toast
+ * overlapping this is correct: a toast answers something the user just did, and this is unprompted.
  */
 function InstallPrompt() {
   const { installed, canInstall, iosHint, install } = useInstallPrompt("banner");
@@ -88,16 +67,13 @@ function InstallPrompt() {
   const openBanner = useOpenInstallBanner();
   const closeBanner = useCloseInstallBanner();
 
-  // THE UNPROMPTED APPEARANCE, which is separate from the pill's deliberate one. Gated on the full ladder:
-  // not already installed, not inside the dismissal cooldown, and there is some install path to offer. On
-  // Chrome the last condition arrives with `beforeinstallprompt`, a beat after mount; on iOS Safari it is
-  // true immediately, since there is no event to wait for; on a desktop browser with neither it never
-  // becomes true and this stays shut, which is the intended outcome rather than a missing case.
+  // The unprompted appearance, separate from the pill's deliberate one, gated on the full ladder: not
+  // installed, not in the cooldown, and some install path exists. On a desktop browser with none it never
+  // opens, which is the intended outcome rather than a missing case.
   //
-  // AUTO-OPEN ONCE PER MOUNT, tracked by a ref rather than by reading `open`. Without it, dismissing would
-  // set `open` false, this effect would re-run and immediately re-open the banner — the X would do nothing.
-  // The cooldown write makes `dismissedRecently()` true so a later re-run bails anyway, but that relies on
-  // localStorage being writable, and in private mode it is not.
+  // Auto-open once per mount, tracked by a ref rather than by reading `open`: otherwise dismissing sets
+  // `open` false, the effect re-runs and re-opens immediately, so the X does nothing. The cooldown write
+  // would bail a later run, but that relies on localStorage being writable, and in private mode it is not.
   const autoOpenedRef = useRef(false);
 
   useEffect(() => {
@@ -111,14 +87,10 @@ function InstallPrompt() {
     } else if (iosHint) {
       autoOpenedRef.current = true;
       openBanner();
-      // A DIFFERENT EVENT NAME, NOT `install_banner_shown` WITH A `method`, because on iOS this banner is
-      // not an offer — it is documentation. There is no Install button to accept (see the `canInstall`
-      // guard on it), so nothing here can convert and no accept/decline pair exists to compare.
-      //
-      // Naming it apart is what stops the two being summed by accident: `install_banner_shown` now means
-      // "an install offer with a working accept path was presented", which is true on Android and desktop
-      // and false here. A shared name separated only by a param relies on every future reader remembering
-      // to segment, and one unsegmented chart would quietly report iOS as a wall of refusals.
+      // A different event name rather than `install_banner_shown` with a `method`, because on iOS this is
+      // documentation, not an offer: there is no Install button, so nothing can convert. Naming it apart
+      // stops the two being summed, since a shared name split only by a param relies on every future reader
+      // remembering to segment, and one unsegmented chart would report iOS as a wall of refusals.
       track("install_instructions_shown", { source: "banner" });
     }
   }, [installed, canInstall, iosHint, openBanner]);
@@ -131,21 +103,11 @@ function InstallPrompt() {
       // Storage unavailable (private mode). The banner still closes for this session; it just will
       // not remember, so it may be offered again on the next load.
     }
-    // NOT TRACKED ON iOS, deliberately, which is why this is guarded rather than carrying a `method`.
-    //
-    // On native the X is a real decline: an Install button sits beside it, so closing is a choice made
-    // against a visible alternative, and this is the other branch of `install_banner_clicked`.
-    //
-    // On iOS the X is the ONLY control on the banner, so it fires on virtually every impression and is
-    // very nearly a duplicate of `install_instructions_shown`. It is also ambiguous in the wrong
-    // direction: it is pressed just as readily by someone tidying away steps they have already followed
-    // as by someone refusing. An event that is both near-constant and unreadable is worse than absent,
-    // because it invites a dismissal rate to be computed from it.
-    //
-    // Nothing on this banner can observe an iOS install anyway — Safari fires neither
-    // `beforeinstallprompt` nor `appinstalled` (see useInstallPrompt). Installed iOS users are counted
-    // instead by `app_open` reporting `display_mode: "ios-standalone"`, read on its own as a user count
-    // rather than joined back to this banner.
+    // Not tracked on iOS, deliberately, which is why this is guarded rather than carrying a `method`. On
+    // native the X is a real decline made against a visible Install button. On iOS it is the banner's only
+    // control, so it fires on nearly every impression and is pressed as readily by someone tidying away
+    // steps they followed as by someone refusing — near-constant and unreadable, which is worse than absent
+    // because it invites a dismissal rate. Installed iOS users are counted by `app_open` instead.
     if (!iosHint) {
       track("install_banner_dismissed", { method: "native", source: "banner" });
     }
@@ -362,49 +324,25 @@ function InstallPrompt() {
 
 /**
  * The persistent install path, as a labelled pill in the app header's right corner (see AppShellHeader).
+ * No dismiss and no cooldown, unlike the banner: this is the surface that stays available to someone who
+ * closed the banner and has forgotten it existed.
  *
- * IT REPLACED A CARD AT THE END OF THE TOOL TAB, which was the wrong place twice over: the tool page is
- * where you build a profile, so an "install the app" card sat in the middle of unrelated work, and being
- * in a tab's scrolling content meant it only existed if you scrolled to the bottom of that one tab. The
- * header is pinned on every tab at every scroll depth, so this is reachable from anywhere without
- * costing any tab's content a slot.
+ * Renders NOTHING when there is no install path, which is what makes it safe in the header: on a Mac in
+ * Firefox the corner is simply empty rather than showing a control that cannot work. It is also why the
+ * header's `min-h-14` is a floor rather than a fixed height.
  *
- * NO DISMISS AND NO COOLDOWN, unlike the banner: this is the surface that stays available. Someone who
- * closed the banner (or closed it fourteen days ago and has forgotten it existed) still has a way in.
+ * It installs directly where it can and opens the banner where it cannot, which is a platform split rather
+ * than an inconsistency: the button says "Install", so where a native prompt exists it fires on the first
+ * tap. On iOS Safari there is no prompt, only the manual Share gesture, which the banner already documents.
+ * An earlier pass routed every platform through the banner for consistency, which cost every Android user an
+ * extra tap and a card that asked them to decide twice.
  *
- * RENDERS NOTHING WHEN THERE IS NO INSTALL PATH — an installed app, or a desktop browser that never
- * fired `beforeinstallprompt` and is not iOS Safari. That is what makes it safe to put in the header: on
- * a Mac in Firefox the corner is simply empty rather than showing a control that cannot work. It is also
- * why the header's `min-h-14` is a floor rather than a fixed height (see AppShellHeaderStack).
+ * `outline` rather than the black `default` fill: a permanent fixture of the chrome should not be the
+ * loudest thing in the bar on every screen. The banner's own Install button keeps the solid fill, and the
+ * asymmetry is the point — that one is the primary action of the surface it sits on, this one is a way in.
  *
- * IT INSTALLS DIRECTLY WHERE IT CAN, AND OPENS THE BANNER WHERE IT CANNOT — which is a platform split, not
- * an inconsistency. The button says "Install", so on Chrome/Edge/Android it fires the native prompt on the
- * first tap and nothing comes between the label and the thing it promises.
- *
- * ON iOS SAFARI IT OPENS THE BANNER, because there is no prompt to fire: Safari never fires
- * `beforeinstallprompt`, and the only install is the manual Share → Add to Home Screen gesture. Those
- * instructions have to be shown somewhere, and the banner is already that surface.
- *
- * THIS REVERSES AN EARLIER "ALWAYS OPEN THE BANNER" PASS, which routed every platform through the card so
- * the pill would behave identically everywhere. The reasoning was consistency; the cost was that on Android
- * a button labelled Install opened a card that also said Install, and asked the user to decide twice. Nobody
- * compares the two platforms side by side, so that consistency bought nothing real — whereas the extra tap
- * was paid by every Android user, every time. A label should do what it says wherever it can.
- *
- * `outline` RATHER THAN THE BLACK `default` FILL, which it briefly had. Black is the app's primary and it did
- * fix a real problem — the `slate-200` treatment inherited from the scroll-top button that used to hold this
- * slot was subtle enough against the header's `slate-100` tint to be missed entirely — but it overshot. A
- * permanent fixture of the chrome should not be the loudest thing in the bar on every screen of every tab; a
- * solid black pill parked beside the brand lockup reads as an advertisement rather than as an available action.
- *
- * THE BANNER'S OWN INSTALL BUTTON KEEPS THE SOLID FILL, and the asymmetry is the point. That one appears in
- * response to a moment and is the primary action of the surface it sits on, so it should dominate its card.
- * This one is always there and is a way IN to that surface, so it only has to be findable. Same offer, two
- * different jobs, two weights.
- *
- * IT KEEPS ITS LABEL. A bare download glyph would be the one control in the app whose meaning has to be
- * guessed, and on iOS the tray-and-arrow specifically reads as "download a file" — the exact misreading the
- * banner's tile drops the glyph to avoid. Toning the pill down is a job for the FILL, not for the word.
+ * It keeps its label. A bare download glyph would be the one control here whose meaning has to be guessed,
+ * and on iOS the tray-and-arrow reads as "download a file". Tone it down via the fill, not the word.
  */
 function InstallPill() {
   const { installed, canInstall, iosHint, install } = useInstallPrompt("header_pill");
@@ -413,15 +351,10 @@ function InstallPill() {
   const bannerOpen = useInstallBannerOpen();
   const openBanner = useOpenInstallBanner();
 
-  // NO IMPRESSION EVENT FOR THE PILL, deliberately — it is the CLICK that is tracked, below.
-  //
-  // There used to be an `install_banner_shown` { source: "header_pill" } effect here, and its counts were
-  // not comparable with the banner's. The banner logs one impression per mount (guarded by
-  // `autoOpenedRef`), whereas this fired on every page load AND again each time the banner was dismissed
-  // and the pill reappeared. Since /poster and /social are full page loads rather than SPA routes, simply
-  // moving around the app re-fired it. The pill is permanent chrome on every tab at every scroll depth, so
-  // "was it on screen" is very nearly a constant anyway and was never the question worth asking of it.
-  // "Did anyone press it" is, and that is one unambiguous event per deliberate tap.
+  // No impression event for the pill, deliberately: it is the CLICK that is tracked, below. An earlier
+  // impression event was not comparable with the banner's (which logs once per mount) because this fired on
+  // every page load and again whenever the banner was dismissed. The pill is permanent chrome, so "was it on
+  // screen" is nearly a constant; "did anyone press it" is the question worth asking.
 
   // HIDDEN WHILE THE BANNER IS UP, so the same offer is not made twice at once. Last of the three
   // conditions because it is the only transient one: the other two are facts about the browser that hold

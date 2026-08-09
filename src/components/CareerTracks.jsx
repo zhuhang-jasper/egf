@@ -10,29 +10,10 @@ import { DOC_SECTION, DOC_TEXT } from "@/styles/doc-typography";
 import { cn } from "@/utils";
 
 /**
- * The 640–819px band, and the only place the six columned radars decide between emoji-only spokes and
- * full text pillar names. Inside it they show emoji; outside it, text.
+ * Emoji-only spokes for the six columned radars; text pillar names outside this band.
  *
- * ALL SIX SWAP TOGETHER because this is a property of the PAGE's width — the same fact that decides the
- * layout regime — evaluated once. They used to carry a px threshold that each chart compared against its
- * OWN canvas width (`emojiMaxWidthPx = 220`), and the six frames are not the same width: a career-track
- * card's chart runs 176→263px across the columned range while a foundational cell's runs 170→257px (it
- * carries the divided grid's extra `px-2` plus ChartPanel's `p-2`). So the two groups crossed 220 about
- * 20 viewport px apart — at ~772 the track cards went to text while the foundation row was still emoji —
- * and scrollbar width shifted both.
- *
- * Written out as numbers because matchMedia takes a string and the theme is `@theme inline` (see
- * index.css), which substitutes values into the generated utilities instead of emitting
- * `--breakpoint-*` on `:root` — so there is nothing to read Tailwind's scale from at runtime.
- *
- *   640 — the lower bound, Tailwind's `sm`, and it MUST stay in step with `sm:grid-cols-3` below. Under
- *     it the cards stack and every chart is full-width (286–591px), which fits text comfortably, so
- *     emoji is confined to the columned view and never reaches mobile.
- *   820 — the upper bound, and the one value here tuned to a device rather than a breakpoint: it is the
- *     iPad Air's portrait width, the narrowest screen we want reading full pillar names. So the query
- *     caps at 819 and text starts exactly at 820, where the columns are ~230–236px wide. Raise it to
- *     hold emoji further up; drop it to 640 for text everywhere, at the cost of 9 pillar names at the
- *     8px floor around a 170px chart in the narrowest column.
+ * Keyed on the PAGE's width so all six swap together, since the six frames are not the same width. 640 must
+ * stay in step with `sm:grid-cols-3` below. See docs/DECISIONS.md#career-radar-emoji-breakpoint.
  */
 const TRACK_CHART_EMOJI_QUERY = "(min-width: 640px) and (max-width: 819px)";
 

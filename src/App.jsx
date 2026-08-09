@@ -15,31 +15,17 @@ const route = getRoute();
 /**
  * Routes that only exist for the admin (dev) build-a-share-image workflow.
  *
- * THESE WERE REACHABLE BY URL BY ANYONE, which made the admin unlock cosmetic for the two pages that
- * matter most: `IS_ADMIN` hid the Admin TAB — the link to them — while `/poster` and `/social` rendered
- * for whoever typed the path. Gating the affordance and not the destination protects nothing.
- *
- * THIS IS STILL A CLIENT-SIDE CHECK AND IS NOT A SECURITY BOUNDARY. The app is a static bundle on
- * GitHub Pages, so both pages' code ships to every visitor either way and the unlock flag can simply be
- * written by hand in devtools (see constants/features.js). What this buys is that the paths do not work
- * for someone who merely knows or guesses them, which is the actual exposure. Making these pages truly
- * unavailable to the public means not SHIPPING them: a build-time flag plus dynamic imports so Rollup
- * drops the chunks, not a stricter runtime test here.
+ * NOT A SECURITY BOUNDARY: this is a static bundle, so both pages' code ships to every visitor either way.
+ * See docs/DECISIONS.md#admin-gating-is-not-a-security-boundary.
  */
 const ADMIN_ROUTES = new Set(["poster", "social"]);
 const isGatedRoute = ADMIN_ROUTES.has(route) && !IS_ADMIN;
 
-// Put the address bar back to the tool root, so a gated visit does not sit on a path that is not what
-// is being rendered — a reload would otherwise land right back here, and a copied URL would still read
-// as the poster. `hrefForRoute` because the base differs between local ("/") and Pages ("/egf/").
+// Put the address bar back to the tool root so a gated visit does not sit on a path that is not what is
+// rendered. `replaceState` because no history entry should be spent on a route the visitor never got.
 //
-// `replaceState` rather than a redirect: there is no navigation to undo, and no history entry should be
-// spent on a route the visitor never got. Same shape as the `?admin=` strip in constants/features.js,
-// and for the same reason — the URL should describe what is on screen once the gate has been resolved.
-//
-// NOT WHILE A PASSWORD IS OUTSTANDING, though: `unlockAdmin` applies an unlock by reloading, so keeping
-// the path means `/poster?admin=1` comes back as the poster. Rewrite it first and the correct password
-// would land the visitor on the tool, having silently thrown away where they were going.
+// NOT while a password is outstanding: `unlockAdmin` applies the unlock by reloading, so keeping the path
+// is what lets `/poster?admin=1` come back as the poster rather than dumping the visitor on the tool.
 if (isGatedRoute && !ADMIN_PASSWORD_REQUESTED) {
   try {
     window.history.replaceState(window.history.state, "", hrefForRoute("home"));
@@ -56,16 +42,8 @@ if (isGatedRoute && !ADMIN_PASSWORD_REQUESTED) {
 // `isGatedRoute` fall-through, and would silently start disagreeing the moment a third route existed.
 const exportCanvasRoute = !isGatedRoute && (route === "poster" || route === "social") ? route : null;
 
-// The export canvases sit on a BLACK stage, the tool on the app's `bg-slate-100` surround — and `body` has to
-// agree with whichever is on screen, because a background on `body` propagates to the canvas and is therefore
-// what an over-pull past either end of the document reveals. The stages set their own black (see PosterPage),
-// which covers the document; it is only the rubber-band gap outside it that needs this.
-//
-// STAMPED ON `documentElement`, NOT `body`, and at module scope: `html` having no background of its own is the
-// precondition for `body`'s propagating at all (see index.css and useScrollLock), so the flag goes on the
-// element that must stay unpainted, and the paint stays in CSS. Module scope rather than an effect because the
-// route is read once at module-eval time and never changes — an effect would leave the wrong colour painted for
-// the first frame, which on this page is the one being looked at.
+// `body` must agree with whichever stage is on screen. Stamped on `documentElement` rather than `body`, and
+// at module scope rather than in an effect. See docs/DECISIONS.md#body-background-propagates-to-the-canvas.
 if (exportCanvasRoute !== null) {
   document.documentElement.dataset.exportCanvas = "";
 }

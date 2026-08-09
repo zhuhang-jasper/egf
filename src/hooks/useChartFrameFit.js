@@ -5,25 +5,10 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
  * ({@link useStaticCompetencyChart}): ONE rAF-coalesced ResizeObserver per chart frame, plus a memo
  * of the last successful fit.
  *
- * THE MEMO IS THE POINT. Both tab panels stay mounted and are toggled with `hidden`, so every tab
- * switch takes each chart's frame from a real width to 0 and back — and a ResizeObserver reports
- * BOTH transitions. Without a memo each switch re-ran the full converge loop for all nine charts on
- * the page, ~8 Chart.js renders apiece, which is the flash on the frame a switch commits. The fit is
- * a pure function of frame width (the label set, font size, label padding and layout padding are all
- * derived from it), so an unchanged width can reuse the height that width converged to last time and
- * spend a single `chart.resize()` instead.
- *
- * THE OBSERVER CALLBACK DEFERS TO A rAF for two reasons. Correctness: the fit mutates the frame's
- * height — the very box the observer watches — so running it synchronously inside the callback forms
- * an observe→resize→observe loop. The browser then drops the "undelivered" follow-up notifications,
- * and if the dropped pass was a transient collapse (a momentary 0-width mid drag-resize) the chart
- * is left at ~0 height and never recovers: the chart "disappears". Cost: one drag frame can deliver
- * several notifications, and the hop collapses them into one fit.
- *
- * There is deliberately NO `window.resize` listener. A frame that is width-flexible already gets a
- * ResizeObserver notification whenever the window resize changes its width, and everything the fit
- * derives comes from the chart's own width rather than the viewport's — so a listener could only
- * ever duplicate a pass the observer had already scheduled.
+ * THE MEMO IS THE POINT: without it every tab switch re-runs the converge loop for all nine charts, which is
+ * the flash. The rAF hop is correctness, not throttling — running the fit synchronously forms an
+ * observe→resize→observe loop that can leave a chart at ~0 height permanently. There is deliberately no
+ * `window.resize` listener. See docs/DECISIONS.md#chart-frame-fit-memo.
  *
  * @param frameRef ref to the chart's frame element (the box whose height the fit sets).
  * @param fit `(frame, width, cachedHeight) => number | null` — runs the converge loop and returns

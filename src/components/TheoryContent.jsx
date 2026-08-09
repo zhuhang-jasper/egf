@@ -45,18 +45,14 @@ import {
 const cardClass = "rounded-xl border border-slate-300 bg-white shadow-md shadow-slate-200/40";
 
 /**
- * Whether the OS share sheet can be opened at all here — true on mobile Safari/Chrome and a few desktop
- * browsers, false on desktop Chrome-macOS / Firefox. Computed once at module load; the API's presence
+ * Whether the OS share sheet can be opened at all. Computed once at module load, since the API's presence
  * does not change within a page's lifetime.
  *
- * A PLAIN `navigator.share` CHECK, deliberately NOT the `canShare({ files: [...] })` probe that gates the
- * chart's Share button (see ChartSection). The share DOES attach the pillar poster, so the stricter probe
- * looks tempting — but the image is an enhancement and the link is the payload. `shareTheoryLink` runs the
- * file probe itself and drops to a text-only share when it fails, so gating the button on file support
- * would hide it from browsers that can still deliver the thing being shared.
- *
- * Where the API is absent there is no fallback worth a button, and none is needed: every section heading
- * carries a copy-link control (ShareLinkButton), which is the desktop route to the same URL.
+ * A plain `navigator.share` check, deliberately NOT the `canShare({ files: [...] })` probe that gates the
+ * chart's Share button: the poster is an enhancement and the link is the payload, and `shareTheoryLink`
+ * already falls back to a text-only share. Gating on file support would hide the button from browsers that
+ * can still deliver what is being shared. Where the API is absent, each section heading's copy-link control
+ * is the route to the same URL.
  */
 const CAN_SHARE_LINK = typeof navigator !== "undefined" && typeof navigator.share === "function";
 
@@ -69,24 +65,17 @@ const returnsFalse = () => false;
 // Skill-tier band geometry is static — resolve the chained start/width percentages once.
 const SKILL_TIER_BANDS = getSkillTierBands();
 
-// THE MATRIX OPENS ITS FIRST PILLAR ON A FRESH VISIT, so the section shows what a pillar card actually
-// contains instead of asking the reader to take the lead-in's word for it. Nine collapsed cards read as a
-// second copy of the Section I pillar grid — a name over its focus areas — with the 45 cells nowhere on
-// screen. The first item open is what an accordion normally does for exactly this reason.
-//
-// Read from the matrix data rather than hardcoding "coding", so it follows the authored pillar order.
+// The matrix opens its first pillar on a fresh visit, so the section shows what a card contains rather than
+// reading as a second copy of the Section I pillar grid with the 45 cells nowhere on screen. Read from the
+// matrix data rather than hardcoded, so it follows the authored pillar order.
 const DEFAULT_EXPANDED_PILLAR = COMPETENCY_MATRIX[0].pillarId;
 
 /**
- * The expanded pillar to boot with, resolving the three persisted states (see
- * `getPersistedExpandedPillar`) against that default.
+ * The expanded pillar to boot with, resolving the three persisted states against that default.
  *
- * A STORED EMPTY STRING WINS OVER THE DEFAULT: the user closed the matrix and reloaded, and reopening it
- * for them would be the app arguing. Only a session that has never touched the matrix gets the default.
- *
- * A PILLAR DEEP-LINK SUPPRESSES IT TOO. The staged effect below deliberately boots from the persisted
- * pillar and switches to the link's target only once scroll-restore has settled; opening pillar 1 here
- * would just mean opening it to collapse it again ~350ms later, shifting layout mid-restore for nothing.
+ * A stored empty string wins over the default: the user closed the matrix and reloaded, and reopening it
+ * would be the app arguing. A pillar deep-link suppresses it too, since the staged effect below switches to
+ * the link's target once restore settles, and opening the default first would collapse it ~350ms later.
  */
 function getInitialExpandedPillar(deepLink) {
   const persisted = getPersistedExpandedPillar();
@@ -116,18 +105,13 @@ const DEEPLINK_EXPAND_ANIM_MS = 300;
  * Zero-height marker bracketing a section's content, used by `useSectionSeenObserver` to detect that
  * the head/tail of the section has been in view.
  *
- * MUST stay IN FLOW. An earlier version used `absolute` to dodge the flex gap (below) and that broke
- * the whole mechanism: `top: auto` on an abs-positioned child means "its static position", but a flex
- * container never gives an abs-positioned child a static position, so BOTH sentinels collapsed onto the
- * section's top-left origin. Head and tail sat at the same point, the pair armed the instant a
- * section's top appeared, and dots cleared long before the user reached the bottom.
+ * MUST stay IN FLOW: its document position IS the signal. An earlier `absolute` version collapsed both
+ * sentinels onto the section's origin, because a flex container never gives an abs-positioned child a
+ * static position for `top: auto` to resolve against — so the pair armed as soon as a section's top
+ * appeared and dots cleared before the reader reached the bottom.
  *
- * In flow, the sentinel lands where it is written — which is the whole point, since its document
- * position IS the signal. The cost is that a flex `gap` is charged for every child including a
- * zero-height one, so each sentinel would add its parent's gap (12px at `gap-3`, 4px at `gap-1`) of
- * dead space. `-mt-[gap]` on the tail and `-mb-[gap]` on the head cancel exactly that, keeping section
- * spacing byte-identical to before these existed. The gap value is passed in per section because the
- * four parents don't all use `gap-3`.
+ * The cost is that a flex `gap` is charged for every child including a zero-height one, which the negative
+ * margin in `gapClass` cancels exactly. It is passed in per section because the parents don't share a gap.
  */
 function SectionSentinel({ section, edge, gapClass }) {
   return <span id={getSectionSentinelId(section, edge)} aria-hidden className={cn("block h-0 w-full shrink-0", gapClass)} />;
@@ -182,36 +166,19 @@ function SeniorityPhaseTitle({ phase, className, breakAfterSlash = false }) {
  * rather than degrading to a stacked list on mobile, which would flatten the idea into three
  * unrelated rows.
  *
- * ONE layout at all sizes. The narrowest band (Foundational, 35% of the track) is the binding
- * constraint: it carries the LONGEST label, so it is the only band whose text can outgrow its box.
- * `minWidth: max-content` on each band is what guarantees the fit — widen the band in `SKILL_TIERS`
- * rather than shrinking the type if a label ever looks cramped, since the percentages are
- * approximate by intent (see `SKILL_TIERS`) but a clipped word is just a bug.
+ * ONE layout at all sizes. The narrowest band is the binding constraint, since it carries the longest
+ * label; `minWidth: max-content` guarantees the fit. If a label looks cramped, widen the band in
+ * `SKILL_TIERS` rather than shrinking the type: the percentages are approximate by intent, a clipped word
+ * is a bug.
  *
- * SELF-CONTAINED AXIS. An L1-L5 ruler sits directly above the bands and is the only thing naming the
- * horizontal scale, at every width. This card used to live at the tail of the Proficiency Levels
- * section, where from `sm:` up it also registered with the five level cards above it — the ruler
- * pulled out to the card's outer edge and the band edges were computed through the card grid's
- * gutters, so "Core ends mid-L3" landed over the actual L3 column. Moved to the head of the matrix
- * section (it is the legend for the tier pills on every pillar card), there is no column grid above it
- * to register with, so both the ruler and the bands are plain percentages of this card's own track:
- * five equal 20% cells, band edges at their authored percentages. The ruler and the bands share that
- * one track, so they stay exact against each other, which is the alignment that carries the meaning.
+ * SELF-CONTAINED AXIS. The ruler and the bands are both plain percentages of this card's own track, so they
+ * stay exact against each other, which is the alignment that carries the meaning. Keep it that way: this
+ * card previously sat where it registered with a column grid above it, and the band edges were then
+ * computed through that grid's gutters.
  *
- * A FIGURE, NOT A TITLED CARD. The "Skill Tiers" h3 lives nowhere now and the prose that framed these
- * bands lives outside, as `SKILL_TIERS_INTRO` immediately above (see the call site): a title inside the
- * box would repeat what that paragraph just said. What is left is the drawing, plus the one caption the
- * drawing needs.
- *
- * THAT CAPTION IS PART OF THE FIGURE, which is why it is inside the border rather than a fourth paragraph
- * under the card. `SKILL_TIERS_CAPTION` reads the stagger the bands draw — it only parses with the picture
- * in view, and it is answering the misreading the picture invites (taking a band's left edge as the level
- * a tier "starts" at). A rule above it separates it from the track so it is not mistaken for a fourth band.
- *
- * IT KEEPS ITS BORDER, though. Dropping the card was considered and rejected: three small tinted bands and
- * a ruler on bare white read as unfinished, and the nine pillar cards below are cluster-tinted with a
- * coloured left edge, so a plain white card is already a visibly different kind of object rather than a
- * tenth one competing with them.
+ * A figure, not a titled card. The framing prose lives outside as `SKILL_TIERS_INTRO`, so a title inside the
+ * box would repeat it. The caption stays INSIDE the border because it reads the stagger the bands draw and
+ * only parses with the picture in view.
  */
 function SkillTierBands() {
   return (
