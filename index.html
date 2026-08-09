@@ -34,6 +34,9 @@
          ONLY AFFECTS ICONS ADDED AFTER THIS SHIPS. iOS bakes the launch mode into the home-screen shortcut at the
          moment it is created, so an existing icon keeps opening in Safari until it is removed and re-added. Worth
          knowing before concluding the tag did not work. -->
+    <!-- Both tags, on purpose: `mobile-web-app-capable` is the standard one (Chrome warns if it is missing), but
+         iOS Safari only reads the `apple-` prefixed form, so dropping it would break standalone launch on iOS. -->
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <!-- `black-translucent` would extend the page under the status bar and require a top safe-area inset on the
          header to compensate; `default` keeps the status bar as its own opaque band, so the header needs no
