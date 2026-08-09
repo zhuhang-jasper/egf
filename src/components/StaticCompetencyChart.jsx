@@ -117,6 +117,10 @@ export function StaticCompetencyChart({
   return (
     <div
       ref={frameRef}
+      // The box whose inline `height` the fit writes (applyChartFrameLayout). Named so print CSS can
+      // release that height without counting `> div` levels — see the foundational-grid and hero rules
+      // in index.css, both of which have to undo a pinned screen height on paper.
+      data-radar-frame
       style={maxWidthPx ? { maxWidth: `${maxWidthPx}px` } : undefined}
       className={cn(
         "relative mx-auto box-border aspect-square w-full xs:max-w-none xs:min-h-[80px]",

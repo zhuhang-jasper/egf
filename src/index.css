@@ -368,6 +368,50 @@
     max-height: 100%;
   }
 
+  /* THE FOUNDATIONAL 3-UP ROW — printing the three stage radars at the size the track cards below get.
+
+     Below `sm` this grid is rendered out of flow rather than hidden (see the long note in CareerTracks), so
+     its three canvases are actually laid out and drawn and are there to print. A radar's GEOMETRY — radius,
+     axis-label font size, label padding — is derived from the width it fitted at and then baked into the
+     bitmap, and print can rescale a bitmap but cannot re-derive it. So the off-screen copy is pinned to an
+     inline `printFoundationGridWidthPx`, the width paper will give it, and fits at printed size from the
+     start. Left at the phone's card width it drew three ~100px radars with their pillar names clipped
+     ("Archi", "unication") while the in-flow track cards right below looked correct.
+
+     On paper the real content box takes over, so hand the width back — `100%` of the card, which is what the
+     in-flow desktop grid uses and what the track cards already print at. `!important` because the inline
+     width is what it has to beat.
+
+     THE REST MIRRORS THE HERO RULE BELOW, for the same reason in a milder form: the pinned width is a close
+     approximation of the printed one (A4-derived; Letter is ~22px wider), not an exact match, so the frame's
+     converged height is still a hair off what paper wants. `height: auto` releases that height (an inline px
+     value from `applyChartFrameLayout`, hence `!important`), `position: static` puts the `absolute inset-0`
+     box back in flow so the frame does not collapse to zero, and `max-height: none` lets the canvas take its
+     full column width. Bounded, unlike the hero: these charts pass `maxHeightPx: 180`, so the released frame
+     cannot exceed 180. `display: block` because back in flow a canvas is an inline replaced element and would
+     otherwise sit on a text baseline, adding a descender gap under each radar.
+
+     TARGETS THIS ROW ONLY, not the three track cards — those are in flow at every viewport, so they were
+     always laid out at the full card width and the plain bitmap rescale at the top of this block is all they
+     need. This row is the only one drawn at a width the paper does not naturally give it. */
+  [data-print-foundation-grid] {
+    width: 100% !important;
+  }
+
+  [data-print-foundation-grid] [data-radar-frame] {
+    height: auto !important;
+    aspect-ratio: unset !important;
+  }
+
+  [data-print-foundation-grid] [data-radar-frame] > div {
+    position: static !important;
+  }
+
+  [data-print-foundation-grid] canvas[data-radar-canvas] {
+    display: block;
+    max-height: none !important;
+  }
+
   /* THE COVER RADAR, WHICH THE RULE ABOVE CANNOT RESCUE ON ITS OWN.
 
      That rule rescales the BITMAP inside whatever box the frame gives it, and the frame's box is an inline
@@ -402,6 +446,20 @@
   [data-print-hero-radar] canvas[data-radar-canvas] {
     display: block;
     max-height: none !important;
+  }
+
+  /* THE COVER TITLE PRINTS AT THE PRINTED RADAR'S SIZE, not the screen's.
+
+     Its `font-size` is an inline style sized from the hero frame's LIVE width, and paper does not re-measure
+     (same staleness as the frame height above). Printing from a desktop hid it — the frame is already at its
+     526px cap, so screen and paper agree — but from a phone the frame is ~350px, which puts the title on the
+     16.8px floor and prints a cover heading at body-copy size.
+
+     `--print-title-size` is `getChartTitleSizePx(chartMaxWidthPx)`, set on the element in TheoryContent so the
+     number stays tied to the function that owns it. `!important` is REQUIRED and not defensive: the size it is
+     beating is an inline style, which no ordinary stylesheet rule can outrank. */
+  [data-print-hero-title] {
+    font-size: var(--print-title-size) !important;
   }
 
   /* The page itself is WHITE on paper. `body` is tinted (`bg-slate-100`, see @layer base) because on

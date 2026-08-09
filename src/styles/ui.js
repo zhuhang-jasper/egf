@@ -10,6 +10,31 @@ export const FE_UI = {
      * width and therefore the same rendered size.
      */
     chartMaxWidthPx: 526,
+    /**
+     * The width the foundational 3-up row is LAID OUT AT while it sits off-screen on mobile, and therefore
+     * the width its three radars fit themselves to. See the note at the grid in CareerTracks for why that
+     * row is rendered out of flow rather than hidden.
+     *
+     * IT MUST APPROXIMATE THE PRINTED CONTENT WIDTH, because a Chart.js radar's geometry — radius, axis-label
+     * font size, label padding — is derived from the width it fitted at and then baked into the drawn bitmap.
+     * Print CSS can rescale that bitmap but cannot re-derive it, so a row laid out at the phone's ~320px card
+     * width printed three ~100px radars with their pillar names clipped ("Archi", "unication"), while the
+     * track cards directly below it looked right for the only reason that matters: they are in normal flow,
+     * so they were laid out at the full card width all along.
+     *
+     * 762 is that width on A4 portrait, which is the narrower of the two common papers and so the safe one to
+     * target: 794px page − 24px of tab-panel `px-3` − 24px of card `p-3` = 746px of card content, then +16
+     * because this grid carries `-mx-2` and so is 16px WIDER than the content box it sits in. Getting that
+     * last term wrong is a silent 5px-per-column error, which is why the whole sum is written out.
+     *
+     * It works out to ~222px per chart, against ~219px for the three track cards below (their column is
+     * `(746 − 16 of gap) / 3`, less each card's `p-3`) — the two rows are meant to read as the same size, and
+     * that is the arithmetic that keeps them there.
+     *
+     * Letter is 816px and lands ~22px wider, which the bitmap rescale absorbs without visible loss. The
+     * theory panel's own 900px cap never binds here — paper is narrower than that, so the page box decides.
+     */
+    printFoundationGridWidthPx: 762,
   },
   chartFrame: {
     /**

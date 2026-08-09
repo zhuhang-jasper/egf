@@ -650,6 +650,7 @@ function TheoryContent({
               The version is print-only. On screen it is already in the bottom nav's Theory tab. */}
           <p
             aria-hidden
+            data-print-hero-title
             /* SIZED FROM THE HERO RADAR'S MEASURED WIDTH, exactly like the tool tab's chart title — same
                function (getChartTitleSizePx), same input, so the two titles are the same size at every
                viewport rather than merely agreeing at their endpoints.
@@ -669,7 +670,24 @@ function TheoryContent({
                `heroChartWidth` starts at 0 and the fallback keeps the first paint at the mobile size, which is
                the smaller of the two ends; the real measurement lands on the same frame the radar fits. */
             className="text-balance mx-auto flex w-full flex-col items-center font-extrabold leading-tight tracking-tight text-slate-900 text-center print:mb-[5vh]"
-            style={{ fontSize: getChartTitleSizePx(heroChartWidth || FE_UI.page.minWidthPx) }}
+            /* TWO SIZES, AND PAPER MUST NOT INHERIT THE SCREEN'S.
+
+               `fontSize` is the SCREEN size, measured from the live hero frame. On paper that measurement is
+               stale in exactly the way the radar's is (see the wrapper note below): the frame prints at
+               `chartMaxWidthPx` whatever the device, but `heroChartWidth` still holds whatever the screen gave.
+               From a desktop the two agree — the frame is already at its 526px cap — so this was invisible until
+               it was printed from a phone, where a ~350px frame pins the title at the 16.8px FLOOR and prints it
+               at that size above a full-width radar. The title read as body copy on its own cover sheet.
+
+               `--print-title-size` is the same function at the width paper actually uses, handed to a print rule
+               in index.css that overrides the inline `fontSize` (only `!important` can — an inline style outranks
+               any stylesheet). Computed here rather than written as a number in the CSS so it cannot drift from
+               `chartMaxWidthPx` or `labelMultiplier`; those two are what set it, and moving either moves both
+               media in step. */
+            style={{
+              "fontSize": getChartTitleSizePx(heroChartWidth || FE_UI.page.minWidthPx),
+              "--print-title-size": `${getChartTitleSizePx(FE_UI.page.chartMaxWidthPx)}px`,
+            }}
           >
             {/* THE VERSION IS PRINT-ONLY. On screen the bottom nav's Theory tab already carries a `v4.1`
                 badge, so stating it again under the title said the same number twice within a thumb's reach.
@@ -678,9 +696,10 @@ function TheoryContent({
 
                 Two sibling spans, which the plate's `flex-col` sets as two rows: that is the layout paper
                 wants, and on screen the second one is simply not rendered. `text-xl` (20px) holds it a step
-                under the title rather than inheriting it — the title prints at whatever its last SCREEN
-                measurement gave, which is 22px from any desktop, the same staleness the hero radar itself
-                already has on paper (see the note on its wrapper below). */}
+                under the title rather than inheriting it — the title prints at ~21.3px, the size the print
+                rule pins it to from the printed frame width (see `--print-title-size` on this element). It
+                used to inherit whatever the last SCREEN measurement gave, which is what made this pair
+                invert on a phone: a 16.8px title over a 20px version line. */}
             <span>{SITE_COPY.title}</span>
             <span className="hidden text-xl print:block">v{FRAMEWORK_VERSION}</span>
           </p>

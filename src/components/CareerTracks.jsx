@@ -4,7 +4,7 @@ import { StaticCompetencyChart } from "@/components/StaticCompetencyChart";
 
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 
-import { CLUSTERS, getClusterSurfaceBg } from "@/constants";
+import { CLUSTERS, FE_UI, getClusterSurfaceBg } from "@/constants";
 import { CAREER_TRACK_PROFILES, FOUNDATIONAL_PHASE, JUNIOR_TO_SENIOR, SENIOR_FORK, sortKeyFocusPillars } from "@/constants/theory-data";
 import { DOC_SECTION, DOC_TEXT } from "@/styles/doc-typography";
 import { cn } from "@/utils";
@@ -35,6 +35,25 @@ import { cn } from "@/utils";
  *     8px floor around a 170px chart in the narrowest column.
  */
 const TRACK_CHART_EMOJI_QUERY = "(min-width: 640px) and (max-width: 819px)";
+
+/**
+ * Whether the foundational phase shows its 3-up grid as the ON-SCREEN layout. Below this the carousel is
+ * what the screen gets — but the grid is still rendered and still laid out, just out of flow, because paper
+ * always wants all three stage charts. See the long note at the grid itself for the mechanics.
+ *
+ * A JS QUERY RATHER THAN `sm:hidden` / `hidden sm:grid`, AND PRINT IS THE WHOLE REASON. That pairing let CSS
+ * pick between two rendered branches, which is fine on screen and silently broken on paper: `min-width`
+ * queries in paged media measure the PAGE BOX. A4 portrait is 794px, so printing from ANY device revealed
+ * the grid — and from a phone that branch had been `display: none` all session, so its canvases had never
+ * been drawn (`useChartFrameFit` bails at width 0, correctly, since nothing is measurable there). Print got
+ * three blank canvases and hid the carousel that actually had a radar in it. The foundational charts came
+ * out missing, and the empty row they left behind is what pushed section IV onto a second sheet.
+ *
+ * 640 MUST STAY IN STEP with `sm` and with TRACK_CHART_EMOJI_QUERY's lower bound, for the reason given
+ * there: the track-card grid below still switches at `sm:grid-cols-3`, so all three have to agree on where
+ * the columned regime starts.
+ */
+const FOUNDATION_GRID_QUERY = "(min-width: 640px)";
 
 const cardClass = "rounded-xl border border-white/70 shadow-md shadow-slate-200/40";
 const levelBadgeClass = cn(
@@ -140,7 +159,8 @@ function FoundationStageBody({ chart, style, centerRole = false, animateChart = 
 
 /** Mobile-only (<sm): one chart at a time with a centered horizontal S1/S2/S3 badge selector above
  *  it, so the chart stays centered. Tapping a level swaps the chart. Starts on the first stage (S1).
- *  At sm and up the desktop 3-up grid is shown instead (this whole block is `sm:hidden`). */
+ *  At sm and up the caller mounts the desktop 3-up grid instead of this (see FOUNDATION_GRID_QUERY) — this
+ *  component is not rendered at all there, rather than rendered and hidden. */
 // How long each stage stays on screen before the carousel auto-advances to the next.
 const FOUNDATION_AUTOPLAY_MS = 1400;
 // After the user taps a stage, autoplay pauses this long before resuming (so it doesn't immediately
@@ -182,7 +202,11 @@ function FoundationCarousel({ stageCharts, style, isVisible = true, emojiSpokes 
   };
 
   return (
-    <div className="flex flex-col gap-1 sm:hidden">
+    // NO `sm:hidden` — the caller mounts this only below `sm` (see FOUNDATION_GRID_QUERY), so hiding it by
+    // breakpoint too would be saying the same thing twice, and saying it in the medium that got this wrong
+    // in the first place: paper measures `sm` against the page box, not the device. Paper suppresses this
+    // via the `print:hidden` wrapper the caller puts around it, in favour of the 3-up grid.
+    <div className="flex flex-col gap-1">
       <div className="flex justify-center gap-1.5 pt-1" role="tablist" aria-label="Foundational stage">
         {stageCharts.map((chart, index) => {
           const isActive = index === activeIndex;
@@ -214,7 +238,7 @@ function FoundationCarousel({ stageCharts, style, isVisible = true, emojiSpokes 
   );
 }
 
-function FoundationalPhase({ isVisible, emojiSpokes }) {
+function FoundationalPhase({ isVisible, emojiSpokes, gridLayout }) {
   const style = TRACK_STYLE.foundation;
 
   return (
@@ -225,10 +249,17 @@ function FoundationalPhase({ isVisible, emojiSpokes }) {
       className={cn(cardClass, "overflow-hidden border-l-[3px] p-3 print:overflow-visible")}
       style={{ borderLeftColor: style.accent, backgroundColor: style.chipBg }}
     >
-      {/* `gap`, not `space-y`: gap only applies BETWEEN rendered flex items, so the breakpoint-hidden
-          chart branch below contributes nothing. `space-y-*` sets margins by DOM position, which is
-          why these two charts used to need a wrapper element to avoid a phantom gap. */}
-      <div className="flex flex-col gap-2">
+      {/* `gap`, not `space-y`: gap only applies BETWEEN rendered flex items, and an ABSOLUTELY POSITIONED
+          item is not one, so the out-of-flow grid below contributes no gap of its own. `space-y-*` sets
+          margins by DOM position, which is why these two charts used to need a wrapper element to avoid a
+          phantom gap.
+
+          `relative` is what the off-screen grid anchors to. Its own `width` is explicit, so this is not what
+          sizes it — it is what keeps it positioned against THIS CARD rather than the page, so it stays inside
+          the ancestor whose `overflow-hidden` clips it. That clip is what stops a 762px box inside a ~320px
+          phone card from reaching `body`'s `overflow-x: auto` and producing a horizontal scrollbar, so the
+          card's existing `overflow-hidden` is load-bearing for this now — see the note at the grid. */}
+      <div className="relative flex flex-col gap-2">
         <h3 className={cn(DOC_TEXT.cardTitlePlain, "font-bold")}>{FOUNDATIONAL_PHASE.title}</h3>
 
         <div className="flex flex-col gap-2">
@@ -237,17 +268,57 @@ function FoundationalPhase({ isVisible, emojiSpokes }) {
           <KeyPillarChips pillars={FOUNDATIONAL_PHASE.technicalPillars} ringColor={style.ringColor} textColor={style.textColor} />
         </div>
 
-        <FoundationCarousel stageCharts={FOUNDATIONAL_PHASE.stageCharts} style={style} isVisible={isVisible} emojiSpokes={emojiSpokes} />
+        {/* THE 3-UP GRID IS ALWAYS MOUNTED AND ALWAYS LAID OUT, at every viewport, because ALL THREE STAGE
+            CHARTS MUST PRINT — on paper this section is a reference document, and one stage of a three-stage
+            progression is not the document. The carousel is the SCREEN affordance for small viewports only.
 
-        {/* `print:break-inside-avoid` — this row is three radars plus their role labels, ~250px, so it
+            `hidden`/`sm:grid` CANNOT EXPRESS THAT, and that pairing is the bug this replaces. A chart in a
+            `display: none` box has no width, `useChartFrameFit` bails at width 0 (correctly — nothing is
+            measurable there), and the canvas is never drawn. Print then resolves `sm` against the PAGE box
+            (A4 portrait is 794px, so it matches at any device), revealed the grid, and got three blank
+            canvases — while the carousel that did have a drawn radar was hidden by its own `sm:hidden`.
+            Below `sm` the grid is therefore taken OUT OF FLOW rather than out of layout: `absolute` +
+            `invisible` keeps a real, non-zero width, so the fit runs and the three radars are drawn and kept
+            current, while costing no vertical space and painting nothing. `pointer-events-none` and
+            `aria-hidden` so an off-screen copy is neither tappable nor announced twice — the carousel is the
+            accessible presentation at these widths, and it carries the same three charts.
+
+            `print:static` puts it back in flow for paper at ALL widths (not `sm:`-gated — printing from a
+            phone is exactly the case that was broken), and the carousel takes `print:hidden` so the two never
+            both appear. Note the asymmetry is deliberate: the grid is conditionally POSITIONED, the carousel
+            is conditionally MOUNTED. Only the grid has canvases that must stay warm for print.
+
+            `print:break-inside-avoid` — this row is three radars plus their role labels, ~250px, so it
             either fits or moves as a unit. Without it a page break lands mid-radar. */}
-        <div className="-mx-2 hidden grid-cols-3 divide-x divide-slate-300/70 sm:grid print:break-inside-avoid">
+        <div
+          data-print-foundation-grid
+          aria-hidden={!gridLayout}
+          /* OFF-SCREEN IT IS LAID OUT AT THE PRINTED WIDTH, not the card's — the single most important part
+             of this whole arrangement. A radar's geometry (radius, axis-label size, label padding) is derived
+             from the width it fitted at and baked into the drawn bitmap; print CSS can rescale that bitmap but
+             cannot re-derive it. Left at the phone's ~320px card width this row printed three ~100px radars
+             with clipped pillar names, next to track cards that looked right purely because they are in flow
+             and were always laid out full-width. So the off-screen copy is pinned to the width paper will give
+             it, and prints at the size it was built for. `inset-x-0` is dropped in that state: it would stretch
+             the box back to the card's width and undo exactly this. */
+          style={gridLayout ? undefined : { width: FE_UI.page.printFoundationGridWidthPx }}
+          className={cn(
+            "-mx-2 grid grid-cols-3 divide-x divide-slate-300/70 print:break-inside-avoid",
+            !gridLayout && "pointer-events-none invisible absolute left-0 top-0 print:visible print:static",
+          )}
+        >
           {FOUNDATIONAL_PHASE.stageCharts.map((chart) => (
             <div key={chart.id} className="flex flex-col gap-2 px-2">
               <FoundationStageBody chart={chart} style={style} emojiSpokes={emojiSpokes} />
             </div>
           ))}
         </div>
+
+        {!gridLayout && (
+          <div className="print:hidden">
+            <FoundationCarousel stageCharts={FOUNDATIONAL_PHASE.stageCharts} style={style} isVisible={isVisible} emojiSpokes={emojiSpokes} />
+          </div>
+        )}
       </div>
     </article>
   );
@@ -291,6 +362,8 @@ export function CareerTracks({ isVisible = true }) {
   // Evaluated ONCE here and handed to all six charts, which is what makes them swap on the same pixel
   // instead of each deciding from its own width — see TRACK_CHART_EMOJI_QUERY.
   const emojiSpokes = useMediaQuery(TRACK_CHART_EMOJI_QUERY);
+  // Which foundational layout MOUNTS (not merely which one is visible) — see FOUNDATION_GRID_QUERY.
+  const foundationGridLayout = useMediaQuery(FOUNDATION_GRID_QUERY);
 
   return (
     <div className="flex flex-col gap-3">
@@ -304,7 +377,7 @@ export function CareerTracks({ isVisible = true }) {
         <p className={DOC_SECTION.intro}>{JUNIOR_TO_SENIOR.intro}</p>
       </div>
 
-      <FoundationalPhase isVisible={isVisible} emojiSpokes={emojiSpokes} />
+      <FoundationalPhase isVisible={isVisible} emojiSpokes={emojiSpokes} gridLayout={foundationGridLayout} />
 
       <div className="flex flex-col gap-1 pt-1">
         <h3 className={cn(DOC_TEXT.subsectionTitle, "font-bold")}>{SENIOR_FORK.title}</h3>
