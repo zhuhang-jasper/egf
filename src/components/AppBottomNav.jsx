@@ -325,7 +325,15 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
                 // The INACTIVE side stays on the slate ramp deliberately: it is the unselected majority and should
                 // recede into the chrome it sits on, which is exactly what sharing the bar's hue does. Black is
                 // reserved for the one segment being marked.
-                selected ? "border-black bg-slate-200 text-black" : "border-transparent text-slate-500 hover:bg-slate-200/50",
+                // THE INACTIVE LABEL IS `slate-400`, THE SAME RUNG AS ITS ICON. It was slate-500, one rung darker,
+                // and that gap was deliberate once — the icon was decoration and meant to sit back from its label
+                // (see the Icon's note). It read as a mismatch rather than as a hierarchy: at 11px semibold over a
+                // 24px glyph the two are one unit, close enough together that a single rung between them looks
+                // like an inconsistency in the same mark rather than a foreground and a background.
+                //
+                // SO THE PAIR MOVES TOGETHER FROM HERE. If the inactive weight is ever retuned, both values change
+                // or neither does — the whole point is that the segment's contents are one colour.
+                selected ? "border-black bg-slate-200 text-black" : "border-transparent text-slate-400 hover:bg-slate-200/50",
               )}
             >
               {/* THE UNSEEN DOT BADGES THE ICON, not the version text. It rode on `v4.1` as a superscript when this
@@ -365,9 +373,9 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
                     IT CARRIED `group-hover:text-slate-600` AND THAT WENT FIRST, because a rung of the slate ramp is
                     not a fixed amount of visual weight — it trades against how much ink carries it. slate-600 was
                     nominally LIGHTER than the label's hover slate-700, matching the one-rung offset the resting state
-                    keeps (slate-400 icon vs slate-500 label), but 24px of solid 2px strokes reads heavier than 11px
-                    semibold text, so the glyph looked DARKER than the label it was supposed to sit behind. Worse at
-                    24px than at the 20px it was set for.
+                    kept at the time, but 24px of solid 2px strokes reads heavier than 11px semibold text, so the
+                    glyph looked DARKER than the label it was supposed to sit behind. Worse at 24px than at the 20px
+                    it was set for.
 
                     THE LABEL'S `hover:text-slate-700` THEN WENT TOO, rather than being matched. Aligning the two on
                     one hover colour was the intermediate fix and it worked, but it left the segment doing two things
@@ -375,13 +383,14 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
                     pointer-only state, and the fill is the one that reads as "this whole target is live" rather than
                     as the text itself changing meaning.
 
-                    THE RESTING OFFSET SURVIVES ALL OF THIS. slate-400 against the label's slate-500 is unchanged: at
-                    rest the icon is decoration on an unselected tab and should sit back from its label. That was never
-                    the thing that looked wrong.
+                    THE RESTING OFFSET IS NOW GONE TOO, and this was the last of the three to go: the label came DOWN
+                    to slate-400 to meet this glyph (see the button's note). The offset existed to sit the icon back
+                    from its label as decoration, and the same argument that killed the hover values applies at rest —
+                    a 24px glyph and 11px semibold text are not comparable amounts of ink, so one nominal rung between
+                    them does not read as depth. It read as the two halves of one mark failing to match.
 
-                    SO THERE IS NOW EXACTLY ONE COLOUR PER STATE PER ELEMENT, and no `group-hover` anywhere in this
-                    button. Nothing here needs re-judging the next time `size-*` changes, which is what the deleted
-                    values could not promise. */}
+                    SO THE INACTIVE SEGMENT IS ONE COLOUR THROUGHOUT, in every state, with no `group-hover` anywhere
+                    in this button. Change it here and in the button's ternary together, or the two drift apart again. */}
                 <Icon className={cn("size-6 shrink-0", selected ? "text-black" : "text-slate-400")} aria-hidden />
                 {showUnseenDot ? (
                   // NO RING. The dot used to carry `ring-2` in the segment's own background colour, so the band
@@ -450,19 +459,32 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
                 {version ? (
                   // Inline with the label: the version qualifies "Theory" rather than standing on its own.
                   //
-                  // NO TYPE SIZE AND NO WEIGHT OF ITS OWN — it inherits the button's `font-semibold` and its
-                  // responsive size, so it is the same style as the label beside it and rides the app's type ladder
-                  // across breakpoints without repeating any of its steps here. It was `text-[10px] font-semibold`:
-                  // the weight was already a restatement of the inherited value, and the fixed 10px was the whole
-                  // reason the two runs did not sit on one line. A version string one step smaller than the word it
-                  // qualifies reads as a footnote bolted on rather than part of the label.
+                  // NO TYPE SIZE, NO WEIGHT AND NO COLOUR OF ITS OWN — it inherits all three from the button, so it
+                  // is the same text as the label beside it and rides the app's type ladder across breakpoints
+                  // without repeating any of its steps here. It was `text-[10px] font-semibold`: the weight was
+                  // already a restatement of the inherited value, and the fixed 10px was the whole reason the two
+                  // runs did not sit on one line. A version string one step smaller than the word it qualifies
+                  // reads as a footnote bolted on rather than part of the label.
                   //
-                  // `text-slate-500` in BOTH states, not a ternary on `selected`. The old segmented control needed
-                  // two values because the active tab was a dark pill (`text-white/70` on it, slate otherwise);
-                  // here the active tab is a light tint, so one muted grey is legible against both and a
-                  // conditional would be a decision that makes no difference. It is ALSO now the only thing
-                  // distinguishing the version from the label, since the size and weight no longer do.
-                  <span className="ml-1 leading-none text-slate-500">{version}</span>
+                  // SO NOTHING NOW DISTINGUISHES IT FROM THE LABEL, and that is the intent rather than a shortfall:
+                  // "Theory v4.1" is one phrase. The only reason it is a separate span at all is the `ml-1` that
+                  // keeps the two words from touching.
+                  //
+                  // NO COLOUR OF ITS OWN — IT INHERITS THE LABEL'S, in every state. This is the same argument as
+                  // the size and weight above, carried to its conclusion: the version is part of the label's
+                  // phrase ("Theory v4.1"), not an annotation hanging off it, so it should be the same text in
+                  // every respect and inherit whatever the button decides.
+                  //
+                  // IT WAS A FLAT `text-slate-500`, which was right only while the inactive label happened to be
+                  // slate-500 too. When that label came down to slate-400 to match its icon (see the button's
+                  // note), this became DARKER than the label it belongs to — the version outweighing the word it
+                  // qualifies. Pinning it to a rung, any rung, is what allowed that: a hardcoded value cannot
+                  // track a label that moves. Inheriting cannot drift.
+                  //
+                  // SO THE ACTIVE TAB'S VERSION IS BLACK, with the rest of its label. That is a real change and it
+                  // is the point — the old flat slate-500 muted the version on the selected tab, which put the
+                  // faintest text on the one tab being read.
+                  <span className="ml-1 leading-none">{version}</span>
                 ) : null}
               </span>
             </button>
