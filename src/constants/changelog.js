@@ -114,6 +114,24 @@ export const SECTION_LATEST_VERSION = (() => {
 })();
 
 /**
+ * The framework revision shown in the Theory tab, DERIVED from the newest changelog entry rather than
+ * declared: the version and the entry that explains it cannot disagree, and a bump is a single edit here.
+ *
+ * It used to be a hand-maintained constant in storage.js, which made two failures possible — a bump with no
+ * matching entry (the dev assert in useTheoryUpdates existed only to catch that, since an unranked version
+ * leaves every unseen dot stuck on forever), and a version that disagreed with the changelog it was supposed
+ * to summarise. Deriving it removes both by construction.
+ *
+ * Bump by ADDING AN ENTRY to the top of {@link CHANGELOG}, never by editing this. Only for genuinely new
+ * material, never copy tweaks.
+ *
+ * ALSO READ AT BUILD TIME by vite-plugins/resolve-framework-version.js and published as `frameworkVersion`
+ * in `dist/meta.json`, which the README's badge reads from the deployed site. That parser reads the first
+ * `version:` in this file, so keep the newest entry first (which the authoring rules already require).
+ */
+export const FRAMEWORK_VERSION = CHANGELOG[0].version;
+
+/**
  * Ordering key for a changelog version: its POSITION in {@link CHANGELOG}, where 0 is newest, so a SMALLER
  * rank means newer. Indexed rather than parsed, which cannot misorder "4.10" vs "4.2".
  *

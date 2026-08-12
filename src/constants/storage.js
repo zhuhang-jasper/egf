@@ -5,13 +5,6 @@ export const PROFILES_STORAGE_KEY = "fe-growth-framework:profiles:v1";
 export const SCHEMA_VERSION = 2;
 
 /**
- * The framework revision shown in the Theory tab. Bump only for genuinely new material, never copy tweaks.
- * A bump alone raises NO dots: which sections light up comes from the matching CHANGELOG entry's `sections`,
- * so add that entry in the same commit.
- */
-export const FRAMEWORK_VERSION = "4.2";
-
-/**
  * Legacy (v1): the version the Theory tab was last OPENED at, superseded by the per-section map below and
  * still read once to migrate an existing baseline.
  *

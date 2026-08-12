@@ -38,7 +38,7 @@ export {
   SENIORITY_LEVEL_COUNT,
   TECHNICAL_FLOOR_PILLARS,
 } from "@/constants/scoring";
-export { CHANGELOG, changelogRank, isNewerVersion, SECTION_LATEST_VERSION } from "@/constants/changelog";
+export { CHANGELOG, changelogRank, FRAMEWORK_VERSION, isNewerVersion, SECTION_LATEST_VERSION } from "@/constants/changelog";
 export {
   ADMIN_PASSWORD_REQUESTED,
   FEATURE_CHART_LEGEND_SETTING,
@@ -52,7 +52,6 @@ export {
   ADMIN_UNLOCK_KEY,
   BACKUP_REMINDER_EVERY,
   BACKUP_REMINDER_FIRST,
-  FRAMEWORK_VERSION,
   INSTALL_DISMISS_DAYS,
   INSTALL_DISMISSED_AT_KEY,
   PROFILE_SAVE_COUNT_KEY,

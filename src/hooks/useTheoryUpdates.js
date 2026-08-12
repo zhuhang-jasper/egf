@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 
 import {
-  changelogRank,
   FRAMEWORK_VERSION,
   isNewerVersion,
   SECTION_LATEST_VERSION,
@@ -33,14 +32,6 @@ import { track } from "@/utils/analytics";
  */
 export function useTheoryUpdates() {
   const [seenSections, setSeenSections] = useState(readSeenSections);
-
-  // FRAMEWORK_VERSION must exist in CHANGELOG: `markSectionSeen` stamps it as the "read at" value,
-  // and changelogRank() ranks an unknown version as infinitely OLD — so a bump with no matching
-  // changelog entry would stamp a value that never satisfies isNewerVersion, leaving dots stuck on
-  // forever. Cheap dev-time assert rather than a subtle "the dot won't go away" bug report.
-  if (import.meta.env.DEV && changelogRank(FRAMEWORK_VERSION) === Number.POSITIVE_INFINITY) {
-    console.error(`FRAMEWORK_VERSION "${FRAMEWORK_VERSION}" has no CHANGELOG entry — unseen dots will never clear. Add the entry.`);
-  }
 
   // Sections whose newest change is newer than what this user has read. Recomputed from the map, so
   // marking one section seen re-derives the set (and with it the tab dot) with no extra bookkeeping.
