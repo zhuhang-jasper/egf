@@ -12,7 +12,18 @@ export const SITE_COPY = {
   title: "9-Pillar Engineer Growth Framework",
   tagline: "A spider chart to measure software engineering mastery, identify core interests, and guide career paths.",
   detail: "Supported by a 45-point competency matrix across 5 proficiency levels.",
-  byline: "— Jasper Loo Zhu Hang",
+  /**
+   * The flag trails the name rather than leading it. Leading, it would either sit between the dash and the name
+   * (making the dash attribute the flag) or ahead of the dash (detaching it from the name); trailing, the whole
+   * run stays one signature, which is what the `whitespace-nowrap` on its render sites protects.
+   *
+   * NOT MIRRORED into the README, which carries a `made in Malaysia` shields badge in its badge row instead —
+   * project metadata belongs with the other badges there, and duplicating it in the README's own byline would
+   * put the flag twice in one header. Nor into `share.imageAttribution` or the share templates below: those are
+   * a legal credit and two sentences respectively, not signatures, and the attribution line is already
+   * width-constrained enough that renderAttribution steps its font down to fit.
+   */
+  byline: "— Jasper Loo Zhu Hang 🇲🇾",
   /**
    * MIRRORED IN TWO STATIC FILES that cannot import this: `short_name` in `public/manifest.json`, and
    * `application-name` plus `apple-mobile-web-app-title` in `index.html`. Change all three together.
