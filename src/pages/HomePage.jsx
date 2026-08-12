@@ -203,16 +203,9 @@ export default function HomePage() {
     syncTabInUrl(nextTab);
   };
 
-  // Keeps the inactive tab's content (eight radar charts, on Theory) off the first-paint path:
-  //
-  //   deferred — first render, active panel only.
-  //   prefit   — on the next idle callback: mount the inactive panel laid out but clipped, so its charts
-  //              measure real frame widths and converge once (see TabPanel's `prefit`, and useChartFrameFit's
-  //              memo, which makes the result survive to the switch).
-  //   mounted  — back to `hidden`, charts already fitted.
-  //
-  // Because a chart pre-fits at the width it is shown at, the switch is a memo hit: one `chart.resize()` each
-  // rather than eight converge loops at once, which is what the flash on the first switch to Theory was.
+  // Keeps the inactive tab's charts off the first-paint path: deferred (active only) → prefit (mounted,
+  // clipped, converging via TabPanel's `prefit`) → mounted (hidden, already fitted). Makes the first switch
+  // to Theory a memo hit instead of eight converge loops firing at once.
   const [inactivePhase, setInactivePhase] = useState("deferred");
   const inactiveMounted = inactivePhase !== "deferred";
 
@@ -231,11 +224,9 @@ export default function HomePage() {
     return () => clearTimeout(timer);
   }, [inactivePhase]);
 
-  // Theory tab's version-bump indicators. `unseenSections` drives a dot on each changed section's
-  // heading; `theoryHasUnseenUpdates` is their aggregate and drives the dot on the Theory tab label.
-  // Dismissal is per-section and requires BOTH the section's head and tail to have been in view
-  // (TheoryContent observes edge sentinels) — NOT tab open, so the tab dot survives a drive-by visit.
-  // Half-read progress is persisted, so the two edges can be reached in separate sessions.
+  // Theory tab's version-bump dots. `unseenSections` per heading, `theoryHasUnseenUpdates` their aggregate
+  // on the tab label. Dismissal requires BOTH a section's head and tail seen, not just tab-open, so a
+  // drive-by visit does not clear the dot; half-read progress persists across sessions.
   const {
     hasUnseenUpdates: theoryHasUnseenUpdates,
     unseenSections,
@@ -267,18 +258,11 @@ export default function HomePage() {
     setMatrixNav((prev) => ({ pillarId, seq: (prev?.seq ?? 0) + 1, cancelRestoreRef }));
   };
 
-  // `min-w` on `main` is the app's usability floor, and it sits on `main` so it is measured against the
-  // VIEWPORT: on a tab panel (nested inside padding) the same 350 would become a larger effective floor.
-  // Nothing in this shell may clip that overflow, or the right edge becomes unreachable instead of scrollable.
-  // That also rules out enforcing it with an inner scroll container, which would stop the sticky header pinning.
-  //
-  // `main` has NO max width (the per-tab measure lives on the panels) so the header and footer span the
-  // viewport and the pinned header does not change width on tab switch. It has no vertical padding and no
-  // corner radius either, both of which are only visible at `scrollY 0` and so made the sticky header appear to
-  // move or change shape on arrival at the top.
-  //
-  // `flex-1` rather than a viewport height of its own: it gives the footer's `mt-auto` a floor while keeping
-  // every viewport unit out of this box, which is what stops the fixed nav jumping (see the padding note below).
+  // `min-w` sits on `main` so it measures against the VIEWPORT, not a nested panel's smaller effective floor.
+  // Nothing here may clip that overflow, or the right edge becomes unreachable instead of scrollable.
+  // `main` has no max-width (that's per-tab, on the panels) so the sticky header does not change width or
+  // shape on tab switch. `flex-1`, not a viewport height, keeps viewport units out of this box — see
+  // docs/DECISIONS.md#tab-switch-scrollbar-jump for why that matters.
   return (
     /* `bg-slate-100` matches `body` in index.css, and the pairing is the point: this wrapper paints the surround
        beside the content measure, and `body`'s identical value is what an over-pull past the document reveals.

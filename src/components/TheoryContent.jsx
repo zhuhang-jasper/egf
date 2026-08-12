@@ -46,14 +46,11 @@ import {
 const cardClass = "rounded-xl border border-slate-300 bg-white shadow-md shadow-slate-200/40";
 
 /**
- * Whether the OS share sheet can be opened at all. Computed once at module load, since the API's presence
- * does not change within a page's lifetime.
+ * Whether the OS share sheet can be opened at all, computed once at module load.
  *
- * A plain `navigator.share` check, deliberately NOT the `canShare({ files: [...] })` probe that gates the
- * chart's Share button: the poster is an enhancement and the link is the payload, and `shareTheoryLink`
- * already falls back to a text-only share. Gating on file support would hide the button from browsers that
- * can still deliver what is being shared. Where the API is absent, each section heading's copy-link control
- * is the route to the same URL.
+ * A plain `navigator.share` check, deliberately NOT the `canShare({ files })` probe gating the chart's Share
+ * button: the link is the payload and `shareTheoryLink` already falls back to text, so gating on file support
+ * would hide the button from browsers that can still deliver it.
  */
 const CAN_SHARE_LINK = typeof navigator !== "undefined" && typeof navigator.share === "function";
 
@@ -72,11 +69,8 @@ const SKILL_TIER_BANDS = getSkillTierBands();
 const DEFAULT_EXPANDED_PILLAR = COMPETENCY_MATRIX[0].pillarId;
 
 /**
- * The expanded pillar to boot with, resolving the three persisted states against that default.
- *
- * A stored empty string wins over the default: the user closed the matrix and reloaded, and reopening it
- * would be the app arguing. A pillar deep-link suppresses it too, since the staged effect below switches to
- * the link's target once restore settles, and opening the default first would collapse it ~350ms later.
+ * The expanded pillar to boot with. A stored empty string wins over the default (user closed it on purpose),
+ * and a pillar deep-link suppresses it too, since the staged effect below overrides it once restore settles.
  */
 function getInitialExpandedPillar(deepLink) {
   const persisted = getPersistedExpandedPillar();
@@ -88,10 +82,8 @@ function getInitialExpandedPillar(deepLink) {
   return deepLinkPillar ? null : DEFAULT_EXPANDED_PILLAR;
 }
 
-// Hero radar pillar-label sizing: scales linearly with the chart, 12px at its small-mobile width up
-// to 15px at FE_UI.page.chartMaxWidthPx (the wrapper cap below). Shared with the tool chart so the
-// two stay identical — see FE_UI.chart.pointLabelPxRange. Its stable module-level identity also
-// satisfies StaticCompetencyChart, which memoizes on this object.
+// Hero radar pillar-label sizing, 12-15px linear — shared with the tool chart (FE_UI.chart.pointLabelPxRange)
+// and kept at stable module identity since StaticCompetencyChart memoizes on this object.
 const HERO_POINT_LABEL_PX_RANGE = FE_UI.chart.pointLabelPxRange;
 
 // On a deep-link boot, how long to let the scroll-restore loop settle at the remembered position
@@ -103,16 +95,12 @@ const DEEPLINK_RESTORE_SETTLE_MS = 350;
 const DEEPLINK_EXPAND_ANIM_MS = 300;
 
 /**
- * Zero-height marker bracketing a section's content, used by `useSectionSeenObserver` to detect that
- * the head/tail of the section has been in view.
+ * Zero-height marker bracketing a section's content, used by `useSectionSeenObserver` to detect that the
+ * head/tail has been in view.
  *
- * MUST stay IN FLOW: its document position IS the signal. An earlier `absolute` version collapsed both
- * sentinels onto the section's origin, because a flex container never gives an abs-positioned child a
- * static position for `top: auto` to resolve against — so the pair armed as soon as a section's top
- * appeared and dots cleared before the reader reached the bottom.
- *
- * The cost is that a flex `gap` is charged for every child including a zero-height one, which the negative
- * margin in `gapClass` cancels exactly. It is passed in per section because the parents don't share a gap.
+ * MUST stay IN FLOW: its document position IS the signal, and an `absolute` version collapses both sentinels
+ * onto the section's origin. The cost is that flex charges `gap` for a zero-height child, which `gapClass`
+ * cancels — passed in per section because the parents do not share a gap.
  */
 function SectionSentinel({ section, edge, gapClass }) {
   return <span id={getSectionSentinelId(section, edge)} aria-hidden className={cn("block h-0 w-full shrink-0", gapClass)} />;
@@ -139,9 +127,8 @@ function SectionHeading({ title, subtitle, section, hasUnseenUpdates = false }) 
 const levelBadgeClass = "flex shrink-0 items-center justify-center rounded-full bg-slate-900 font-bold text-white";
 
 /**
- * Renders a "Quality / Identity" phase title. When `breakAfterSlash` is set, a line break is
- * forced after the slash — used in the cramped 5-column grid. In the mobile stacked view the
- * levels sit in vertical cards with ample horizontal room, so the break is left off there.
+ * Renders a "Quality / Identity" phase title. `breakAfterSlash` forces a break for the cramped 5-column
+ * grid; left off in the mobile stacked view, which has ample horizontal room.
  */
 function SeniorityPhaseTitle({ phase, className, breakAfterSlash = false }) {
   const [quality, identity] = phase.split(" / ");
@@ -160,26 +147,15 @@ function SeniorityPhaseTitle({ phase, className, breakAfterSlash = false }) {
 }
 
 /**
- * The three cumulative skill tiers, drawn as staggered bands across the L1-L5 axis. Each band starts
- * at the MIDPOINT of the one before it, so the overlap is visible as horizontal offset: the tiers
- * build on each other rather than partitioning the scale. That overlap is the whole point of the
- * diagram — it is what stops L3 reading as "done with Core" — so the stagger is kept at every width
- * rather than degrading to a stacked list on mobile, which would flatten the idea into three
- * unrelated rows.
+ * The three cumulative skill tiers, drawn as staggered bands across the L1-L5 axis. Each band starts at the
+ * MIDPOINT of the one before it: the overlap is the whole point of the diagram, so the stagger is kept at
+ * every width rather than degrading to a stacked list on mobile.
  *
- * ONE layout at all sizes. The narrowest band is the binding constraint, since it carries the longest
- * label; `minWidth: max-content` guarantees the fit. If a label looks cramped, widen the band in
- * `SKILL_TIERS` rather than shrinking the type: the percentages are approximate by intent, a clipped word
- * is a bug.
+ * ONE layout at all sizes, bound by the narrowest band since it carries the longest label. If a label looks
+ * cramped, widen the band in `SKILL_TIERS` rather than shrinking the type — a clipped word is a bug.
  *
- * SELF-CONTAINED AXIS. The ruler and the bands are both plain percentages of this card's own track, so they
- * stay exact against each other, which is the alignment that carries the meaning. Keep it that way: this
- * card previously sat where it registered with a column grid above it, and the band edges were then
- * computed through that grid's gutters.
- *
- * A figure, not a titled card. The framing prose lives outside as `SKILL_TIERS_INTRO`, so a title inside the
- * box would repeat it. The caption stays INSIDE the border because it reads the stagger the bands draw and
- * only parses with the picture in view.
+ * SELF-CONTAINED AXIS: ruler and bands are both percentages of this card's own track, so they stay exact
+ * against each other. Keep it that way; computing band edges through an outer grid's gutters broke it once.
  */
 function SkillTierBands() {
   return (
@@ -214,11 +190,8 @@ function SkillTierBands() {
               DOC_TEXT.bodySemibold,
               bandClass,
             )}
-            // Straight percentages of the track: no clamping needed, since 0-100% now IS the box.
-            //
-            // `minWidth: max-content` guards the label: the browser measures the rendered text and refuses
-            // to draw the band narrower. Where it binds it wins over exact positioning, since an
-            // approximate percentage is fine (see `SKILL_TIERS`) but a clipped word is a bug.
+            // Straight percentages of the track, no clamping needed. `minWidth: max-content` guards the
+            // label and wins over exact positioning where it binds — a clipped word is a bug.
             style={{
               marginLeft: `${startPct}%`,
               width: `${widthPct}%`,
@@ -304,26 +277,16 @@ function TheoryContent({
   // on screen. Observes only the still-unseen sections, so this is inert for a caught-up user.
   useSectionSeenObserver(isVisible, unseenSections, markSectionEdgeSeen, isSectionEdgePairComplete, markSectionSeen);
 
-  // Expanded pillar state lives here so the matrix share button can read it. On a deep-link boot we
-  // intentionally start from the *persisted* pillar, NOT the deep-link's — so the page first restores
-  // its previous scroll against the layout it was saved with (old pillar A still open). The deep-link
-  // effect below then switches to pillar B (collapse A, expand B) once restore has settled, and only
-  // then glides to B. Expanding B immediately here would shift layout under the restore and land it
-  // at the wrong spot.
+  // Expanded pillar state lives here so the matrix share button can read it.
+  // See docs/DECISIONS.md#theory-deeplink-boot-order for why this starts from the PERSISTED pillar.
   const [expandedPillar, setExpandedPillar] = useState(() => getInitialExpandedPillar(deepLink));
 
-  // The "What's New" highlighter is permanently OFF: the `**…**` markers still exist in the copy
-  // (kept for future use) but the amber fill never renders, so elevated text always reads as plain
-  // text. The page-level toggle has been replaced by the "Show changelog" button below; sections
-  // receive a hardcoded `false`.
+  // The "What's New" highlighter is permanently OFF (hardcoded `false` below) — the `**…**` markers stay in
+  // the copy for future use, but the page toggle was replaced by the "Show changelog" button.
   const [changelogOpen, setChangelogOpen] = useState(false);
 
-  // The hero radar's measured frame width, republished by StaticCompetencyChart's `onFrameWidthChange`. It
-  // sizes the framework title above it (see the note on that element), so the theory tab's title and the tool
-  // tab's chart title run off the same function and the same number.
-  //
-  // `useCallback` because it is a prop on the chart and one of that effect's dependencies — an inline arrow
-  // would be a new function every render and would refire the notify effect on every render of this tab.
+  // The hero radar's measured frame width, republished by `onFrameWidthChange`; sizes the title above it.
+  // `useCallback` because an inline arrow would refire the notify effect on every render of this tab.
   const [heroChartWidth, setHeroChartWidth] = useState(0);
   const handleHeroFrameWidth = useCallback((width) => setHeroChartWidth(width), []);
 
@@ -365,15 +328,12 @@ function TheoryContent({
     const targetPillar = section === THEORY_SECTIONS.matrix ? deepLink.pillar : null;
     const targetId = targetPillar ? getPillarCardElementId(targetPillar) : sectionId;
 
-    // Staged so a shared link feels like a real navigation, not a teleport:
-    //   1. double rAF — let the hidden tabpanel lay out so the restore loop can land at the remembered
-    //      scroll (against the OLD expanded pillar, the layout that scroll was saved with).
-    //   2. after DEEPLINK_RESTORE_SETTLE_MS — restore has settled; NOW switch to the deep-link pillar
-    //      (collapse the old one, expand the target). cancelRestoreRef is flipped here because this
-    //      expand changes layout and we no longer want restore re-asserting the old position.
-    //   3. after the expand animation — re-aim until the card stops moving (the old pillar may be
-    //      collapsing above the target, sliding it up), then smooth-glide. A single scroll would land
-    //      a below-the-old-pillar target gapless under the bar.
+    // Staged so a shared link reads as navigation rather than a teleport:
+    //   1. double rAF — let the hidden tabpanel lay out so restore lands at the remembered scroll.
+    //   2. after DEEPLINK_RESTORE_SETTLE_MS — switch to the deep-link pillar. `cancelRestoreRef` flips here
+    //      so restore stops re-asserting the old position against this expand.
+    //   3. after the expand — re-aim until the card stops moving (the old pillar may still be collapsing
+    //      above it), then smooth-glide. A single scroll lands the target gapless under the bar.
     let settleTimer = null;
     let glideTimer = null;
     let inner = null;
@@ -420,13 +380,9 @@ function TheoryContent({
   /**
    * Hand the theory tab's URL, plus the pillar poster image, to the OS share sheet.
    *
-   * `buildTheoryShareUrl(null, null)` gives the plain `?tab=theory` link — no `section`/`pillar` —
-   * because this is the tab-level control: it shares the document, not wherever the reader happens to be
-   * scrolled to. Per-section links stay the job of the copy-link icon in each heading.
-   *
-   * NO TOAST ON EITHER OUTCOME. The sheet is its own feedback when it opens, and once it closes what the
-   * chosen app did is out of our hands; a dismissal is a decision, not an error. `method` distinguishes
-   * the image share from the text-only fallback so the split is visible in analytics.
+   * `buildTheoryShareUrl(null, null)` gives the plain `?tab=theory` link because this is the tab-level
+   * control: it shares the document, not the reader's scroll position. NO TOAST on either outcome — the sheet
+   * is its own feedback, and a dismissal is a decision rather than an error.
    */
   const handleShareTheory = async () => {
     const result = await shareTheoryLink(buildTheoryShareUrl(null, null));
@@ -619,39 +575,15 @@ function TheoryContent({
           <p
             aria-hidden
             data-print-hero-title
-            /* SIZED FROM THE HERO RADAR'S MEASURED WIDTH, exactly like the tool tab's chart title — same
-               function (getChartTitleSizePx), same input, so the two titles are the same size at every
-               viewport rather than merely agreeing at their endpoints.
-
-               THIS IS A TITLE ABOVE A CHART, which is what makes the chart the right thing to scale against.
-               It used to run on the document's own breakpoint ladder (`text-[18px] sm:text-[20px]
-               md:text-[22px]`, the DOC_TEXT idiom), and that ladder is right for the prose BELOW the hero —
-               but this title's job is to head the radar, and the radar's size does not follow those
-               breakpoints. Between 550 and 768 the hero was already at its full 526px while the title was
-               still two rungs down, because the theory panel is 900 wide and reaches the radar's cap long
-               before `md` fires.
-
-               The two charts are the same width by construction — the tool panel caps at 550 (526 inside its
-               gutters) and the hero caps its own wrapper at FE_UI.page.chartMaxWidthPx to match, see the note
-               there — so one width feeds both titles and they cannot drift.
-
-               `heroChartWidth` starts at 0 and the fallback keeps the first paint at the mobile size, which is
-               the smaller of the two ends; the real measurement lands on the same frame the radar fits. */
+            /* SIZED FROM THE HERO RADAR'S MEASURED WIDTH via the same getChartTitleSizePx the tool tab's
+               title uses, so the two match at every viewport. A title above a chart scales against the chart,
+               not the document's breakpoint ladder — the theory panel is 900 wide and hits the radar's cap
+               long before `md` fires. The 0 fallback keeps the first paint at mobile size. */
             className="text-balance mx-auto flex w-full flex-col items-center font-extrabold leading-tight tracking-tight text-slate-900 text-center print:mb-[5vh]"
-            /* TWO SIZES, AND PAPER MUST NOT INHERIT THE SCREEN'S.
-
-               `fontSize` is the SCREEN size, measured from the live hero frame. On paper that measurement is
-               stale in exactly the way the radar's is (see the wrapper note below): the frame prints at
-               `chartMaxWidthPx` whatever the device, but `heroChartWidth` still holds whatever the screen gave.
-               From a desktop the two agree — the frame is already at its 526px cap — so this was invisible until
-               it was printed from a phone, where a ~350px frame pins the title at the 16.8px FLOOR and prints it
-               at that size above a full-width radar. The title read as body copy on its own cover sheet.
-
-               `--print-title-size` is the same function at the width paper actually uses, handed to a print rule
-               in index.css that overrides the inline `fontSize` (only `!important` can — an inline style outranks
-               any stylesheet). Computed here rather than written as a number in the CSS so it cannot drift from
-               `chartMaxWidthPx` or `labelMultiplier`; those two are what set it, and moving either moves both
-               media in step. */
+            /* TWO SIZES, AND PAPER MUST NOT INHERIT THE SCREEN'S. `fontSize` is measured from the live frame
+               and is stale on paper; `--print-title-size` is the same function at the width paper actually
+               uses, computed here rather than hardcoded in CSS so it cannot drift from `chartMaxWidthPx`.
+               See docs/DECISIONS.md#print-chart-frame-height-is-stale. */
             style={{
               "fontSize": getChartTitleSizePx(heroChartWidth || FE_UI.page.minWidthPx),
               "--print-title-size": `${getChartTitleSizePx(FE_UI.page.chartMaxWidthPx)}px`,

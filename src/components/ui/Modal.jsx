@@ -8,23 +8,17 @@ import { useScrollLock } from "@/hooks/useScrollLock";
 import { cn } from "@/utils";
 
 /**
- * The confirm button of a high-risk dialog: red outline and red text, never a filled red block. Fill is what
- * the app uses to mean "this is the way forward", so pointing it at Delete all would recommend it. Outline
- * keeps the action clearly available and clearly not encouraged, while red carries the consequence.
- *
- * Shared so the high-risk dialogs cannot drift. Pair it with `destructive` on ConfirmDialog rather than
- * reaching for it directly.
+ * The confirm button of a high-risk dialog: red outline and red text, never a filled red block — fill means
+ * "the way forward" in this app, so a filled Delete all would read as a recommendation. Shared so the
+ * high-risk dialogs cannot drift; pair it with `destructive` on ConfirmDialog rather than using it directly.
  */
 const DESTRUCTIVE_CONFIRM_CLASS = "justify-center border-red-500/50 text-red-600 hover:bg-red-50 hover:text-red-700";
 
 /**
  * A bare exclamation mark for the high-risk dialogs, hand-rolled because every lucide alert icon wraps the
- * mark in an enclosing shape and this one already sits on a black disc. These are exactly CircleAlert's two
- * strokes with its `circle` dropped, on lucide's grid and cap style so it sits with the real icons.
- *
- * Stroke 3.5 rather than lucide's 2, because without the enclosure it has the whole disc to fill. The
- * endpoints stay inset (6→18) despite that: a round cap projects half the stroke past its endpoint, so the
- * visible ink already runs ~4.2→19.8 of 24. Extending them too would push the caps under the disc's rim.
+ * mark in a shape and this already sits on a black disc. Exactly CircleAlert's two strokes without its
+ * `circle`, on lucide's grid. Stroke 3.5 rather than 2 to fill the disc; endpoints stay inset at 6→18 because
+ * a round cap already projects the visible ink to ~4.2→19.8.
  */
 function ExclamationMark(props) {
   return (
@@ -45,7 +39,7 @@ function ExclamationMark(props) {
  *         │                SaveCollisionDialog, BackupReminderDialog, AdminUnlockPrompt)
  *         └─ FullModal     wide, bordered header + close ✕, scrolling body   (ChangelogModal)
  *
- * The split is at the machinery because that is what was actually shared: merging the two panels would mean
+ * The split is at the machinery because that is what is actually shared: merging the panels would mean
  * `size`/`maxHeight`/`hideActions` props that serve one caller while every dialog carries them.
  *
  * Props:
@@ -167,9 +161,8 @@ function Modal({
  * the bottom. Every dialog that asks a short question is this one (ConfirmDialog, SaveCollisionDialog,
  * BackupReminderDialog, AdminUnlockPrompt).
  *
- * What it does NOT decide is which buttons: each dialog's actions differ in count, order, label, emphasis
- * and destructiveness, and a prop general enough for all of that reads worse at the call site than the JSX
- * it would replace. `actions` takes finished <Button>s and owns only where they sit.
+ * It does NOT decide which buttons: actions differ in count, order, label and emphasis, and a prop general
+ * enough for all of it reads worse than the JSX it replaces. `actions` takes finished <Button>s.
  *
  * Props: everything {@link Modal} takes, plus
  *   - title          — heading text (required; it is what labels the dialog).
@@ -215,13 +208,11 @@ function SimpleModal({ title, icon: Icon = null, compactIcon = false, titleId, a
  * THE DOCUMENT DIALOG: a wider panel with a bordered header, a close ✕, and a body that SCROLLS INSIDE
  * the panel rather than growing it. For content that is read rather than answered (ChangelogModal).
  *
- * The scroll is why this cannot be {@link SimpleModal} at a bigger width. Three things must agree for a panel
- * to scroll internally: a bounded height, `overflow-hidden` on the panel so the rounded corners clip the
- * moving content, and `min-h-0` on the body so it may shrink below its content. Without the last, a flex
- * child's `min-height: auto` pushes the panel past its max-height and scrolls the PAGE instead.
+ * The scroll is why this cannot be {@link SimpleModal} at a bigger width. Three things must agree: a bounded
+ * height, `overflow-hidden` on the panel to clip the rounded corners, and `min-h-0` on the body — without the
+ * last, a flex child's `min-height: auto` pushes past max-height and scrolls the PAGE instead.
  *
- * `role="dialog"` by default, not SimpleModal's "alertdialog": this is browsable content, and an
- * alertdialog tells a screen reader to expect an urgent message with limited interaction.
+ * `role="dialog"` by default rather than "alertdialog", since this is browsable content.
  *
  * Props: everything {@link Modal} takes, plus
  *   - title       — heading text, rendered in the header row and labelling the dialog.

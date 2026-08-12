@@ -514,6 +514,135 @@ panel's own 900px cap never binds, since paper is narrower than that.
 
 ---
 
+### print-trailing-blank-sheet
+
+The document kept emitting one extra sheet with nothing on it. It is **trailing height**, not a stray page
+break, and the tell is that choosing "Margins: None" in the print dialog makes it disappear: that is what an
+overflow-by-a-little looks like, since giving the content area more room lets the overrun fit.
+
+Four separate screen-layout habits each contribute, and all four had to go:
+
+- **`min-h-dvh` on `html`, `body` and `#root`.** In print `dvh` resolves against the page box, so each asks to
+  be at least one full sheet tall. Once content ends just past a page boundary, that minimum demands another
+  sheet. HomePage's wrapper opts out with `print:min-h-0`; these three are the ones it cannot reach.
+- **`body`'s `overflow-x: auto`** (there so the min-width floor stays reachable). Because the other axis is
+  `visible`, CSS computes **both** to `auto`, making the box a scroll container whose extent the print layout
+  then accounts for. Neither axis means anything once content is paginated.
+- **`main`'s bottom-nav reservation**, `pb-[calc(3.5rem+env(safe-area-inset-bottom))]`. 56px of padding
+  hanging off the end of the last page is by itself enough to demand another sheet. `print:pb-0` cancels it,
+  but that relies on Tailwind's utility ordering beating an arbitrary-value utility, so the raw rule states it
+  outright rather than depending on that.
+- **The running footer**, which is `position: fixed` and therefore out of flow, so it stops contributing to
+  the last page's height at all. See [print-running-footer](#print-running-footer).
+
+Related but distinct: `html` and `body` are forced to `#fff` in print. `body` is tinted `bg-slate-100` on
+screen because that tint is the surround the app's white card sits on. Paper has no surround to show, but the
+tint was still painted and filled whatever was left of the final sheet below the footer. Both elements are set
+because only `body` was ever painted, so past the end of body's box the sheet fell back to default white and
+printed as a stray strip of a second shade. This stays load-bearing now that the surround is pale rather than
+black: a slate wash over the unused part of a sheet is quieter than a black one, but it is still ink nobody
+asked to spend.
+
+### print-chart-frame-height-is-stale
+
+Print never re-runs the chart fit. `applyChartFrameLayout` writes the frame's `height` as an inline px value
+derived from its **screen** width, and neither hook fires in time to correct it: `beforeprint` runs before the
+print layout exists, so measuring there still reads the screen, and the ResizeObserver's rAF does not get a
+turn before rasterisation.
+
+From a desktop window this never shows, because the frame is already at its 526px cap, which is also its
+printed width. From a phone it does. A ~350px frame pins a ~330px height; on paper the frame widens to 526px
+but keeps that height, so the canvas asks for `height: auto` (~496px), `max-height: 100%` clamps it back to
+330px, and clamping a **replaced** element's height recomputes its width to preserve the aspect ratio. The
+radar redraws at its mobile size, centred in a frame nearly twice as wide: the "shrunken cover chart".
+
+So the fix releases the height rather than fighting the clamp: `height: auto` on the frame, `position: static`
+on the `absolute inset-0` box inside it (otherwise the frame has no in-flow content and collapses to zero),
+and `max-height: none` so the canvas can take its full width. `display: block` on the canvas because back in
+flow it is an inline replaced element and would sit on a text baseline, adding a descender gap.
+
+Scoped to the hero deliberately. The career-track radars pass a hard `maxHeightPx`, so releasing their heights
+would let six charts grow past the size their grid is built around.
+
+The cover **title** has the same staleness for the same reason: its `font-size` is an inline style sized from
+the hero frame's live width, so a phone print put it on the 16.8px floor and printed a cover heading at
+body-copy size. `--print-title-size` carries `getChartTitleSizePx(chartMaxWidthPx)` instead, set in
+TheoryContent so the number stays with the function that owns it.
+
+### print-pillar-grid-breakpoint
+
+The printed pillar grid reaches 3 columns at `@media print and (min-width: 640px)`.
+
+This is not a fix for a print-only bug. The grid's own `xs:`/`md:` steps are plain `min-width` queries, and in
+paged media those resolve against the **page box**, so the printed grid already tracked paper size. The
+problem was only *where* the 3-column step sat: `md`, 768px, which most portrait paper falls under once
+margins are taken off. Hence Letter dropping to 2 columns.
+
+Page widths at the zero side margins: A4 portrait 794px, Letter 816px, A5 559px, A6 397px. 640 is chosen for
+headroom in **both** directions rather than to fit one paper size. It clears A4 even if the margin is widened
+back out (A4 at 15mm is still 680px), and stays above A5 so A5 keeps 2 columns. Below the threshold the
+component's own `xs` (2 col) and base (1 col) steps take over untouched, which is what covers small paper.
+
+Columns and rows are set together: each card is a 4-row subgrid, so 9 cards over 3 columns needs
+`repeat(12, auto)`. Keeping it as one rule is why this is raw CSS on a data attribute rather than two stacked
+Tailwind variants; unlayered CSS also beats `@layer utilities`, so it wins over `md:grid-cols-3` without
+specificity games.
+
+### print-running-footer
+
+The copyright line repeats at the foot of every printed sheet. `position: fixed` is the only mechanism a
+browser offers: per CSS Paged Media a fixed box is repeated on every page, and Chromium implements that. It
+also takes the footer out of flow, so it stops contributing to the last page's height, which is half of why
+the document no longer emits a trailing blank sheet.
+
+**`bottom: 0`, inside the page area, and it must stay there.** A negative offset looks tempting, since it
+would drop the line into the page's bottom margin and guarantee it never meets body text. What it actually
+does is put the box outside the page area, and Chromium renders that overrun at the *start of the next page*:
+the footer appeared at the top of every sheet from the second onwards. The margin band is unreachable without
+`@page` margin boxes, so `bottom: 0` is the only correct place.
+
+That does mean the footer shares the last few millimetres of the content area with the text above it, and
+nothing enforces a gap. It is safe because of how this document paginates: every section and every matrix
+pillar starts its own sheet, so pages end well short of the bottom. If that stops being true, the fix is
+bottom padding on the content, **not** a negative offset here.
+
+**No page numbers**, and not for want of trying. A counter needs `@page { @bottom-center { content:
+counter(page) } }`, and CSS Paged Media margin boxes are unimplemented in Chrome, Safari and Firefox alike:
+they support only `size` and `margin` on `@page`. The print dialog's own "Headers and footers" option is where
+page numbers come from.
+
+**The printed line names the framework; the screen line does not.** On screen the header lockup, the tab bar
+and the URL all say what this is, so the footer does not repeat them. Paper keeps none of that, and the header
+does not repeat per sheet, so by the third page a matrix card has nothing naming the framework it belongs to.
+This line is the only thing on every sheet. The same reasoning drives `share.imageAttribution` in
+`constants/site.js`, which is why the two strings currently match, though they are composed independently and
+are not required to.
+
+The app version goes the other way and is dropped in print. It tells someone reporting a bug which build they
+are on, which is only actionable against a running app; a sheet of paper has no build behind it any more.
+
+### print-page-margins
+
+`@page { margin: 5mm 0 }`. The target is "Default margins + Headers and footers unchecked, printing like
+Minimum would". Only the dialog's **Default** setting resolves to this value, since "None", "Minimum" and
+"Custom" all override it, so this is what someone who never opens that dropdown gets.
+
+It was briefly 10mm, to hold the browser's own header and footer clear of the content, since Chrome draws that
+chrome inside the margin box rather than reserving extra space for it. With the checkbox off there is nothing
+to clear, so the reasoning inverts and the margin should be as small as paper allows.
+
+**Asymmetric on purpose.** The sides go to nothing while the top and bottom keep a band:
+
+- **Sides at 0** spend the whole sheet on measure, and they are not bare: every tab panel carries `px-3`, so
+  content still sits ~3mm off the paper edge. That is thin for hardware (most laser and inkjet printers cannot
+  print within ~4-5mm of an edge) but it only risks the outer card borders, and it is exact for PDF.
+- **Top and bottom at 5mm** because that edge has something at it. The running footer is `bottom: 0` of the
+  page *area*, so it lands exactly this margin above the paper edge; at 0 it would be the first thing a
+  printer clipped, and it is the one element with nothing beneath it. Equal vertical values also keep the
+  head and foot gaps matched.
+
+---
+
 ## Copy
 
 ### changelog-rank-sentinels
@@ -632,6 +761,15 @@ This is the same property that rules out compensating the scroll lock on `body` 
 ---
 
 ## Tabs
+
+### theory-deeplink-boot-order
+
+On a deep-link boot, the matrix must start expanded on the PERSISTED pillar, not the deep-link's target.
+
+The page first restores its previous scroll position against the layout it was saved with (the old pillar
+still open). Only once that restore has settled does the staged deep-link effect switch to the target pillar
+— collapsing the old one, expanding the new one, then gliding to it. Expanding the target immediately would
+shift layout under the restore and land it at the wrong spot.
 
 ### tab-panel-prefit
 

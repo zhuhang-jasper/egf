@@ -13,12 +13,8 @@ import { CAREER_TRACK_PROFILES, PILLAR_CLUSTER_GROUPS } from "@/constants/theory
 import { track } from "@/utils/analytics";
 import { copyShareToClipboard, downloadSharePng } from "@/utils/export-image";
 
-// Design canvas WIDTH. Wide enough for poster-scale type and to read well in a LinkedIn feed. Rendered at
-// this exact pixel width (the page scrolls if the window is smaller) so the export is 1:1.
-//
-// There is deliberately no matching height constant: either band can be switched off, so a fixed frame
-// would leave a blank strip, and no table of per-combination heights would survive editing a band. The
-// article's height is `auto` and `useMeasuredHeight` reads the result back out.
+// Design canvas WIDTH, rendered at this exact pixel width so the export is 1:1. No matching height constant:
+// bands toggle independently, so height is `auto` and `useMeasuredHeight` reads it back out.
 const CANVAS_W = 1080;
 
 // A deliberately well-rounded-but-varied profile so the radar reads as a rich,
@@ -114,10 +110,8 @@ const TRACKS = CAREER_TRACK_PROFILES.map((t) => ({
 }));
 
 /**
- * Visual fit-scale for the preview only — fits the viewport WIDTH (the page scrolls
- * vertically). The poster renders at its true pixel size and is scaled with a CSS transform; the
- * export path (renderShareBlob) strips that transform before capture, so the preview scales to
- * width while the export stays pixel-exact.
+ * Visual fit-scale for the preview only, fitting the viewport WIDTH. renderShareBlob strips the transform
+ * before capture, so the export stays pixel-exact while the preview scales.
  */
 function useFitScale() {
   const [scale, setScale] = useState(1);
@@ -135,15 +129,9 @@ function useFitScale() {
 }
 
 /**
- * The article's own rendered height in CANVAS pixels.
- *
- * Measured, not computed: summing band heights in JS would be a second model of the layout that drifts
- * the first time a font metric, a wrap or a padding changes.
- *
- * `/ scale` converts back out of the preview transform, since consumers want the true unscaled height;
- * the `scale > 0` guard keeps a degenerate scale from producing Infinity. ResizeObserver rather than a
- * one-shot measure, because the height changes on band toggles, font load and chart settle. Rounded UP,
- * or a fractional height crops the last device pixel off the export.
+ * The article's own rendered height in CANVAS pixels — measured, not summed, so it cannot drift from the
+ * real layout. `/ scale` undoes the preview transform; rounded UP so a fractional height cannot crop a
+ * device pixel off the export.
  */
 function useMeasuredHeight(ref, scale) {
   const [height, setHeight] = useState(null);
@@ -187,14 +175,10 @@ function SectionLabel({ children }) {
 // Radial ring geometry, in poster pixels. The ring is an ellipse — wider than tall — so the
 // nine cards spread across the available width and stay clear of one another top-to-bottom.
 const RING_W = 984; // stage width (canvas minus side padding)
-// The ring's LAYOUT BOX — the coordinate space the labels are placed in, NOT the height the band
-// occupies on the paper. Every label's `cy` is measured from `RING_H / 2`, so this number is the ring's
-// vertical ORIGIN as much as its size: changing it moves all nine labels rather than trimming the box.
-//
-// It is deliberately taller than the labels need, because the ring is a circle of text with ragged top
-// and bottom edges and the slack is what keeps the placement math simple. `PillarRing` then measures
-// the labels' real union and pulls the band's own height in to fit (see the `fit` state there), so the
-// slack costs nothing on the paper — which matters now that the paper is only as tall as its content.
+// The ring's LAYOUT BOX, not the height the band occupies on paper. Every label's `cy` is measured from
+// `RING_H / 2`, so this is the ring's vertical ORIGIN as much as its size — changing it moves all nine labels
+// rather than trimming the box. Deliberately taller than the labels need, to keep the placement math simple;
+// `PillarRing` measures their real union and pulls the band in to fit, so the slack costs nothing on paper.
 const RING_H = 620;
 const RING_RX = 300; // horizontal radius to each label centre
 const RING_RY = 250; // vertical radius to each label centre — pulled in toward the hub
@@ -229,9 +213,8 @@ function ringAlignClass(cos) {
 }
 
 /**
- * One pillar's label floating on the ring at its axis angle — no card chrome, just text.
- * Text is aligned toward the centre based on which side of the ring it sits on, so the
- * floating labels read cleanly without visible box edges.
+ * One pillar's label floating on the ring at its axis angle — no card chrome, just text, aligned toward the
+ * centre based on which side of the ring it sits on.
  */
 function PillarNode({ pillar }) {
   const rad = (pillar.angleDeg * Math.PI) / 180;
@@ -269,17 +252,10 @@ function PillarNode({ pillar }) {
 Chart.register(RadarController, RadialLinearScale, PointElement, LineElement, Filler);
 
 /**
- * Self-contained square radar. Unlike StaticCompetencyChart it does NOT auto-measure/resize
- * its frame — it fills its box exactly, so it always renders large and centred (the auto-sizer
- * collapses to a tiny blob inside a transformed/absolute box). Labels and ticks are hidden;
- * the surrounding cards / chips are the labels.
+ * Self-contained square radar. Unlike StaticCompetencyChart it does NOT auto-measure its frame.
  *
- * NOT `responsive`, and that is the fix for a real bug rather than an optimisation. The poster renders
- * at true pixel size under a viewport-derived `transform: scale()`, and Chart.js's responsive observer
- * sizes the canvas from the container's SCALED rect while the box it sits in is unscaled. Changing the
- * scale (resizing, or toggling DevTools device mode) then shrank the radar to a blob in a full-size box,
- * with nothing to restore it since the chart is only rebuilt when its data props change. Every call site
- * is a fixed-px box, so `size` is passed in and the canvas is pinned to it.
+ * NOT `responsive`, which is a bug fix: the poster renders under a `transform: scale()`, and Chart.js's
+ * observer sizes the canvas from the SCALED rect inside an unscaled box, collapsing it to a blob.
  *
  * @param levels       per-pillar values in fe order
  * @param size         edge length in px — must match the box, since nothing measures it
@@ -353,18 +329,9 @@ function PosterRadar({ levels, size, showClusters = false, showPolygon = true, s
 }
 
 /**
- * Chart hub + ring of 9 floating pillar labels.
- *
- * TWO NESTED BOXES, because the ring's layout space and the space it fills differ. The inner box is the full
- * `RING_W × RING_H` coordinate space label positions are computed against and cannot shrink without moving
- * them; the outer box is what the paper sees, clamped to the measured union of the labels and hub.
- *
- * Measured rather than derived because label HEIGHTS are not known in JS: each wraps to one or two lines
- * depending on text and font metrics, and `translate(-50%, -50%)` makes the outer edges depend on that.
- *
- * Rects are in SCALED screen pixels (the poster is under a CSS transform), so measurements are taken
- * relative to the inner box's rect and divided by `rect.width / RING_W`, recovering the scale without this
- * component knowing it.
+ * Chart hub + ring of 9 floating pillar labels. TWO NESTED BOXES: the inner is the fixed `RING_W × RING_H`
+ * coordinate space labels are positioned against, the outer is what the paper sees, clamped to their measured
+ * union. Rects are in SCALED screen pixels, divided by `rect.width / RING_W` to recover the scale.
  */
 function PillarRing() {
   const innerRef = useRef(null);
@@ -472,13 +439,9 @@ function TrackCard({ careerTrack }) {
             <span className="min-w-0 text-[20px] font-semibold leading-tight text-slate-700 -mr-2">
               {r.level === "S5"
                 ? r.title.split(" / ").map((part, i) => (
-                    /* `whitespace-nowrap`, not a natural wrap. "Principal Software Engineer" measures within a
-                       pixel or two of this box (~265px at 20px/600), so whether it fit was decided by glyph-advance
-                       rounding at the DEVICE scale — one line in a normal window, two under DevTools device
-                       emulation at the same CSS width, which then pushed this card's ladder a row taller than its
-                       neighbours'. The split at " / " already says where the breaks go, so there is no wrap
-                       decision left to make; `tracking-tight` buys the few pixels that keeps the widest part
-                       inside the card at any DPR. */
+                    /* `whitespace-nowrap`, not a natural wrap — "Principal Software Engineer" sits within a
+                       pixel or two of this box, so fit varied by DPR and pushed one card's ladder a row taller.
+                       The split at " / " already says where the breaks go. */
                     <span key={part} className="block whitespace-nowrap tracking-tight">
                       {i > 0 ? `/ ${part}` : part}
                     </span>
@@ -493,12 +456,8 @@ function TrackCard({ careerTrack }) {
 }
 
 /**
- * One toggle row in the poster settings menu. A copy of the tool tab's `DisplayCheckbox`
- * (see ChartSection) rather than an import: that one is local to that file, and this menu sits on the
- * poster page's BLACK chrome, so the row colours are the menu's own rather than the tool's `bg-muted`
- * surface. If a third caller ever appears, promote it to a shared component then.
- *
- * `select-none` because these rows get clicked repeatedly and a double-click would select the label.
+ * One toggle row, a copy of ChartSection's `DisplayCheckbox` rather than an import since this menu needs its
+ * own colours for the poster's BLACK chrome. `select-none` so repeated clicks do not select the label.
  */
 function PosterToggle({ label, checked, onChange }) {
   return (
@@ -516,11 +475,8 @@ function PosterToggle({ label, checked, onChange }) {
 }
 
 /**
- * Which bands the poster shows. Same interaction as the tool's chart-settings popover but without the
- * tooltip, since this is the only settings control on its row.
- *
- * State is owned by the PAGE, not this menu and not the app store: view state for one admin page with
- * nothing to restore across sessions, unlike the tool's toggles, which are part of the persisted draft.
+ * Which bands the poster shows. State is owned by the PAGE, not the app store: view state for one admin
+ * page, unlike the tool's toggles which are part of the persisted draft.
  */
 function PosterSettingsMenu({ showHeader, setShowHeader, showPillars, setShowPillars, showTracks, setShowTracks }) {
   const [open, setOpen] = useState(false);
@@ -623,37 +579,18 @@ export default function PosterPage() {
   const downloadLabel = busy === "download" ? "Saving…" : { idle: "↓ Download", done: "✓ Saved", error: "Save failed" }[downloadState];
 
   return (
-    /* `min-h-dvh` IS WHAT KEEPS THE BLACK GOING PAST THE CANVAS. This box is `w-full` with no height of its
-       own, so it stops at its content — and a portrait canvas scaled to fit a wide window leaves real space
-       below it. That used to look fine only because `body` was ALSO black (index.css) and filled the gap; now
-       that `body` carries the app's `bg-slate-100` surround, the leftover showed as a pale slab under the
-       poster. The stage owns its own height rather than leaning on what happens to be behind it.
-       `min-h`, not `h`: a canvas taller than the viewport still has to grow this box and scroll. */
+    /* `min-h-dvh` IS WHAT KEEPS THE BLACK GOING PAST THE CANVAS — `body` no longer paints black itself (it
+       carries the app's `bg-slate-100`), so a portrait canvas in a wide window would leave a pale slab below
+       it otherwise. `min-h`, not `h`: a taller canvas still has to grow this box and scroll. */
     <div className="flex min-h-dvh w-full flex-col items-center overflow-x-hidden overflow-y-auto bg-black p-4">
-      {/* TOP CHROME ROW: the back link at the left, the settings button centred, the canvas size at the right.
-          Three unrelated things that happen to share a row, which is why the row lives here and none of them
-          owns the others.
+      {/* TOP CHROME ROW: back link left, settings centred, canvas size right. Spans the viewport rather than
+          the canvas's scaled width, which would mean threading the runtime scale up here.
 
-          `w-full` + `justify-between` is what gives them their ends. This page centres its children, so a bare
-          link would be centred; the full-width row is also what the link's old `self-start` was working around.
-          It spans the viewport rather than the canvas's scaled width — the canvas is scaled to fit at runtime,
-          so matching it would mean threading that scale up here to place a static label.
+          THE SIZE LABEL IS OUT HERE, NOT IN THE EXPORT CLUSTER, so it cannot reach the rasterized PNG at all
+          rather than relying on the `data-export-ignore` opt-out. Its numbers are the export's own.
 
-          `mb-4` is the gap down to the canvas, which the link itself used to carry.
-
-          THE SIZE LABEL IS OUT HERE, NOT IN THE CANVAS'S EXPORT CLUSTER, for two reasons: this row is on the
-          page's black background, so plain white text works with no chip behind it, and being outside the
-          `<article>` means it cannot end up in the rasterized PNG at all rather than relying on the
-          `data-export-ignore` opt-out to strip it.
-
-          The numbers are the same ones handed to the export, so the label cannot drift from what the export
-          actually produces — and now that the height is measured rather than fixed, the label doubles as a
-          readout of what the toggles below did to the paper.
-
-          THE SETTINGS BUTTON IS ABSOLUTELY CENTRED, not the middle child of a `justify-between` row. Three
-          flex children would put it at the centre of the LEFTOVER space between two items of unequal width
-          (the back link is far wider than the size label), which reads as visibly off-centre. Taking it out
-          of flow centres it on the row itself, and the two flanking items keep their ends. */}
+          THE SETTINGS BUTTON IS ABSOLUTELY CENTRED, not a third flex child — that would centre it in the
+          leftover space between two items of unequal width, which reads as visibly off-centre. */}
       <div className="relative mb-4 flex w-full items-center justify-between gap-3">
         <BackToToolButton />
         <div className="pointer-events-none absolute inset-x-0 flex justify-center">
@@ -676,23 +613,15 @@ export default function PosterPage() {
           article inside keeps its true pixel size for export. Its height tracks the MEASURED article height,
           so switching a band off reclaims the page scroll instead of leaving a tall gap below the paper. */}
       <div className="shrink-0" style={{ width: CANVAS_W * scale, height: canvasH * scale }}>
-        {/* Fixed-WIDTH paper canvas, auto height — rendered 1:1 (then visually scaled) so the export is
-            pixel-exact. Bands stack from the top and take their natural height, and the paper ends where the
-            last one does.
-
-            `overflow-hidden` STAYS, and is load-bearing horizontally rather than vertically: the ring's labels
-            are absolutely positioned `CARD_W`-wide boxes whose outer halves reach past the canvas edge (the
-            widest span to -85px on the left and 1069px on the right, against a 0–1080 canvas). The text inside
-            them is aligned toward the ring's centre, so what hangs over the edge is empty box — but only while
-            it is clipped. Removing this would let those boxes widen the paper itself. */}
+        {/* Fixed-WIDTH paper canvas, auto height — rendered 1:1 then visually scaled so the export is
+            pixel-exact. `overflow-hidden` STAYS and is load-bearing HORIZONTALLY: the ring's labels are
+            `CARD_W`-wide boxes reaching to -85px and 1069px against a 0–1080 canvas, and what hangs over is
+            empty box only while clipped. Removing it lets those boxes widen the paper. */}
         <article
           ref={posterRef}
-          /* `pt-10` PAIRS WITH THE MASTHEAD, NOT WITH THE PAPER. 40px is the air a poster title wants above
-             it; a SectionLabel is a divider rather than a masthead and wants less, so with the header off the
-             first band would otherwise open on a top gap visibly deeper than the paper's own bottom edge.
-             (The bands' `mt-6` already drops away in that case — see each band below — so this is the
-             remaining half of the same asymmetry.) Bottom padding is unconditional: the last band ends on
-             ordinary content whatever is switched on. */
+          /* `pt-10` PAIRS WITH THE MASTHEAD, NOT WITH THE PAPER: a SectionLabel is a divider and wants less
+             air than a title, so with the header off that gap would read deeper than the bottom edge. Bottom
+             padding is unconditional, since the last band ends on ordinary content either way. */
           className={`relative flex flex-col overflow-hidden bg-white px-10 pb-10 shadow-2xl ${showHeader ? "pt-10" : "pt-6"}`}
           style={{ width: CANVAS_W, transform: `scale(${scale})`, transformOrigin: "top left" }}
         >
@@ -722,15 +651,10 @@ export default function PosterPage() {
             ) : null}
           </div>
 
-          {/* Header — poster masthead with oversized "9" mark.
-
-              Toggled by the settings menu like the two bands below, and unmounted rather than hidden for the
-              same reason: the paper's height is MEASURED (see useMeasuredHeight), so `invisible` would leave
-              its full height as a blank strip at the top of the export.
-
-              WHY SWITCH IT OFF: the README already carries the title, byline and tagline as text directly
-              above the image, so the masthead repeats all three. Exporting without it is what produces the
-              cropped ring-only artwork, without a second copy of the artwork to keep in sync. */}
+          {/* Header — poster masthead with oversized "9" mark. Every toggled band is UNMOUNTED rather than
+              hidden, because the paper's height is measured (see useMeasuredHeight) and `invisible` would
+              leave its full height as a blank strip. Switching this off is what produces the ring-only
+              artwork for the README, which already carries the title and tagline as text. */}
           {showHeader ? (
             <header>
               <div className="flex items-stretch gap-4">
@@ -752,7 +676,6 @@ export default function PosterPage() {
                       <MalaysiaFlag />
                     </span>
                   </div>
-                  {/* <p className="mt-3 text-[20px] font-bold uppercase tracking-[0.22em] text-slate-500">The Engineer Growth Framework</p> */}
                 </div>
               </div>
 
@@ -762,14 +685,8 @@ export default function PosterPage() {
             </header>
           ) : null}
 
-          {/* The 9 pillars as a radial ring around the central radar — chart + labels merged.
-
-              No negative top margin any more: one used to tuck the ring up under the section header, since the
-              stage reserved empty space above its topmost labels. PillarRing now trims that edge itself, so the
-              band sits on the ordinary gap.
-
-              Toggled by the settings menu. Unmounted rather than hidden, so the paper's measured height
-              actually drops when it is off — `invisible`/`opacity-0` would keep occupying the stage. */}
+          {/* The 9 pillars as a radial ring around the central radar. No negative top margin any more —
+              PillarRing trims its own top edge now, so the band sits on the ordinary gap. */}
           {showPillars ? (
             <div className={`flex flex-col gap-3 mb-3 ${showHeader ? "mt-6" : ""}`}>
               <SectionLabel>The 9 Pillars</SectionLabel>
@@ -777,15 +694,9 @@ export default function PosterPage() {
             </div>
           ) : null}
 
-          {/* Career tracks — foundational S1–S2 phase, then three columns that split at S3.
-
-              A PLAIN `mt-6` WHENEVER SOMETHING IS ABOVE. This used to be `-mt-2`, a negative margin that
-              existed to claw back the ring stage's empty bottom edge; PillarRing now trims that edge itself,
-              so subtracting it again here would pull the tracks up into the lowest pillar labels.
-
-              DROPPED WHEN THIS BAND IS FIRST ON THE PAPER (header and ring both off): the article's own
-              `py-10` is already the top margin, and a top margin under it reads as a lopsided paper. Same
-              rule on the ring band above. */}
+          {/* Career tracks — foundational S1–S2 phase, then three columns that split at S3. A plain `mt-6`
+              whenever something is above (not `-mt-2`: PillarRing trims its own bottom edge now), dropped
+              entirely when this band is first on the paper, matching the ring band's own rule. */}
           {showTracks ? (
             <div className={`flex flex-col gap-3 ${showHeader || showPillars ? "mt-6" : ""}`}>
               <SectionLabel>3 Career Tracks</SectionLabel>

@@ -29,11 +29,8 @@ const initialProfiles = loadProfilesFromStorage();
 let toastSeq = 0;
 // Per-toast auto-dismiss timers, so a coalescing toast can reset its own countdown.
 const toastTimers = new Map();
-// Every toast that carries an "Undo" action shares this key, so a new undoable action REPLACES the
-// previous one — there is only ever ONE undo toast on screen at a time. Stacking multiple undo toasts
-// is confusing: e.g. after "Deleted all profiles" the user tweaks the draft and hits New profile; the
-// draft-discard undo must supersede the stale delete-all undo, not sit beside it. All producers
-// (single delete, delete-all, draft-discard, import, destructive save) pass this key.
+// Shared by every undoable action so a newer one REPLACES the older: only one Undo toast is ever on
+// screen, and a stale one must never sit beside the undo the user is actually looking for.
 export const UNDO_TOAST_KEY = "undo";
 
 // How long an undo toast stays up. Longer than the default toast duration — undoing is a decision,
@@ -41,14 +38,10 @@ export const UNDO_TOAST_KEY = "undo";
 // animates over exactly this window (see src/components/ui/Toaster.jsx).
 const UNDO_TOAST_DURATION = 8000;
 
-// Accumulator for the batched single-delete Undo toast. `deleteBatch` collects the rows removed while
-// that toast is still on screen; it resets once the toast is gone (expired/undone) or is replaced by
-// a different undo action. `deleteBatchLive` tracks whether the *current* undo toast is a delete batch
-// (it can't be inferred from the shared key anymore) — it's what the coalescing check keys off, and
-// it's cleared whenever a non-delete producer takes over the toast. `deleteBatchReloadRow` holds the
-// one removed row that was the *loaded* profile at delete time (if any) — deleting the active profile
-// resets the draft to blank, so Undo reloads that row to fully reverse. At most one row per batch can
-// be the active one (only one is loaded at a time).
+// Accumulator for the batched single-delete Undo toast, reset when that toast is gone or replaced.
+// `deleteBatchLive` is what the coalescing check keys off, since the shared key no longer implies a
+// delete. `deleteBatchReloadRow` is the removed row that was LOADED at delete time (at most one), which
+// Undo must reload because deleting the active profile blanks the draft.
 let deleteBatch = [];
 let deleteBatchReloadRow = null;
 let deleteBatchLive = false;
@@ -100,14 +93,12 @@ export const useAppStore = create((set, get) => ({
    * given, is `{ label, onAction }` and renders a button (e.g. "Undo") that fires `onAction` then
    * dismisses. `duration` ms until auto-dismiss (0 = sticky).
    *
-   * `key` coalesces: if a live toast already has the same `key`, this replaces its content in place
-   * and resets its countdown instead of stacking a new toast. All undoable actions share
-   * `UNDO_TOAST_KEY` so only one Undo toast is ever on screen — a newer one replaces the older.
+   * `key` coalesces: a live toast with the same key has its content replaced and countdown reset in
+   * place, rather than a second toast stacking (see {@link UNDO_TOAST_KEY}).
    *
-   * `keepDeleteBatch` (internal) — only deleteProfileWithUndo passes true, to preserve the running
-   * single-delete batch while it coalesces. Any other producer taking over the undo toast ends the
-   * batch, so its Undo can't re-insert now-stale rows.
-   * Returns the toast id (the existing one when coalescing).
+   * `keepDeleteBatch` (internal) — only deleteProfileWithUndo passes true, to keep the running batch
+   * alive while it coalesces; any other producer taking the toast ends the batch so its Undo cannot
+   * re-insert stale rows. Returns the toast id (the existing one when coalescing).
    */
   showToast: (message, { variant = "default", duration = 2600, action = null, key = null, keepDeleteBatch = false } = {}) => {
     const text = String(message ?? "").trim();
@@ -191,10 +182,8 @@ export const useAppStore = create((set, get) => ({
   },
 
   setTitle: (title) => {
-    // Keep the link to the loaded profile (`activeSavedProfileId`) even when the title is edited.
-    // A renamed draft then reads as "renaming" against its source, so the Save control can offer
-    // Rename (in place) vs. Save new (save a copy under the new name). Use `saveAsNew`/`duplicateDraft`
-    // /`createNew`/Reset to fork or detach.
+    // Keeps `activeSavedProfileId` even when the title is edited, so a renamed draft reads as "renaming"
+    // and Save can offer Rename vs. Save new. Use saveAsNew/duplicateDraft/createNew/Reset to detach.
     set({ title });
     get().persistDraft();
   },
@@ -307,10 +296,9 @@ export const useAppStore = create((set, get) => ({
     return target;
   },
 
-  // (Re)render the batched-delete Undo toast from the current `deleteBatch`. Both single deletes and
-  // "Delete all" feed the same batch, so their removals combine into one "Deleted N profiles" toast
-  // whose Undo re-inserts every batched row (and reloads the one that was the loaded profile, if any).
-  // Assumes the batch has already been populated + `deleteBatchLive` set by the caller.
+  // (Re)render the batched-delete Undo toast from the current `deleteBatch`. Single deletes and "Delete
+  // all" feed the same batch, so removals combine into one "Deleted N profiles" toast whose Undo reverses
+  // all of them. Assumes the caller has populated the batch and set `deleteBatchLive`.
   showDeleteBatchToast: () => {
     const rows = deleteBatch; // capture for the Undo closure
     const reloadRow = deleteBatchReloadRow;
@@ -342,10 +330,8 @@ export const useAppStore = create((set, get) => ({
     });
   },
 
-  // Delete a profile via the bin icon and surface a batched Undo toast. Rapid deletes coalesce: each
-  // one while the toast is still up merges into a single "Deleted N profiles" toast, accumulates the
-  // removed row, and resets the 10s countdown. Undo re-inserts every row from the current batch. The
-  // batch clears once the toast is gone (expired or undone), so the next delete starts fresh.
+  // Delete one profile with a batched Undo toast: rapid deletes coalesce into the running batch and reset
+  // its countdown, and the batch clears once the toast is gone so the next delete starts fresh.
   deleteProfileWithUndo: (id) => {
     // Was this the currently-loaded profile? If so the app resets to a blank draft after removal.
     const wasActive = get().activeSavedProfileId === id;
@@ -373,10 +359,8 @@ export const useAppStore = create((set, get) => ({
     get().showDeleteBatchToast();
   },
 
-  // Delete every saved profile. Treated as one more delete into the running batch: the wiped rows are
-  // appended to `deleteBatch` (deduped), so a preceding single delete + "Delete all" combine into a
-  // single "Deleted N profiles" toast whose Undo restores everything. If the loaded profile is among
-  // the deleted (whether linked now or already unloaded by a batched delete), Undo reloads it too.
+  // Delete every saved profile, appended (deduped) into the running batch as one more delete, so a
+  // preceding single delete and this combine into one toast whose Undo restores everything.
   clearAllProfiles: () => {
     const existing = loadProfilesFromStorage();
     const prev = get();
@@ -462,10 +446,9 @@ export const useAppStore = create((set, get) => ({
     set({ profiles: next, activeSavedProfileId: activeId != null && drop.has(activeId) ? null : activeId });
   },
 
-  // Load a saved profile into the draft. Returns `{ undo, hadUnsavedChanges }` — a draft-only
-  // snapshot of the state it replaced (title/levels/badge/link) plus whether that state had unsaved
-  // work the load discarded — so the caller can offer an "Undo" (via restoreDraft) only when there's
-  // something to recover. Returns null if the id is gone or the payload can't be normalized.
+  // Load a saved profile into the draft. Returns `{ undo, hadUnsavedChanges }` — a restoreDraft-shaped
+  // snapshot of the replaced state, plus whether it held unsaved work, so the caller offers Undo only when
+  // there is something to recover. Null if the id is gone or the payload cannot be normalized.
   loadProfile: (id) => {
     const pr = loadProfilesFromStorage().find((p) => p.id === id);
     if (!pr) {
@@ -495,7 +478,7 @@ export const useAppStore = create((set, get) => ({
   //
   // Target: `overwriteId` writes into that exact profile; `forceNew` always inserts; otherwise it updates
   // the linked profile or inserts. `removeId` drops another row in the same write, which is how overwriting
-  // resolves a rename collision (the renamed source merges into the clash target).
+  // resolves a rename collision.
   //
   // Returns { status: "saved" | "add-title" | "error" | "collision" }. "saved" carries `mode` for analytics
   // and `backupReminder` when this write CREATED a profile and hit a milestone (see storage.js).
@@ -566,20 +549,14 @@ export const useAppStore = create((set, get) => ({
     const overwrote = replaceIdx >= 0 ? existing[replaceIdx] : null;
     const undo = overwrote || removedSource ? { profiles: existing, activeSavedProfileId: get().activeSavedProfileId } : null;
 
-    // Which KIND of save this was, for analytics only — every path below lands on the same
-    // `profile_saved` event, which otherwise can't tell a first save from an in-place edit. Derived
-    // from the same `replaceIdx` the backup-reminder count uses: no row replaced means a new profile,
-    // and a replaced row whose title moved is a rename rather than a value update. The caller's
-    // `overwrite` / `copy` flags stay separate — they describe how the save was reached, not what it did.
+    // Which KIND of save this was, for analytics only — the single `profile_saved` event cannot otherwise
+    // tell a first save from an in-place edit. The caller's `overwrite`/`copy` flags stay separate: they
+    // describe how the save was REACHED, not what it did.
     const mode = replaceIdx < 0 ? "created" : overwrote.title !== state.title ? "renamed" : "updated";
 
-    // Count only writes that ADD a row. `replaceIdx < 0` is exactly that test: an update to the linked
-    // profile and an "Overwrite it" both resolve to an existing index and leave the total alone, so the
-    // backup reminder tracks how many profiles the user has accumulated, not how often they hit Save.
-    //
-    // Deliberately NOT undone by restoreProfiles: the undo puts the profile back, but it cannot un-show
-    // a modal the user has already read. Re-counting a re-created profile would replay the 1st-profile
-    // reminder for someone who has seen it.
+    // Count only writes that ADD a row, so the reminder tracks profiles accumulated rather than saves made.
+    // Deliberately NOT undone by restoreProfiles: an undo cannot un-show a modal the user has read, and
+    // re-counting a re-created profile would replay the 1st-profile reminder.
     const backupReminder = replaceIdx < 0 && isBackupReminderMilestone(bumpProfileCreateCount());
 
     writeProfilesToStorage(next);
@@ -699,11 +676,9 @@ export const useAppStore = create((set, get) => ({
     get().persistDraft();
   },
 
-  // Show the "unsaved draft discarded" Undo toast when a load / New profile wiped a dirty draft.
-  // `undo` is that draft's pre-discard snapshot (restoreDraft shape). Shared by loadProfile's caller
-  // and handleNewProfile so both behave identically. Uses the shared UNDO_TOAST_KEY, so it replaces
-  // any other undo toast (delete, import, save) — only one Undo is ever offered at a time. Undo
-  // recovers the most recent discarded draft. `onUndone` fires analytics for the specific path.
+  // The "unsaved draft discarded" Undo toast, shared by loadProfile's caller and handleNewProfile so both
+  // behave identically. `undo` is the pre-discard snapshot (restoreDraft shape); `onUndone` fires the
+  // analytics for whichever path got here.
   showDraftDiscardedToast: (undo, onUndone) => {
     const name = String(undo.title).trim();
     const message = name ? `Unsaved changes to “${name}” were discarded` : "Unsaved changes to your draft were discarded";

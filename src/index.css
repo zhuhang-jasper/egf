@@ -31,14 +31,8 @@
   --color-track-be-foreground: hsl(0 0% 100%);
 }
 
-/* The same Inter files as "Inter Variable" (see main.jsx), re-declared under a distinct family with
-   tabular figures baked into the face. Chart.js draws the radar's L1–L5 ticks on a canvas, where
-   digits take Inter's proportional advances — "1" is narrower than "2"–"5", so "L1" and its backdrop
-   pill rendered thinner than its siblings. Chart.js has no tick-width option (and its backdrop is
-   sized from the measured text, so padding can't equalise it), while canvas 2D takes no CSS
-   font-feature-settings — there's no element for `tabular-nums` to style. Features declared on the
-   @font-face are part of the resolved face, so they do reach canvas text. Latin-only subset: these
-   ticks are just "L" + a digit. */
+/* Inter re-declared with tabular figures BAKED INTO THE FACE: canvas 2D takes no font-feature-settings, so
+   this is the only way the radar's L1–L5 ticks get equal digit advances. Latin-only, they are "L" + a digit. */
 @font-face {
   font-family: "Inter Tabular";
   font-style: normal;
@@ -50,19 +44,8 @@
 }
 
 @layer base {
-  /* Width the vertical scrollbar gave up when a modal locked scrolling — 0 at rest, set by useScrollLock
-     while a dialog is open, so the page does not shift sideways as the scrollbar goes.
-
-     ONLY THE CHROME THAT BELONGS TO THE PAGE USES IT. `#root` takes it as a margin (in the hook), and
-     AppBottomNav pulls its right EDGE in by it — the bar is the page's own footer and reads as part of
-     the column above it, so it has to end where that column ends. A fixed box is laid out against the
-     viewport and never sees the column's margin, which is why it needs the value at all.
-
-     The genuinely viewport-level overlays deliberately DO NOT: toasts, the install prompt and the modal
-     scrim float over whatever is beneath them rather than aligning to the page, so pinning them to the
-     column's edge would be the wrong relationship, not a fix.
-
-     Declared here so `var(--scroll-lock-gutter)` resolves to `0px`, not to nothing, when no modal is open. */
+  /* Scrollbar width a modal's scroll lock reclaims; 0 at rest so the var always resolves.
+     See docs/DECISIONS.md#scroll-lock-gutter. */
   :root {
     --scroll-lock-gutter: 0px;
   }
@@ -78,76 +61,29 @@
     /* "Inter Variable" is bundled locally (see main.jsx) so exports render identically
        across devices; system-ui is only the pre-load / no-webfont fallback. */
     font-family: "Inter Variable", system-ui, sans-serif;
-    /* Drive Inter's optical-size (opsz) axis from the font-size so large display text
-       (the poster "9", titles, headings) tightens automatically the way SF Pro Display
-       does, while body text stays open like SF Text. Needs the opsz build (see main.jsx). */
+    /* Drives Inter's optical-size axis from the font-size, so display text tightens and body text stays open
+       the way SF Pro Display/Text do. Needs the opsz build (see main.jsx). */
     font-optical-sizing: auto;
-    /* Inter renders slightly wider than the OS system-ui fonts it replaces, which pushed
-       some single-line text to wrap. A small negative tracking (Inter's own recommended
-       default) compacts it back and reads closer to the previous SF spacing. */
+    /* Inter runs wider than the system-ui fonts it replaces, which pushed some single-line text to wrap.
+       Inter's own recommended tracking default compacts it back. */
     letter-spacing: -0.011em;
   }
 
-  /* `bg-slate-100` IS THE HEADER'S AND THE BOTTOM NAV'S TINT, and it is here for one reason: this
-     background propagates to the canvas (`html` has none), so it is what an over-pull past either end
-     of the document reveals. It was `bg-black`, chosen as the surround the app's white card sits on
-     down both sides at wide viewports — but the same value also paints the rubber-band gap, and a
-     black flash appearing above a `bg-slate-100` header (or below the matching nav) read as a hole
-     behind the chrome rather than as the page continuing.
-     The tint is the value both pieces of chrome already carry (AppShellHeader, AppBottomNav), so the
-     over-pull now looks like the bar simply extending, and the surround at wide viewports still reads
-     as a distinct plane behind `main`'s white. Keep the three in step: see AppShellHeader's docblock,
-     which owns the decision.
-
-     THE TOOL'S VALUE, THOUGH — the poster and social routes put it back to black just below, because their
-     stage is black and the over-pull has to match whatever is on screen. */
+  /* `bg-slate-100` must match the header's and bottom nav's tint — it propagates to the canvas, so it is what
+     an over-pull reveals. See docs/DECISIONS.md#body-background-propagates-to-the-canvas. */
   body {
     @apply bg-slate-100 text-foreground font-medium antialiased;
     /* PWA: kill double-tap-to-zoom and pinch-zoom gestures. The viewport meta
        handles most browsers; this covers iOS Safari which ignores user-scalable=no. */
     touch-action: pan-x pan-y;
     -webkit-text-size-adjust: 100%;
-    /* `auto`, not `hidden`, so the app stays REACHABLE when the viewport is narrower than the layout's
-       min-width (`FE_UI.page.minWidthPx`, set on `main`). That floor deliberately makes the document wider
-       than a small viewport; `hidden` would clip the difference instead of scrolling it, so on a ~320px screen
-       the right edge — part of the tab bar and the caret among it — could not be got to at all. A min-width
-       whose overflow is clipped is a min-width that does nothing.
-
-       This was `hidden` to hide a horizontal scrollbar caused by Tooltips near the right edge (the chart's
-       settings gear, the profile actions menu) overhanging `main`. That was NOT a flash: a tooltip is
-       `opacity-0` when idle, not `display: none`, so it is still laid out — and its clamp only ran on
-       mouseenter/focusin, an event that by definition had not happened yet. The idle, invisible tooltip grew
-       the document permanently and nothing would ever shift it back.
-
-       Fixed at the source: Tooltip is positioned by Floating UI with `strategy: "fixed"`, so it is laid out
-       against the viewport and contributes NOTHING to the document's scroll extent — an overhang cannot grow the
-       page, visible or not. `flip()`/`shift()` also keep it on screen without any per-call-site alignment to
-       remember. It previously measured itself and corrected a centred position at runtime, which is what kept
-       regressing — see the note in components/ui/Tooltip.jsx. Do not put `hidden` back here; it would only
-       re-hide that class of bug while also making the min-width floor unreachable.
-
-       THIS AXIS MUST SCROLL RATHER THAN CLIP, AND THAT COST A ROUND TO RELEARN. A `clip` here (with the scrollport
-       moved to `html`) was tried to stop a one-frame horizontal scrollbar during tab switches, which was shrinking
-       the visual viewport and making the fixed bottom nav jump. It did stop that — but `clip` on `body` means the
-       min-width overflow never reaches `html` to be scrolled, so below ~350px the right edge became unreachable:
-       precisely the failure this comment already warned about.
-
-       The transient scrollbar is fixed where it comes from instead — the inactive tab panel, which is still laid
-       out at its own (wider) measure for the frame after a switch. See `overflow-x: clip` on the hidden panel in
-       HomePage. Fix the thing that overflows, not the thing that scrolls. */
+    /* `auto`, NOT `hidden` OR `clip` — both were tried and both make the right edge unreachable below ~350px.
+       Fix what overflows, not what scrolls. See docs/DECISIONS.md#tab-switch-scrollbar-jump. */
     overflow-x: auto;
   }
 
-  /* THE EXPORT CANVASES OVERSHOOT BLACK, NOT SLATE. `/poster` and `/social` are black stages (see PosterPage),
-     and `body`'s background is what the rubber-band gap paints — so on those two routes the tool's tint would
-     flash pale above and below a full-bleed black page, which is the same "hole behind the page" that moved the
-     tool off black in the first place, just inverted.
-     The flag is set on `documentElement` at module-eval time in App.jsx, so this is painted on the first frame;
-     the routes never change at runtime, so nothing has to clear it.
-     `html` ITSELF STAYS UNPAINTED, deliberately — `body`'s background only propagates to the canvas while `html`
-     has none of its own, and that propagation is the entire mechanism being used here. Setting the black on
-     `html` instead would work by accident today and break the useScrollLock reasoning that depends on `body`
-     being the painted one. */
+  /* Black stages overshoot black. On `body`, never `html` — the flag sits on `documentElement` so it stays
+     unpainted. See docs/DECISIONS.md#body-background-propagates-to-the-canvas. */
   html[data-export-canvas] body {
     @apply bg-black;
   }
@@ -175,9 +111,8 @@
   }
 }
 
-/* Install banner entrance — see src/components/InstallPrompt.jsx. It rises from below because that is
-   where it comes from: the banner is pinned just above the bottom nav, so sliding up reads as it
-   arriving from off-screen rather than fading in on top of content the user was reading. */
+/* Install banner entrance — see src/components/InstallPrompt.jsx. Rises from below because that is where it
+   is pinned, so it reads as arriving from off-screen rather than fading in over content. */
 @keyframes install-rise {
   from {
     opacity: 0;
@@ -199,11 +134,8 @@
   }
 }
 
-/* Countdown ring around a toast's dismiss "X" — see src/components/ui/Toaster.jsx. The circle is
-   drawn with its full circumference as one dash, so animating `stroke-dashoffset` unwinds the arc
-   over the toast's remaining lifetime. The offset runs 0 → *negative* circumference, which retreats
-   the arc's end clockwise from 12 o'clock (a positive offset would unwind counter-clockwise).
-   `--toast-ring-circumference` and the animation duration are set inline per toast. */
+/* Countdown ring on a toast's dismiss "X" — see src/components/ui/Toaster.jsx. Full circumference as one dash
+   so the offset unwinds it; NEGATIVE so it retreats clockwise. Set inline per toast. */
 @keyframes toast-ring-drain {
   from {
     stroke-dashoffset: 0;
@@ -224,9 +156,8 @@
   }
 }
 
-/* Marquee / "LED sign" scroll for over-long profile names — see src/components/ProfileCombobox.jsx.
-   Two copies of the text sit side by side in the track; scrolling one full copy width (-50% of the
-   track) and looping lands the second copy exactly where the first began, so it reads seamlessly. */
+/* Marquee scroll for over-long profile names — see src/components/ProfileCombobox.jsx. Two copies sit side by
+   side, so scrolling -50% of the track lands the second exactly where the first began. */
 @keyframes marquee-scroll {
   from {
     transform: translateX(0);
@@ -249,43 +180,8 @@
   }
 }
 
-/* TAB CROSS-SLIDE — see the transition notes in src/pages/HomePage.jsx for the phase machine that
-   applies these classes, and why the outgoing panel has to stay laid out while it runs.
-
-   EACH PANEL ANIMATES IN PLACE rather than the two sliding as one track. A track would need both tabs
-   laid out side by side for the duration, which here means the document holding both tabs' full height
-   at once while the WINDOW is the scroller and each tab has its own remembered scroll position (see
-   useTabScrollMemory) — the outgoing panel's height would move the incoming one's scroll coordinates
-   mid-animation. Animating in place keeps each panel in its normal position in flow, so scroll restore
-   is untouched: it runs on the switch exactly as it did before, and the transform is purely visual.
-
-   TRANSFORM AND OPACITY ONLY. Both are compositor properties, so neither triggers layout — which matters
-   because the outgoing panel is on screen next to eight radar charts' worth of settling content, and a
-   width- or height-animating transition here would fight the fit passes.
-
-   ONLY THE ARRIVING TAB ANIMATES. THERE IS NO EXIT ANIMATION, and that is the whole design.
-
-   This was a cross-fade — outgoing panel fading 1 → 0 while the incoming one came up underneath it — and it
-   GHOSTED: two semi-transparent copies of the app overlaid for the length of the overlap, with the old tab's
-   headings legible through the new tab's. That is not a tuning problem, it is what cross-fading two opaque
-   full-page layouts *is*. Any pair of intermediate opacities shows both. Slowing it down, offsetting the
-   timings, or easing differently only changes how long the double-image lasts.
-
-   So the outgoing panel is not faded at all. It is simply gone on the frame the tab changes (HomePage keeps it
-   mounted a few frames longer for reasons unrelated to opacity — see TAB_TRANSITION_MS), and the arriving tab
-   plays a short slide-and-lift on its own, over the page background rather than over its predecessor. One
-   layer is visible at any instant, so there is nothing to ghost against.
-
-   It also fixes the earlier complaint that the switch felt delayed, and for the same reason: nothing is
-   withheld waiting for something else to finish leaving.
-
-   THE DISTANCE IS A PERCENTAGE OF THE PANEL, not a fixed px, so it reads the same at the 350px floor as at
-   the 900px theory measure. Deliberately small (3%): a full-width slide would leave the incoming tab
-   off-screen for most of the duration, which reads as a delay rather than as motion. A hint of direction,
-   not a carousel.
-
-   Direction comes from the tabs' index in the bottom nav, so going Tool → Theory pushes left and
-   Theory → Tool pushes right. */
+/* TAB CROSS-SLIDE. Only the ARRIVING tab animates: an exit animation ghosts. The 3% is a percentage, not px,
+   and is small on purpose. See docs/DECISIONS.md#tab-transition-duration. */
 @keyframes tab-slide-in-left {
   from {
     opacity: 0;
@@ -308,14 +204,8 @@
   }
 }
 
-/* `--tab-transition-ms` IS SET INLINE BY TabPanel, from the same JS constant that drives the phase timer
-   (TAB_TRANSITION_MS in HomePage). Deliberately not a value declared here: that timer decides how long the
-   outgoing panel stays mounted, so if the two numbers drifted the entrance would be cut off mid-flight or
-   hold a finished frame. One constant, passed in. The `160ms` in each `var()` below is only a fallback for
-   the class being applied without the property, and is not the live value.
-
-   `ease-out` (not `ease-in-out`): the arriving tab covers most of its distance in the first third and settles
-   into place, which is what makes a short transition feel like it resolved rather than like it ran out. */
+/* `--tab-transition-ms` IS SET INLINE BY TabPanel from TAB_TRANSITION_MS, which also drives the mount timer;
+   the `160ms` fallbacks below are not the live value. See docs/DECISIONS.md#tab-transition-duration. */
 .tab-enter-left {
   animation: tab-slide-in-left var(--tab-transition-ms, 160ms) cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -324,19 +214,15 @@
   animation: tab-slide-in-right var(--tab-transition-ms, 160ms) cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* THE OUTGOING PANEL IS HIDDEN OUTRIGHT, NOT ANIMATED — see the keyframes note above for why fading it is
-   what caused the ghosting. It cannot use `hidden`/`display: none` for the few frames it is still mounted
-   (that is the very thing HomePage keeps it mounted to avoid mid-switch layout churn), so it is made
-   invisible instead: no opacity ramp, no transform, nothing to see through. */
+/* THE OUTGOING PANEL IS HIDDEN OUTRIGHT, NOT ANIMATED — fading it ghosts. `display: none` is unavailable
+   (HomePage keeps it mounted to avoid layout churn), so it is made invisible with no ramp. */
 .tab-leave-left,
 .tab-leave-right {
   opacity: 0;
 }
 
-/* Reduced motion gets the switch with NO animation at all, rather than a shortened one — the new tab is
-   simply there. The JS phase timer still runs its full duration either way (it is a timer, not an animation
-   event), which changes nothing visible: the leave rule above is plain CSS rather than an animation, so the
-   outgoing panel is already invisible for that window regardless of this preference. */
+/* Reduced motion gets NO animation, not a shortened one. The JS phase timer still runs its full duration,
+   which changes nothing visible — the leave rule above is plain CSS, not an animation. */
 @media (prefers-reduced-motion: reduce) {
   .tab-enter-left,
   .tab-enter-right {
@@ -344,23 +230,8 @@
   }
 }
 
-/* PRINT: let each radar scale to its frame instead of trusting the px size JS gave it.
-   
-   Every radar is sized imperatively. Chart.js writes explicit `width`/`height` px onto the canvas from
-   a ResizeObserver callback that is deliberately deferred to a rAF (see useChartFrameFit — running it
-   synchronously inside the observer forms an observe→resize→observe loop that can leave a chart at zero
-   height). Printing lays the document out at the PAPER width and rasterises it without waiting for that
-   rAF, so every canvas keeps whatever px size the SCREEN layout gave it while the frame around it has
-   already been re-measured for paper. The radar ends up adrift in an over-sized box, or spilling out of
-   an under-sized one.
-   
-   Scaling the bitmap is the fix rather than trying to re-fit in time: `height: auto` keeps the radar
-   undistorted (the canvas element's width/height attributes already carry its aspect ratio) and
-   `max-height: 100%` stops a tall one from running past its frame. Quality is unaffected — the bitmap is
-   already devicePixelRatio-scaled, so it has pixels to spare when it shrinks.
-   
-   Scoped to `[data-radar-canvas]`, so the poster and social pages' export canvases — which are sized
-   for a fixed output and must not be touched — are left alone. */
+/* PRINT: rescale each radar's bitmap to its frame, since print rasterizes before the fit rAF runs. Scoped so
+   the poster/social export canvases are untouched. See docs/DECISIONS.md#print-chart-frame-height-is-stale. */
 @media print {
   canvas[data-radar-canvas] {
     width: 100% !important;
@@ -368,32 +239,9 @@
     max-height: 100%;
   }
 
-  /* THE FOUNDATIONAL 3-UP ROW — printing the three stage radars at the size the track cards below get.
-
-     Below `sm` this grid is rendered out of flow rather than hidden (see the long note in CareerTracks), so
-     its three canvases are actually laid out and drawn and are there to print. A radar's GEOMETRY — radius,
-     axis-label font size, label padding — is derived from the width it fitted at and then baked into the
-     bitmap, and print can rescale a bitmap but cannot re-derive it. So the off-screen copy is pinned to an
-     inline `printFoundationGridWidthPx`, the width paper will give it, and fits at printed size from the
-     start. Left at the phone's card width it drew three ~100px radars with their pillar names clipped
-     ("Archi", "unication") while the in-flow track cards right below looked correct.
-
-     On paper the real content box takes over, so hand the width back — `100%` of the card, which is what the
-     in-flow desktop grid uses and what the track cards already print at. `!important` because the inline
-     width is what it has to beat.
-
-     THE REST MIRRORS THE HERO RULE BELOW, for the same reason in a milder form: the pinned width is a close
-     approximation of the printed one (A4-derived; Letter is ~22px wider), not an exact match, so the frame's
-     converged height is still a hair off what paper wants. `height: auto` releases that height (an inline px
-     value from `applyChartFrameLayout`, hence `!important`), `position: static` puts the `absolute inset-0`
-     box back in flow so the frame does not collapse to zero, and `max-height: none` lets the canvas take its
-     full column width. Bounded, unlike the hero: these charts pass `maxHeightPx: 180`, so the released frame
-     cannot exceed 180. `display: block` because back in flow a canvas is an inline replaced element and would
-     otherwise sit on a text baseline, adding a descender gap under each radar.
-
-     TARGETS THIS ROW ONLY, not the three track cards — those are in flow at every viewport, so they were
-     always laid out at the full card width and the plain bitmap rescale at the top of this block is all they
-     need. This row is the only one drawn at a width the paper does not naturally give it. */
+  /* THE FOUNDATIONAL 3-UP ROW — hands back the width `printFoundationGridWidthPx` pins for screen, then
+     releases the frame height as the hero does. This row only; the track cards are in flow and need none of
+     it. See docs/DECISIONS.md#print-foundation-grid-width. */
   [data-print-foundation-grid] {
     width: 100% !important;
   }
@@ -412,26 +260,8 @@
     max-height: none !important;
   }
 
-  /* THE COVER RADAR, WHICH THE RULE ABOVE CANNOT RESCUE ON ITS OWN.
-
-     That rule rescales the BITMAP inside whatever box the frame gives it, and the frame's box is an inline
-     `height` in px written by `applyChartFrameLayout` from the frame's SCREEN width. Print never re-runs that
-     fit: `beforeprint` fires before the print layout exists, so measuring there still reads the screen, and the
-     ResizeObserver's rAF does not get a turn before rasterisation.
-
-     From a desktop window it does not matter — the frame is already at its 526px cap, which is also its printed
-     width. From a phone it does. A ~350px frame pins a ~330px height; on paper the frame widens to 526px but
-     keeps that height, so the canvas asks for `height: auto` (~496px), `max-height: 100%` clamps it to 330px,
-     and clamping a REPLACED element's height recomputes its width to preserve the ratio. The radar redraws at
-     its mobile size, centred in a frame nearly twice as wide: the "shrunken cover chart".
-
-     So release the height rather than fight the clamp. `height: auto` on the frame, `position: static` on the
-     absolutely-positioned box inside it (otherwise the frame has no in-flow content and collapses to zero), and
-     `max-height: none` so the canvas is free to take its full width. The frame then grows to whatever the canvas
-     needs, and the canvas keeps its own aspect ratio at the printed width.
-
-     SCOPED TO THE HERO, deliberately. The career-track radars pass a hard `maxHeightPx`, so releasing their
-     heights would let six charts grow past the size their grid is built around. */
+  /* THE COVER RADAR — releases the stale inline frame height instead of letting `max-height` clamp it. Hero
+     only; the track radars need their `maxHeightPx`. See docs/DECISIONS.md#print-chart-frame-height-is-stale. */
   [data-print-hero-radar] > div {
     height: auto !important;
     aspect-ratio: unset !important;
@@ -448,158 +278,74 @@
     max-height: none !important;
   }
 
-  /* THE COVER TITLE PRINTS AT THE PRINTED RADAR'S SIZE, not the screen's.
-
-     Its `font-size` is an inline style sized from the hero frame's LIVE width, and paper does not re-measure
-     (same staleness as the frame height above). Printing from a desktop hid it — the frame is already at its
-     526px cap, so screen and paper agree — but from a phone the frame is ~350px, which puts the title on the
-     16.8px floor and prints a cover heading at body-copy size.
-
-     `--print-title-size` is `getChartTitleSizePx(chartMaxWidthPx)`, set on the element in TheoryContent so the
-     number stays tied to the function that owns it. `!important` is REQUIRED and not defensive: the size it is
-     beating is an inline style, which no ordinary stylesheet rule can outrank. */
+  /* THE COVER TITLE, same staleness as the frame above. `!important` is required, not defensive — it beats an
+     inline style. See docs/DECISIONS.md#print-chart-frame-height-is-stale. */
   [data-print-hero-title] {
     font-size: var(--print-title-size) !important;
   }
 
-  /* The page itself is WHITE on paper. `body` is tinted (`bg-slate-100`, see @layer base) because on
-     screen that tint is the surround the app's white card sits on, visible down both sides once the
-     viewport is wider than the content measure, and it is what an over-pull reveals. On paper there is
-     no surround to show — but the tint was still being painted, and it filled whatever was left of the
-     final sheet below the footer, because HomePage's wrapper carries `print:min-h-0` and so stops at
-     its content.
-     `html` too: only `body` was ever painted, so past the end of body's box the sheet fell back to the
-     default white and printed as a stray strip of a second shade. Setting both makes the whole sheet
-     one surface regardless of where the content happens to end.
-     THIS OVERRIDE IS STILL LOAD-BEARING NOW THAT THE SURROUND IS PALE RATHER THAN BLACK — a slate wash
-     over the unused part of a sheet is less startling than a black one, but it is still ink nobody asked
-     to spend. Do not drop it on the grounds that the colour got quieter. */
+  /* WHITE on paper — the screen tint is a surround paper has none of. Both elements, or the sheet past body's
+     box falls back to default white and prints as a stray second shade.
+     See docs/DECISIONS.md#print-trailing-blank-sheet. */
   html,
   body {
     background: #fff !important;
   }
 
-  /* A MINIMUM VIEWPORT HEIGHT IS MEANINGLESS ON PAPER, and it is a live cause of a trailing blank sheet.
-     `html`, `body` and `#root` all carry `min-h-dvh` (see @layer base) so the app fills the window on
-     screen. In print `dvh` resolves against the page box, so each of these asks to be at least one full
-     sheet tall — and once the content ends just past a page boundary, that minimum is enough to demand
-     one more sheet with nothing on it. HomePage's own wrapper already opts out with `print:min-h-0`;
-     these three are the ones it could not reach. */
+  /* The next three each independently cause the TRAILING BLANK SHEET.
+     See docs/DECISIONS.md#print-trailing-blank-sheet. */
   html,
   body,
   #root {
     min-height: 0 !important;
   }
 
-  /* NOTHING SCROLLS ON PAPER, and a scrollport is a plausible source of a phantom trailing sheet. `body`
-     is `overflow-x: auto` on screen so the min-width floor stays reachable (see @layer base) — and since
-     the other axis is `visible`, CSS computes BOTH to `auto`, making the box a scroll container whose
-     extent the print layout then has to account for. Neither axis means anything once the content is
-     being paginated. */
   html,
   body {
     overflow: visible !important;
   }
 
-  /* THE TRAILING BLANK SHEET IS TRAILING HEIGHT, not a stray page break — choosing "Margins: None" in the
-     print dialog makes it disappear, which is what an overflow-by-a-little looks like: give the content
-     area more room and the overrun fits. `main` reserves the bottom nav's height with
-     `pb-[calc(3.5rem+env(safe-area-inset-bottom))]` and cancels it with `print:pb-0`, but that relies on
-     Tailwind's utility ordering to beat an arbitrary-value utility. Stated outright here so it cannot
-     depend on that: 56px of padding hanging off the end of the last page is exactly enough to demand
-     another sheet. */
+  /* PRINT THE FILLS — the `economy` default may drop backgrounds to save ink, and here the cluster wedges,
+     badges and level bars ARE the content. On the root so it inherits everywhere; `-webkit-` for Safari. */
+  html {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* `print:pb-0` already cancels the bottom-nav reservation, but only by Tailwind's utility ordering beating
+     an arbitrary-value utility. Stated outright so it cannot depend on that. */
   main {
     padding-bottom: 0 !important;
   }
 
-  /* RUNNING FOOTER — the copyright line repeated at the foot of every sheet.
-     `position: fixed` is the only mechanism a browser offers: per CSS Paged Media a fixed box is repeated
-     on every page, and Chromium implements that. It also takes the footer OUT OF FLOW, so it stops
-     contributing to the last page's height — which is the other half of the trailing-sheet fix above.
-
-     NO PAGE NUMBERS, and not for want of trying: a counter would need `@page { @bottom-center { content:
-     counter(page) } }`, and CSS Paged Media MARGIN BOXES are unimplemented in Chrome, Safari and Firefox
-     alike — they support only `size` and `margin` on `@page`. The print dialog's own "Headers and footers"
-     option is where page numbers come from.
-
-     `bottom: 0` — INSIDE the page area, and it must stay there. A negative offset looks tempting, since it
-     would drop the line into the page's bottom margin and guarantee it never meets body text; what it
-     actually does is put the box outside the page area, and Chromium renders that overrun at the START OF
-     THE NEXT PAGE. The footer appeared at the top of every sheet from the second onwards. The margin band
-     is unreachable without `@page` margin boxes, so `bottom: 0` is the only correct place.
-
-     That does mean this shares the last few millimetres of the content area with the text above it, and
-     nothing enforces a gap. It is safe HERE because of how this document paginates — every section and
-     every matrix pillar starts its own sheet (see the `print:break-before-page` rules), so pages end well
-     short of the bottom. If that ever stops being true, the fix is bottom padding on the content, NOT a
-     negative offset here. */
-  /* Career-track key-pillar chips always wrap as a ROW on paper. Their screen rule
-     (`flex-row sm:flex-col md:flex-row`) turns them into a one-per-line column between 640px and 767px,
-     which is right on screen — that is the width where a track card is a narrow column — but in print those
-     queries measure the PAGE BOX, so a couple of millimetres of margin flipped a track's chips between 2
-     lines and 4. Raw CSS rather than a `print:flex-row` class so it beats `sm:flex-col` outright: unlayered
-     rules win over Tailwind's `@layer utilities` regardless of variant sort order. */
+  /* Key-pillar chips always wrap as a ROW on paper — their `sm:flex-col` step measures the PAGE BOX in print.
+     Raw CSS so it beats that outright: unlayered rules win over `@layer utilities`. */
   [data-print-chip-row] {
     flex-direction: row;
   }
 
+  /* RUNNING FOOTER, repeated per sheet. `bottom: 0` is load-bearing — a negative offset lands the box on the
+     NEXT sheet's top edge. See docs/DECISIONS.md#print-running-footer. */
   footer[data-print-running] {
     position: fixed;
     right: 0;
     bottom: 0;
     left: 0;
     margin: 0;
-    /* `padding-block: 0` SO THE TWO EDGES MATCH. Content on every sheet starts flush against the top of the
-       page area — a section or matrix card that forced a break begins right at it — whereas this element
-       carries `py-2` for screen, which is 8px of padding holding its text up off the bottom. The page margin
-       is already the intended breathing room at both edges; the extra 8px only at the foot read as the
-       footer being further from the paper edge than the content was from the top. Horizontal padding is
-       kept: it is the only inset this has if the dialog's margins are set to None. */
+    /* Zeroed so both page edges match; horizontal padding stays as the only inset at "Margins: None". */
     padding-block: 0;
   }
 }
 
-/* Page margins. Top level rather than inside `@media print` — `@page` only ever applies to paged media.
-
-   THE TARGET IS "Default margins + Headers and footers unchecked, printing like Minimum would". Only the
-   dialog's "Default" setting resolves to this value; "None", "Minimum" and "Custom" all override it. So this
-   number is what someone who never opens that dropdown gets, and it is deliberately near the floor.
-
-   It was briefly 10mm, to hold the browser's OWN header and footer clear of the content — Chrome draws that
-   chrome inside this margin box rather than reserving extra space for it. With the checkbox off there is
-   nothing to clear, so the reasoning inverts and the margin should be as small as paper allows.
-
-   ASYMMETRIC ON PURPOSE — `5mm 0`, so the sides go to nothing while the top and bottom keep a band.
-
-   Sides at 0 spend the whole sheet on measure, and they are not bare: every tab panel carries `px-3`, so
-   content still sits ~3mm off the paper edge. That is thin for hardware (most laser and inkjet printers
-   cannot print within ~4–5mm of an edge) but it only risks the outer card borders, and it is exact for PDF.
-
-   Top and bottom stay at 5mm because that edge has something at it. The running footer is
-   `position: fixed; bottom: 0` of the page AREA, so it lands exactly this margin above the paper edge — with
-   0 it would be the first thing a printer clipped, and it is the one element with nothing else beneath it.
-   Keeping both vertical values equal also preserves the matched head/foot gap (see the footer rule above). */
+/* Page margins, asymmetric on purpose: the panels' own `px-3` already insets the sides, while the running
+   footer needs the vertical band to clear the paper edge. See docs/DECISIONS.md#print-page-margins. */
 @page {
   margin: 5mm 0;
 }
 
-/* PRINTED PILLAR GRID — reach 3 columns on normal portrait paper.
-
-   Not a fix for a print-only bug: `xs:`/`md:` on the grid are plain `min-width` queries, and in paged media
-   those resolve against the PAGE BOX, so the printed grid already tracks paper size. The problem was only
-   WHERE the 3-column step sat — `md`, 768px, which most portrait paper falls under once margins are taken
-   off. Hence Letter dropping to 2 columns.
-
-   Page widths at the zero side margins above: A4 portrait 794px, Letter 816px, A5 559px, A6 397px. 640px is chosen
-   to have headroom in BOTH directions rather than to fit one paper size: it clears A4 even if the margin is
-   widened back out (A4 at 15mm is still 680px), and stays above A5 so A5 keeps 2 columns. Below the
-   threshold the component's own `xs` (2 col) and base (1 col) steps take over untouched — that is what
-   covers small paper, so it is deliberately not restated here.
-
-   COLUMNS AND ROWS TOGETHER: each card is a 4-row subgrid, so 9 cards over 3 columns needs
-   `repeat(12, auto)`. Kept as one rule so the arithmetic reads in one place — the reason this is raw CSS on
-   a data attribute rather than two stacked Tailwind variants. Unlayered CSS also beats Tailwind's
-   `@layer utilities`, so it wins over `md:grid-cols-3` without specificity games. */
+/* PRINTED PILLAR GRID — 3 columns on portrait paper, which the grid's own 768px `md:` step sat above. Rows
+   are set alongside columns: each card is a 4-row subgrid, so 9 cards over 3 columns needs `repeat(12, auto)`.
+   See docs/DECISIONS.md#print-pillar-grid-breakpoint. */
 @media print and (min-width: 640px) {
   [data-print-pillar-grid] {
     grid-template-columns: repeat(3, minmax(0, 1fr));

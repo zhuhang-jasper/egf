@@ -27,15 +27,11 @@ function dismissedRecently() {
 
 /**
  * The iOS "Share → Add to Home Screen" instruction line, shared by both surfaces. Instructions only: the
- * value sentence is shared with the other platforms' branch and this follows it, so the two read as one
- * message with a platform-specific tail.
+ * value sentence comes from the shared branch above it.
  *
- * The two glyphs are the point. iOS labels neither control with text, so showing the icon inline IS the
- * instruction, where naming it in prose would ask the reader to map a name onto an unlabelled icon.
- *
- * HARDCODES NO COLOUR, which is required rather than tidy: this renders on both the banner's dark ground and
- * the popover's light one. `emphasisClass` is the one knob each surface passes, and BOTH GLYPHS take it as
- * well as the `<b>` — they are what the reader must find in the iOS UI, so they cannot be muted.
+ * The two glyphs are the point, since iOS labels neither control with text. HARDCODES NO COLOUR — it renders
+ * on both a dark and a light ground, so `emphasisClass` is the one knob, and BOTH GLYPHS take it as well as
+ * the `<b>`: they are what the reader must find in the iOS UI.
  */
 function IosHintText({ emphasisClass }) {
   return (
@@ -50,15 +46,13 @@ function IosHintText({ emphasisClass }) {
 }
 
 /**
- * The floating, dismissible install banner, pinned to the bottom of the viewport. Mounted from App.jsx
- * because it is `fixed` and should be offerable on whichever route or tab the visitor is on.
+ * The floating, dismissible install banner, pinned to the bottom of the viewport. Mounted from App.jsx since
+ * it is `fixed` and offerable on any route.
  *
- * `4.25rem` is AppBottomNav's 3.5rem plus a 0.75rem gap, and `env(safe-area-inset-bottom)` is the term the
- * bar itself carries, so the offset tracks its real painted height on a notched iPhone. The Toaster does the
- * same arithmetic with its own figure; if the bar's height changes, all three move together.
- *
- * `z-[100]` matches the Toaster and the dialogs, clearing the `z-40` chrome and `z-50` popovers. A toast
- * overlapping this is correct: a toast answers something the user just did, and this is unprompted.
+ * `4.25rem` is AppBottomNav's 3.5rem plus a 0.75rem gap, with the bar's own `env(safe-area-inset-bottom)` so
+ * the offset tracks its painted height; the Toaster repeats this arithmetic with its own figure. `z-[100]`
+ * matches the Toaster and dialogs — a toast overlapping this is correct, since a toast answers something the
+ * user just did and this is unprompted.
  */
 function InstallPrompt() {
   const { installed, canInstall, iosHint, install } = useInstallPrompt("banner");
@@ -67,13 +61,8 @@ function InstallPrompt() {
   const openBanner = useOpenInstallBanner();
   const closeBanner = useCloseInstallBanner();
 
-  // The unprompted appearance, separate from the pill's deliberate one, gated on the full ladder: not
-  // installed, not in the cooldown, and some install path exists. On a desktop browser with none it never
-  // opens, which is the intended outcome rather than a missing case.
-  //
-  // Auto-open once per mount, tracked by a ref rather than by reading `open`: otherwise dismissing sets
-  // `open` false, the effect re-runs and re-opens immediately, so the X does nothing. The cooldown write
-  // would bail a later run, but that relies on localStorage being writable, and in private mode it is not.
+  // Gated on: not installed, not in cooldown, some install path exists. Auto-open once per mount, tracked by
+  // a ref rather than reading `open` — otherwise dismissing re-opens it immediately and the X does nothing.
   const autoOpenedRef = useRef(false);
 
   useEffect(() => {
@@ -103,25 +92,17 @@ function InstallPrompt() {
       // Storage unavailable (private mode). The banner still closes for this session; it just will
       // not remember, so it may be offered again on the next load.
     }
-    // Not tracked on iOS, deliberately, which is why this is guarded rather than carrying a `method`. On
-    // native the X is a real decline made against a visible Install button. On iOS it is the banner's only
-    // control, so it fires on nearly every impression and is pressed as readily by someone tidying away
-    // steps they followed as by someone refusing — near-constant and unreadable, which is worse than absent
-    // because it invites a dismissal rate. Installed iOS users are counted by `app_open` instead.
+    // Not tracked on iOS: the X is the banner's only control there, so it fires as readily for someone
+    // tidying away finished steps as for a decline — unreadable as a dismissal rate. `app_open` covers those.
     if (!iosHint) {
       track("install_banner_dismissed", { method: "native", source: "banner" });
     }
   }, [iosHint, closeBanner]);
 
   const onInstall = useCallback(async () => {
-    // The CLICK, not the outcome — `install_os_accepted` / `install_os_declined` already report what the
-    // browser's sheet returned. Fired here so the banner's two buttons can be compared directly against
-    // each other (this vs `install_banner_dismissed` on the X), and so the drop-off between pressing
-    // Install and completing the OS dialog is visible as its own step:
-    // install_banner_shown → install_banner_clicked → install_os_accepted → install_completed.
-    //
-    // Before `await`, because the native prompt hands control to the browser and an event queued after it
-    // is at the mercy of whatever the user does to the tab while the sheet is up.
+    // The CLICK, not the outcome (`install_os_accepted`/`_declined` report that), so the funnel reads
+    // install_banner_shown → _clicked → install_os_accepted → install_completed. Fired BEFORE `await`: the
+    // native prompt hands control to the browser, and an event queued after it is at the tab's mercy.
     track("install_banner_clicked", { method: "native", source: "banner" });
     const outcome = await install();
     // Only close on acceptance. A user who cancels the native sheet has not asked to stop being
@@ -140,13 +121,8 @@ function InstallPrompt() {
     return null;
   }
 
-  /* THE ROW'S HORIZONTAL SPACING IS TUNED AT THE TEXT/BUTTON SEAM, which is where the visible gap was.
-     The gap is paid TWICE on the way to the Install button (once after the icon tile, once before the
-     button) on top of the `p-3` inset, so at `gap-3` the body text stopped well short of the button with
-     a dead band between them. `gap-2.5` keeps the icon tile off the heading while letting the text run
-     up to the button, and `pr-2.5` trims only the button's side of the inset — the pill carries its own
-     `px-5`, so it still reads as inset from the banner edge without a full 12px outside it. The other
-     three sides keep `p-3`. */
+  /* Spacing tuned at the text/button seam: `gap-3` left a dead band before the Install button since the gap
+     is paid twice on the way there. `gap-2.5` closes it; `pr-2.5` trims only the button's side of the inset. */
   return (
     <section
       className="install-enter fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-[100] mx-auto flex w-[min(34rem,calc(100vw-1.5rem))] items-center gap-2.5 rounded-2xl border border-slate-700 bg-slate-900 p-3 pr-2.5 shadow-2xl print:hidden"
@@ -259,19 +235,10 @@ function InstallPrompt() {
           to the bottom edge instead would leave a gap above that grows with every extra line the text
           wraps to. */}
       {canInstall ? (
-        /* WHITE ON DARK, AND THE LOUDEST THING ON THIS CARD, which is the opposite weight the header pill
-           carries. "Primary" means maximum contrast against whatever is behind it, so on this `slate-900`
-           surface that is a solid white fill — `variant="default"` (`bg-primary`, i.e. near-black) would be
-           the LOWEST-contrast element in the banner rather than the highest, hence the override.
-
-           The header pill is deliberately quieter (`outline`, see InstallPill): it is permanent chrome that
-           only has to be findable, whereas this appears in response to a moment and is the whole point of the
-           card it sits on. Same offer, two jobs, two weights — do not "unify" them.
-
-           Hover lifts to a faint slate, since there is nowhere brighter to go from white.
-
-           `ring-offset-slate-900` matches the card behind it. The base offset colour is the page background
-           (white), which on this dark card would draw a white band around the focus ring. */
+        /* WHITE ON DARK, AND THE LOUDEST THING ON THIS CARD — on `slate-900`, `variant="default"`'s near-black
+           fill would be the lowest-contrast element rather than the highest. The header pill is deliberately
+           quieter; do not "unify" them. Hover lifts to a faint slate since nothing is brighter than white, and
+           `ring-offset-slate-900` stops the default white offset drawing a band around the focus ring. */
         <Button
           type="button"
           variant="default"
@@ -323,26 +290,18 @@ function InstallPrompt() {
 }
 
 /**
- * The persistent install path, as a labelled pill in the app header's right corner (see AppShellHeader).
- * No dismiss and no cooldown, unlike the banner: this is the surface that stays available to someone who
- * closed the banner and has forgotten it existed.
+ * The persistent install path, as a labelled pill in the app header's right corner. No dismiss and no
+ * cooldown, unlike the banner: this stays available to someone who closed that and forgot it existed.
  *
- * Renders NOTHING when there is no install path, which is what makes it safe in the header: on a Mac in
- * Firefox the corner is simply empty rather than showing a control that cannot work. It is also why the
+ * Renders NOTHING when there is no install path, which is what makes it safe in the header and why the
  * header's `min-h-14` is a floor rather than a fixed height.
  *
- * It installs directly where it can and opens the banner where it cannot, which is a platform split rather
- * than an inconsistency: the button says "Install", so where a native prompt exists it fires on the first
- * tap. On iOS Safari there is no prompt, only the manual Share gesture, which the banner already documents.
- * An earlier pass routed every platform through the banner for consistency, which cost every Android user an
- * extra tap and a card that asked them to decide twice.
+ * Installs directly where a native prompt exists and opens the banner where it does not (iOS Safari, which
+ * has only the manual Share gesture). Routing every platform through the banner cost Android users an extra
+ * tap and a card that asked them to decide twice.
  *
- * `outline` rather than the black `default` fill: a permanent fixture of the chrome should not be the
- * loudest thing in the bar on every screen. The banner's own Install button keeps the solid fill, and the
- * asymmetry is the point — that one is the primary action of the surface it sits on, this one is a way in.
- *
- * It keeps its label. A bare download glyph would be the one control here whose meaning has to be guessed,
- * and on iOS the tray-and-arrow reads as "download a file". Tone it down via the fill, not the word.
+ * `outline` rather than the banner's solid fill — permanent chrome should not be the loudest thing in the
+ * bar. It keeps its label: a bare tray-and-arrow glyph reads as "download a file" on iOS.
  */
 function InstallPill() {
   const { installed, canInstall, iosHint, install } = useInstallPrompt("header_pill");
@@ -363,35 +322,20 @@ function InstallPill() {
     return null;
   }
 
-  /* `top-3` MATCHES THE BRAND MARK OPPOSITE so the two corners share one centre line, and `right-3`
-     takes the true corner — both inherited from the scroll-top button that used to hold this slot, and
-     both resolving against the header stack's own `p-3` (absolute offsets measure from the padding box).
-
-     NO WRAPPER DIV ANY MORE. There was one, `relative` with a `data-install-pill` hook, to anchor the iOS
-     popover and to let an outside-tap handler tell "inside the pill or its panel" from "outside". With the
-     popover gone — the banner is the explanatory surface now — there is nothing to anchor and nothing to
-     dismiss, so the button takes the corner directly. */
+  /* `top-3` MATCHES THE BRAND MARK OPPOSITE so the two corners share a centre line; both offsets resolve
+     against the header stack's own `p-3`. No wrapper div: the iOS popover it used to anchor is gone. */
   return (
     <Button
       type="button"
       variant="outline"
       size="sm"
       shape="pill"
-      // `gap-1` over the base's `gap-2`, matching the Theory toolbar's icon-plus-label pills — at 14px the
-      // wider default gap reads as a glyph floating away from its word rather than labelling it.
-      //
-      // `border-slate-300` OVER THE VARIANT'S `border-input`, and an explicit white fill: `outline` is drawn
-      // for the app's white content area, where `bg-background` IS the page. Here it sits on the header's
-      // `slate-100`, so the default border is too faint to read as an edge and the fill has to be stated to
-      // separate the pill from the bar at all. Same values the scroll-top button used against this tint.
+      // `gap-1` over the base `gap-2`, matching the Theory toolbar's pills at 14px. Explicit
+      // `border-slate-300` + white fill, since `outline`'s default border is too faint on the header's tint.
       className="absolute top-3 right-3 z-10 gap-1 border-slate-300 bg-white text-slate-900 hover:bg-slate-50 print:hidden"
-      // INSTALL DIRECTLY WHERE THERE IS A PROMPT TO FIRE, otherwise open the banner and let its instructions
-      // do the work. `canInstall` is the capability test, not the platform — a Chrome that never fired
-      // `beforeinstallprompt` falls to the banner too, which is the right fallback rather than a dead tap.
-      // `method` records WHICH BRANCH the tap took, because they are two different outcomes wearing one
-      // label: `native` fires the OS prompt (so it can go on to `install_os_accepted`), while `ios` only opens
-      // the banner and the install still depends on a manual Share-sheet gesture we cannot observe. Without
-      // it the two would be averaged into a single meaningless conversion rate.
+      // `canInstall` is a capability test, not a platform test — a Chrome that never fired
+      // `beforeinstallprompt` falls to the banner too. `method` splits `native` (fires the OS prompt) from
+      // `ios` (opens the banner, install unobservable after) so they are not averaged into one conversion rate.
       onClick={() => {
         track("install_banner_clicked", { method: canInstall ? "native" : "ios", source: "header_pill" });
         if (canInstall) {
@@ -400,13 +344,9 @@ function InstallPill() {
           openBanner();
         }
       }}
-      // NOT `aria-expanded`. It was a disclosure while it toggled its own inline popover; that popover is gone,
-      // and neither branch is a disclosure now — one installs, the other opens a surface elsewhere in the
-      // document.
-      //
-      // THE LABEL DIFFERS WITH THE BRANCH, because the two taps do different things and a screen reader user
-      // gets no other cue which one they are on. The visible word stays "Install" either way: on iOS it is the
-      // name of the job, and the banner it opens explains the gesture immediately.
+      // NOT `aria-expanded` — the popover it used to toggle is gone, and neither branch is a disclosure now.
+      // THE ARIA LABEL DIFFERS WITH THE BRANCH, since a screen reader user has no other cue which tap this is;
+      // the visible word stays "Install" either way.
       aria-label={canInstall ? "Install this app" : "How to install this app"}
     >
       {/* A DOWNLOAD GLYPH, NOT THE FAVICON, which is the distinction that matters in this slot. The

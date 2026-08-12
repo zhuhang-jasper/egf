@@ -9,11 +9,9 @@ const UNSUPPORTED_COLOR_RE = /(?:oklch|oklab|lab\(|lch\(|color\()/i;
 const PROFILE_SLUG_MAX_LENGTH = 30;
 
 /**
- * Normalize a user-typed profile name into a lower-kebab slug safe for a filename on any OS.
- *
- * NFKD + stripping combining marks folds "Café" to "Cafe" rather than dropping the letter, as a bare a-z
- * filter would. Everything outside a-z0-9 becomes a hyphen, which is what keeps path separators and leading
- * dots out. Returns "" for a name with nothing slug-able (e.g. "🎉"); see {@link buildChartFileName}.
+ * Normalize a user-typed profile name into a lower-kebab slug safe for a filename on any OS. NFKD folds
+ * "Café" to "Cafe" rather than dropping the letter; everything outside a-z0-9 becomes a hyphen, which is what
+ * keeps path separators and leading dots out. Returns "" when nothing is slug-able (e.g. "🎉").
  */
 export function toProfileSlug(name) {
   return String(name ?? "")
@@ -27,11 +25,8 @@ export function toProfileSlug(name) {
 }
 
 /**
- * Today's date as `yyyy-mm-dd` in the user's LOCAL time zone.
- *
- * NOT `toISOString().slice(0, 10)`, which is UTC: for a user in UTC+8 exporting at 01:00, that returns
- * yesterday's date, and for UTC-5 exporting at 20:00 it returns tomorrow's. The filename should say the
- * day the person actually made the export, so this reads the local calendar fields and pads them.
+ * Today's date as `yyyy-mm-dd` in the user's LOCAL time zone. Not `toISOString().slice(0, 10)`, which is UTC
+ * and lands a day out either side of midnight; the filename should say the day the export was made.
  */
 function getLocalDateStamp() {
   const d = new Date();
@@ -43,11 +38,9 @@ function getLocalDateStamp() {
 /**
  * The exported PNG's filename, filling `SITE_COPY.share.fileName`'s `{profileName}` and `{date}`.
  *
- * An unnamed profile falls back to `unnamedProfileSlug`, keeping the segment occupied so the name reads as
- * a known state rather than as broken naming. Setting that fallback blank drops the segment instead, which
- * swallows ONE neighbouring separator, the leading one by preference: taking both consumes the hyphen the
- * next segment needs. A template missing a placeholder is left as-is, so `site.js` can simplify the
- * filename without touching this code.
+ * An unnamed profile falls back to `unnamedProfileSlug` so the segment reads as a known state rather than as
+ * broken naming; blanking that fallback drops the segment and ONE neighbouring separator, the leading one by
+ * preference. A template missing a placeholder is left as-is.
  */
 export function buildChartFileName(profileName) {
   const slug = toProfileSlug(profileName) || toProfileSlug(SITE_COPY.share.unnamedProfileSlug);
@@ -88,19 +81,14 @@ function getExportImagePaddingPx() {
 
 /**
  * Pins `exportRoot` to the export's fixed layout width and waits for the chart to re-fit at it, returning a
- * restore function. See `exportImageLayoutWidthPx` for why the width is fixed at all.
+ * restore function.
  *
- * INLINE WIDTH ON THE LIVE ELEMENT, not a clone. A clone would need its own Chart.js instance to redraw the
- * radar (a cloned <canvas> is blank, and the geometry cannot be rescaled out of the original bitmap), which
- * is a second chart lifecycle to keep in step with this one. Widening the real element instead reuses the
- * converge loop that already owns this chart's fit.
+ * INLINE WIDTH ON THE LIVE ELEMENT, not a clone: a cloned <canvas> is blank and would need its own Chart.js
+ * lifecycle, whereas widening the real element reuses the converge loop that already owns this fit. The cost
+ * is a visible reflow for a few frames, contained by `overflow: hidden` on the wrapper.
  *
- * The visible reflow is the cost: on a narrow viewport the chart jumps to 526px for the few frames this
- * holds. `overflow: hidden` on the wrapper keeps that from widening the page and forcing a scrollbar. At
- * export scale the whole round trip is a handful of frames.
- *
- * `chart.resize()` is what re-derives the geometry from the new width; the double rAF gives the ResizeObserver
- * driving `applyChartFrameLayout` a turn to converge the frame height before anything is measured.
+ * `chart.resize()` re-derives the geometry; the double rAF lets the ResizeObserver converge the frame height
+ * before anything is measured.
  */
 async function withPinnedExportWidth(exportRoot, chart, widthPx) {
   const prev = {
@@ -127,17 +115,12 @@ async function withPinnedExportWidth(exportRoot, chart, widthPx) {
 
 /**
  * Height of the credit strip below the chart, or 0 when it is switched off (admin only — see
- * FEATURE_CHART_ATTRIBUTION_SETTING). Returned as a height rather than a boolean because every consumer
- * needs the number: it grows the canvas and offsets nothing else, since the band is added BELOW the content.
+ * FEATURE_CHART_ATTRIBUTION_SETTING). A height rather than a boolean because every consumer needs the number.
  *
- * THE LINE'S OWN BOX PLUS THE GAP ABOVE IT. The canvas is laid out as
- * `padPx + content + bandPx`, where the band is gap + line + its own bottom inset — it REPLACES the trailing
- * `padPx` rather than sitting on top of it, so both of the credit's edges are set here.
- *
- * THE GAP ABOVE IS ITS OWN NUMBER; THE INSET BELOW IS `padPx`. `contentH` is `exportRoot.offsetHeight`, which
- * ends flush at the cluster legend's BORDER — the card is the last element and carries no bottom margin — so
- * the gap above the credit starts at a drawn edge and needs more room than the open white below it, which is
- * the export's own padding and matches the top and sides.
+ * The canvas is `padPx + content + bandPx`, where the band is gap + line + bottom inset and REPLACES the
+ * trailing `padPx` rather than sitting on top of it. The gap above is its own number because `contentH` ends
+ * flush at the cluster legend's border, so it starts at a drawn edge and needs more room than the open white
+ * below.
  */
 function getAttributionBandPx(hidden, chartWidthPx) {
   if (hidden || !SITE_COPY.share.imageAttribution) {
@@ -157,13 +140,11 @@ function getAttributionBottomInsetPx() {
 
 /**
  * The credit line's type size in CSS px — A FRACTION OF THE CLUSTER LEGEND'S, via the function the legend
- * itself calls, so the credit tracks the chart's type scale rather than being a fixed value against a scaled
- * one. Shared by the band's height and the line that fills it, so the two cannot disagree.
+ * itself calls, so the credit tracks the chart's type scale. Shared by the band's height and the line that
+ * fills it so the two cannot disagree.
  *
- * The fraction is what buys the full framework title one line: at the legend's own size the string overruns the
- * pinned export width. It is a constant rather than a measured fit — the string is a constant too, so
- * eyeballing one export settles it more cheaply than remeasuring on every export. Reword the credit long
- * enough to overrun and this ratio (or the wording) is the knob.
+ * The fraction is what buys the full framework title one line. A constant rather than a measured fit, since
+ * the string is constant too; reword the credit long enough to overrun and this ratio is the knob.
  */
 function getAttributionFontPx(chartWidthPx) {
   const ratio = Number(FE_UI.chart.exportImageAttributionFontRatio) || 0.75;
@@ -173,12 +154,9 @@ function getAttributionFontPx(chartWidthPx) {
 /**
  * Paints the credit line into the strip reserved at the foot of the export.
  *
- * NOT MIRRORED FROM THE DOM, unlike everything renderExportDom draws: there is no element to measure because
- * the line exists only in the exported image. So it is drawn in canvas space directly, the way the export's
- * white ground and its padding are.
- *
- * CENTRED IN ITS BAND, AND THE BAND STOPS SHORT OF THE CANVAS EDGE by the export's bottom padding — the same
- * inset the content above it gets, so the credit sits in a symmetric gutter instead of against the edge.
+ * NOT MIRRORED FROM THE DOM, unlike everything renderExportDom draws — the line exists only in the exported
+ * image, so it is drawn in canvas space the way the white ground and padding are. Centred in its band, which
+ * stops short of the canvas edge by the export's bottom padding so the credit sits in a symmetric gutter.
  */
 function renderAttribution(ctx, { exportW, exportH, bandPx, chartWidthPx, scaleY }) {
   if (bandPx <= 0) {
@@ -192,13 +170,9 @@ function renderAttribution(ctx, { exportW, exportH, bandPx, chartWidthPx, scaleY
   // fallback the DOM-mirrored text uses.
   ctx.font = `500 ${getAttributionFontPx(chartWidthPx) * scaleY}px Inter, system-ui, sans-serif`;
 
-  // BOTTOM-ALIGNED ONTO ITS OWN INSET, not the export's `padPx`.
-  //
-  // `padPx` is the inset at the top and the sides, where it works: the export opens on the title, whose LINE
-  // BOX carries leading above the glyphs, so the visible white above the type is the padding plus that
-  // leading. Nothing supplies leading under the credit — `textBaseline: "bottom"` puts the glyphs' own bottom
-  // edge on this offset — so reusing `padPx` here made the foot look tighter than the head even though both
-  // measured 8. This constant is the visual match, and it is why the canvas height reserves it separately.
+  // BOTTOM-ALIGNED ONTO ITS OWN INSET, not the export's `padPx`. The title's line box carries leading above
+  // the glyphs, but `textBaseline: "bottom"` gives the credit none, so reusing `padPx` made the foot look
+  // tighter than the head at the same measured 8. This constant is the visual match.
   ctx.textBaseline = "bottom";
   ctx.fillText(text, exportW / 2, exportH - getAttributionBottomInsetPx() * scaleY);
 }
@@ -252,11 +226,8 @@ function isVisuallyHidden(el) {
 }
 
 /**
- * An element's own text, ignoring element children — the direct text nodes only.
- *
- * `textContent` is the wrong tool wherever a node can carry an off-screen helper element (a measuring span, a
- * visually-hidden label), since it flattens the whole subtree into one string with no way to tell the painted
- * text from the scaffolding.
+ * An element's own text, ignoring element children — the direct text nodes only. `textContent` flattens the
+ * whole subtree, so it cannot tell painted text from an off-screen measuring span or hidden label.
  */
 function getOwnText(el) {
   let out = "";
@@ -273,13 +244,9 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY, padX, padY) {
 
   const title = exportRoot.querySelector("#competency-chart-heading");
   if (title && !isVisuallyHidden(title)) {
-    // NOT `title.textContent`, WHICH DOUBLES THE TITLE. The heading also contains useMiddleEllipsis's
-    // measuring <span>: React renders it empty, but the fitting loop writes candidate strings into it
-    // imperatively and the last one tested stays in the DOM. textContent concatenates every descendant, so it
-    // returned that leftover plus the visible text — the export read "Staff Engineer (FE)Staff Engineer (FE)".
-    // `isVisuallyHidden` cannot catch it either: it is asked about the <h2>, not the span inside it.
-    // Reading only the heading's OWN text nodes takes what is actually painted and skips any element child,
-    // which is the measuring span's whole category.
+    // NOT `title.textContent`, WHICH DOUBLES THE TITLE: the heading also holds useMiddleEllipsis's measuring
+    // <span>, whose last-tested candidate string stays in the DOM. Reading only the heading's OWN text nodes
+    // takes what is painted and skips any element child, which is that span's whole category.
     const text = getOwnText(title);
     if (text) {
       const cs = window.getComputedStyle(title);
@@ -570,10 +537,8 @@ function buildShareMessage(linkOverride) {
 }
 
 /**
- * Share the chart PNG (plus a message containing the tool link) via the Web Share API, opening the
- * native OS share sheet so the user can pick a target app (WhatsApp, LinkedIn, Messages, AirDrop…).
- *
- * Falls back to a clipboard copy where file sharing is unsupported, so the button never dead-ends.
+ * Share the chart PNG plus a message containing the tool link via the Web Share API, falling back to a
+ * clipboard copy where file sharing is unsupported so the button never dead-ends.
  *
  * @param {string} [url] Optional link override embedded in the message; defaults to the tool link.
  * @param {string} [profileName] Profile name, slugged into the attachment filename.
@@ -638,13 +603,10 @@ export async function shareChartAsImage({ exportRoot, canvas, chart, url, profil
 }
 
 /**
- * Share the Theory tab: its deep link, plus the pre-rendered pillar poster from `public/` as an
- * attached image so the share lands with a visual instead of a bare URL.
+ * Share the Theory tab: its deep link, plus the pre-rendered pillar poster from `public/` as an attachment.
  *
- * The link is the payload and the image is an enhancement, so the no-files path shares TEXT rather than
- * falling back to a clipboard copy the way {@link shareChartAsImage} does: that function's image is
- * generated on the spot and would be lost, whereas this one is a static asset. The fetch is deliberately
- * non-fatal for the same reason.
+ * The link is the payload and the image only an enhancement, so the no-files path shares TEXT rather than
+ * copying to the clipboard as {@link shareChartAsImage} does, and the fetch is deliberately non-fatal.
  *
  * @param {string} url The theory link to embed in the message.
  * @returns {{ ok: boolean, method: "share" | "share-text" | null }}
