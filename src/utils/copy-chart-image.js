@@ -1,3 +1,4 @@
+import { getChartSecondaryLabelSizePx } from "@/chart/fonts";
 import { syncFontsForChart } from "@/chart/radar-center";
 import { FE_UI, SITE_COPY } from "@/constants";
 import { ensureInterFontsLoaded } from "@/utils/export-image";
@@ -85,6 +86,123 @@ function getExportImagePaddingPx() {
   return Math.max(0, Number(FE_UI.chart.exportImagePaddingPx) || 8);
 }
 
+/**
+ * Pins `exportRoot` to the export's fixed layout width and waits for the chart to re-fit at it, returning a
+ * restore function. See `exportImageLayoutWidthPx` for why the width is fixed at all.
+ *
+ * INLINE WIDTH ON THE LIVE ELEMENT, not a clone. A clone would need its own Chart.js instance to redraw the
+ * radar (a cloned <canvas> is blank, and the geometry cannot be rescaled out of the original bitmap), which
+ * is a second chart lifecycle to keep in step with this one. Widening the real element instead reuses the
+ * converge loop that already owns this chart's fit.
+ *
+ * The visible reflow is the cost: on a narrow viewport the chart jumps to 526px for the few frames this
+ * holds. `overflow: hidden` on the wrapper keeps that from widening the page and forcing a scrollbar. At
+ * export scale the whole round trip is a handful of frames.
+ *
+ * `chart.resize()` is what re-derives the geometry from the new width; the double rAF gives the ResizeObserver
+ * driving `applyChartFrameLayout` a turn to converge the frame height before anything is measured.
+ */
+async function withPinnedExportWidth(exportRoot, chart, widthPx) {
+  const prev = {
+    width: exportRoot.style.width,
+    maxWidth: exportRoot.style.maxWidth,
+    overflow: exportRoot.style.overflow,
+  };
+  exportRoot.style.width = `${widthPx}px`;
+  exportRoot.style.maxWidth = "none";
+  exportRoot.style.overflow = "hidden";
+
+  chart.resize();
+  chart.update("none");
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+  return () => {
+    exportRoot.style.width = prev.width;
+    exportRoot.style.maxWidth = prev.maxWidth;
+    exportRoot.style.overflow = prev.overflow;
+    chart.resize();
+    chart.update("none");
+  };
+}
+
+/**
+ * Height of the credit strip below the chart, or 0 when it is switched off (admin only — see
+ * FEATURE_CHART_ATTRIBUTION_SETTING). Returned as a height rather than a boolean because every consumer
+ * needs the number: it grows the canvas and offsets nothing else, since the band is added BELOW the content.
+ *
+ * THE LINE'S OWN BOX PLUS THE GAP ABOVE IT. The canvas is laid out as
+ * `padPx + content + bandPx`, where the band is gap + line + its own bottom inset — it REPLACES the trailing
+ * `padPx` rather than sitting on top of it, so both of the credit's edges are set here.
+ *
+ * THE GAP ABOVE IS ITS OWN NUMBER; THE INSET BELOW IS `padPx`. `contentH` is `exportRoot.offsetHeight`, which
+ * ends flush at the cluster legend's BORDER — the card is the last element and carries no bottom margin — so
+ * the gap above the credit starts at a drawn edge and needs more room than the open white below it, which is
+ * the export's own padding and matches the top and sides.
+ */
+function getAttributionBandPx(hidden, chartWidthPx) {
+  if (hidden || !SITE_COPY.share.imageAttribution) {
+    return 0;
+  }
+  const gapPx = Math.max(0, Number(FE_UI.chart.exportImageAttributionGapPx) || 0);
+  return gapPx + getAttributionFontPx(chartWidthPx) + getAttributionBottomInsetPx();
+}
+
+/**
+ * White below the credit line, in CSS px — the same `exportImagePaddingPx` that insets the top and the sides,
+ * so the export's four edges are one number.
+ */
+function getAttributionBottomInsetPx() {
+  return getExportImagePaddingPx();
+}
+
+/**
+ * The credit line's type size in CSS px — A FRACTION OF THE CLUSTER LEGEND'S, via the function the legend
+ * itself calls, so the credit tracks the chart's type scale rather than being a fixed value against a scaled
+ * one. Shared by the band's height and the line that fills it, so the two cannot disagree.
+ *
+ * The fraction is what buys the full framework title one line: at the legend's own size the string overruns the
+ * pinned export width. It is a constant rather than a measured fit — the string is a constant too, so
+ * eyeballing one export settles it more cheaply than remeasuring on every export. Reword the credit long
+ * enough to overrun and this ratio (or the wording) is the knob.
+ */
+function getAttributionFontPx(chartWidthPx) {
+  const ratio = Number(FE_UI.chart.exportImageAttributionFontRatio) || 0.75;
+  return Math.round(getChartSecondaryLabelSizePx(chartWidthPx) * ratio);
+}
+
+/**
+ * Paints the credit line into the strip reserved at the foot of the export.
+ *
+ * NOT MIRRORED FROM THE DOM, unlike everything renderExportDom draws: there is no element to measure because
+ * the line exists only in the exported image. So it is drawn in canvas space directly, the way the export's
+ * white ground and its padding are.
+ *
+ * CENTRED IN ITS BAND, AND THE BAND STOPS SHORT OF THE CANVAS EDGE by the export's bottom padding — the same
+ * inset the content above it gets, so the credit sits in a symmetric gutter instead of against the edge.
+ */
+function renderAttribution(ctx, { exportW, exportH, bandPx, chartWidthPx, scaleY }) {
+  if (bandPx <= 0) {
+    return;
+  }
+  const text = SITE_COPY.share.imageAttribution;
+  ctx.fillStyle = FE_UI.chart.exportImageAttributionColor || "#94a3b8";
+  ctx.textAlign = "center";
+
+  // Inter to match the rest of the export (ensureInterFontsLoaded has already awaited it), with the same
+  // fallback the DOM-mirrored text uses.
+  ctx.font = `500 ${getAttributionFontPx(chartWidthPx) * scaleY}px Inter, system-ui, sans-serif`;
+
+  // BOTTOM-ALIGNED ONTO ITS OWN INSET, not the export's `padPx`.
+  //
+  // `padPx` is the inset at the top and the sides, where it works: the export opens on the title, whose LINE
+  // BOX carries leading above the glyphs, so the visible white above the type is the padding plus that
+  // leading. Nothing supplies leading under the credit — `textBaseline: "bottom"` puts the glyphs' own bottom
+  // edge on this offset — so reusing `padPx` here made the foot look tighter than the head even though both
+  // measured 8. This constant is the visual match, and it is why the canvas height reserves it separately.
+  ctx.textBaseline = "bottom";
+  ctx.fillText(text, exportW / 2, exportH - getAttributionBottomInsetPx() * scaleY);
+}
+
 function getRelativeRect(el, rootRect, scaleX, scaleY, offsetX = 0, offsetY = 0) {
   const rect = el.getBoundingClientRect();
   return {
@@ -133,12 +251,36 @@ function isVisuallyHidden(el) {
   return cs.position === "absolute" && w <= 1 && h <= 1;
 }
 
+/**
+ * An element's own text, ignoring element children — the direct text nodes only.
+ *
+ * `textContent` is the wrong tool wherever a node can carry an off-screen helper element (a measuring span, a
+ * visually-hidden label), since it flattens the whole subtree into one string with no way to tell the painted
+ * text from the scaffolding.
+ */
+function getOwnText(el) {
+  let out = "";
+  for (const node of el.childNodes) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      out += node.nodeValue;
+    }
+  }
+  return out.trim();
+}
+
 function renderExportDom(ctx, exportRoot, scaleX, scaleY, padX, padY) {
   const rootRect = exportRoot.getBoundingClientRect();
 
   const title = exportRoot.querySelector("#competency-chart-heading");
   if (title && !isVisuallyHidden(title)) {
-    const text = title.textContent?.trim();
+    // NOT `title.textContent`, WHICH DOUBLES THE TITLE. The heading also contains useMiddleEllipsis's
+    // measuring <span>: React renders it empty, but the fitting loop writes candidate strings into it
+    // imperatively and the last one tested stays in the DOM. textContent concatenates every descendant, so it
+    // returned that leftover plus the visible text — the export read "Staff Engineer (FE)Staff Engineer (FE)".
+    // `isVisuallyHidden` cannot catch it either: it is asked about the <h2>, not the span inside it.
+    // Reading only the heading's OWN text nodes takes what is actually painted and skips any element child,
+    // which is the measuring span's whole category.
+    const text = getOwnText(title);
     if (text) {
       const cs = window.getComputedStyle(title);
       const { x, y, w, h } = getRelativeRect(title, rootRect, scaleX, scaleY, padX, padY);
@@ -278,7 +420,7 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY, padX, padY) {
  * single high-res PNG and return it as a Blob. Shared by the clipboard-copy and share paths.
  * Returns null if the refs aren't ready or the canvas hasn't drawn yet.
  */
-export async function renderChartImageBlob({ exportRoot, canvas, chart }) {
+export async function renderChartImageBlob({ exportRoot, canvas, chart, attributionHidden = false, uhd = false }) {
   if (!exportRoot || !canvas || !chart) {
     return null;
   }
@@ -289,12 +431,39 @@ export async function renderChartImageBlob({ exportRoot, canvas, chart }) {
   await ensureInterFontsLoaded();
 
   const padPx = getExportImagePaddingPx();
+  const layoutW = Math.max(120, Math.round(Number(FE_UI.chart.exportImageLayoutWidthPx) || 526));
+  // EVERY MEASUREMENT BELOW IS TAKEN WHILE PINNED. Widening the root changes the frame height, the label
+  // sizes and the canvas rect, so reading any of them before this point would mix the live layout's numbers
+  // into a capture of the pinned one.
+  const restoreWidth = await withPinnedExportWidth(exportRoot, chart, layoutW);
+
+  try {
+    return await rasterizeChart({ exportRoot, canvas, chart, attributionHidden, uhd, padPx });
+  } finally {
+    restoreWidth();
+    requestAnimationFrame(() => syncFontsForChart(chart));
+  }
+}
+
+/**
+ * The capture itself, split out so `renderChartImageBlob` owns only the pinned-width window around it. Assumes
+ * `exportRoot` is already laid out at the export width.
+ */
+async function rasterizeChart({ exportRoot, canvas, chart, attributionHidden, uhd, padPx }) {
+  // The RADAR's width, which is what the legend's own type size is derived from — not the export root's,
+  // which includes the padding and any wider chrome around the chart.
+  const chartWidthPx = Math.max(1, Math.round(canvas.getBoundingClientRect().width));
+  const bandPx = getAttributionBandPx(attributionHidden, chartWidthPx);
   const contentW = Math.max(1, Math.round(exportRoot.offsetWidth));
   const contentH = Math.max(1, Math.round(exportRoot.offsetHeight));
   const cssW = contentW + padPx * 2;
-  const cssH = contentH + padPx * 2;
+  // The band is added BELOW the content, so every rect mirrored from the DOM keeps the same offsets and only
+  // the canvas gets taller. It SUPPLIES ITS OWN BOTTOM INSET (gap + line + inset), so it replaces the trailing
+  // `padPx` rather than stacking on it; without a band the layout is the plain `padPx` on both sides.
+  const cssH = contentH + padPx + (bandPx || padPx);
   const scaleMax = Math.max(1, Number(FE_UI.chart.exportImageCssScaleMax) || 12);
-  const cssScale = Math.max(0.25, Math.min(scaleMax, Number(FE_UI.chart.exportImageCssScale) || 8));
+  const requestedScale = uhd ? Number(FE_UI.chart.exportImageCssScaleUhd) || 4 : Number(FE_UI.chart.exportImageCssScale) || 2;
+  const cssScale = Math.max(0.25, Math.min(scaleMax, requestedScale));
   const exportW = Math.max(120, Math.round(cssW * cssScale));
   const exportH = Math.max(2, Math.round(cssH * cssScale));
   const pxPerCssX = exportW / cssW;
@@ -320,6 +489,7 @@ export async function renderChartImageBlob({ exportRoot, canvas, chart }) {
     octx.fillStyle = "#ffffff";
     octx.fillRect(0, 0, exportW, exportH);
     renderExportDom(octx, exportRoot, pxPerCssX, pxPerCssY, padPx, padPx);
+    renderAttribution(octx, { exportW, exportH, bandPx, chartWidthPx, scaleY: pxPerCssY });
 
     const rootRect = exportRoot.getBoundingClientRect();
     const canvasRect = canvas.getBoundingClientRect();
@@ -337,14 +507,13 @@ export async function renderChartImageBlob({ exportRoot, canvas, chart }) {
       out.toBlob((b) => (b ? resolve(b) : reject(new Error("toBlob failed"))), "image/png", 1);
     });
   } finally {
+    // Only the dpr is undone here. The pinned width — and the resize/font resync that unwinding it needs — is
+    // owned by renderChartImageBlob's own finally, which runs after this one.
     if (hadDpr) {
       chart.options.devicePixelRatio = prevDpr;
     } else {
       delete chart.options.devicePixelRatio;
     }
-    chart.resize();
-    chart.update("none");
-    requestAnimationFrame(() => syncFontsForChart(chart));
   }
 }
 
@@ -352,12 +521,12 @@ export async function renderChartImageBlob({ exportRoot, canvas, chart }) {
  * @param profileName Used only by the download fallback, to name the file. The clipboard path never sees
  *   it — a pasted image has no filename.
  */
-export async function copyChartAsImageToClipboard({ exportRoot, canvas, chart, profileName }) {
+export async function copyChartAsImageToClipboard({ exportRoot, canvas, chart, profileName, attributionHidden, uhd }) {
   if (!exportRoot || !canvas || !chart) {
     return { ok: false, method: null };
   }
 
-  const blob = await renderChartImageBlob({ exportRoot, canvas, chart });
+  const blob = await renderChartImageBlob({ exportRoot, canvas, chart, attributionHidden, uhd });
   if (!blob) {
     return { ok: false, method: null };
   }
@@ -410,12 +579,12 @@ function buildShareMessage(linkOverride) {
  * @param {string} [profileName] Profile name, slugged into the attachment filename.
  * @returns {{ ok: boolean, method: "share" | "share-fallback-clipboard" | "share-fallback-download" | null }}
  */
-export async function shareChartAsImage({ exportRoot, canvas, chart, url, profileName }) {
+export async function shareChartAsImage({ exportRoot, canvas, chart, url, profileName, attributionHidden, uhd }) {
   if (!exportRoot || !canvas || !chart) {
     return { ok: false, method: null };
   }
 
-  const blob = await renderChartImageBlob({ exportRoot, canvas, chart });
+  const blob = await renderChartImageBlob({ exportRoot, canvas, chart, attributionHidden, uhd });
   if (!blob) {
     return { ok: false, method: null };
   }

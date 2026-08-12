@@ -1,8 +1,10 @@
 import {
   BACKUP_REMINDER_EVERY,
   BACKUP_REMINDER_FIRST,
+  FEATURE_CHART_ATTRIBUTION_SETTING,
   FEATURE_CHART_LEGEND_SETTING,
   FEATURE_CHART_STRUCTURE_SETTINGS,
+  FEATURE_CHART_UHD_EXPORT_SETTING,
   PROFILE_SAVE_COUNT_KEY,
   PROFILES_STORAGE_KEY,
   RETIRED_STORAGE_KEYS,
@@ -21,6 +23,8 @@ export function getDefaultChartDisplay() {
     levelsPolygonHidden: false,
     chartLevelTicksHidden: false,
     chartLegendHidden: false,
+    chartAttributionHidden: false,
+    chartUhdExport: false,
     chartBadgeHidden: false,
     chartTitleHidden: false,
     footerScoresHidden: false,
@@ -41,14 +45,19 @@ export function parseChartDisplay(parsed) {
   }
   const defaults = getDefaultChartDisplay();
   return {
-    // These three are forced back on in the public build: their toggles are admin-gated (see
-    // FEATURE_CHART_STRUCTURE_SETTINGS / FEATURE_CHART_LEGEND_SETTING), so honouring a draft
-    // persisted while they were still reachable would strand a user with a degraded chart and no
-    // control left to restore it. Reading them off here is what heals those older drafts, and the
-    // healed value is written back on the next persistDraft().
+    // EVERY ADMIN-GATED TOGGLE IS FORCED BACK TO ITS DEFAULT in the public build. Honouring a draft persisted
+    // while one was still reachable would leave a user with a setting they can neither see nor undo, since the
+    // control that set it is gone. Reading them off here is what heals those older drafts, and the healed value
+    // is written back on the next persistDraft().
+    // The first four each REMOVE something — the polygon, the level ticks, the legend, the credit line — so a
+    // stale `true` means a degraded chart or an uncredited export. The fifth is the reverse: UHD adds
+    // resolution, and a stale `true` would have a public user silently exporting 4x files they never asked for
+    // and cannot switch off.
     levelsPolygonHidden: FEATURE_CHART_STRUCTURE_SETTINGS && parsed.levelsPolygonHidden === true,
     chartLevelTicksHidden: FEATURE_CHART_STRUCTURE_SETTINGS && parsed.chartLevelTicksHidden === true,
     chartLegendHidden: FEATURE_CHART_LEGEND_SETTING && parsed.chartLegendHidden === true,
+    chartAttributionHidden: FEATURE_CHART_ATTRIBUTION_SETTING && parsed.chartAttributionHidden === true,
+    chartUhdExport: FEATURE_CHART_UHD_EXPORT_SETTING && parsed.chartUhdExport === true,
     chartBadgeHidden: parsed.chartBadgeHidden === true,
     chartTitleHidden: parsed.chartTitleHidden === true,
     footerScoresHidden: Object.hasOwn(parsed, "footerScoresHidden") ? parsed.footerScoresHidden === true : defaults.footerScoresHidden,
@@ -69,6 +78,8 @@ export function toDraftStoragePayload(state) {
     levelsPolygonHidden: state.levelsPolygonHidden,
     chartLevelTicksHidden: state.chartLevelTicksHidden,
     chartLegendHidden: state.chartLegendHidden,
+    chartAttributionHidden: state.chartAttributionHidden,
+    chartUhdExport: state.chartUhdExport === true,
     chartBadgeHidden: state.chartBadgeHidden,
     chartTitleHidden: state.chartTitleHidden,
     ...(state.footerScoresHiddenUserSet ? { footerScoresHidden: state.footerScoresHidden === true } : {}),

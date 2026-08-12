@@ -79,10 +79,39 @@ export const FE_UI = {
        has shrunk with the radius. Also feeds radarTickBackdropHalf() and so the scale's reserved layout space. */
     tickBackdropPad: { top: 1.5, bottom: 1.5, left: 2, right: 2 },
     tickBackdropColor: "rgba(255, 255, 255, 0.5)",
-    exportImageCssScale: 8,
+    /* THE EXPORT IS RENDERED AT A FIXED WIDTH, not at the viewport's.
+       The chart is width-adaptive — label sizes, wrapping and the radar's radius are all derived from the
+       width it fitted at and then baked into the bitmap — so capturing at whatever the window happened to be
+       made the same profile export at ~2800px from a phone and ~4200px from a desktop, with phone
+       proportions baked into the former. Pinning the layout width is what makes an export reproducible.
+       526px is `page.chartMaxWidthPx`, the width the canvas reaches on desktop, so the image carries the
+       proportions a desktop user actually sees rather than a composition no one is shown. */
+    exportImageLayoutWidthPx: 526,
+    /* Resolution multiplier on the pinned layout above — pixel dimensions only, no effect on proportion.
+       2x is the retina target: one CSS px drawn with two physical ones, so the PNG is sharp displayed at its
+       natural size, and 526 + 2×8 padding lands at ~1084px, near enough 1080 to read as a Full-HD-width
+       image. Was 8x, which produced 3-4k-wide files whose extra pixels only paid off under heavy zoom. */
+    exportImageCssScale: 2,
     exportImageCssScaleMax: 12,
+    /** UHD export multiplier, admin-gated (FEATURE_CHART_UHD_EXPORT_SETTING) — for stills that get displayed
+        far larger than natural size, e.g. stretched across a slide. */
+    exportImageCssScaleUhd: 4,
     /** White inset on copied image only (Tailwind p-2 = 8px). */
     exportImagePaddingPx: 8,
+    /* ATTRIBUTION BAND on the copied image only — the credit strip below the chart.
+       Both numbers are fractions of getChartSecondaryLabelSizePx(), the size the cluster legend renders at, so
+       the credit tracks the chart's type scale instead of being a fixed px value against a scaled one.
+       Below 1 because the credit names the framework in FULL, which does not fit on one line at the legend's own
+       size across the pinned export width. It is a constant rather than a measured fit: the string is a constant
+       too. Reword the credit long enough to overrun and this is the knob.
+       No band-height constant: the strip is `exportImageAttributionGapPx + this line's height`. */
+    exportImageAttributionFontRatio: 0.8,
+    /* Space between the content above and the credit line. Larger than exportImagePaddingPx because the content
+       ends flush at the cluster legend's drawn border, so this gap starts at a hard edge rather than at type.
+       The white BELOW the credit is exportImagePaddingPx itself, keeping all four edges of the export on one
+       number. See getAttributionBandPx. */
+    exportImageAttributionGapPx: 16,
+    exportImageAttributionColor: "#94a3b8",
     clusterBorderColor: "rgba(0, 0, 0, 0.22)",
     clusterBorderWidth: 1,
   },

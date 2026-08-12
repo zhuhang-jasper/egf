@@ -17,7 +17,15 @@ import { useMiddleEllipsis } from "@/hooks/useMiddleEllipsis";
 import { useAppStore } from "@/store/useAppStore";
 
 import { getChartTitleSizePx, getTrackBadgeMdHeightPx } from "@/chart/fonts";
-import { FE_UI, FEATURE_CHART_LEGEND_SETTING, FEATURE_CHART_STRUCTURE_SETTINGS, FEATURE_SCORES_SETTINGS, SITE_COPY } from "@/constants";
+import {
+  FE_UI,
+  FEATURE_CHART_ATTRIBUTION_SETTING,
+  FEATURE_CHART_LEGEND_SETTING,
+  FEATURE_CHART_STRUCTURE_SETTINGS,
+  FEATURE_CHART_UHD_EXPORT_SETTING,
+  FEATURE_SCORES_SETTINGS,
+  SITE_COPY,
+} from "@/constants";
 import { TOOLBAR_ICON_SURFACE, TOOLBAR_SURFACE } from "@/styles/toolbar";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
@@ -54,6 +62,10 @@ function ChartDisplayMenu() {
 
   const chartLegendHidden = useAppStore((s) => s.chartLegendHidden);
   const setChartLegendHidden = useAppStore((s) => s.setChartLegendHidden);
+  const chartAttributionHidden = useAppStore((s) => s.chartAttributionHidden);
+  const setChartAttributionHidden = useAppStore((s) => s.setChartAttributionHidden);
+  const chartUhdExport = useAppStore((s) => s.chartUhdExport);
+  const setChartUhdExport = useAppStore((s) => s.setChartUhdExport);
   const chartBadgeHidden = useAppStore((s) => s.chartBadgeHidden);
   const setChartBadgeHidden = useAppStore((s) => s.setChartBadgeHidden);
   const levelsPolygonHidden = useAppStore((s) => s.levelsPolygonHidden);
@@ -127,6 +139,20 @@ function ChartDisplayMenu() {
           ) : null}
           {FEATURE_CHART_LEGEND_SETTING ? (
             <DisplayCheckbox adminOnly label="Legend" checked={!chartLegendHidden} onChange={(v) => setChartLegendHidden(!v)} />
+          ) : null}
+          {/* EXPORT-ONLY ROWS, unlike every other toggle in this menu: neither the credit line nor the export
+              resolution is anything on screen, so these change the copied/shared PNG and nothing the user is
+              looking at. Both are labelled for the image rather than the chart for that reason. */}
+          {FEATURE_CHART_ATTRIBUTION_SETTING ? (
+            <DisplayCheckbox
+              adminOnly
+              label="Attribution on export"
+              checked={!chartAttributionHidden}
+              onChange={(v) => setChartAttributionHidden(!v)}
+            />
+          ) : null}
+          {FEATURE_CHART_UHD_EXPORT_SETTING ? (
+            <DisplayCheckbox adminOnly label="UHD export (4x)" checked={chartUhdExport} onChange={setChartUhdExport} />
           ) : null}
           {/* Appearance of the pillar labels themselves, as opposed to the show/hide toggles above. */}
           <hr className="my-1 border-t border-border" />
@@ -218,6 +244,10 @@ export function ChartSection({ isVisible }) {
   const title = useAppStore((s) => s.title);
   const attachedBadge = useAppStore((s) => s.attachedBadge);
   const chartLegendHidden = useAppStore((s) => s.chartLegendHidden);
+  // Read here only to hand to the export calls — it paints nothing on screen, so it is deliberately absent
+  // from the relayout deps below.
+  const chartAttributionHidden = useAppStore((s) => s.chartAttributionHidden);
+  const chartUhdExport = useAppStore((s) => s.chartUhdExport);
   const chartBadgeHidden = useAppStore((s) => s.chartBadgeHidden);
   const chartTitleHidden = useAppStore((s) => s.chartTitleHidden);
   const footerScoresHidden = useAppStore((s) => s.footerScoresHidden);
@@ -266,6 +296,8 @@ export function ChartSection({ isVisible }) {
         canvas: canvasRef.current,
         chart: chartRef.current,
         profileName: title,
+        attributionHidden: chartAttributionHidden,
+        uhd: chartUhdExport,
       });
       if (result?.method === "clipboard") {
         track("chart_copied", { method: "clipboard" });
@@ -289,6 +321,8 @@ export function ChartSection({ isVisible }) {
         canvas: canvasRef.current,
         chart: chartRef.current,
         profileName: title,
+        attributionHidden: chartAttributionHidden,
+        uhd: chartUhdExport,
       });
       if (result?.method === "share") {
         // Native share sheet opened — completion is out of our hands, so don't claim success.

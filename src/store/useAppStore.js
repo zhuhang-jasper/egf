@@ -81,6 +81,8 @@ export const useAppStore = create((set, get) => ({
   levelsPolygonHidden: initialDraft.levelsPolygonHidden,
   chartLevelTicksHidden: initialDraft.chartLevelTicksHidden,
   chartLegendHidden: initialDraft.chartLegendHidden,
+  chartAttributionHidden: initialDraft.chartAttributionHidden,
+  chartUhdExport: initialDraft.chartUhdExport === true,
   chartBadgeHidden: initialDraft.chartBadgeHidden,
   chartTitleHidden: initialDraft.chartTitleHidden,
   footerScoresHidden: initialDraft.footerScoresHidden,
@@ -165,6 +167,8 @@ export const useAppStore = create((set, get) => ({
         levelsPolygonHidden: draft.levelsPolygonHidden,
         chartLevelTicksHidden: draft.chartLevelTicksHidden,
         chartLegendHidden: draft.chartLegendHidden,
+        chartAttributionHidden: draft.chartAttributionHidden,
+        chartUhdExport: draft.chartUhdExport === true,
         chartBadgeHidden: draft.chartBadgeHidden,
         chartTitleHidden: draft.chartTitleHidden,
         footerScoresHidden: draft.footerScoresHidden,
@@ -216,6 +220,8 @@ export const useAppStore = create((set, get) => ({
         levelsPolygonHidden: get().levelsPolygonHidden,
         chartLevelTicksHidden: get().chartLevelTicksHidden,
         chartLegendHidden: get().chartLegendHidden,
+        chartAttributionHidden: get().chartAttributionHidden,
+        chartUhdExport: get().chartUhdExport,
         chartBadgeHidden: get().chartBadgeHidden,
         chartTitleHidden: get().chartTitleHidden,
         footerScoresHidden: get().footerScoresHidden,
@@ -239,6 +245,16 @@ export const useAppStore = create((set, get) => ({
 
   setChartLegendHidden: (hidden) => {
     set({ chartLegendHidden: hidden });
+    get().persistDraft();
+  },
+
+  setChartAttributionHidden: (hidden) => {
+    set({ chartAttributionHidden: hidden });
+    get().persistDraft();
+  },
+
+  setChartUhdExport: (enabled) => {
+    set({ chartUhdExport: enabled });
     get().persistDraft();
   },
 

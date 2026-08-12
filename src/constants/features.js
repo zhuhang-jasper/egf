@@ -104,6 +104,33 @@ export const FEATURE_SCORES_SETTINGS = IS_ADMIN;
 export const FEATURE_CHART_STRUCTURE_SETTINGS = IS_ADMIN;
 
 /**
+ * When false, hides the "Attribution" toggle so every exported chart PNG carries the credit line.
+ *
+ * The line is what makes a shared image traceable: an exported chart travels without the message it was
+ * posted with, and the framework content is CC BY-NC, which requires attribution. So the public build has no
+ * control to remove it, and parseChartDisplay() forces the flag back off whenever this is false, or a draft
+ * persisted while the toggle was reachable would keep stripping it.
+ *
+ * Admin-gated rather than absent because the author's own materials (poster, README, slides) already carry
+ * the credit around the image and do not need it burned in twice.
+ */
+export const FEATURE_CHART_ATTRIBUTION_SETTING = IS_ADMIN;
+
+/**
+ * When false, hides the "UHD export" toggle so every exported chart PNG uses the default 2x scale.
+ *
+ * 2x is the right default: it is the retina target for an image shown at its natural size, and it keeps the
+ * file small. 4x only pays off when the still is blown up well past that — stretched across a slide, say —
+ * which is an authoring need rather than a sharing one, so it is admin-gated instead of a public choice
+ * nobody has the context to make.
+ *
+ * Gating the toggle is not enough on its own: parseChartDisplay() in utils/storage.js also forces the flag
+ * off whenever this is false, or a draft persisted while the toggle was reachable would leave a public user
+ * exporting 4x files they never asked for and have no control to switch off.
+ */
+export const FEATURE_CHART_UHD_EXPORT_SETTING = IS_ADMIN;
+
+/**
  * When false, hides the "Legend" display toggle so every chart carries the cluster legend.
  *
  * Deliberately separate from FEATURE_CHART_STRUCTURE_SETTINGS despite both being IS_ADMIN today, because only

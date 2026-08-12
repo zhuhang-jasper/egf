@@ -43,6 +43,23 @@ export const SITE_COPY = {
     theoryMessageTemplate:
       "Jasper's 9-Pillar Engineer Growth Framework: a model for measuring software engineering mastery and guiding career paths. {link}",
     toolLinkQuery: "?tab=tool",
+    /**
+     * Credit line painted along the bottom of an exported chart PNG. Not in the DOM: it is a property of the
+     * exported artifact rather than of the on-screen chart, so renderChartImageBlob reserves a strip for it
+     * and draws it straight onto the canvas (the same way the export's own padding is synthesized).
+     *
+     * NAMES THE WORK, unlike the app footer, and that difference is the point rather than an inconsistency.
+     * The footer sits inside the app, where the header, the title and the tab all say what this is; an
+     * exported PNG lands in a chat or a slide deck with NOTHING around it, so it is the one place the credit
+     * has to identify the framework as well as the author and the terms.
+     *
+     * THE FULL TITLE, NOT `shortName`, and the type shrinks to pay for it. Naming the work in full does not
+     * fit at the cluster legend's size over a ~320-530px chart, so renderAttribution steps the font down
+     * until the line fits — landing around 70-80% of the legend, which is still comfortably legible at the
+     * 8x export scale. Identification wins over matching the legend exactly: an abbreviation nobody can
+     * expand is a weaker credit on an image that travels with no context to expand it from.
+     */
+    imageAttribution: "© 2026 Jasper Loo Zhu Hang · 9-Pillar Engineer Growth Framework · CC BY-NC 4.0",
     // `{profileName}` and `{date}` are filled by buildChartFileName. Date last, so one profile's exports
     // sort chronologically in a file listing.
     fileName: "9-pillar-egf-{profileName}-{date}.png",
