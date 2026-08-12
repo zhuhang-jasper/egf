@@ -11,7 +11,7 @@ import { Toaster } from "@/components/ui/Toaster";
 import { getPersistedActiveTab, useTabScrollMemory } from "@/hooks/useTabScrollMemory";
 import { useTheoryUpdates } from "@/hooks/useTheoryUpdates";
 
-import { FE_UI, IS_ADMIN } from "@/constants";
+import { FE_UI, IS_ADMIN, SITE_COPY } from "@/constants";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
 import { cleanTheoryDeepLinkParams, getTabFromUrl, parseTheoryDeepLink, syncTabInUrl } from "@/utils/theory-url";
@@ -374,10 +374,12 @@ export default function HomePage() {
             itself from white content with an upward shadow, so a tint here (which would need a `border-t` to stay
             crisp) puts a second separator 56px from the first. See docs/DECISIONS.md#footer-has-no-chrome.
 
-            `data-print-running` makes this a running footer on paper, repeated at the foot of every sheet. See
-            the `@page` rules in index.css. */}
+            `data-print-running` makes this a running footer on paper, repeated at the foot of every sheet. The
+            print form differs from the screen one in both directions — it names the framework and drops the
+            version — because paper travels without the header, tab bar and URL that identify this on screen.
+            See docs/DECISIONS.md#print-running-footer and the `@page` rules in index.css. */}
         <footer data-print-running className="mt-auto px-3 py-2 text-center text-[11px] text-slate-500">
-          © 2026 Jasper Loo Zhu Hang ·{" "}
+          © 2026 Jasper Loo Zhu Hang · <span className="hidden print:inline">{SITE_COPY.title} · </span>
           <a
             href="https://creativecommons.org/licenses/by-nc/4.0/"
             target="_blank"
@@ -385,8 +387,12 @@ export default function HomePage() {
             className="underline underline-offset-2 hover:text-slate-700"
           >
             CC BY-NC 4.0
-          </a>{" "}
-          · <span className="tabular-nums">v{appVersion}</span>
+          </a>
+          {/* Screen only, and the separator hides WITH it so print does not end on a dangling `·`. */}
+          <span className="print:hidden">
+            {" "}
+            · <span className="tabular-nums">v{appVersion}</span>
+          </span>
         </footer>
       </main>
 
