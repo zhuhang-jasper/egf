@@ -500,7 +500,7 @@ function PosterToggle({ label, checked, onChange }) {
  * State is owned by the PAGE, not this menu and not the app store: view state for one admin page with
  * nothing to restore across sessions, unlike the tool's toggles, which are part of the persisted draft.
  */
-function PosterSettingsMenu({ showPillars, setShowPillars, showTracks, setShowTracks }) {
+function PosterSettingsMenu({ showHeader, setShowHeader, showPillars, setShowPillars, showTracks, setShowTracks }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
 
@@ -544,6 +544,7 @@ function PosterSettingsMenu({ showPillars, setShowPillars, showTracks, setShowTr
           aria-label="Poster display settings"
           className="absolute left-1/2 top-[calc(100%+4px)] z-50 w-max -translate-x-1/2 rounded-lg border border-slate-300 bg-white py-1 shadow-lg"
         >
+          <PosterToggle label="Masthead" checked={showHeader} onChange={setShowHeader} />
           <PosterToggle label="The 9 Pillars" checked={showPillars} onChange={setShowPillars} />
           <PosterToggle label="3 Career Tracks" checked={showTracks} onChange={setShowTracks} />
         </div>
@@ -559,7 +560,8 @@ export default function PosterPage() {
   const [copyState, setCopyState] = useState("idle"); // idle | done | error
   const [downloadState, setDownloadState] = useState("idle");
   const [errMsg, setErrMsg] = useState("");
-  // Which bands the paper carries. Both on by default — the full poster is what this page is for.
+  // Which bands the paper carries. All on by default — the full poster is what this page is for.
+  const [showHeader, setShowHeader] = useState(true);
   const [showPillars, setShowPillars] = useState(true);
   const [showTracks, setShowTracks] = useState(true);
   const scale = useFitScale();
@@ -578,7 +580,7 @@ export default function PosterPage() {
       await fn(posterRef.current, canvasH);
       // Height and bands ride along because the poster is no longer one fixed artifact: without them
       // an export event can't be told apart from any other shape the toggles produce.
-      const bands = [showPillars && "pillars", showTracks && "tracks"].filter(Boolean).join("+") || "none";
+      const bands = [showHeader && "header", showPillars && "pillars", showTracks && "tracks"].filter(Boolean).join("+") || "none";
       track("poster_exported", { action, height: canvasH, bands });
       setState("done");
       setTimeout(() => setState("idle"), 2000);
@@ -634,7 +636,14 @@ export default function PosterPage() {
         <BackToToolButton />
         <div className="pointer-events-none absolute inset-x-0 flex justify-center">
           <div className="pointer-events-auto">
-            <PosterSettingsMenu showPillars={showPillars} setShowPillars={setShowPillars} showTracks={showTracks} setShowTracks={setShowTracks} />
+            <PosterSettingsMenu
+              showHeader={showHeader}
+              setShowHeader={setShowHeader}
+              showPillars={showPillars}
+              setShowPillars={setShowPillars}
+              showTracks={showTracks}
+              setShowTracks={setShowTracks}
+            />
           </div>
         </div>
         <span className="shrink-0 select-none text-sm font-semibold tabular-nums text-white">
@@ -656,7 +665,13 @@ export default function PosterPage() {
             it is clipped. Removing this would let those boxes widen the paper itself. */}
         <article
           ref={posterRef}
-          className="relative flex flex-col overflow-hidden bg-white px-10 py-10 shadow-2xl"
+          /* `pt-10` PAIRS WITH THE MASTHEAD, NOT WITH THE PAPER. 40px is the air a poster title wants above
+             it; a SectionLabel is a divider rather than a masthead and wants less, so with the header off the
+             first band would otherwise open on a top gap visibly deeper than the paper's own bottom edge.
+             (The bands' `mt-6` already drops away in that case — see each band below — so this is the
+             remaining half of the same asymmetry.) Bottom padding is unconditional: the last band ends on
+             ordinary content whatever is switched on. */
+          className={`relative flex flex-col overflow-hidden bg-white px-10 pb-10 shadow-2xl ${showHeader ? "pt-10" : "pt-6"}`}
           style={{ width: CANVAS_W, transform: `scale(${scale})`, transformOrigin: "top left" }}
         >
           {/* Floating export controls — inside the poster (scale with it), top-right, excluded from
@@ -685,29 +700,39 @@ export default function PosterPage() {
             ) : null}
           </div>
 
-          {/* Header — poster masthead with oversized "9" mark */}
-          <header>
-            <div className="flex items-stretch gap-4">
-              {/* Big "9" reads as part of the title; no wasted eyebrow line beside it */}
-              <span className="text-[132px] font-extrabold leading-[0.8] tracking-tighter text-slate-900 -translate-y-1">9</span>
-              <div className="flex min-w-0 flex-1 flex-col justify-center">
-                <div className="flex items-end justify-between gap-6">
-                  <h1 className="shrink-0 whitespace-nowrap text-[52px] font-extrabold leading-[1] tracking-tight text-slate-900">
-                    Pillar Engineer
-                    <br />
-                    Growth Framework
-                  </h1>
-                  {/* Byline as a signature, sitting on the "Engineering Mastery" baseline */}
-                  <span className="self-end text-[24px] font-bold whitespace-nowrap text-slate-900">{SITE_COPY.byline}</span>
-                </div>
-                {/* <p className="mt-3 text-[20px] font-bold uppercase tracking-[0.22em] text-slate-500">The Engineer Growth Framework</p> */}
-              </div>
-            </div>
+          {/* Header — poster masthead with oversized "9" mark.
 
-            <p className="mt-3 px-3 text-[24px] leading-snug text-slate-700">
-              {SITE_COPY.tagline} <span className="text-slate-700">{SITE_COPY.detail}</span>
-            </p>
-          </header>
+              Toggled by the settings menu like the two bands below, and unmounted rather than hidden for the
+              same reason: the paper's height is MEASURED (see useMeasuredHeight), so `invisible` would leave
+              its full height as a blank strip at the top of the export.
+
+              WHY SWITCH IT OFF: the README already carries the title, byline and tagline as text directly
+              above the image, so the masthead repeats all three. Exporting without it is what produces the
+              cropped ring-only artwork, without a second copy of the artwork to keep in sync. */}
+          {showHeader ? (
+            <header>
+              <div className="flex items-stretch gap-4">
+                {/* Big "9" reads as part of the title; no wasted eyebrow line beside it */}
+                <span className="text-[132px] font-extrabold leading-[0.8] tracking-tighter text-slate-900 -translate-y-1">9</span>
+                <div className="flex min-w-0 flex-1 flex-col justify-center">
+                  <div className="flex items-end justify-between gap-6">
+                    <h1 className="shrink-0 whitespace-nowrap text-[52px] font-extrabold leading-[1] tracking-tight text-slate-900">
+                      Pillar Engineer
+                      <br />
+                      Growth Framework
+                    </h1>
+                    {/* Byline as a signature, sitting on the "Engineering Mastery" baseline */}
+                    <span className="self-end text-[24px] font-bold whitespace-nowrap text-slate-900">{SITE_COPY.byline}</span>
+                  </div>
+                  {/* <p className="mt-3 text-[20px] font-bold uppercase tracking-[0.22em] text-slate-500">The Engineer Growth Framework</p> */}
+                </div>
+              </div>
+
+              <p className="mt-3 px-3 text-[24px] leading-snug text-slate-700">
+                {SITE_COPY.tagline} <span className="text-slate-700">{SITE_COPY.detail}</span>
+              </p>
+            </header>
+          ) : null}
 
           {/* The 9 pillars as a radial ring around the central radar — chart + labels merged.
 
@@ -718,7 +743,7 @@ export default function PosterPage() {
               Toggled by the settings menu. Unmounted rather than hidden, so the paper's measured height
               actually drops when it is off — `invisible`/`opacity-0` would keep occupying the stage. */}
           {showPillars ? (
-            <div className="mt-6 flex flex-col gap-3 mb-3">
+            <div className={`flex flex-col gap-3 mb-3 ${showHeader ? "mt-6" : ""}`}>
               <SectionLabel>The 9 Pillars</SectionLabel>
               <PillarRing />
             </div>
@@ -726,12 +751,15 @@ export default function PosterPage() {
 
           {/* Career tracks — foundational S1–S2 phase, then three columns that split at S3.
 
-              A PLAIN `mt-6` IN BOTH CASES. This used to be `-mt-2`, a negative margin that existed to claw
-              back the ring stage's empty bottom edge; PillarRing now trims that edge itself, so subtracting
-              it again here would pull the tracks up into the lowest pillar labels. The same `mt-6` applies
-              with the ring switched off, where the band simply follows the header. */}
+              A PLAIN `mt-6` WHENEVER SOMETHING IS ABOVE. This used to be `-mt-2`, a negative margin that
+              existed to claw back the ring stage's empty bottom edge; PillarRing now trims that edge itself,
+              so subtracting it again here would pull the tracks up into the lowest pillar labels.
+
+              DROPPED WHEN THIS BAND IS FIRST ON THE PAPER (header and ring both off): the article's own
+              `py-10` is already the top margin, and a top margin under it reads as a lopsided paper. Same
+              rule on the ring band above. */}
           {showTracks ? (
-            <div className="mt-6 flex flex-col gap-3">
+            <div className={`flex flex-col gap-3 ${showHeader || showPillars ? "mt-6" : ""}`}>
               <SectionLabel>3 Career Tracks</SectionLabel>
 
               {/* Foundational phase: everyone starts here, then forks at Senior (S3) */}
