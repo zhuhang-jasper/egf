@@ -472,7 +472,14 @@ function TrackCard({ careerTrack }) {
             <span className="min-w-0 text-[20px] font-semibold leading-tight text-slate-700 -mr-2">
               {r.level === "S5"
                 ? r.title.split(" / ").map((part, i) => (
-                    <span key={part} className="block">
+                    /* `whitespace-nowrap`, not a natural wrap. "Principal Software Engineer" measures within a
+                       pixel or two of this box (~265px at 20px/600), so whether it fit was decided by glyph-advance
+                       rounding at the DEVICE scale — one line in a normal window, two under DevTools device
+                       emulation at the same CSS width, which then pushed this card's ladder a row taller than its
+                       neighbours'. The split at " / " already says where the breaks go, so there is no wrap
+                       decision left to make; `tracking-tight` buys the few pixels that keeps the widest part
+                       inside the card at any DPR. */
+                    <span key={part} className="block whitespace-nowrap tracking-tight">
                       {i > 0 ? `/ ${part}` : part}
                     </span>
                   ))
