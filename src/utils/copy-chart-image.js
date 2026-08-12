@@ -87,8 +87,8 @@ function getExportImagePaddingPx() {
  * lifecycle, whereas widening the real element reuses the converge loop that already owns this fit. The cost
  * is a visible reflow for a few frames, contained by `overflow: hidden` on the wrapper.
  *
- * `chart.resize()` re-derives the geometry; the double rAF lets the ResizeObserver converge the frame height
- * before anything is measured.
+ * `chart.resize()` re-derives the geometry; the double rAF lets the frame converge. What has to be right here
+ * is the WIDTH — `rasterizeChart` resizes again and measures that later layout.
  */
 async function withPinnedExportWidth(exportRoot, chart, widthPx) {
   const prev = {
@@ -414,32 +414,20 @@ export async function renderChartImageBlob({ exportRoot, canvas, chart, attribut
 
 /**
  * The capture itself, split out so `renderChartImageBlob` owns only the pinned-width window around it. Assumes
- * `exportRoot` is already laid out at the export width.
+ * `exportRoot` is already pinned to the export WIDTH; the height is this function's own to settle.
  */
 async function rasterizeChart({ exportRoot, canvas, chart, attributionHidden, uhd, padPx }) {
-  // The RADAR's width, which is what the legend's own type size is derived from — not the export root's,
-  // which includes the padding and any wider chrome around the chart.
-  const chartWidthPx = Math.max(1, Math.round(canvas.getBoundingClientRect().width));
-  const bandPx = getAttributionBandPx(attributionHidden, chartWidthPx);
-  const contentW = Math.max(1, Math.round(exportRoot.offsetWidth));
-  const contentH = Math.max(1, Math.round(exportRoot.offsetHeight));
-  const cssW = contentW + padPx * 2;
-  // The band is added BELOW the content, so every rect mirrored from the DOM keeps the same offsets and only
-  // the canvas gets taller. It SUPPLIES ITS OWN BOTTOM INSET (gap + line + inset), so it replaces the trailing
-  // `padPx` rather than stacking on it; without a band the layout is the plain `padPx` on both sides.
-  const cssH = contentH + padPx + (bandPx || padPx);
   const scaleMax = Math.max(1, Number(FE_UI.chart.exportImageCssScaleMax) || 12);
   const requestedScale = uhd ? Number(FE_UI.chart.exportImageCssScaleUhd) || 4 : Number(FE_UI.chart.exportImageCssScale) || 2;
   const cssScale = Math.max(0.25, Math.min(scaleMax, requestedScale));
-  const exportW = Math.max(120, Math.round(cssW * cssScale));
-  const exportH = Math.max(2, Math.round(cssH * cssScale));
-  const pxPerCssX = exportW / cssW;
-  const pxPerCssY = exportH / cssH;
 
   const hadDpr = Object.hasOwn(chart.options, "devicePixelRatio");
   const prevDpr = chart.options.devicePixelRatio;
 
   try {
+    // THE RESIZE COMES FIRST; every measurement below is read from the layout it settles at. `chart.resize()`
+    // re-fits the frame height via onResize, so measuring above it sizes the canvas from a layout the export
+    // never draws. See docs/DECISIONS.md#export-geometry-is-measured-after-the-dpr-resize.
     chart.options.devicePixelRatio = Math.max(cssScale, window.devicePixelRatio || 1);
     chart.resize();
     chart.update("none");
@@ -448,6 +436,22 @@ async function rasterizeChart({ exportRoot, canvas, chart, attributionHidden, uh
     if (canvas.width < 2 || canvas.height < 2) {
       return null;
     }
+
+    // The RADAR's width, which is what the legend's own type size is derived from — not the export root's,
+    // which includes the padding and any wider chrome around the chart.
+    const chartWidthPx = Math.max(1, Math.round(canvas.getBoundingClientRect().width));
+    const bandPx = getAttributionBandPx(attributionHidden, chartWidthPx);
+    const contentW = Math.max(1, Math.round(exportRoot.offsetWidth));
+    const contentH = Math.max(1, Math.round(exportRoot.offsetHeight));
+    const cssW = contentW + padPx * 2;
+    // The band is added BELOW the content, so every rect mirrored from the DOM keeps the same offsets and only
+    // the canvas gets taller. It SUPPLIES ITS OWN BOTTOM INSET (gap + line + inset), so it replaces the trailing
+    // `padPx` rather than stacking on it; without a band the layout is the plain `padPx` on both sides.
+    const cssH = contentH + padPx + (bandPx || padPx);
+    const exportW = Math.max(120, Math.round(cssW * cssScale));
+    const exportH = Math.max(2, Math.round(cssH * cssScale));
+    const pxPerCssX = exportW / cssW;
+    const pxPerCssY = exportH / cssH;
 
     const out = document.createElement("canvas");
     out.width = exportW;

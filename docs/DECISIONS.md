@@ -828,3 +828,29 @@ all, just hidden. It started as a cross-fade and that **ghosted** — two semi-t
 overlaid, the old tab's headings legible through the new one's. Cross-fading two opaque full-page layouts
 always does; no pair of intermediate opacities shows only one of them. Do not reintroduce an exit animation
 to "balance" the entrance.
+
+### export-geometry-is-measured-after-the-dpr-resize
+
+`rasterizeChart` reads every number it needs — `chartWidthPx`, `contentH`, and so the canvas size and the
+attribution band — **after** it raises the chart's `devicePixelRatio` and resizes, not before.
+
+The order is the whole fix. `chart.resize()` fires `onResize: syncFontsForChart` (see `chart/instance.js`),
+which re-derives the label fonts and re-fits the frame's height. Nothing in that path reads `devicePixelRatio`
+itself, so it is the resize **call**, not the dpr value, that moves the layout — it moves it at any dpr, on
+the 2x default and the 4x UHD path alike.
+
+Measuring first meant sizing the output canvas from a layout the export then never rasterised. On a narrow
+viewport the root measured 215px while the settled layout was 310px, and because the canvas slot lower down is
+measured after the resize, the radar was drawn 95px past the bottom of the canvas those stale numbers had
+sized. Two symptoms, one cause: the export cropped through the lower axis labels, and the credit line was
+positioned against a content edge that had already moved, landing on top of "Communication" / "Ownership".
+
+The band arithmetic was never wrong. `getAttributionBandPx` reserves `gap + line + inset` and
+`renderAttribution` bottom-aligns onto that same inset, which is self-consistent and leaves the credit clear of
+the content — **given a `contentH` that describes the layout being drawn**. Three attempts went into the
+spacing formula and the pin's settle loop before the numbers were actually logged; the formula and the pin
+were both fine.
+
+`withPinnedExportWidth` still has to run first and still has to settle, but only for the **width**: the fit,
+the label sizes and the credit band all derive from it. The height it happens to converge to there is
+superseded by the dpr resize, so there are two settles and only the second one is measured.
