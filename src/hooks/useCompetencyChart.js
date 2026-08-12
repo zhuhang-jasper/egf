@@ -37,8 +37,13 @@ function convergeContentHeight(frame, chart, w) {
   return applied;
 }
 
-/** Converge the frame height to the radar's measured label span. Returns the height it applied. */
-function fitFrameToChart(frame, chart, w) {
+/**
+ * Converge the frame height to the radar's measured label span. Returns the height it applied.
+ *
+ * Exported for the off-screen export clone (utils/export-clone.js), which has to reproduce this fit exactly
+ * or its radar geometry diverges from the on-screen one. Sharing the function is what keeps them identical.
+ */
+export function fitFrameToChart(frame, chart, w) {
   // There is a single pillar layout now (the FE/BE distinction is a cosmetic badge, not a different
   // axis set), so the chart labels are the same regardless of badge. Set them once, converge the
   // frame height once, then lock that height so display-toggle changes never shift the UI below.
@@ -79,7 +84,7 @@ function fitFrameToChart(frame, chart, w) {
  * `pointLabelPxRange` puts the tool chart on the same axis-label ramp as the theory hero radar
  * (see FE_UI.chart.pointLabelPxRange) instead of the rounded pointLabelPx × width scaling.
  */
-function chartState() {
+export function chartState() {
   const state = useAppStore.getState();
   return { ...state, plainLabels: state.pillarEmojiHidden === true, pointLabelPxRange: FE_UI.chart.pointLabelPxRange };
 }

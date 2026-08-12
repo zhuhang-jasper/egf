@@ -1,6 +1,6 @@
 import { getChartSecondaryLabelSizePx } from "@/chart/fonts";
-import { syncFontsForChart } from "@/chart/radar-center";
 import { FE_UI, SITE_COPY } from "@/constants";
+import { createExportClone } from "@/utils/export-clone";
 import { ensureInterFontsLoaded } from "@/utils/export-image";
 
 const UNSUPPORTED_COLOR_RE = /(?:oklch|oklab|lab\(|lch\(|color\()/i;
@@ -77,40 +77,6 @@ function sanitizeColorForHtml2Canvas(value) {
 
 function getExportImagePaddingPx() {
   return Math.max(0, Number(FE_UI.chart.exportImagePaddingPx) || 8);
-}
-
-/**
- * Pins `exportRoot` to the export's fixed layout width and waits for the chart to re-fit at it, returning a
- * restore function.
- *
- * INLINE WIDTH ON THE LIVE ELEMENT, not a clone: a cloned <canvas> is blank and would need its own Chart.js
- * lifecycle, whereas widening the real element reuses the converge loop that already owns this fit. The cost
- * is a visible reflow for a few frames, contained by `overflow: hidden` on the wrapper.
- *
- * `chart.resize()` re-derives the geometry; the double rAF lets the frame converge. What has to be right here
- * is the WIDTH — `rasterizeChart` resizes again and measures that later layout.
- */
-async function withPinnedExportWidth(exportRoot, chart, widthPx) {
-  const prev = {
-    width: exportRoot.style.width,
-    maxWidth: exportRoot.style.maxWidth,
-    overflow: exportRoot.style.overflow,
-  };
-  exportRoot.style.width = `${widthPx}px`;
-  exportRoot.style.maxWidth = "none";
-  exportRoot.style.overflow = "hidden";
-
-  chart.resize();
-  chart.update("none");
-  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-
-  return () => {
-    exportRoot.style.width = prev.width;
-    exportRoot.style.maxWidth = prev.maxWidth;
-    exportRoot.style.overflow = prev.overflow;
-    chart.resize();
-    chart.update("none");
-  };
 }
 
 /**
@@ -383,9 +349,11 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY, padX, padY) {
 }
 
 /**
- * Rasterize the chart export DOM (title, legend, badge, scores) plus the live radar canvas into a
- * single high-res PNG and return it as a Blob. Shared by the clipboard-copy and share paths.
- * Returns null if the refs aren't ready or the canvas hasn't drawn yet.
+ * Rasterize the chart export DOM (title, legend, badge, scores) plus the radar into a single high-res PNG and
+ * return it as a Blob. Shared by the clipboard-copy and share paths. Null if nothing is ready to capture.
+ *
+ * `canvas` and `chart` are the LIVE ones and are read only as a readiness signal — the pixels come from the
+ * off-screen clone, which builds its own. See docs/DECISIONS.md#export-renders-from-an-off-screen-clone.
  */
 export async function renderChartImageBlob({ exportRoot, canvas, chart, attributionHidden = false, uhd = false }) {
   if (!exportRoot || !canvas || !chart) {
@@ -399,16 +367,27 @@ export async function renderChartImageBlob({ exportRoot, canvas, chart, attribut
 
   const padPx = getExportImagePaddingPx();
   const layoutW = Math.max(120, Math.round(Number(FE_UI.chart.exportImageLayoutWidthPx) || 526));
-  // EVERY MEASUREMENT BELOW IS TAKEN WHILE PINNED. Widening the root changes the frame height, the label
-  // sizes and the canvas rect, so reading any of them before this point would mix the live layout's numbers
-  // into a capture of the pinned one.
-  const restoreWidth = await withPinnedExportWidth(exportRoot, chart, layoutW);
+
+  // No fallback to pinning the live element: a failed clone skips the export rather than reintroducing the
+  // flash it exists to remove.
+  const clone = createExportClone(exportRoot, layoutW);
+  if (!clone) {
+    return null;
+  }
 
   try {
-    return await rasterizeChart({ exportRoot, canvas, chart, attributionHidden, uhd, padPx });
+    clone.fit();
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    return await rasterizeChart({
+      exportRoot: clone.root,
+      canvas: clone.canvas,
+      chart: clone.chart,
+      attributionHidden,
+      uhd,
+      padPx,
+    });
   } finally {
-    restoreWidth();
-    requestAnimationFrame(() => syncFontsForChart(chart));
+    clone.dispose();
   }
 }
 

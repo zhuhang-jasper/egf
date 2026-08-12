@@ -575,7 +575,7 @@ The printed pillar grid reaches 3 columns at `@media print and (min-width: 640px
 
 This is not a fix for a print-only bug. The grid's own `xs:`/`md:` steps are plain `min-width` queries, and in
 paged media those resolve against the **page box**, so the printed grid already tracked paper size. The
-problem was only *where* the 3-column step sat: `md`, 768px, which most portrait paper falls under once
+problem was only _where_ the 3-column step sat: `md`, 768px, which most portrait paper falls under once
 margins are taken off. Hence Letter dropping to 2 columns.
 
 Page widths at the zero side margins: A4 portrait 794px, Letter 816px, A5 559px, A6 397px. 640 is chosen for
@@ -597,7 +597,7 @@ the document no longer emits a trailing blank sheet.
 
 **`bottom: 0`, inside the page area, and it must stay there.** A negative offset looks tempting, since it
 would drop the line into the page's bottom margin and guarantee it never meets body text. What it actually
-does is put the box outside the page area, and Chromium renders that overrun at the *start of the next page*:
+does is put the box outside the page area, and Chromium renders that overrun at the _start of the next page_:
 the footer appeared at the top of every sheet from the second onwards. The margin band is unreachable without
 `@page` margin boxes, so `bottom: 0` is the only correct place.
 
@@ -637,7 +637,7 @@ to clear, so the reasoning inverts and the margin should be as small as paper al
   content still sits ~3mm off the paper edge. That is thin for hardware (most laser and inkjet printers cannot
   print within ~4-5mm of an edge) but it only risks the outer card borders, and it is exact for PDF.
 - **Top and bottom at 5mm** because that edge has something at it. The running footer is `bottom: 0` of the
-  page *area*, so it lands exactly this margin above the paper edge; at 0 it would be the first thing a
+  page _area_, so it lands exactly this margin above the paper edge; at 0 it would be the first thing a
   printer clipped, and it is the one element with nothing beneath it. Equal vertical values also keep the
   head and foot gaps matched.
 
@@ -854,3 +854,58 @@ were both fine.
 `withPinnedExportWidth` still has to run first and still has to settle, but only for the **width**: the fit,
 the label sizes and the credit band all derive from it. The height it happens to converge to there is
 superseded by the dpr resize, so there are two settles and only the second one is measured.
+
+### export-renders-from-an-off-screen-clone
+
+The copied/shared PNG is rasterised from a **clone** of the chart export DOM, mounted in a host parked at
+`left: -10000px` with its own Chart.js instance, not from the element on screen.
+
+It used to pin the live element: set `width: 526px` on the real `exportRoot`, let the chart re-fit, capture,
+then restore. That reused the fit already running and needed no second chart, but the user saw it — on a narrow
+viewport the chart visibly jumped to 526px and back for the few frames the pin was held. `overflow: hidden` on
+the wrapper stopped it forcing a page scrollbar; it could not stop the reflow being visible.
+
+A clone costs a second chart lifecycle, which is the thing to be careful about: **a cloned `<canvas>` is
+blank**, since canvas pixels are not part of the DOM. So the clone gets a real chart built from
+`createCompetencyChart` — the same factory the live one uses — handed the same store state, and run through the
+same `fitFrameToChart`. All three are shared rather than reimplemented, which is what stops the exported radar
+drifting from the on-screen one; `fitFrameToChart` is exported from `useCompetencyChart` for exactly this.
+
+The clone finds its frame by `[data-chart-frame]`. Refs do not survive `cloneNode`, and a positional parent
+walk would silently fit the wrong element the first time that markup gains a wrapper.
+
+**The chrome has to be rescaled by hand.** The title, track badge and cluster legend size themselves in JS
+from the frame width React last measured, and write the result as inline styles. `cloneNode` copies those
+literally and nothing re-renders a detached clone, so an export taken on a phone came out with phone-sized
+type ringing a 526px radar — the radar scaled, the words around it did not. `rescaleChromeForWidth` recomputes
+them through the same `fonts.js` helpers the components call, which is why those helpers are the shared
+source of truth rather than each site inlining the arithmetic.
+
+Everything is scaled from the **frame's** width, not the host's. The frame sits inside the root's horizontal
+padding, so the two differ, and the frame is what `useChartFrameFit` measures on screen; using the host width
+would fit the radar to a box it is not in.
+
+**The inherited frame HEIGHT has to be cleared too**, and this is the subtler half. `applyChartFrameLayout`
+writes the frame's height as an inline px value, so the clone is born carrying the viewport's height. The
+converge loop measures label extents *inside the box it is given* and settles near whatever it starts from, so
+a phone's ~330px came out ~330px even at a 526px width. The radar is height-limited, not width-limited, so the
+visible result was a small radar with its label ring pulled in, floating in white at the correct overall
+width — width and chrome right, radar wrong. Calling `applyChartFrameLayout(frame, width, null)` before the
+fit resets it to the width-derived estimate, which is what a fresh mount starts from.
+
+**The clone is isolated from the visible chart, NOT from the page**, and both halves of that are deliberate.
+It is appended to `document.body` and really laid out, because a detached or `display:none` subtree measures
+zero and never paints — there would be nothing to capture. Living in the page is also what gives the export
+its type: `font-family: "Inter Variable"`, `font-optical-sizing` and the `letter-spacing` correction are
+declared on `html, body, #root` in `index.css` and reach the clone by inheritance. Move this into an iframe or
+a shadow root to "isolate it properly" and the exported text silently changes face and metrics.
+
+The rule that follows is worth remembering, because every bug this has produced so far obeyed it: **stylesheet
+rules inherit correctly into the clone; anything the app writes imperatively to `element.style` is copied
+verbatim by `cloneNode` and is therefore stale.** The chrome's font sizes and the frame's height were both
+imperative, which is exactly why both had to be re-derived by hand. A new width-scaled inline style anywhere
+in the export subtree is a new instance of this bug.
+
+Two further properties fall out beyond the flash. The export no longer depends on the viewport, so it renders
+identically on a phone and a desktop; and it no longer has to restore anything, so an export that throws
+midway cannot leave the visible chart pinned at the wrong width.
