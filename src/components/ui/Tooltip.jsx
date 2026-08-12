@@ -53,7 +53,7 @@ export function Tooltip({ text, className, visible = false, placement = "top" })
     setAnchor(anchorRef.current?.parentElement ?? null);
   }, []);
 
-  const { refs, floatingStyles } = useFloating({
+  const { refs, floatingStyles, update } = useFloating({
     elements: { reference: anchor },
     // `fixed` so the tooltip never contributes to document overflow — see the note above.
     strategy: "fixed",
@@ -75,6 +75,24 @@ export function Tooltip({ text, className, visible = false, placement = "top" })
     ],
     whileElementsMounted: autoUpdate,
   });
+
+  // Re-measure when the trigger is actually pointed at. `autoUpdate` cannot catch the panel un-hiding on a tab
+  // switch: its scroll listeners are bound to the overflow ancestors captured at setup (nothing scrolls, so
+  // nothing fires), and its IntersectionObserver is never installed at all, because the trigger measured 0x0
+  // while the panel was `hidden` and observeMove bails on a zero-sized reference. The placement left over from
+  // that state points `top`, into the sticky header. Hover is the one signal that always precedes the tooltip
+  // being seen, so it is what re-runs `flip()` against the trigger's real rect.
+  useEffect(() => {
+    if (!anchor) {
+      return undefined;
+    }
+    anchor.addEventListener("pointerenter", update);
+    anchor.addEventListener("focusin", update);
+    return () => {
+      anchor.removeEventListener("pointerenter", update);
+      anchor.removeEventListener("focusin", update);
+    };
+  }, [anchor, update]);
 
   if (!text) {
     return null;
