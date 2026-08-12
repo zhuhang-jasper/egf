@@ -377,7 +377,16 @@ export default function HomePage() {
             `data-print-running` makes this a running footer on paper, repeated at the foot of every sheet. See
             the `@page` rules in index.css. */}
         <footer data-print-running className="mt-auto px-3 py-2 text-center text-[11px] text-slate-500">
-          © 2026 Jasper Loo Zhu Hang · All rights reserved · <span className="tabular-nums">v{appVersion}</span>
+          © 2026 Jasper Loo Zhu Hang ·{" "}
+          <a
+            href="https://creativecommons.org/licenses/by-nc/4.0/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-2 hover:text-slate-700"
+          >
+            CC BY-NC 4.0
+          </a>{" "}
+          · <span className="tabular-nums">v{appVersion}</span>
         </footer>
       </main>
 
