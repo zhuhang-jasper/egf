@@ -204,6 +204,9 @@ const RING_RY = 250; // vertical radius to each label centre — pulled in towar
 const RING_CORNER_BOOST = 64;
 const CARD_W = 360; // label width — wide enough for the longest question to fit in exactly 2 rows
 const CHART_SIZE = 400; // box for the centred radar hub — larger so its grid reaches the labels
+// Track-card radar. A constant, not a Tailwind arbitrary value, because PosterRadar renders at an
+// explicit px size (responsive off) and the two must not drift apart.
+const TRACK_CHART_SIZE = 170;
 
 // Per-pillar manual nudges (px) after the ring math, to relieve specific crowding.
 const RING_NUDGE = {
@@ -271,13 +274,21 @@ Chart.register(RadarController, RadialLinearScale, PointElement, LineElement, Fi
  * collapses to a tiny blob inside a transformed/absolute box). Labels and ticks are hidden;
  * the surrounding cards / chips are the labels.
  *
+ * NOT `responsive`, and that is the fix for a real bug rather than an optimisation. The poster renders
+ * at true pixel size under a viewport-derived `transform: scale()`, and Chart.js's responsive observer
+ * sizes the canvas from the container's SCALED rect while the box it sits in is unscaled. Changing the
+ * scale (resizing, or toggling DevTools device mode) then shrank the radar to a blob in a full-size box,
+ * with nothing to restore it since the chart is only rebuilt when its data props change. Every call site
+ * is a fixed-px box, so `size` is passed in and the canvas is pinned to it.
+ *
  * @param levels       per-pillar values in fe order
+ * @param size         edge length in px — must match the box, since nothing measures it
  * @param showClusters draw the colour-coded cluster wedges (the track mini-charts use this)
  * @param showPolygon  draw the data polygon (false on the hub → just a labelled L1–L5 grid)
  * @param showTicks    show the L1–L5 ring tick labels
  * @param lineWidth    stroke width
  */
-function PosterRadar({ levels, showClusters = false, showPolygon = true, showTicks = false, lineWidth = 3, pointRadius = 3 }) {
+function PosterRadar({ levels, size, showClusters = false, showPolygon = true, showTicks = false, lineWidth = 3, pointRadius = 3 }) {
   const canvasRef = useRef(null);
   useLayoutEffect(() => {
     const d = FE_UI.dataset;
@@ -300,7 +311,7 @@ function PosterRadar({ levels, showClusters = false, showPolygon = true, showTic
         ],
       },
       options: {
-        responsive: true,
+        responsive: false,
         maintainAspectRatio: false,
         animation: false,
         backgroundColor: "transparent",
@@ -334,8 +345,11 @@ function PosterRadar({ levels, showClusters = false, showPolygon = true, showTic
       plugins: showClusters ? [createClusterBackgroundPlugin()] : [],
     });
     return () => chart.destroy();
-  }, [levels, showClusters, showPolygon, showTicks, lineWidth, pointRadius]);
-  return <canvas ref={canvasRef} aria-label="competency radar chart" />;
+  }, [levels, size, showClusters, showPolygon, showTicks, lineWidth, pointRadius]);
+  // width/height ATTRIBUTES, not CSS: with responsive off these are the render size Chart.js draws at,
+  // and the matching CSS box keeps the bitmap 1:1 with its layout box (the poster's own scale does the
+  // visual sizing). devicePixelRatio still applies on top, so the export stays sharp.
+  return <canvas ref={canvasRef} width={size} height={size} style={{ width: size, height: size }} aria-label="competency radar chart" />;
 }
 
 /**
@@ -401,7 +415,7 @@ function PillarRing() {
         {/* Centre radar — point labels hidden; the ring cards ARE the labels */}
         <div className="absolute" style={{ width: CHART_SIZE, height: CHART_SIZE, left: "50%", top: "50%", transform: "translate(-50%, -50%)" }}>
           {/* Centre: cluster-coloured L1–L5 radial grid — data polygon hidden; the ring labels carry the meaning */}
-          <PosterRadar levels={POSTER_LEVELS} showClusters showPolygon={false} showTicks />
+          <PosterRadar levels={POSTER_LEVELS} size={CHART_SIZE} showClusters showPolygon={false} showTicks />
         </div>
         {RING_PILLARS.map((p) => (
           <PillarNode key={p.id} pillar={p} />
@@ -426,8 +440,8 @@ function TrackCard({ careerTrack }) {
       </h4>
 
       {/* Characteristic chart shape — with cluster background colour */}
-      <div className="relative mx-auto mt-2 h-[170px] w-[170px]">
-        <PosterRadar levels={careerTrack.levels} showClusters lineWidth={2.5} pointRadius={0} />
+      <div className="relative mx-auto mt-2" style={{ width: TRACK_CHART_SIZE, height: TRACK_CHART_SIZE }}>
+        <PosterRadar levels={careerTrack.levels} size={TRACK_CHART_SIZE} showClusters lineWidth={2.5} pointRadius={0} />
       </div>
 
       {/* Key pillars — plain names, no emoji. Fixed height (2 rows) so the role ladders below

@@ -385,6 +385,21 @@ There is deliberately **no `window.resize` listener**. A width-flexible frame al
 whenever the window resize changes its width, and everything the fit derives comes from the chart's own
 width rather than the viewport's, so a listener could only duplicate a pass already scheduled.
 
+**Resuming from background force-refits, and it is a repaint rather than a re-fit.** Mobile browsers discard
+canvas backing stores under memory pressure, which empties the canvas while leaving its dimensions intact —
+so the memo still looks valid, no geometry check can detect it, and nothing schedules another pass because
+no width ever changed. The chart is simply gone until something redraws it. Forcing clears the memo, which
+sends the fit down its full `refreshChart` path and repaints. It listens to `pageshow` as well as
+`visibilitychange` because iOS does not reliably deliver the latter on restore from a frozen state, and
+defers to a rAF because the frame may not be laid out at event time.
+
+Note that a plain `chart.resize()` is enough everywhere else, and deliberately so: `resizeDelay` is unset,
+so Chart.js's `_doResize` is `debounce(update, 0)`, which calls through **synchronously**. Any real size
+change therefore re-fits the scales (and re-runs `applyRadarCenterFit`) inside the `resize()` call. The
+`retinaScale` early-return above it only triggers when the new device pixel dimensions equal the old, i.e.
+when there is no geometry to re-derive — so wrapping `resize()` in a follow-up `update()` buys nothing and
+costs a second full render per pass.
+
 ### career-radar-emoji-breakpoint
 
 The six columned radars swap between emoji-only spokes and full text pillar names on a **media query**, not

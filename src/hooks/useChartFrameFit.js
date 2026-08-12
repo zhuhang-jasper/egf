@@ -78,10 +78,36 @@ export function useChartFrameFit(frameRef, fit) {
     if (frameRef.current) {
       ro.observe(frameRef.current);
     }
+
+    // Repaint on resume from background: mobile browsers discard canvas backing stores under memory
+    // pressure, which empties the canvas while leaving its dimensions (and so the fit memo, and every
+    // geometry check) looking correct — only a redraw fixes it. Forcing clears the memo, which sends
+    // the fit down its full refreshChart path and repaints.
+    //
+    // rAF-deferred because at event time the frame may not be laid out yet, and relayout declines at
+    // width 0. `pageshow` covers iOS, which does not reliably deliver visibilitychange on restore.
+    let resumeId = null;
+    const onResume = () => {
+      if (document.visibilityState !== "visible" || resumeId != null) {
+        return;
+      }
+      resumeId = requestAnimationFrame(() => {
+        resumeId = null;
+        relayoutRef.current({ force: true });
+      });
+    };
+    document.addEventListener("visibilitychange", onResume);
+    window.addEventListener("pageshow", onResume);
+
     return () => {
       if (rafId != null) {
         cancelAnimationFrame(rafId);
       }
+      if (resumeId != null) {
+        cancelAnimationFrame(resumeId);
+      }
+      document.removeEventListener("visibilitychange", onResume);
+      window.removeEventListener("pageshow", onResume);
       ro.disconnect();
     };
   }, [frameRef]);
