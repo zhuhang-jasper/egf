@@ -36,7 +36,7 @@ There were three separate sources of that one-frame overflow, and all three are 
 2. **The outgoing tab panel's own measure.** On the frame a switch commits, the outgoing panel can still be
    laid out at the wider measure (Theory's 900 vs the tool's 550). Guarded by `overflow-x-clip` plus
    `max-w-full` on the inactive panel. Both halves are load-bearing: `overflow-x: clip` contains what is
-   *inside* a box and cannot clip the box itself, and the panel's own border-box is what overflows.
+   _inside_ a box and cannot clip the box itself, and the panel's own border-box is what overflows.
 3. **The tab entrance animation.** It starts at a horizontal offset, which on a full-width panel is overflow
    by construction. Contained by putting the transform on an **inner wrapper** (a clip never crops the box it
    is declared on) and by clipping the panel for the duration of the entrance.
@@ -78,7 +78,7 @@ final frame, a resting position that is not the one we asked for.
 
 This is why the expand **glide** must suspend it and the collapse **pin** merely benefits: the pin writes the
 same value every frame, so a fight with the anchor converges invisibly (though it can hold `drift` off zero
-and defeat the pin's early release). The glide writes a moving value, so the contention *is* the animation.
+and defeat the pin's early release). The glide writes a moving value, so the contention _is_ the animation.
 
 Scoped to `documentElement` (the scrolling element, where anchor selection happens) and restored to whatever
 was there before, so it composes with any future stylesheet rule instead of clobbering it.
@@ -111,7 +111,7 @@ matrix if layout had not settled by then. An explicit trajectory has no lag to a
 Two details that look incidental and are not:
 
 - **Wall clock, not a frame count.** A CSS transition is paced by elapsed time. Counting frames and assuming
-  16.7ms each desynchronises the moment frames drop, and expanding a pillar *below* the open one is the worst
+  16.7ms each desynchronises the moment frames drop, and expanding a pillar _below_ the open one is the worst
   case (a full-height collapse and expand in one layout pass).
 - **Whole pixels with a 1px dead zone.** Scroll position is quantised and fractional on HiDPI, so a sub-pixel
   destination is snapped to something else and reads back as fresh error next frame: a correction that can
@@ -123,7 +123,7 @@ Two details that look incidental and are not:
 a matrix pillar from the strip at its foot removes several screens of content from **above** the viewport, so
 the browser clamps `scrollY` to the shrinking `scrollHeight` and the page appears to lurch upward on its own.
 
-**Where it holds is wherever the element already is, floored at the sticky inset.** Pinning it *to* the inset
+**Where it holds is wherever the element already is, floored at the sticky inset.** Pinning it _to_ the inset
 unconditionally was wrong in a way that only shows once the reader has scrolled: with a pillar open but
 scrolled up so the card sits mid-viewport, collapsing it hauled the card to the top of the page. The card was
 already in view, so the correct amount of scrolling is none.
@@ -147,7 +147,7 @@ attempts each failed instructively:
 
 - **`padding-right` on `body`.** `body` carries the app's surround tint, and a background on `body` propagates
   to the canvas when `html` has none, as here. The reserved strip paints that tint across the full viewport,
-  *outside* the modal's `fixed inset-0` scrim, reading as a bar down the right edge. This was obvious when the
+  _outside_ the modal's `fixed inset-0` scrim, reading as a bar down the right edge. This was obvious when the
   tint was black; it is the same bug at `slate-100`, just quieter, so do not read the softer colour as licence
   to revisit it.
 - **`margin-right` on `body`.** Identical, for the same reason: what shows in the gap is the propagated canvas
@@ -195,7 +195,7 @@ The iOS safe-area padding has a dependency that silently resolves to 0 if either
 inside the safe area already and there is no inset to report) and `apple-mobile-web-app-capable` (iOS reports
 0 for every inset while browser chrome is present, because Safari's own bottom bar is what clears the home
 indicator). The second was missing, which meant the padding did nothing on iOS no matter how the app was
-launched. It also only takes effect for home-screen icons created *after* it shipped, since iOS bakes the
+launched. It also only takes effect for home-screen icons created _after_ it shipped, since iOS bakes the
 launch mode into the shortcut when it is added.
 
 ### bottom-nav-visual-viewport-jump
@@ -213,7 +213,7 @@ Four values in the bar are read **against** its `bg-slate-100` tint, so none of 
 - active vs hover — or hovering an inactive tab looks selected
 
 **The active fill stays light at `slate-200`, one step off the bar.** `slate-300` has been tried and rejected
-**twice**: it buys the hover a full rung to sit on, but the active tab then reads as a *pressed button* rather
+**twice**: it buys the hover a full rung to sit on, but the active tab then reads as a _pressed button_ rather
 than a passive "you are here" marker, which is the wrong idea about what the mark is for. Do not reach for it
 a third time. The active state does not carry the signal alone — it also gets a black top border and black
 text, so the light fill is the third of three cues.
@@ -233,7 +233,7 @@ bold: widening the hover means darkening active, which is the trade refused abov
 **The rule is not "never alpha", it is "never alpha of the background you sit on".** The hover this replaced
 was `slate-100/70`, the bar's own colour at 70%, which composites to `slate-100` exactly: contrast 1.000, a
 literal no-op. It was correct while the bar was white and died silently when the bar took the tint. Alpha of a
-*different* rung cannot collapse into the background, and is self-maintaining in the direction that matters —
+_different_ rung cannot collapse into the background, and is self-maintaining in the direction that matters —
 it tracks the state it interpolates toward, not the surface it has to differ from.
 
 **The active mark is true `black`, not `slate-900`.** Everything else in the app's greys is on the slate ramp,
@@ -246,7 +246,7 @@ different darks stacked, which is more visible than either value being wrong.
 argument that the icon was decoration and should sit back from it. That read as a mismatch rather than a
 hierarchy: at 11px semibold over a 24px glyph the two are one unit, and a rung of the slate ramp is not a
 fixed amount of visual weight — 24px of 2px strokes outweighs 11px semibold text, so the "receding" glyph
-looked *darker* than its label. The inactive segment is therefore one colour in every state, with no
+looked _darker_ than its label. The inactive segment is therefore one colour in every state, with no
 `group-hover` anywhere in the button: hover is carried by the segment's **background** alone, since one signal
 is enough for a transient, pointer-only state.
 
@@ -279,7 +279,7 @@ and the whole row would shift by 3px on every tab change.
 
 Drawn by a border rather than an absolutely-positioned child, which is what it was first: a child had to be
 pulled to `-top-px` to reach the bar's edge and still fought the row's padding for its last few pixels. A
-border *is* the top edge. 3px is an arbitrary value because Tailwind's border scale jumps 2 → 4 with nothing
+border _is_ the top edge. 3px is an arbitrary value because Tailwind's border scale jumps 2 → 4 with nothing
 between, and 4px read as a slab rather than a marker at this bar's weight.
 
 **`min-h-14` (56px) matches the header** so the two pinned bars are the same weight of chrome top and bottom.
@@ -514,7 +514,7 @@ The two out-of-range results are **sentinels meaning "absent from the array"**, 
 
 - **`Infinity`** — unknown and not ahead of the newest entry, so it cannot be placed on the scale. It reads
   as older than every real entry, raising a dot on every changed section. This is the long-absent user: a
-  v2.9 stamp lands here because v2.9 is *commented out of the array*, not because 2.9 is numerically far
+  v2.9 stamp lands here because v2.9 is _commented out of the array_, not because 2.9 is numerically far
   from 4.2. Uncomment that entry and the same stamp gets a finite rank.
 - **`-1`** — numerically ahead of the newest entry, so it reads as newer than everything and raises no dots.
   This is the rollback case: someone who read a section at v4.2 keeps that stamp after v4.2 is reverted, and
@@ -557,7 +557,7 @@ The framework's name carries **no article and no possessive**: not "The 9-Pillar
 The opening word of a title is its most valuable position, and neither earns it. The possessive cost more
 than prominence: a self-applied one reads as one person's take rather than a model others can cite, and the
 eponymous frameworks this was modelled on (the Barrett Model, Bloom's Taxonomy) had that possessive
-*conferred* by the people citing them, never claimed up front.
+_conferred_ by the people citing them, never claimed up front.
 
 Dropping "The" is also what leaves **one** canonical string instead of two differing only by the article. The
 `<h1>` and `og:site_name` had already drifted apart on exactly that, and there is now nothing to keep in sync.

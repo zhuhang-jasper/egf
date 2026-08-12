@@ -4,6 +4,7 @@ import { Chart, Filler, LineElement, PointElement, RadarController, RadialLinear
 import { Settings } from "lucide-react";
 
 import { BackToToolButton } from "@/components/BackToToolButton";
+import { MalaysiaFlag } from "@/components/MalaysiaFlag";
 
 import { TICK_FONT_FAMILY } from "@/chart/instance";
 import { createClusterBackgroundPlugin } from "@/chart/plugins";
@@ -721,8 +722,14 @@ export default function PosterPage() {
                       <br />
                       Growth Framework
                     </h1>
-                    {/* Byline as a signature, sitting on the "Engineering Mastery" baseline */}
-                    <span className="self-end text-[24px] font-bold whitespace-nowrap text-slate-900">{SITE_COPY.byline}</span>
+                    {/* Byline as a signature, sitting on the "Engineering Mastery" baseline.
+                        Inline, not flex: the flag aligns itself with `vertical-align`. */}
+                    <span className="self-end text-[24px] font-bold whitespace-nowrap text-slate-900">
+                      {SITE_COPY.byline}
+                      {" "}
+                      {/* No tooltip: this page gets rasterized. */}
+                      <MalaysiaFlag />
+                    </span>
                   </div>
                   {/* <p className="mt-3 text-[20px] font-bold uppercase tracking-[0.22em] text-slate-500">The Engineer Growth Framework</p> */}
                 </div>

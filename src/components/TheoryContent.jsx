@@ -6,6 +6,7 @@ import { AdminLockBadge } from "@/components/AdminLockBadge";
 import { CareerTracks } from "@/components/CareerTracks";
 import { ChangelogModal } from "@/components/ChangelogModal";
 import { CompetencyMatrix } from "@/components/CompetencyMatrix";
+import { MalaysiaFlag } from "@/components/MalaysiaFlag";
 import { PillarGrid } from "@/components/PillarGrid";
 import { ShareLinkButton } from "@/components/ShareLinkButton";
 import { StaticCompetencyChart } from "@/components/StaticCompetencyChart";
@@ -736,7 +737,12 @@ function TheoryContent({
             </span>
             <span className={cn(taglineFitsOneLine && "block")}>{SITE_COPY.tagline}</span>{" "}
             <span className={cn(taglineFitsOneLine && "block")}>
-              {SITE_COPY.detail} <span className={cn("whitespace-nowrap text-slate-500", taglineFitsOneLine && "block")}>{SITE_COPY.byline}</span>
+              {SITE_COPY.detail}{" "}
+              <span className={cn("whitespace-nowrap text-slate-500", taglineFitsOneLine && "block")}>
+                {SITE_COPY.byline}
+                {" "}
+                <MalaysiaFlag withTooltip />
+              </span>
             </span>
           </p>
         </div>
