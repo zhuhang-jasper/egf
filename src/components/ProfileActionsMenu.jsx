@@ -9,6 +9,7 @@ import { Tooltip } from "@/components/ui/Tooltip";
 
 import { UNDO_TOAST_KEY, useAppStore } from "@/store/useAppStore";
 
+import { LAYER } from "@/constants";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
 import { readFileAsText } from "@/utils/profile-transfer";
@@ -158,7 +159,8 @@ export function ProfileActionsMenu() {
           role="menu"
           aria-label="Profile actions"
           className={cn(
-            "absolute right-0 z-30 flex w-max min-w-[100px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border border-border bg-card shadow-md",
+            "absolute right-0 flex w-max min-w-[100px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border border-border bg-card shadow-md",
+            LAYER.dropdown,
             openUp ? "bottom-[calc(100%+4px)]" : "top-[calc(100%+4px)]",
           )}
         >

@@ -24,6 +24,7 @@ import {
   FEATURE_CHART_STRUCTURE_SETTINGS,
   FEATURE_CHART_UHD_EXPORT_SETTING,
   FEATURE_SCORES_SETTINGS,
+  LAYER,
   SITE_COPY,
 } from "@/constants";
 import { TOOLBAR_ICON_SURFACE, TOOLBAR_SURFACE } from "@/styles/toolbar";
@@ -117,14 +118,14 @@ function ChartDisplayMenu() {
       >
         <Settings className="h-4 w-4" />
         {/* Points down, into clear space — a top tooltip would render up into the sticky header
-            (z-40) and get covered. */}
+            (LAYER.chrome, which the tooltip sits below) and get covered. */}
         {open ? null : <Tooltip text="Chart display settings" placement="bottom" />}
       </Button>
       {open ? (
         <div
           role="menu"
           aria-label="Chart display settings"
-          className="absolute right-0 top-[calc(100%+4px)] z-50 w-max rounded-lg border border-border bg-card py-1 shadow-md"
+          className={cn("absolute right-0 top-[calc(100%+4px)] w-max rounded-lg border border-border bg-card py-1 shadow-md", LAYER.dropdown)}
         >
           <DisplayCheckbox label="Title" checked={!chartTitleHidden} onChange={(v) => setChartTitleHidden(!v)} />
           <DisplayCheckbox label="Badge" checked={!chartBadgeHidden} onChange={(v) => setChartBadgeHidden(!v)} />
@@ -366,7 +367,11 @@ export function ChartSection({ isVisible }) {
           gear at the right — which is the same division theory's toolbar makes (page actions left, changelog
           right). Everything used to be bunched at the right together, so the gear (a settings control) read as
           a third export button. */}
-      <div className="relative z-[2] mb-4 flex w-full min-w-0 items-center justify-between gap-2 print:hidden">
+      {/* `relative` WITHOUT A Z-INDEX, deliberately. Both children open dropdowns; a z-index here would make
+          this row a stacking context and cap those menus inside it, so the gear's menu lost to the form panel
+          below (`LAYER` in constants/layers.js has the full rule). Bare `relative` still paints above the
+          static chart. */}
+      <div className="relative mb-4 flex w-full min-w-0 items-center justify-between gap-2 print:hidden">
         <ExportMenu onCopy={handleCopy} onShare={handleShare} />
         <ChartDisplayMenu />
       </div>

@@ -14,6 +14,7 @@ import { useTouchPrimary } from "@/hooks/useTouchPrimary";
 
 import { selectHasUnsavedWork, selectProfileSaveStatus, UNDO_TOAST_KEY, useAppStore } from "@/store/useAppStore";
 
+import { LAYER } from "@/constants";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
 import { readProfileCreateCount } from "@/utils/storage";
@@ -153,7 +154,10 @@ function SaveButton({ statusMeta, showMenu, onSave, copyAction, undoAction }) {
         <div
           role="menu"
           aria-label="Save options"
-          className="absolute right-0 top-[calc(100%+4px)] z-30 flex w-max min-w-[100px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border border-border bg-card shadow-md"
+          className={cn(
+            "absolute right-0 top-[calc(100%+4px)] flex w-max min-w-[100px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border border-border bg-card shadow-md",
+            LAYER.dropdown,
+          )}
         >
           <MenuItem
             icon={Copy}

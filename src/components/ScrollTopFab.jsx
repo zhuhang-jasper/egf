@@ -13,7 +13,7 @@ import { getWindowScrollY, scrollWindowToTop } from "@/utils/scroll";
  * has no effect.
  *
  * `bottom-[calc(4.25rem+…)]` clears AppBottomNav plus a gap plus the safe-area inset, the same offset the
- * install banner uses. `z-30` puts this below the banner's `z-[100]`, so in the rare overlap on a narrow phone
+ * install banner uses. `z-30` puts this below the banner (LAYER.modal), so in the rare overlap on a narrow phone
  * this tucks behind rather than punching through the card.
  *
  * `smooth`, unlike the instant scrolls elsewhere: those are restores that should feel like the page was always

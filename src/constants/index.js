@@ -49,6 +49,7 @@ export {
   IS_ADMIN,
   unlockAdmin,
 } from "@/constants/features";
+export { LAYER, TOOLTIP_LAYER } from "@/constants/layers";
 export { SITE_COPY } from "@/constants/site";
 export {
   ADMIN_UNLOCK_KEY,

@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef } from "react";
 
 import { InstallPill } from "@/components/InstallPrompt";
 
-import { SITE_COPY } from "@/constants";
+import { LAYER, SITE_COPY } from "@/constants";
 import { cn } from "@/utils";
 import { clearStickyScrollOffset, setStickyScrollOffset } from "@/utils/scroll";
 
@@ -63,7 +63,7 @@ function AppShellHeaderStack() {
       // on this box, since its bottom edge IS the boundary; on a child the shadow drew a line across the header.
       //
       // No `relative` needed for the corner controls: `sticky` already establishes a containing block.
-      className="sticky top-0 z-40 min-h-14 border-b border-slate-200 bg-slate-100 p-3 shadow-sm print:hidden"
+      className={cn("sticky top-0 min-h-14 border-b border-slate-200 bg-slate-100 p-3 shadow-sm print:hidden", LAYER.chrome)}
     >
       <AppShellBrandMark />
       {/* Renders nothing unless this browser can install the app, so the corner is simply empty where there is

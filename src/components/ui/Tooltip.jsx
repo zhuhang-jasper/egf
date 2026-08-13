@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { autoUpdate, flip, offset, shift, useFloating } from "@floating-ui/react-dom";
 
+import { TOOLTIP_LAYER } from "@/constants";
 import { cn } from "@/utils";
 
 /** Keep the tooltip at least this far from the viewport's edges. */
@@ -109,7 +110,8 @@ export function Tooltip({ text, className, visible = false, placement = "top" })
           // `w-max` because a fixed-position box shrink-wraps to its containing block otherwise; with
           // `whitespace-nowrap` this is the natural single-line width. `max-w-[calc(100vw-1rem)]` keeps a long
           // string inside the viewport, which is also what lets `shift()` place it sensibly.
-          "pointer-events-none z-50 w-max max-w-[calc(100vw-1rem)] rounded-md bg-slate-900 px-2 py-1 text-[11px] font-medium leading-none whitespace-nowrap text-white opacity-0 transition-opacity duration-100 group-hover:opacity-100 group-focus-visible:opacity-100",
+          "pointer-events-none w-max max-w-[calc(100vw-1rem)] rounded-md bg-slate-900 px-2 py-1 text-[11px] font-medium leading-none whitespace-nowrap text-white opacity-0 transition-opacity duration-100 group-hover:opacity-100 group-focus-visible:opacity-100",
+          TOOLTIP_LAYER,
           visible && "opacity-100",
           className,
         )}

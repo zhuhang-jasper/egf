@@ -2,6 +2,7 @@ import { AlertCircle, Check, X } from "lucide-react";
 
 import { useAppStore } from "@/store/useAppStore";
 
+import { LAYER } from "@/constants";
 import { cn } from "@/utils";
 
 // A neutral toast is dark: the old white card sat on a white form and read as part of the page
@@ -92,7 +93,10 @@ export function Toaster() {
       // Sits ABOVE the bottom nav. `4.5rem` is the bar's `3.5rem` row plus a 1rem gap, summed because
       // `bottom` takes one length, so this moves by the bar's DELTA rather than to its new height. See
       // docs/DECISIONS.md#fixed-element-offsets-agree-by-construction.
-      className="pointer-events-none fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-[100] flex flex-col-reverse items-center gap-2 px-4 print:hidden"
+      className={cn(
+        "pointer-events-none fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] flex flex-col-reverse items-center gap-2 px-4 print:hidden",
+        LAYER.toast,
+      )}
     >
       {toasts.map((t) => {
         const meta = VARIANT_META[t.variant] ?? VARIANT_META.default;

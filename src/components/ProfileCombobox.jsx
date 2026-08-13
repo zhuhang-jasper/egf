@@ -11,7 +11,7 @@ import { useTouchPrimary } from "@/hooks/useTouchPrimary";
 
 import { useAppStore } from "@/store/useAppStore";
 
-import { MAX_PROFILE_NAME_LENGTH, normalizeAttachedBadge, TRACK_BADGE_OPTIONS, TRACK_BADGE_UI } from "@/constants";
+import { LAYER, MAX_PROFILE_NAME_LENGTH, normalizeAttachedBadge, TRACK_BADGE_OPTIONS, TRACK_BADGE_UI } from "@/constants";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
 import { getPopoverViewportBounds } from "@/utils/scroll";
@@ -236,7 +236,7 @@ export function ProfileCombobox({ titleError = false }) {
       // Natural (uncapped) menu height, so the flip decision isn't skewed by a prior cap.
       const naturalHeight = menu.scrollHeight;
       // The menu must clear the pinned chrome at BOTH ends — the sticky header above, the fixed bottom nav
-      // below. Not a stacking issue (the menu is z-50 and both bars z-40, so it paints over them) but covering
+      // below. Not a stacking issue (the menu is at LAYER.dropdown, above chrome, so it paints over them) but covering
       // the title, or disappearing behind the navigation, reads as broken either way. The header boundary also
       // tracks the intro's expand/collapse animation for free, since it is measured live.
       const { top: topBoundary, bottom: bottomBoundary } = getPopoverViewportBounds();
@@ -369,7 +369,8 @@ export function ProfileCombobox({ titleError = false }) {
         <div
           ref={menuRef}
           className={cn(
-            "absolute left-0 z-50 flex w-max min-w-full max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border border-border bg-card shadow-md",
+            "absolute left-0 flex w-max min-w-full max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border border-border bg-card shadow-md",
+            LAYER.dropdown,
             openUp ? "bottom-[calc(100%+4px)]" : "top-[calc(100%+4px)]",
           )}
         >

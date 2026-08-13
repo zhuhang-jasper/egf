@@ -6,7 +6,7 @@ import { Tooltip } from "@/components/ui/Tooltip";
 
 import { useAppStore } from "@/store/useAppStore";
 
-import { normalizeAttachedBadge, TRACK_BADGE_OPTIONS, TRACK_BADGE_UI } from "@/constants";
+import { LAYER, normalizeAttachedBadge, TRACK_BADGE_OPTIONS, TRACK_BADGE_UI } from "@/constants";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
 
@@ -95,7 +95,7 @@ export function BadgePicker() {
         <div
           role="menu"
           aria-label="Attached badge"
-          className="absolute left-0 top-[calc(100%+4px)] z-50 flex min-w-[9rem] flex-col overflow-hidden rounded-lg border border-border bg-card py-1 shadow-md"
+          className={cn("absolute left-0 top-[calc(100%+4px)] flex min-w-[9rem] flex-col overflow-hidden rounded-lg border border-border bg-card py-1 shadow-md", LAYER.dropdown)}
         >
           {TRACK_BADGE_OPTIONS.map((id) => {
             const ui = TRACK_BADGE_UI[id];

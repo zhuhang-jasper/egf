@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 
 import { useScrollLock } from "@/hooks/useScrollLock";
 
+import { LAYER } from "@/constants";
 import { cn } from "@/utils";
 
 /**
@@ -122,7 +123,7 @@ function Modal({
 
   const overlay = (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 print:hidden"
+      className={cn("fixed inset-0 flex items-center justify-center p-4 print:hidden", LAYER.modal)}
       // A real <dialog> would need showModal() and a ref+effect to open it, to get semantics these
       // three attributes already provide for a component that is conditionally rendered anyway.
       role={role}

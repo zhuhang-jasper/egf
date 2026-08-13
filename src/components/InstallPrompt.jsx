@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 
 import { useCloseInstallBanner, useInstallBannerOpen, useInstallPrompt, useOpenInstallBanner } from "@/hooks/useInstallPrompt";
 
-import { INSTALL_DISMISS_DAYS, INSTALL_DISMISSED_AT_KEY, SITE_COPY } from "@/constants";
+import { INSTALL_DISMISS_DAYS, INSTALL_DISMISSED_AT_KEY, LAYER, SITE_COPY } from "@/constants";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
 
@@ -125,7 +125,10 @@ function InstallPrompt() {
      is paid twice on the way there. `gap-2.5` closes it; `pr-2.5` trims only the button's side of the inset. */
   return (
     <section
-      className="install-enter fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-[100] mx-auto flex w-[min(34rem,calc(100vw-1.5rem))] items-center gap-2.5 rounded-2xl border border-slate-700 bg-slate-900 p-3 pr-2.5 shadow-2xl print:hidden"
+      className={cn(
+        "install-enter fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] mx-auto flex w-[min(34rem,calc(100vw-1.5rem))] items-center gap-2.5 rounded-2xl border border-slate-700 bg-slate-900 p-3 pr-2.5 shadow-2xl print:hidden",
+        LAYER.modal,
+      )}
       aria-label="Install this app"
     >
       {/* THE APP'S OWN ICON, NOT A DOWNLOAD GLYPH, and the glyph was actively working against the copy.

@@ -3,9 +3,12 @@ import { TitleToolbar } from "@/components/TitleToolbar";
 
 import { getPillarGroups } from "@/constants";
 
+// `relative` with NO z-index on the <aside>: the panel contains the name combobox and Save menu, and a z-index
+// here would both trap their dropdowns and (at the `z-10` it used to carry) paint the panel over the chart
+// toolbar's open gear menu. See `LAYER` in constants/layers.js.
 export function FormPanel({ onOpenPillarInMatrix }) {
   return (
-    <aside className="relative z-10 w-full min-w-0 border-t border-border pt-3 mt-3">
+    <aside className="relative w-full min-w-0 border-t border-border pt-3 mt-3">
       {/* <h2 className="mb-2 text-sm font-semibold text-slate-900">Build Your Profile</h2> */}
       <TitleToolbar />
       <div className="mt-2 flex flex-col gap-2">

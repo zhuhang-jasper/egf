@@ -8,7 +8,7 @@ import { MalaysiaFlag } from "@/components/MalaysiaFlag";
 
 import { TICK_FONT_FAMILY } from "@/chart/instance";
 import { createClusterBackgroundPlugin } from "@/chart/plugins";
-import { CLUSTERS, FE_UI, getPillarLabel, getPillarOrder, SITE_COPY } from "@/constants";
+import { CLUSTERS, FE_UI, getPillarLabel, getPillarOrder, LAYER, SITE_COPY } from "@/constants";
 import { CAREER_TRACK_PROFILES, PILLAR_CLUSTER_GROUPS } from "@/constants/theory-data";
 import { track } from "@/utils/analytics";
 import { copyShareToClipboard, downloadSharePng } from "@/utils/export-image";
@@ -520,7 +520,7 @@ function PosterSettingsMenu({ showHeader, setShowHeader, showPillars, setShowPil
         <div
           role="menu"
           aria-label="Poster display settings"
-          className="absolute left-1/2 top-[calc(100%+4px)] z-50 w-max -translate-x-1/2 rounded-lg border border-slate-300 bg-white py-1 shadow-lg"
+          className={`absolute left-1/2 top-[calc(100%+4px)] w-max -translate-x-1/2 rounded-lg border border-slate-300 bg-white py-1 shadow-lg ${LAYER.dropdown}`}
         >
           <PosterToggle label="Masthead" checked={showHeader} onChange={setShowHeader} />
           <PosterToggle label="The 9 Pillars" checked={showPillars} onChange={setShowPillars} />

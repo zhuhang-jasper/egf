@@ -3,7 +3,7 @@ import { FileText, Radar, Wrench } from "lucide-react";
 import { AdminLockBadge } from "@/components/AdminLockBadge";
 import { UnseenDot } from "@/components/UnseenDot";
 
-import { FRAMEWORK_VERSION, IS_ADMIN } from "@/constants";
+import { FRAMEWORK_VERSION, IS_ADMIN, LAYER } from "@/constants";
 import { cn } from "@/utils";
 
 /** Gated in two places: here and HomePage's VALID_TABS. Keep them in step. */
@@ -34,7 +34,10 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
       aria-label="Primary"
       // The gutter must move the right EDGE, not add padding: padding would inset the row while the
       // background kept painting to the viewport edge. See docs/DECISIONS.md#scroll-lock-gutter.
-      className="fixed left-0 right-[var(--scroll-lock-gutter)] bottom-0 z-40 bg-slate-100 shadow-[0_-1px_3px_0_rgb(0_0_0/0.1),0_-1px_2px_1px_rgb(0_0_0/0.1)] pb-[env(safe-area-inset-bottom)] print:hidden"
+      className={cn(
+        "fixed left-0 right-[var(--scroll-lock-gutter)] bottom-0 bg-slate-100 shadow-[0_-1px_3px_0_rgb(0_0_0/0.1),0_-1px_2px_1px_rgb(0_0_0/0.1)] pb-[env(safe-area-inset-bottom)] print:hidden",
+        LAYER.chrome,
+      )}
     >
       {/* No horizontal padding: it would inset every item, so the active indicator could not reach the row's
           outer edge. Breathing room belongs inside each button. The width bound is per ITEM, not here. */}
