@@ -54,7 +54,7 @@ export const PILLAR_GROUPS = [
  * Selectable "attached badge" options for a profile — a cosmetic label decoupled from the pillar
  * layout. `none` = no badge. Append here (plus a {@link TRACK_BADGE_UI} entry) to add a future badge.
  */
-export const TRACK_BADGE_OPTIONS = ["none", "fe", "be"];
+export const TRACK_BADGE_OPTIONS = ["none", "fe", "be", "fs"];
 
 export const TRACK_BADGE_UI = {
   none: {
@@ -71,6 +71,11 @@ export const TRACK_BADGE_UI = {
     shortLabel: "BE",
     label: "Backend",
     pillClass: "bg-track-be text-track-be-foreground",
+  },
+  fs: {
+    shortLabel: "FS",
+    label: "Fullstack",
+    pillClass: "bg-track-fs text-track-fs-foreground",
   },
 };
 
@@ -89,9 +94,9 @@ export const MAX_PROFILE_NAME_LENGTH = 50;
 /** Pillar ids persisted in profiles (missing keys default on load). */
 export const CANONICAL_PILLAR_IDS = [...new Set(PILLAR_ORDER)];
 
-/** A profile's attached badge. Explicit `fe`/`be` are kept; everything else (incl. legacy/absent) is `none`. */
+/** A profile's attached badge. Any listed option is kept; everything else (incl. legacy/absent) is `none`. */
 export function normalizeAttachedBadge(value) {
-  return value === "fe" || value === "be" ? value : "none";
+  return TRACK_BADGE_OPTIONS.includes(value) ? value : "none";
 }
 
 export function getPillarOrder() {

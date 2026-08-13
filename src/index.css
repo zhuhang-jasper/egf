@@ -29,6 +29,8 @@
   --color-track-fe-foreground: hsl(0 0% 100%);
   --color-track-be: hsl(217 78% 52%);
   --color-track-be-foreground: hsl(0 0% 100%);
+  --color-track-fs: hsl(147 66% 34%);
+  --color-track-fs-foreground: hsl(0 0% 100%);
 }
 
 /* Inter re-declared with tabular figures BAKED INTO THE FACE: canvas 2D takes no font-feature-settings, so
