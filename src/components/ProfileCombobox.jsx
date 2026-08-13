@@ -342,7 +342,7 @@ export function ProfileCombobox({ titleError = false }) {
             setTitle(trimmed);
           }
         }}
-        className={cn("pl-17 pr-9 shadow-none", titleError && "border-red-500 focus-visible:ring-red-500/40")}
+        className={cn("pl-18 pr-9 shadow-none", titleError && "border-red-500 focus-visible:ring-red-500/40")}
       />
       {/* Right adornment: the browse caret — the only way to open the profile dropdown. */}
       <button
@@ -449,11 +449,8 @@ export function ProfileCombobox({ titleError = false }) {
                       onMouseEnter={() => setHighlight(i)}
                       onClick={() => handleLoad(pr)}
                     >
-                      {/* Badge slot spans from the row's left edge to where the input text starts
-                          (matches the input's pl-17), with the badge/dash centered in it — so it
-                          visually sits under the input's badge adornment. Keep the two in step.
-                          No-badge rows show an em-dash. */}
-                      <span className="flex w-17 shrink-0 items-center justify-center">
+                      {/* Badge slot spans from the row's left edge to where the input text starts. No-badge rows show an em-dash. */}
+                      <span className="flex w-14 shrink-0 items-center justify-center">
                         {normalizeAttachedBadge(pr.attachedBadge) === "none" ? (
                           <span className="text-muted-foreground">{TRACK_BADGE_UI.none.shortLabel}</span>
                         ) : (

@@ -89,7 +89,7 @@ export function BadgePicker() {
         className="group my-1.5 flex h-[calc(100%-0.75rem)] cursor-pointer items-center gap-1 border-r border-border pl-2.5 pr-1.5 text-muted-foreground hover:text-foreground"
       >
         <BadgePill id={attachedBadge} />
-        <ChevronDown className="h-3 w-3 opacity-60" />
+        <ChevronDown className="h-4 w-4 opacity-60" />
         {open ? null : <Tooltip text="Attached badge" />}
       </button>
       {open ? (
