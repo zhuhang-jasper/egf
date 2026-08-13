@@ -385,15 +385,12 @@ export function TitleToolbar() {
           variant="outline"
           size="sm"
           shape="pill"
-          className="group relative shrink-0 gap-1.5"
+          className="shrink-0 gap-1.5"
           onClick={handleNewProfile}
           aria-label="New profile — clear the name, badge and all levels to start fresh"
         >
           <FilePlus className="h-4 w-4" />
           New profile
-          {/* The tooltip carries what the label cannot: that this CLEARS everything. Was a native `title`; now
-              the app's one tooltip component. */}
-          <Tooltip text="Clears the name, badge and all levels to start fresh" />
         </Button>
         {/* Keypad toggle is touch-only — the numeric keyboard switch is meaningless with a physical
             keyboard, so it renders only when touch is the primary input. Icon + switch only (no text

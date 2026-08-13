@@ -5,7 +5,6 @@ import { ChevronDown, Search, Trash2 } from "lucide-react";
 import { BadgePicker } from "@/components/BadgePicker";
 import { TrackBadge } from "@/components/TrackBadge";
 import { Input } from "@/components/ui/input";
-import { Tooltip } from "@/components/ui/Tooltip";
 
 import { useTouchPrimary } from "@/hooks/useTouchPrimary";
 
@@ -357,10 +356,9 @@ export function ProfileCombobox({ titleError = false }) {
             openDropdown();
           }
         }}
-        className="group absolute right-0 top-0 flex h-full w-7 items-center justify-center text-muted-foreground hover:text-foreground"
+        className="absolute right-0 top-0 flex h-full w-7 cursor-pointer items-center justify-center text-muted-foreground hover:text-foreground"
       >
         <ChevronDown className={cn("h-4 w-4 opacity-60 transition-transform", open && "rotate-180")} />
-        {open ? null : <Tooltip text="Browse profiles" />}
       </button>
       {open ? (
         // Sizes to the widest row (w-max), never narrower than the input (min-w-full) nor wider than

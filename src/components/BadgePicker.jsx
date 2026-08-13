@@ -2,8 +2,6 @@ import { useEffect, useRef, useState } from "react";
 
 import { ChevronDown } from "lucide-react";
 
-import { Tooltip } from "@/components/ui/Tooltip";
-
 import { useAppStore } from "@/store/useAppStore";
 
 import { LAYER, normalizeAttachedBadge, TRACK_BADGE_OPTIONS, TRACK_BADGE_UI } from "@/constants";
@@ -86,11 +84,10 @@ export function BadgePicker() {
         aria-expanded={open}
         aria-label={`Attached badge: ${current.label}`}
         onClick={() => setOpen((v) => !v)}
-        className="group my-1.5 flex h-[calc(100%-0.75rem)] cursor-pointer items-center gap-1 border-r border-border pl-2.5 pr-1.5 text-muted-foreground hover:text-foreground"
+        className="my-1.5 flex h-[calc(100%-0.75rem)] cursor-pointer items-center gap-1 border-r border-border pl-2.5 pr-1.5 text-muted-foreground hover:text-foreground"
       >
         <BadgePill id={attachedBadge} />
         <ChevronDown className="h-4 w-4 opacity-60" />
-        {open ? null : <Tooltip text="Attached badge" />}
       </button>
       {open ? (
         <div
