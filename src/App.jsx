@@ -46,6 +46,20 @@ const exportCanvasRoute = !isGatedRoute && (route === "poster" || route === "soc
 // at module scope rather than in an effect. See docs/DECISIONS.md#body-background-propagates-to-the-canvas.
 if (exportCanvasRoute !== null) {
   document.documentElement.dataset.exportCanvas = "";
+
+  // KEEP THE EXPORT CANVASES OUT OF SEARCH RESULTS. This, not robots.txt, is what actually does it: the app
+  // is served from a GitHub project page, so /egf/robots.txt is never fetched (crawlers only read the origin
+  // root) and its Disallow rules are inert. A noindex meta tag travels with the document, so it works here
+  // and keeps working on a custom domain.
+  //
+  // Injected rather than sitting in index.html because index.html is shared by every route — a static
+  // noindex there would de-index the tool page itself. Runs before paint at module scope, but note the
+  // ordering caveat: a crawler that reads only the raw HTML never sees this tag. That is acceptable because
+  // such a crawler is also not running the JS that would render any poster content worth indexing.
+  const noindex = document.createElement("meta");
+  noindex.name = "robots";
+  noindex.content = "noindex, nofollow";
+  document.head.appendChild(noindex);
 }
 
 function RoutedPage() {

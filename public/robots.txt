@@ -1,2 +1,47 @@
+# Crawlers only read robots.txt from the ORIGIN ROOT, so on a GitHub project page this file at
+# /egf/robots.txt is never actually fetched. zhuhang-jasper.github.io/robots.txt currently 404s,
+# which crawlers treat as "no restrictions". The rules below therefore document intent and take
+# effect if the app moves to its own domain, where this file WOULD be read. What actually keeps the
+# admin routes out of search results today is the noindex meta tag the app sets on them.
+#
+# The Sitemap line is likewise not how the sitemap gets discovered here: submit
+# https://zhuhang-jasper.github.io/egf/sitemap.xml directly in Google Search Console.
+
 User-agent: *
 Allow: /
+
+# Admin-only export canvases (see ADMIN_ROUTES in src/App.jsx). These render the share/poster PNG
+# build surfaces, not reader-facing pages, and they duplicate the framework copy — so indexing them
+# splits ranking signal across near-identical URLs. Paths are base-prefixed because the routes are
+# path segments under Vite's "/egf/" base (see src/utils/route.js).
+Disallow: /egf/poster
+Disallow: /egf/social
+# Same routes when the app is served from a domain root.
+Disallow: /poster
+Disallow: /social
+# The admin tab is a query param on the tool page, not its own path.
+Disallow: /*?tab=admin
+Disallow: /*?admin=1
+
+# THE FINISHED POSTER IS DELIBERATELY CRAWLABLE — it is a legitimate discovery surface, and someone
+# finding the competency chart through Google Images is a real path to the tool. The Allow is required,
+# not redundant: `Disallow: /poster` above is a PREFIX match, so it already covers /poster.png. Longest
+# matching rule wins, so this line is what exempts the image from the route rule.
+Allow: /poster.png
+
+# The masthead images are shared on social media, so they are crawlable for the same reason as the
+# poster: they are published artifacts, not build inputs. Blocking a social image is the worst of both
+# worlds anyway — link-preview scrapers (LinkedIn, WhatsApp, Slack, X) fetch a URL directly without
+# consulting robots.txt, so a Disallow forfeits image-search presence without making the file private.
+# The Allow lines are required to override the `Disallow: /poster` prefix match above.
+Allow: /poster-masthead-pillar-v4.png
+Allow: /poster-masthead-track-v4.png
+
+# The only genuine build input: an intermediate composition of the poster body with no masthead, so it
+# is a near-duplicate of poster.png rather than something shared or searched for.
+Disallow: /poster-pillar-v4.png
+
+# social.png needs no rule — it does not match any Disallow prefix. Noted only so its absence here does
+# not read as an oversight: it is the og:image and is deliberately crawlable.
+
+Sitemap: https://zhuhang-jasper.github.io/egf/sitemap.xml

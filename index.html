@@ -77,6 +77,113 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.json" />
 
+    <!-- Structured data. Hand-written rather than generated from src/constants: this file cannot import
+         from the bundle, and a build plugin to inject it would couple index.html to the module graph for
+         a payload that changes about once a year. The trade-off is that the pillar names and the L1-L5
+         terms below are a SECOND COPY of framework.js PILLARS and theory-data.js
+         SENIORITY_LEVEL_DEFINITIONS — update both together.
+
+         `@type: WebApplication` over the more obvious Article/WebSite: the page's primary function is the
+         interactive chart tool, and WebApplication is what earns the tool-style result treatment. The
+         framework documentation rides along as `about`/`teaches` rather than as a separate Article node,
+         since it is the same URL and splitting it would claim two pages where there is one. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebApplication",
+            "@id": "https://zhuhang-jasper.github.io/egf/#app",
+            "name": "9-Pillar Engineer Growth Framework",
+            "alternateName": "9-Pillar EGF",
+            "url": "https://zhuhang-jasper.github.io/egf/",
+            "description": "A spider chart to measure software engineering mastery, identify core interests, and guide career paths. Supported by a 45-point competency matrix across 5 proficiency levels.",
+            "applicationCategory": "BusinessApplication",
+            "operatingSystem": "Any",
+            "browserRequirements": "Requires JavaScript.",
+            "isAccessibleForFree": true,
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD"
+            },
+            "author": {
+              "@id": "https://zhuhang-jasper.github.io/egf/#author"
+            },
+            "screenshot": "https://zhuhang-jasper.github.io/egf/social.png",
+            "featureList": [
+              "Interactive 9-pillar competency radar chart",
+              "45-point competency matrix across 5 proficiency levels",
+              "Career stage estimation from chart shape",
+              "Save and compare multiple engineer profiles",
+              "Export the chart as an image"
+            ],
+            "about": [
+              { "@type": "Thing", "name": "Software engineering competency" },
+              { "@type": "Thing", "name": "Engineering career progression" },
+              { "@type": "Thing", "name": "Skills assessment" }
+            ],
+            "teaches": [
+              "Coding",
+              "Domain Logic",
+              "Architecture",
+              "AI Leverage",
+              "UI/UX",
+              "Product Sense",
+              "Process",
+              "Communication",
+              "Ownership"
+            ]
+          },
+          {
+            "@type": "Person",
+            "@id": "https://zhuhang-jasper.github.io/egf/#author",
+            "name": "Jasper Loo Zhu Hang",
+            "alternateName": "Jasper Loo",
+            "jobTitle": "Software Engineer"
+          },
+          {
+            "@type": "DefinedTermSet",
+            "@id": "https://zhuhang-jasper.github.io/egf/#levels",
+            "name": "Proficiency levels (L1-L5)",
+            "description": "The five proficiency levels a single pillar is rated against. A pillar level is not a job title; career stage reads from the whole chart shape rather than any one axis.",
+            "hasDefinedTerm": [
+              {
+                "@type": "DefinedTerm",
+                "termCode": "L1",
+                "name": "Learner",
+                "description": "Can follow clear instructions, match existing patterns, and execute with high support."
+              },
+              {
+                "@type": "DefinedTerm",
+                "termCode": "L2",
+                "name": "Practitioner",
+                "description": "Can complete defined tasks and workflows end-to-end independently."
+              },
+              {
+                "@type": "DefinedTerm",
+                "termCode": "L3",
+                "name": "Expert",
+                "description": "Can navigate messy, complex problems alone while meeting standard expectations."
+              },
+              {
+                "@type": "DefinedTerm",
+                "termCode": "L4",
+                "name": "Mentor",
+                "description": "Can raise the quality bar for others, resolve cross-team friction, mentor peers, and hold the team to the foundations below them."
+              },
+              {
+                "@type": "DefinedTerm",
+                "termCode": "L5",
+                "name": "Strategist",
+                "description": "Can navigate high ambiguity, solve systemic risks, shape direction beyond the team, and set the foundations the wider company inherits."
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+
     <!-- SPA deep-link decoder: restores the real path from the ?/ redirect set by
          public/404.html, before the app bundle reads window.location. See 404.html. -->
     <script>
@@ -94,9 +201,107 @@
         }
       })();
     </script>
+
+    <!-- HIDES THE #root FALLBACK FROM ANY BROWSER THAT RUNS JS, so it never flashes on screen.
+         Without this the fallback is painted the moment the body is parsed and stays up until React mounts
+         (the bundle is a deferred module, so it does not even begin executing until parsing finishes) — a
+         visible slug of half-Tailwind-styled headings on a slow connection.
+
+         Inline and in <head> on purpose: it must apply on the first style resolution, before the fallback
+         has any chance to paint. A rule in the Tailwind entry CSS would be a separate request and could
+         land after first paint.
+
+         `display: none` rather than a visually-hidden clip: nothing here needs to reach a screen reader,
+         since the mounted app is the accessible experience and the fallback is a duplicate of it.
+
+         The <noscript> override below is what keeps the no-JS reader's copy visible. Crawlers are
+         unaffected either way — the markup is in the served HTML, which is what a non-rendering crawler
+         parses, and Google has never treated CSS-hidden text as cloaking when it is an honest
+         pre-mount placeholder for the same content. -->
+    <style>
+      #root > .egf-nojs-fallback {
+        display: none;
+      }
+    </style>
+    <noscript>
+      <style>
+        #root > .egf-nojs-fallback {
+          display: block;
+        }
+      </style>
+    </noscript>
   </head>
   <body>
-    <div id="root"></div>
+    <!-- CRAWLABLE FALLBACK: the only content this page has before JS runs, and what a reader with JS off
+         gets. Hidden from JS-capable browsers by the <style> block in <head> (see the note there) and
+         replaced outright when React mounts — createRoot().render() clears the container's children, so
+         there is no hydration contract to match here. This is not SSR output; do not switch to
+         hydrateRoot expecting it to line up.
+
+         Why it exists: Google renders JS but on a deferred second pass, and most other crawlers and every
+         link-preview scraper never do. Without this the entire indexable body was `<div id="root">`, so the
+         only ranking signal was <title> and the meta description. This is also what a reader with JS off
+         sees, hence the real prose and the real link — not a "please enable JavaScript" stub.
+
+         Keep it to the framework's own vocabulary and keep it honest: it must describe what the page
+         actually contains, or it is cloaking. Pillar names and L1-L5 terms are a third copy of the
+         constants (see the JSON-LD note above) — update together. -->
+    <div id="root">
+      <main class="egf-nojs-fallback">
+        <h1>9-Pillar Engineer Growth Framework</h1>
+        <p>
+          A spider chart to measure software engineering mastery, identify core interests, and guide career paths. Supported by a 45-point competency
+          matrix across 5 proficiency levels. By Jasper Loo Zhu Hang.
+        </p>
+
+        <h2>The nine pillars</h2>
+        <p>Each pillar is rated L1 to L5. The nine group into three clusters:</p>
+        <h3>Technical</h3>
+        <ul>
+          <li><strong>Coding (Hands)</strong> — implementation, data structures, refactoring, testing discipline.</li>
+          <li><strong>Domain Logic (Nose)</strong> — business rules, workflow integrity, edge cases and loopholes.</li>
+          <li><strong>Architecture (Brain)</strong> — system boundaries, data modelling, API design, secure design.</li>
+          <li><strong>AI Leverage (Machine)</strong> — using AI tooling to multiply engineering output.</li>
+        </ul>
+        <h3>Product</h3>
+        <ul>
+          <li><strong>UI/UX (Eyes)</strong> — interface quality, interaction and visual judgement.</li>
+          <li><strong>Product Sense (Gut)</strong> — user need, prioritisation, product trade-offs.</li>
+        </ul>
+        <h3>Operational</h3>
+        <ul>
+          <li><strong>Process (Spine)</strong> — delivery discipline, planning, engineering hygiene.</li>
+          <li><strong>Communication (Voice)</strong> — written and verbal clarity, alignment, influence.</li>
+          <li><strong>Ownership (Soul)</strong> — accountability, follow-through, raising the bar.</li>
+        </ul>
+
+        <h2>The five proficiency levels</h2>
+        <p>
+          Pillar levels are written L1 to L5 and career stages S1 to S5, kept separate on purpose: S3 does not mean L3 in every pillar. Career stage
+          reads from the whole chart shape, not from any single axis.
+        </p>
+        <ol>
+          <li><strong>L1 Learner</strong> — can follow clear instructions, match existing patterns, and execute with high support.</li>
+          <li><strong>L2 Practitioner</strong> — can complete defined tasks and workflows end-to-end independently.</li>
+          <li><strong>L3 Expert</strong> — can navigate messy, complex problems alone while meeting standard expectations.</li>
+          <li>
+            <strong>L4 Mentor</strong> — can raise the quality bar for others, resolve cross-team friction, mentor peers, and hold the team to the
+            foundations below them.
+          </li>
+          <li>
+            <strong>L5 Strategist</strong> — can navigate high ambiguity, solve systemic risks, shape direction beyond the team, and set the
+            foundations the wider company inherits.
+          </li>
+        </ol>
+
+        <p>
+          The interactive chart and the full competency matrix require JavaScript. Read the framework documentation at
+          <a href="https://zhuhang-jasper.github.io/egf/?tab=theory">the theory tab</a>.
+        </p>
+
+        <p>© 2026 Jasper Loo Zhu Hang. 9-Pillar Engineer Growth Framework. Licensed CC BY-NC 4.0.</p>
+      </main>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Hand-maintained: the app is one HTML document, so there is nothing to generate from a route table.
+  The two entries are the same document in its two tab states (see src/utils/theory-url.js); they are
+  listed because each is a distinct landing target worth ranking, not because they are separate pages.
+
+  `lastmod` is not automated on purpose. A build-stamped date on every deploy tells crawlers the
+  content changed when only a chunk hash did, and a sitemap that cries wolf gets its dates ignored.
+  Bump it by hand when the framework copy actually changes.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://zhuhang-jasper.github.io/egf/</loc>
+    <lastmod>2026-08-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://zhuhang-jasper.github.io/egf/?tab=theory</loc>
+    <lastmod>2026-08-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+</urlset>
