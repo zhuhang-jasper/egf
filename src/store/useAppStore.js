@@ -33,6 +33,12 @@ const toastTimers = new Map();
 // screen, and a stale one must never sit beside the undo the user is actually looking for.
 export const UNDO_TOAST_KEY = "undo";
 
+// One key per action family, so a re-tap of the same control replaces its notice instead of piling a
+// second card on the first. Every outcome of a family shares its key — success, fallback and error are
+// mutually exclusive answers to one press, so the newest is the only true one.
+export const CHART_EXPORT_TOAST_KEY = "chart-export"; // Copy + Share on the chart
+export const PROFILE_IO_TOAST_KEY = "profile-io"; // Export / Import failures in the profiles menu
+
 // How long a toast that only reports something stays up — long enough to read, then gone.
 const DEFAULT_TOAST_DURATION = 2600;
 
@@ -101,6 +107,11 @@ export const useAppStore = create((set, get) => ({
    *
    * `key` coalesces: a live toast with the same key has its content replaced and countdown reset in
    * place, rather than a second toast stacking (see {@link UNDO_TOAST_KEY}).
+   *
+   * PASS A KEY whenever one control can produce the toast repeatedly — a second tap should replace
+   * the notice, not pile on it. Share the key across a family's outcomes (success / fallback / error),
+   * since they answer the same press and only the newest is true. Stacking is for unrelated notices
+   * that happen to overlap, which is why the stack exists at all.
    *
    * `keepDeleteBatch` (internal) — only deleteProfileWithUndo passes true, to keep the running batch
    * alive while it coalesces; any other producer taking the toast ends the batch so its Undo cannot

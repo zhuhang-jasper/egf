@@ -14,7 +14,7 @@ import { Tooltip } from "@/components/ui/Tooltip";
 import { useCompetencyChart } from "@/hooks/useCompetencyChart";
 import { useMiddleEllipsis } from "@/hooks/useMiddleEllipsis";
 
-import { useAppStore } from "@/store/useAppStore";
+import { CHART_EXPORT_TOAST_KEY, useAppStore } from "@/store/useAppStore";
 
 import { getChartTitleSizePx, getTrackBadgeMdHeightPx } from "@/chart/fonts";
 import {
@@ -185,6 +185,14 @@ const CAN_SHARE_FILES = (() => {
   }
 })();
 
+// Outcome messages for the export buttons. Share's fallbacks land on the clipboard or a download —
+// literally what Copy does — so they report it in Copy's words. Two phrasings for one result would
+// only tell the user the app took a different path, which is not something they need to know.
+const EXPORT_TOAST = {
+  clipboard: "Copied to clipboard",
+  download: "Image saved",
+};
+
 /**
  * Image-export controls. "Copy image" is always shown (clipboard, falling back to a download); "Share"
  * appears only where the Web Share API can carry files. Share comes first, being the primary action where
@@ -290,6 +298,9 @@ export function ChartSection({ isVisible }) {
     relayout();
   }, [chartTitleHidden, chartBadgeHidden, chartLegendHidden, relayout]);
 
+  // Copy and Share share one toast key: they sit side by side, each is tappable again straight away,
+  // and every outcome below answers a single press — so the newest notice replaces the last rather
+  // than stacking a second card over it.
   const handleCopy = async () => {
     try {
       const result = await copyChartAsImageToClipboard({
@@ -302,16 +313,16 @@ export function ChartSection({ isVisible }) {
       });
       if (result?.method === "clipboard") {
         track("chart_copied", { method: "clipboard" });
-        showToast("Copied to clipboard", { variant: "success" });
+        showToast(EXPORT_TOAST.clipboard, { variant: "success", key: CHART_EXPORT_TOAST_KEY });
       } else if (result?.method === "download") {
         track("chart_copied", { method: "download" });
-        showToast("Image saved", { variant: "success" });
+        showToast(EXPORT_TOAST.download, { variant: "success", key: CHART_EXPORT_TOAST_KEY });
       } else {
-        showToast("Couldn't copy the image", { variant: "error" });
+        showToast("Couldn't copy the image", { variant: "error", key: CHART_EXPORT_TOAST_KEY });
       }
     } catch (e) {
       console.error(e);
-      showToast("Couldn't copy the image", { variant: "error" });
+      showToast("Couldn't copy the image", { variant: "error", key: CHART_EXPORT_TOAST_KEY });
     }
   };
 
@@ -329,17 +340,19 @@ export function ChartSection({ isVisible }) {
         // Native share sheet opened — completion is out of our hands, so don't claim success.
         track("chart_shared", { method: "share" });
       } else if (result?.method === "share-fallback-clipboard") {
+        // Share fell back to what Copy does, so it says what Copy says. The analytics still record
+        // that this arrived via Share, which is where the distinction actually matters.
         track("chart_shared", { method: "fallback-clipboard" });
-        showToast("Copied — paste it to share", { variant: "success" });
+        showToast(EXPORT_TOAST.clipboard, { variant: "success", key: CHART_EXPORT_TOAST_KEY });
       } else if (result?.method === "share-fallback-download") {
         track("chart_shared", { method: "fallback-download" });
-        showToast("Image saved", { variant: "success" });
+        showToast(EXPORT_TOAST.download, { variant: "success", key: CHART_EXPORT_TOAST_KEY });
       } else {
-        showToast("Couldn't share the image", { variant: "error" });
+        showToast("Couldn't share the image", { variant: "error", key: CHART_EXPORT_TOAST_KEY });
       }
     } catch (e) {
       console.error(e);
-      showToast("Couldn't share the image", { variant: "error" });
+      showToast("Couldn't share the image", { variant: "error", key: CHART_EXPORT_TOAST_KEY });
     }
   };
 

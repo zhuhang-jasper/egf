@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { MenuItem } from "@/components/ui/menu-item";
 import { Tooltip } from "@/components/ui/Tooltip";
 
-import { UNDO_TOAST_KEY, useAppStore } from "@/store/useAppStore";
+import { PROFILE_IO_TOAST_KEY, UNDO_TOAST_KEY, useAppStore } from "@/store/useAppStore";
 
 import { LAYER } from "@/constants";
 import { cn } from "@/utils";
@@ -43,12 +43,12 @@ export function ProfileActionsMenu() {
       return; // user backed out, or nothing to export — stay silent
     }
     if (outcome === "error") {
-      showToast("Couldn't save the file", { variant: "error" });
+      showToast("Couldn't save the file", { variant: "error", key: PROFILE_IO_TOAST_KEY });
       return;
     }
     // "saved" (file confirmed written) or "started" (download fired, no completion signal).
     track("profiles_exported", { count, outcome });
-    showToast(`Exported ${count} profile${count === 1 ? "" : "s"}`, { variant: "success" });
+    showToast(`Exported ${count} profile${count === 1 ? "" : "s"}`, { variant: "success", key: PROFILE_IO_TOAST_KEY });
   };
 
   const handleImportFile = async (e) => {
@@ -75,10 +75,11 @@ export function ProfileActionsMenu() {
           },
         });
       } else {
-        showToast("No valid profiles found in file", { variant: "error" });
+        // A failed import has no Undo, so it takes the file-IO key rather than the undo slot.
+        showToast("No valid profiles found in file", { variant: "error", key: PROFILE_IO_TOAST_KEY });
       }
     } catch {
-      showToast("Couldn't read that file", { variant: "error" });
+      showToast("Couldn't read that file", { variant: "error", key: PROFILE_IO_TOAST_KEY });
     }
   };
 
