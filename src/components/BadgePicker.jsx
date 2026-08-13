@@ -37,8 +37,13 @@ function BadgePill({ id, className }) {
  * Compact badge selector rendered as a start adornment inside the profile-name input.
  * Picks the cosmetic FE/BE/— badge attached to the current profile. Changing it marks the draft
  * "modified"; the user must Save to persist the badge into the saved profile.
+ *
+ * `onOpen` fires just before this menu opens. The picker renders INSIDE the profile combobox's
+ * outside-click root, so that menu can't close itself when the badge trigger is clicked — its
+ * handler sees an inside click. The combobox passes its own close here so only one of the two
+ * dropdowns is ever open; without it they stack and the badge menu paints behind the profile list.
  */
-export function BadgePicker() {
+export function BadgePicker({ onOpen }) {
   const attachedBadge = useAppStore((s) => normalizeAttachedBadge(s.attachedBadge));
   const setAttachedBadge = useAppStore((s) => s.setAttachedBadge);
   const [open, setOpen] = useState(false);
@@ -83,7 +88,12 @@ export function BadgePicker() {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={`Attached badge: ${current.label}`}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          if (!open) {
+            onOpen?.();
+          }
+          setOpen((v) => !v);
+        }}
         className="my-1.5 flex h-[calc(100%-0.75rem)] cursor-pointer items-center gap-1 border-r border-border pl-2.5 pr-1.5 text-muted-foreground hover:text-foreground"
       >
         <BadgePill id={attachedBadge} />

@@ -324,7 +324,7 @@ export function ProfileCombobox({ titleError = false }) {
 
   return (
     <div ref={rootRef} className="relative min-w-0 flex-1">
-      <BadgePicker />
+      <BadgePicker onOpen={close} />
       {/* The name field — naming/creating only. It never filters and never opens the dropdown, so
           "Save as copy"/"New profile" can focus it for typing a name without triggering a browse/load. */}
       <Input
