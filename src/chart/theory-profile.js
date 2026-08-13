@@ -57,12 +57,29 @@ export function isEmojiMode(chart) {
   return Boolean(chart?.options?.plugins?.competencyChart?.emojiOnlyLabels);
 }
 
+/**
+ * `plainLabels` means two unrelated things, and only one of them may affect measurement:
+ *
+ * - On the TOOL chart it is the user's hide-emoji toggle. The emoji layout is that chart's baseline, so
+ *   the frame stays fit to the labels WITH emoji and hiding them paints shorter text into the height
+ *   already reserved. Measuring the plain set re-converged to a smaller span, which GREW the radar — a
+ *   display toggle moving the layout, which every other toggle in that panel avoids.
+ * - On THEORY charts it is a permanent preset (`plainLabels: isTheory`): those charts are text-only by
+ *   design and never paint emoji, so they must keep measuring the plain labels. Reserving emoji width
+ *   there would pad every spoke for glyphs that never render and shrink the hero radar out of sync with
+ *   the tool chart.
+ *
+ * `emojiOnlyLabels` is a third axis (icon-only spokes on the small career-track charts) and wins over both.
+ */
 export function getChartLayoutLabelsForChart(chart) {
   const cc = chart?.options?.plugins?.competencyChart;
   if (isEmojiMode(chart)) {
     return getEmojiChartLabels();
   }
-  return cc?.plainLabels ? getPlainChartLayoutLabels() : getChartLayoutLabels();
+  if (cc?.plainLabels && isTheoryChart(chart)) {
+    return getPlainChartLayoutLabels();
+  }
+  return getChartLayoutLabels();
 }
 
 /**
