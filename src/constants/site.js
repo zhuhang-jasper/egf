@@ -71,7 +71,7 @@ export const SITE_COPY = {
     // Pre-rendered poster in `public/`, resolved against BASE_URL at call time. A static asset rather than a
     // runtime capture, since the theory tab has no single element worth rasterizing. Bump the vN when the
     // artwork is replaced, so caches and already-shared copies stay distinguishable.
-    theoryImagePath: "poster-pillar-v4.png",
+    theoryImagePath: "poster-masthead-pillar-v4.png",
     theoryImageFileName: "9-pillar-egf-theory.png",
   },
 };
