@@ -59,8 +59,8 @@ function rescaleChromeForWidth(root, widthPx) {
     badge.style.paddingLeft = `${padX}px`;
     badge.style.paddingRight = `${padX}px`;
     badge.style.borderRadius = `${Math.min(6, Math.max(4, Math.round(labelPx * 0.42)))}px`;
-    // It matches the title's font size on screen (matchHeightPx), so keep it doing that here.
-    badge.style.height = `${getChartTitleSizePx(widthPx)}px`;
+    // Same 0.86 of the title size as the on-screen `matchHeightPx` — keep the two in step.
+    badge.style.height = `${Math.round(getChartTitleSizePx(widthPx) * 0.86)}px`;
   }
 
   const swatchPx = getClusterLegendSwatchPx(widthPx);

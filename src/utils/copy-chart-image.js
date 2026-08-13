@@ -230,8 +230,13 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY, padX, padY) {
         ctx.font = `${weight} ${fontSize}px ${family}`;
       }
       ctx.textAlign = cs.textAlign === "center" ? "center" : "left";
-      ctx.textBaseline = "middle";
-      ctx.fillText(text, ctx.textAlign === "center" ? x + w / 2 : x, y + h / 2);
+      // `middle` centres on the EM box, whose midpoint sits below the cap band — the title then paints low and
+      // the badge beside it reads high. Centre on the measured cap/baseline extents instead, which is what the
+      // eye aligns the pill against.
+      ctx.textBaseline = "alphabetic";
+      const m = ctx.measureText(text);
+      const capMid = (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
+      ctx.fillText(text, ctx.textAlign === "center" ? x + w / 2 : x, y + h / 2 + capMid);
     }
   }
 
@@ -300,8 +305,10 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY, padX, padY) {
       ctx.fillStyle = sanitizeColorForHtml2Canvas(cs.color);
       ctx.font = buildFont(cs, scaleY);
       ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(text, x + w / 2, y + h / 2);
+      // Cap-band centred, as the title above — `middle` would sit the all-caps label low in the pill.
+      ctx.textBaseline = "alphabetic";
+      const bm = ctx.measureText(text);
+      ctx.fillText(text, x + w / 2, y + h / 2 + (bm.actualBoundingBoxAscent - bm.actualBoundingBoxDescent) / 2);
     }
   }
 

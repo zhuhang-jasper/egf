@@ -404,7 +404,7 @@ export function ChartSection({ isVisible }) {
                 the title's letters, which is what the eye actually aligns it against, and it keeps the pill's
                 height-to-label ratio close to where it already was (1.6x at the 350px floor). */}
             {showBadge ? (
-              <TrackBadge variant={attachedBadge} size="md" className="shrink-0" chartWidth={chartWidth} matchHeightPx={titleSizePx} />
+              <TrackBadge variant={attachedBadge} size="md" className="shrink-0" chartWidth={chartWidth} matchHeightPx={Math.round(titleSizePx * 0.86)} />
             ) : null}
             {showVisibleTitle ? (
               <h2
