@@ -33,9 +33,13 @@ const toastTimers = new Map();
 // screen, and a stale one must never sit beside the undo the user is actually looking for.
 export const UNDO_TOAST_KEY = "undo";
 
-// How long an undo toast stays up. Longer than the default toast duration — undoing is a decision,
-// and the user needs time to notice the toast and react. The dismiss button's countdown ring
-// animates over exactly this window (see src/components/ui/Toaster.jsx).
+// How long a toast that only reports something stays up — long enough to read, then gone.
+const DEFAULT_TOAST_DURATION = 2600;
+
+// How long a toast carrying an action stays up. Longer than the default — acting on it is a
+// decision, and the user needs time to notice the toast and react. Applied automatically to any
+// toast with an `action` (see showToast). The dismiss button's countdown ring animates over
+// exactly this window (see src/components/ui/Toaster.jsx).
 const UNDO_TOAST_DURATION = 8000;
 
 // Accumulator for the batched single-delete Undo toast, reset when that toast is gone or replaced.
@@ -89,9 +93,11 @@ export const useAppStore = create((set, get) => ({
   toasts: [],
 
   /**
-   * Show a transient toast. `variant` is "default" | "success" | "error" | "dark". `action`, if
+   * Show a transient toast. `variant` is "default" (dark neutral; "dark" is an alias) | "success" |
+   * "error". `action`, if
    * given, is `{ label, onAction }` and renders a button (e.g. "Undo") that fires `onAction` then
-   * dismisses. `duration` ms until auto-dismiss (0 = sticky).
+   * dismisses — and lengthens the toast to {@link UNDO_TOAST_DURATION}, so an actionable toast never
+   * has to ask for that. `duration` ms until auto-dismiss (0 = sticky), overriding the above.
    *
    * `key` coalesces: a live toast with the same key has its content replaced and countdown reset in
    * place, rather than a second toast stacking (see {@link UNDO_TOAST_KEY}).
@@ -100,7 +106,10 @@ export const useAppStore = create((set, get) => ({
    * alive while it coalesces; any other producer taking the toast ends the batch so its Undo cannot
    * re-insert stale rows. Returns the toast id (the existing one when coalescing).
    */
-  showToast: (message, { variant = "default", duration = 2600, action = null, key = null, keepDeleteBatch = false } = {}) => {
+  showToast: (message, { variant = "default", duration, action = null, key = null, keepDeleteBatch = false } = {}) => {
+    // A toast with an action defaults to the longer undo window: acting on it is a decision, so it
+    // outlives one that only reports. Call sites pass `duration` only to override that.
+    duration = duration ?? (action ? UNDO_TOAST_DURATION : DEFAULT_TOAST_DURATION);
     const text = String(message ?? "").trim();
     if (!text) {
       return null;
@@ -309,7 +318,6 @@ export const useAppStore = create((set, get) => ({
     const message = count === 1 ? `Deleted “${rows[0].title}”` : `Deleted ${count} profiles`;
     get().showToast(message, {
       variant: "dark",
-      duration: UNDO_TOAST_DURATION,
       key: UNDO_TOAST_KEY,
       keepDeleteBatch: true,
       action: {
@@ -684,7 +692,6 @@ export const useAppStore = create((set, get) => ({
     const message = name ? `Unsaved changes to “${name}” were discarded` : "Unsaved changes to your draft were discarded";
     get().showToast(message, {
       variant: "dark",
-      duration: UNDO_TOAST_DURATION,
       key: UNDO_TOAST_KEY,
       action: {
         label: "Undo",

@@ -64,7 +64,6 @@ export function ProfileActionsMenu() {
       if (added > 0) {
         showToast(`Imported ${added} profile${added === 1 ? "" : "s"}`, {
           variant: "success",
-          duration: 10000,
           key: UNDO_TOAST_KEY, // only one Undo toast at a time — replaces any live delete/discard undo
           action: {
             label: "Undo",

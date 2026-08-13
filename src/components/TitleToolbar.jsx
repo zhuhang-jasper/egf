@@ -201,6 +201,19 @@ export function TitleToolbar() {
   const levelKeyboardInputEnabled = useAppStore((s) => s.levelKeyboardInputEnabled);
   const toggleLevelKeyboardInputEnabled = useAppStore((s) => s.toggleLevelKeyboardInputEnabled);
   const touchPrimary = useTouchPrimary();
+
+  // The switch itself is the only feedback for a setting whose effect isn't visible until the next
+  // level-input tap, so confirm the new state in a toast. Keyed so rapid toggles replace in place.
+  const handleToggleKeypad = () => {
+    toggleLevelKeyboardInputEnabled();
+    showToast(useAppStore.getState().levelKeyboardInputEnabled ? "Tap a number to type it in" : "Use the − and + buttons to change a number", {
+      key: "keypad-toggle",
+      // Longer than the default: this one teaches rather than confirms, so it has to be read, not
+      // just noticed. Still short of an Undo — there's nothing to act on before it goes.
+      duration: 4500,
+    });
+  };
+
   const saveStatus = useAppStore(selectProfileSaveStatus); // "saved" | "renaming" | "modified" | "new"
   const statusMeta = SAVE_STATUS_META[saveStatus];
 
@@ -268,7 +281,6 @@ export function TitleToolbar() {
       if (result.undo) {
         showToast(`Updated “${result.savedTitle}”`, {
           variant: "dark",
-          duration: 10000,
           key: UNDO_TOAST_KEY, // only one Undo toast at a time — replaces any live delete/discard/import undo
           action: {
             label: "Undo",
@@ -388,7 +400,7 @@ export function TitleToolbar() {
             role="switch"
             aria-checked={levelKeyboardInputEnabled}
             aria-label="Keypad — numeric keyboard for level inputs"
-            onClick={toggleLevelKeyboardInputEnabled}
+            onClick={handleToggleKeypad}
             className="group relative inline-flex h-[26.5px] shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-slate-300 bg-white px-1.5 text-xs font-semibold tracking-wide text-slate-600 hover:bg-slate-50 hover:text-slate-800"
           >
             <Calculator className="size-3.5 shrink-0" aria-hidden />

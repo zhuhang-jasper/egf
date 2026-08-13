@@ -4,17 +4,18 @@ import { useAppStore } from "@/store/useAppStore";
 
 import { cn } from "@/utils";
 
+// A neutral toast is dark: the old white card sat on a white form and read as part of the page
+// rather than as a notice. Nothing distinguished it as a message. `dark` stays as an alias so the
+// call sites that ask for it by name keep working — it is the same thing as the default.
+const NEUTRAL_VARIANT = {
+  icon: null,
+  containerClass: "border-transparent bg-slate-900 text-white",
+  dismissClass: "text-white/70 hover:text-white",
+};
+
 const VARIANT_META = {
-  default: {
-    icon: null,
-    containerClass: "border-border bg-card text-card-foreground",
-    dismissClass: "text-muted-foreground hover:text-foreground",
-  },
-  dark: {
-    icon: null,
-    containerClass: "border-transparent bg-slate-900 text-white",
-    dismissClass: "text-white/70 hover:text-white",
-  },
+  default: NEUTRAL_VARIANT,
+  dark: NEUTRAL_VARIANT,
   success: {
     icon: Check,
     containerClass: "border-transparent bg-emerald-600 text-white",
