@@ -17,7 +17,7 @@ import { track } from "@/utils/analytics";
  * Keep the box in step with {@link TrackBadge}'s sm size — these two render the same chip in
  * different places and drift between them reads as a bug.
  */
-function BadgePill({ id }) {
+function BadgePill({ id, className }) {
   const ui = TRACK_BADGE_UI[id];
   if (id === "none") {
     return <span className="inline-flex min-w-[1.5em] justify-center text-muted-foreground">{ui.shortLabel}</span>;
@@ -25,11 +25,12 @@ function BadgePill({ id }) {
   return (
     <span
       className={cn(
-        "inline-flex min-w-[2.75em] items-center justify-center rounded px-[0.85em] py-[2px] text-[10px] font-semibold leading-[1.4]",
+        "inline-flex min-w-[2.75em] items-center justify-center rounded-[0.42em] px-[0.85em] py-[0.45em] text-[10px] font-semibold",
         ui.pillClass,
+        className,
       )}
     >
-      {ui.shortLabel}
+      <span data-badge-ink>{ui.shortLabel}</span>
     </span>
   );
 }
@@ -111,8 +112,11 @@ export function BadgePicker() {
                   attachedBadge === id && "font-semibold",
                 )}
               >
+                {/* A notch smaller than the trigger's pill: the row's label is `text-xs`, and at the shared
+                    10px the pill's ~1.6em box stands taller than the 12px text it sits beside. Every dimension
+                    is in `em`, so the font size is the only lever needed — the shape scales with it. */}
                 <span className="inline-flex w-7 shrink-0 justify-center">
-                  <BadgePill id={id} />
+                  <BadgePill id={id} className="text-[9px]" />
                 </span>
                 <span className={cn(attachedBadge === id ? "text-foreground" : "text-muted-foreground")}>{ui.label}</span>
               </button>

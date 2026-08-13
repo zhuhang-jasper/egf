@@ -230,6 +230,26 @@
   }
 }
 
+/* BADGE INK CENTRING — `align-items: center` centres the LINE BOX, and the line box is not the ink. "FE"/"BE"
+   are all-caps with no descender, so the glyphs sit in its upper part and the pill reads top-heavy. The offset
+   is the font's own descent, and `system-ui` resolves to a DIFFERENT font per platform (SF / Segoe / Roboto),
+   so the error changes per device rather than being one constant to dial out. `text-box` trims the line box to
+   the cap and baseline edges, making the thing flex centres the ink itself, computed from whichever font
+   actually resolved. See docs/DECISIONS.md#badge-ink-centring. */
+[data-badge-ink] {
+  line-height: 1;
+  text-box: trim-both cap alphabetic;
+}
+
+/* Firefox has no `text-box` yet. Nudge down by half a descent so unsupported browsers land close rather than
+   uncorrected — approximate by nature, which is exactly why it is the fallback and not the rule. */
+@supports not (text-box: trim-both cap alphabetic) {
+  [data-badge-ink] {
+    line-height: 1;
+    transform: translateY(0.055em);
+  }
+}
+
 /* PRINT: rescale each radar's bitmap to its frame, since print rasterizes before the fit rAF runs. Scoped so
    the poster/social export canvases are untouched. See docs/DECISIONS.md#print-chart-frame-height-is-stale. */
 @media print {

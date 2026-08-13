@@ -461,6 +461,45 @@ a wrapped title took its leading from a pill's padding — at narrow widths, exa
 rare but not impossible: `MAX_PROFILE_NAME_LENGTH` is a character budget, and capitals are far wider than
 lowercase, so an all-caps name at the limit can still take two lines.
 
+### badge-ink-centring
+
+The FE/BE label is a nested `[data-badge-ink]` span, trimmed with `text-box: trim-both cap alphabetic`, rather
+than text sitting directly in the flex pill.
+
+`align-items: center` centres the **line box**, and the line box is not the ink. Its height and the baseline's
+place inside it come from the font's ascent/descent/line-gap metrics, and "FE"/"BE" are all-caps with no
+descenders — so the glyphs occupy the upper band and the descent space below sits empty. The pill reads
+top-heavy by roughly half a descent.
+
+**This is not a constant that can be dialled out.** `system-ui` deliberately resolves to a different font per
+platform — San Francisco on Apple, Segoe UI Variable on Windows, Roboto on Android — and each carries its own
+ascent/descent ratio, so the same CSS produces a different offset on each device. A nudge tuned on a Mac is
+wrong on Android by whatever those two metrics differ by. This is why it looked fine on the machine it was
+built on and wrong on other devices.
+
+`leading-[1.4]` was the previous mitigation and could not fix it either: half-leading is distributed
+symmetrically around the line box, not around the cap band, so it scales the error without centring it.
+
+`text-box-trim` crops the line box to the cap-height and alphabetic-baseline edges, so the box flex centres
+**is** the ink, derived from whichever font actually resolved. It has to be on a child: the property applies
+to the block container holding the text, and the pill is the flex container. Neither size sets leading on the
+pill anymore — after the trim there is no half-leading left to bias.
+
+Firefox has no support yet, so an `@supports not (...)` fallback nudges by `0.055em`. That one IS an
+approximate constant, which is exactly why it is the fallback rather than the rule.
+
+**The trim cost the sm pill its height, and the padding had to pay it back.** `py-[2px]` was picked against a
+`1.4` line box, where half-leading supplied most of the vertical space and the 2px only topped it up. Trimming
+to cap height removed that leading, so the same 2px wrapped a much shorter box and the chip read cramped — most
+visibly in the BadgePicker dropdown, where the pills sit in a list with room around them. It is now `0.45em`,
+in `em` like `px-[0.85em]` so it tracks the font, landing sm near md's 1.8x height ratio. The two values are
+coupled: reverting the trim means restoring the leading *and* re-deriving this padding.
+
+The chart PNG export never had this bug and is untouched by the fix: `copy-chart-image.js` redraws the badge in
+Canvas 2D with `textBaseline: "middle"`, a font-metric-aware baseline, and reads the label via `textContent`,
+which is indifferent to the wrapper. `export-clone.js` still keys its md/sm guard off the **outer** pill's
+inline `fontSize`, which the nesting does not move.
+
 ### share-gates-are-deliberately-asymmetric
 
 The two share buttons probe the Web Share API differently, and the asymmetry is the point rather than an
