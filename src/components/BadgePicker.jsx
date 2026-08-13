@@ -25,7 +25,7 @@ function BadgePill({ id, className }) {
   return (
     <span
       className={cn(
-        "inline-flex min-w-[2.75em] items-center justify-center rounded-[0.42em] px-[0.85em] py-[0.45em] text-[10px] font-semibold",
+        "inline-flex min-w-[2.75em] items-center justify-center rounded-[0.42em] px-[0.85em] py-[2px] text-[10px] font-semibold",
         ui.pillClass,
         className,
       )}

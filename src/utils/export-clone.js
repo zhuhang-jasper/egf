@@ -5,7 +5,6 @@ import {
   getChartSecondaryLabelSizePx,
   getChartTitleSizePx,
   getClusterLegendSwatchPx,
-  getTrackBadgeMdHeightPx,
 } from "@/chart/fonts";
 import { applyChartState, createCompetencyChart } from "@/chart/instance";
 
@@ -48,19 +47,18 @@ function rescaleChromeForWidth(root, widthPx) {
   if (titleRow instanceof HTMLElement) {
     // The row carries the size; the <h2> inherits it, and `1.25em` resolves the row's min-height against it.
     titleRow.style.fontSize = `${getChartTitleSizePx(widthPx)}px`;
-    titleRow.style.minHeight = `max(1.25em, ${getTrackBadgeMdHeightPx(widthPx)}px)`;
+    titleRow.style.minHeight = "1.25em";
   }
 
   const badge = root.querySelector("[data-chart-export='track-badge']");
   if (badge instanceof HTMLElement && badge.style.fontSize) {
     // Only the `md` badge scales — `sm` sets no fontSize, which is what this guard tests.
-    const padX = Math.round(labelPx * 0.85);
+    //
+    // FONT SIZE IS ALL THERE IS TO RESET. Padding, radius, min-width and height used to be re-derived here in px
+    // because the component wrote them as computed px inline styles and `cloneNode` copies those literally. They
+    // are all `em` ratios in the class list now, so setting the font rescales every one of them — and the height
+    // is not set at all, it falls out of the padding. See TrackBadge.
     badge.style.fontSize = `${labelPx}px`;
-    badge.style.paddingLeft = `${padX}px`;
-    badge.style.paddingRight = `${padX}px`;
-    badge.style.borderRadius = `${Math.min(6, Math.max(4, Math.round(labelPx * 0.42)))}px`;
-    // Same 0.86 of the title size as the on-screen `matchHeightPx` — keep the two in step.
-    badge.style.height = `${Math.round(getChartTitleSizePx(widthPx) * 0.86)}px`;
   }
 
   const swatchPx = getClusterLegendSwatchPx(widthPx);

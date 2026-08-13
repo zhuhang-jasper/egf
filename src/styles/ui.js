@@ -89,29 +89,65 @@ export const FE_UI = {
     exportImageLayoutWidthPx: 526,
     /* Resolution multiplier on the pinned layout above — pixel dimensions only, no effect on proportion.
        2x is the retina target: one CSS px drawn with two physical ones, so the PNG is sharp displayed at its
-       natural size, and 526 + 2×8 padding lands at ~1084px, near enough 1080 to read as a Full-HD-width
-       image. Was 8x, which produced 3-4k-wide files whose extra pixels only paid off under heavy zoom. */
+       natural size, and the ink-cropped 526px layout lands near 1030px wide — close enough to 1080 to read as a
+       Full-HD-width image. Not exactly 2×(526 + padding): the output is cropped to painted pixels, so the width
+       is the ink's plus the margins (see getInkBounds), which moves a little with the track's axis labels.
+       Was 8x, which produced 3-4k-wide files whose extra pixels only paid off under heavy zoom. */
     exportImageCssScale: 2,
     exportImageCssScaleMax: 12,
     /** UHD export multiplier, admin-gated (FEATURE_CHART_UHD_EXPORT_SETTING) — for stills that get displayed
         far larger than natural size, e.g. stretched across a slide. */
     exportImageCssScaleUhd: 4,
-    /** White inset on copied image only (Tailwind p-2 = 8px). */
-    exportImagePaddingPx: 8,
+    /* White margin on the copied image only — all four edges take this one number, but they measure it from
+       different things, and that is on purpose.
+       TOP AND BOTTOM are measured to the nearest PAINTED PIXEL: the only thing between the ink and the layout box
+       on that axis is leading, so trimming it is safe (see getInkRowBounds in utils/copy-chart-image.js).
+       LEFT AND RIGHT are measured to the LAYOUT BOX, i.e. the pinned exportImageLayoutWidthPx. The box is the
+       frame the blocks align to, so trimming the sides to ink would let a display toggle or a short profile name
+       redefine the image's width. The right edge therefore reads looser than the left, since the title row sits
+       flush at the box's left while the radar's axis labels stop short of its right.
+       There is deliberately no per-side variant of this number: a side reading tight is a fault in the block that
+       does not reach the box, not something to offset here. */
+    exportImagePaddingPx: 12,
     /* ATTRIBUTION BAND on the copied image only — the credit strip below the chart.
        Both numbers are fractions of getChartSecondaryLabelSizePx(), the size the cluster legend renders at, so
        the credit tracks the chart's type scale instead of being a fixed px value against a scaled one.
        Below 1 because the credit names the framework in FULL, which does not fit on one line at the legend's own
        size across the pinned export width. It is a constant rather than a measured fit: the string is a constant
        too. Reword the credit long enough to overrun and this is the knob.
-       No band-height constant: the strip is `exportImageAttributionGapPx + this line's height`. */
+       No band-height constant: the strip is `exportImageAttributionGapPx + this line's measured ink`. */
     exportImageAttributionFontRatio: 0.8,
-    /* Space between the content above and the credit line. Larger than exportImagePaddingPx because the content
-       ends flush at the cluster legend's drawn border, so this gap starts at a hard edge rather than at type.
-       The white BELOW the credit is exportImagePaddingPx itself, keeping all four edges of the export on one
-       number. See getAttributionBandPx. */
-    exportImageAttributionGapPx: 16,
+    /* Space between the content's lowest ink and the credit line's highest — whatever that content is, so the
+       gap holds whether the block ends at the cluster legend's border, at a score card, or at a bare axis label
+       when both are switched off.
+       ORDER MATTERS AND IS SEQUENTIAL: content, this gap, the credit line, and only THEN the uniform
+       exportImagePaddingPx around all four sides of that whole block. The white below the credit is therefore
+       the margin, not this number. See measureAttribution in utils/copy-chart-image.js.
+       Larger than exportImagePaddingPx, and a SEPARATE knob rather than a duplicate of it: this one separates two
+       pieces of content, that one is the image's edge. Retune either without touching the other. */
+    exportImageAttributionGapPx: 18,
     exportImageAttributionColor: "#94a3b8",
+    /* Weight the copied image's TITLE is drawn at, as an OFFSET from whatever the <h2> itself computes
+       (`font-extrabold` = 800, so -100 draws it at 700). A delta rather than an absolute so restyling the
+       heading carries through instead of being silently overridden here. 0 disables the correction.
+       WHY IT EXISTS: <body> carries Tailwind's `antialiased`, i.e. `-webkit-font-smoothing: antialiased`, which on
+       macOS visibly THINS DOM text. Canvas 2D does not honour it and there is no canvas equivalent to switch on,
+       so the identical 800 rasterizes heavier in the export than on screen.
+       WHY IT IS A FUDGE AND ACCEPTED AS ONE: unlike the export's geometry, this compensates for a rendering
+       difference with no API behind it, so there is nothing to measure and match. It is also platform-dependent —
+       `-webkit-font-smoothing` is a no-op on Windows and Linux, where the two already agreed, so the export runs
+       slightly light there. Judged worth it because an export is made and reviewed on the same machine.
+       Inter is variable across 100–900, so any value in range is a real instance: dial 750 or 780 rather than
+       treating the 100s as steps. See docs/DECISIONS.md#export-title-weight-is-corrected-for-font-smoothing. */
+    exportImageTitleWeightDelta: -50,
+    /* Same correction, same reasoning, for the TRACK BADGE's label — its own number because the two are different
+       type at different sizes, and grayscale smoothing does not thin them by the same visible amount. The badge's
+       label is ~12px where the title's is ~21px, and small text is where the smoothing difference is least
+       visible, so expect this to want a SMALLER magnitude than the title's, not the same one.
+       Deliberately NOT extended to the cluster legend or the score cards, which are the same size and drawn by the
+       same code: nobody has reported those reading heavy, and a knob per canvas string is how this stops being a
+       correction and becomes a second styling system. Add one if and when a specific one looks wrong. */
+    exportImageBadgeWeightDelta: -150,
     clusterBorderColor: "rgba(0, 0, 0, 0.22)",
     clusterBorderWidth: 1,
   },

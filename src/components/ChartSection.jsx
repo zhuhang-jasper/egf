@@ -16,7 +16,7 @@ import { useMiddleEllipsis } from "@/hooks/useMiddleEllipsis";
 
 import { CHART_EXPORT_TOAST_KEY, useAppStore } from "@/store/useAppStore";
 
-import { getChartTitleSizePx, getTrackBadgeMdHeightPx } from "@/chart/fonts";
+import { getChartTitleSizePx } from "@/chart/fonts";
 import {
   FE_UI,
   FEATURE_CHART_ATTRIBUTION_SETTING,
@@ -284,9 +284,15 @@ export function ChartSection({ isVisible }) {
   const fittedTitle = useMiddleEllipsis(titleMeasureRef, displayTitle, isVisible);
   // A function of chart width ALONE, never of what is currently in the row: the title and badge toggles are
   // independent, so the row must be the same height in all four combinations or toggling one moves the chart.
-  // `max()` in CSS rather than JS so the `1.25em` term resolves `leading-tight` from the same font size in the
-  // same layout pass, leaving no JS mirror of the ratio to drift. See docs/DECISIONS.md#chart-type-scale.
-  const titleRowMinHeight = `max(1.25em, ${getTrackBadgeMdHeightPx(layoutWidth)}px)`;
+  //
+  // `1.25em` ALONE, with no badge term. It used to be `max(1.25em, badgeHeightPx)`, where the badge term was the
+  // px height the pill was handed. That term could never win: it was `0.86em` of the same font size the `1.25em`
+  // resolves against. Dropping it removed a JS number without changing a pixel of layout — and the pill no longer
+  // takes a height at all (see TrackBadge), so there is nothing left to floor the row to.
+  //
+  // Left in `em` rather than resolved in JS so it resolves `leading-tight` from the same font size in the same
+  // layout pass, leaving no JS mirror of the ratio to drift. See docs/DECISIONS.md#chart-type-scale.
+  const titleRowMinHeight = "1.25em";
 
   useLayoutEffect(() => {
     if (isVisible) {
@@ -405,20 +411,14 @@ export function ChartSection({ isVisible }) {
             className="relative z-[1] mb-3 flex w-full min-w-0 items-center gap-3"
             style={{ fontSize: titleSizePx, minHeight: titleRowMinHeight }}
           >
-            {/* `matchHeightPx` IS WHAT MAKES THE BADGE FOLLOW THE TITLE rather than define the row, and it is
-                UNCONDITIONAL — it does not check whether the title is currently shown. It was conditional, and
-                that meant hiding the title also resized the pill beside it, so one toggle changed two things.
-                The pill is now the same size in all four show/hide combinations, exactly like the row it sits
-                in (see `titleRowHeightPx`).
+            {/* NO HEIGHT IS PASSED. The pill sizes itself from `em` padding off `chartWidth`, like every other
+                badge in the app — it used to be handed `round(titleSize * 0.86)` and that ROUNDING JITTERED,
+                since getChartTitleSizePx is deliberately fractional so the type scales smoothly. See TrackBadge.
 
-                IT MATCHES THE TITLE'S FONT SIZE, NOT THE ROW HEIGHT. Matching the row would stretch the pill
-                across the title's full leading, which at narrow widths is a 22px pill around an 11px label —
-                visibly chunkier for no reason. The em box is the better target: the pill ends up the height of
-                the title's letters, which is what the eye actually aligns it against, and it keeps the pill's
-                height-to-label ratio close to where it already was (1.6x at the 350px floor). */}
-            {showBadge ? (
-              <TrackBadge variant={attachedBadge} size="md" className="shrink-0" chartWidth={chartWidth} matchHeightPx={Math.round(titleSizePx * 0.86)} />
-            ) : null}
+                `chartWidth` is still passed and is what keeps the pill in proportion to the title beside it, and
+                it is UNCONDITIONAL — it does not check whether the title is currently shown. It was conditional
+                once, which meant hiding the title also resized the pill, so one toggle changed two things. */}
+            {showBadge ? <TrackBadge variant={attachedBadge} size="md" className="shrink-0" chartWidth={chartWidth} /> : null}
             {showVisibleTitle ? (
               <h2
                 id="competency-chart-heading"

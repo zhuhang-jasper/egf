@@ -43,6 +43,28 @@
   font-feature-settings: "tnum" 1;
 }
 
+/* Inter re-declared with the OPTICAL-SIZE AXIS PINNED, for the copied image's title. Same class of problem as
+   the tabular face above and the same fix: canvas 2D cannot drive a variable axis, so `font-optical-sizing: auto`
+   on the <h2> has no canvas equivalent and the title resolved to the nearest static instance — text-size outlines
+   drawn at display size, which reads thicker and looser than the same string on screen. Pinning the axis in the
+   FACE is what gets past that, since the descriptor applies without canvas having to ask for it.
+
+   21 IS NOT A TASTE VALUE: `font-optical-sizing: auto` maps font-size in px onto the axis, and the export renders
+   at a pinned width, so the title's size there is the constant getChartTitleSizePx(chart.exportImageLayoutWidthPx)
+   — 11 × 526/380 × 1.4 ≈ 21.3. Retune it if either of those two constants moves; nothing checks that for you,
+   which is the cost of the axis being unreachable from JS.
+
+   No unicode-range: a profile name is arbitrary text, unlike the ticks above. The latin file is all this face
+   carries, and a name needing more falls through to "Inter Variable" in the stack (see EXPORT_TITLE_FONT_FAMILY). */
+@font-face {
+  font-family: "Inter Display Canvas";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("@fontsource-variable/inter/files/inter-latin-opsz-normal.woff2") format("woff2-variations");
+  font-variation-settings: "opsz" 21;
+}
+
 @layer base {
   /* Scrollbar width a modal's scroll lock reclaims; 0 at rest so the var always resolves.
      See docs/DECISIONS.md#scroll-lock-gutter. */
@@ -231,24 +253,44 @@
 }
 
 /* BADGE INK CENTRING — `align-items: center` centres the LINE BOX, and the line box is not the ink. "FE"/"BE"
-   are all-caps with no descender, so the glyphs sit in its upper part and the pill reads top-heavy. The offset
-   is the font's own descent, and `system-ui` resolves to a DIFFERENT font per platform (SF / Segoe / Roboto),
-   so the error changes per device rather than being one constant to dial out. `text-box` trims the line box to
-   the cap and baseline edges, making the thing flex centres the ink itself, computed from whichever font
-   actually resolved. See docs/DECISIONS.md#badge-ink-centring. */
+   are all-caps with no descender, so the glyphs sit in its upper part and the pill reads top-heavy.
+
+   THIS IS THE LINE-HEIGHT APPROACH, CHOSEN OVER `text-box: trim-both cap alphabetic`, which was here before and
+   is the more correct rule. The trim resolves the cap box from whichever font actually loaded, so it centred the
+   ink per platform with no constant to dial. It was replaced because it made every dimension of the pill
+   subpixel: at a 10px font the cap box is ~7.2px and `py-[0.45em]` is 9px, so nothing landed on a whole pixel
+   and the glyph rounded up or down as ancestors reflowed — the label visibly jumped while resizing the window.
+
+   A taller line box is less sensitive to a fractional origin, which is the whole reason this is back. The
+   KNOWN COST is that the residual offset is the font's own descent and `system-ui` resolves differently per
+   platform (SF / Segoe / Roboto), so the pill is slightly top-heavy by an amount that varies by device rather
+   than being corrected. See docs/DECISIONS.md#badge-ink-centring.
+
+   `1lh` ROUNDED TO A WHOLE PIXEL IS WHAT STOPS THE LABEL JITTERING, and it is the last fractional term in the
+   pill. `line-height: 1.4` against md's integer font size gives a FRACTIONAL line box — 15.4px at font 11 — and
+   `align-items: center` then centres it in an integer content box, leaving a half-pixel that rounds up or down
+   with wherever the row lands on the device-pixel grid. The pill held still and the glyphs moved 1px, per pixel
+   of window width. `round(1.4em)` snaps the line box itself, so the leftover is a whole number and there is
+   nothing left to resolve inconsistently. sm never showed this: 10px * 1.4 is exactly 14. */
 [data-badge-ink] {
-  line-height: 1;
-  text-box: trim-both cap alphabetic;
+  /* Declared twice on purpose: a browser without `round()` drops that line as invalid and keeps the plain ratio,
+     which is the pre-fix behaviour rather than no leading at all. */
+  line-height: 1.4;
+  line-height: round(1.4em, 1px);
 }
 
-/* Firefox has no `text-box` yet. Nudge down by half a descent so unsupported browsers land close rather than
-   uncorrected — approximate by nature, which is exactly why it is the fallback and not the rule. */
-@supports not (text-box: trim-both cap alphabetic) {
-  [data-badge-ink] {
-    line-height: 1;
-    transform: translateY(0.055em);
-  }
-}
+/* NO `text-box` TRIM ON THE HEADING, deliberately — it was here and it CLIPPED THE DESCENDERS.
+   `trim-both cap alphabetic` puts the block's bottom edge on the alphabetic baseline, so everything below the
+   baseline is outside the box; the <h2> also carries `overflow-hidden` for useMiddleEllipsis's fitting, so the
+   tails of p/g/y/J were cut off rather than merely overflowing. The comment that used to sit here claimed
+   "height is unaffected", which was the mistake: the trim changes the block's own box, and an overflow-hidden
+   box is exactly where that becomes visible.
+
+   The trim was reaching for something real — `align-items: center` centres the title's LINE BOX against the
+   pill's, and `leading-tight`'s half-leading is split evenly while the ascent/descent it wraps is not, so the two
+   ink bands are not what gets centred. If that misalignment needs correcting again, do it WITHOUT resizing the
+   heading's box: `trim-start cap` alone leaves the descenders inside, or offset the pill instead — the pill has no
+   overflow constraint and nothing measures its box. See docs/DECISIONS.md#badge-ink-centring. */
 
 /* PRINT: rescale each radar's bitmap to its frame, since print rasterizes before the fit rAF runs. Scoped so
    the poster/social export canvases are untouched. See docs/DECISIONS.md#print-chart-frame-height-is-stale. */

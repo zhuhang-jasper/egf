@@ -463,8 +463,45 @@ lowercase, so an all-caps name at the limit can still take two lines.
 
 ### badge-ink-centring
 
-The FE/BE label is a nested `[data-badge-ink]` span, trimmed with `text-box: trim-both cap alphabetic`, rather
-than text sitting directly in the flex pill.
+The FE/BE label is a nested `[data-badge-ink]` span carrying `line-height: 1.4`, rather than text sitting
+directly in the flex pill.
+
+**`text-box: trim-both cap alphabetic` was the rule here and has been REVERTED.** It is the more correct way to
+centre the ink, for the reasons below, and it was withdrawn for two concrete failures that outweigh them:
+
+1. **It made every dimension of the pill subpixel.** At a 10px font the trimmed cap box is ~7.2px, and the `em`
+   padding that had to replace the lost leading was 9px. Nothing landed on a whole pixel, so as ancestors
+   reflowed, the glyph rounded up or down against the device-pixel grid — the label visibly jumped while
+   resizing the window, across every `sm` pill at once (profile dropdown, badge picker, selected badge).
+
+**EVERY VERTICAL TERM IN THE PILL MUST BE A WHOLE PIXEL, and there are three of them.** This took three passes to
+get right because each pass fixed one and left another fractional, and the symptom is identical either way:
+
+| Term | Fractional form | Fix |
+| --- | --- | --- |
+| padding-y | `py-[0.45em]` → 4.5px at font 10 | `py-[2px]` |
+| pill height | `round(getChartTitleSizePx(w) * 0.86)` — rounding a *deliberately* fractional input, so it stepped between integers as the chart resized | removed; height falls out of padding |
+| **line box** | `line-height: 1.4` → 15.4px at font 11, and `align-items: center` halves the remainder | `line-height: round(1.4em, 1px)` |
+
+The line box was the last and the most misleading. **The pill held perfectly still and only the glyphs moved**,
+which sends you looking at the box — twice, in this case. The tell to ask for first: *does the pill move, or only
+the text inside it?* If only the text, the fraction is in the line box or the centring, never in the box.
+
+`sm` never showed the line-box symptom because `10 * 1.4` is exactly 14. `md`'s font comes from
+`getChartSecondaryLabelSizePx`, which is integral but lands on 11/12/13/14 — every one of which gives a
+fractional `1.4em`. An integer font size does **not** imply an integer line box.
+2. **On the chart title it clipped the descenders.** The same rule was applied to `#competency-chart-heading`,
+   where `trim-both cap alphabetic` puts the block's bottom edge on the alphabetic baseline. The `<h2>` also
+   carries `overflow-hidden` for `useMiddleEllipsis`, so the tails of p/g/y/J were cut off. The comment on that
+   rule asserted "height is unaffected", which was precisely the error: the trim resizes the block's own box, and
+   an overflow-hidden box is where that becomes visible.
+
+The lesson generalises past this property: **do not resize the box of an element that something else measures or
+clips.** If the centring needs correcting again, `trim-start cap` leaves the descenders inside, or move the pill
+instead — the pill has no overflow constraint and nothing measures its box.
+
+What follows is why the trim was attractive, and it is all still true. It is kept because whatever replaces
+`line-height` next has to answer it.
 
 `align-items: center` centres the **line box**, and the line box is not the ink. Its height and the baseline's
 place inside it come from the font's ascent/descent/line-gap metrics, and "FE"/"BE" are all-caps with no
@@ -477,23 +514,25 @@ ascent/descent ratio, so the same CSS produces a different offset on each device
 wrong on Android by whatever those two metrics differ by. This is why it looked fine on the machine it was
 built on and wrong on other devices.
 
-`leading-[1.4]` was the previous mitigation and could not fix it either: half-leading is distributed
-symmetrically around the line box, not around the cap band, so it scales the error without centring it.
+`line-height: 1.4` — the current rule — does not fix that: half-leading is distributed symmetrically around the
+line box, not around the cap band, so it scales the error without centring it. **The residual top-heaviness is
+accepted, and it varies by platform.** It is the price of the two failures above, and it is a cosmetic offset of
+roughly half a descent rather than clipped text or a jittering label.
 
-`text-box-trim` crops the line box to the cap-height and alphabetic-baseline edges, so the box flex centres
-**is** the ink, derived from whichever font actually resolved. It has to be on a child: the property applies
-to the block container holding the text, and the pill is the flex container. Neither size sets leading on the
-pill anymore — after the trim there is no half-leading left to bias.
+`text-box-trim` cropped the line box to the cap-height and alphabetic-baseline edges, so the box flex centred
+**was** the ink, derived from whichever font actually resolved. It had to be on a child: the property applies to
+the block container holding the text, and the pill is the flex container.
 
-Firefox has no support yet, so an `@supports not (...)` fallback nudges by `0.055em`. That one IS an
-approximate constant, which is exactly why it is the fallback rather than the rule.
+Firefox has no support anyway, so the trim needed an `@supports not (...)` fallback nudging by `0.055em` — an
+approximate per-platform constant, i.e. the very thing the trim existed to avoid, live on one major browser.
 
-**The trim cost the sm pill its height, and the padding had to pay it back.** `py-[2px]` was picked against a
-`1.4` line box, where half-leading supplied most of the vertical space and the 2px only topped it up. Trimming
-to cap height removed that leading, so the same 2px wrapped a much shorter box and the chip read cramped — most
-visibly in the BadgePicker dropdown, where the pills sit in a list with room around them. It is now `0.45em`,
-in `em` like `px-[0.85em]` so it tracks the font, landing sm near md's 1.8x height ratio. The two values are
-coupled: reverting the trim means restoring the leading *and* re-deriving this padding.
+**The padding is coupled to whichever rule is in force, and the two must move together.** `py-[2px]` is picked
+against the `1.4` line box, where half-leading supplies most of the vertical space and the 2px only tops it up.
+Under the trim that leading was gone, so the same 2px wrapped a much shorter box and the chip read cramped — most
+visibly in the BadgePicker dropdown, where the pills sit in a list with room around them; it had to become
+`0.45em` to compensate. Reinstating any trim means re-deriving this padding again, in **both**
+[TrackBadge.jsx](src/components/TrackBadge.jsx) and [BadgePicker.jsx](src/components/BadgePicker.jsx), which
+duplicate the value independently rather than sharing a constant.
 
 The chart PNG export never had this bug and is untouched by the fix: `copy-chart-image.js` redraws the badge in
 Canvas 2D with `textBaseline: "middle"`, a font-metric-aware baseline, and reads the label via `textContent`,
@@ -868,6 +907,96 @@ overlaid, the old tab's headings legible through the new one's. Cross-fading two
 always does; no pair of intermediate opacities shows only one of them. Do not reintroduce an exit animation
 to "balance" the entrance.
 
+### export-title-weight-is-corrected-for-font-smoothing
+
+The copied PNG draws the chart title, and the track badge's label, below the weight their own elements compute —
+via `chart.exportImageTitleWeightDelta` and `chart.exportImageBadgeWeightDelta`. These are **tuned optical
+corrections**, and the only ones in the export.
+
+**One delta per string, not one shared number.** The title is ~21px and the badge ~12px, and grayscale smoothing
+does not thin the two by the same visible amount, so a single constant would be wrong for one of them. The flip
+side is that this is the pattern that stops scaling: the cluster legend and the score cards are drawn by the same
+code at the badge's size and deliberately carry no delta, because a knob per canvas string turns a correction into
+a second styling system running alongside the CSS. Add one only for a string that actually looks wrong.
+
+`<body>` carries Tailwind's `antialiased` — `-webkit-font-smoothing: antialiased` — which on macOS visibly thins
+DOM text. Canvas 2D ignores it, and there is no canvas property that turns it on, so the same 800 rasterizes
+heavier in the export than on screen. Nothing can be measured and matched here the way the export's geometry can,
+which is why this one is a constant where the margins deliberately are not.
+
+Two other DOM/canvas gaps were found and fixed properly first, because both had real mechanisms behind them:
+
+- **Optical size.** `font-optical-sizing: auto` has no canvas equivalent; canvas resolves a variable axis to the
+  nearest static instance (already noted in `chart/defaults.js`). Fixed by pinning the axis in a dedicated
+  `@font-face` — `"Inter Display Canvas"` in `index.css` — the same trick `"Inter Tabular"` uses to get tabular
+  figures past canvas's indifference to `font-feature-settings`. It made no visible difference on Chromium, so
+  canvas is evidently resolving that axis sensibly already; the face is kept because it makes the intent explicit
+  and costs nothing (same woff2 URL as the app's own Inter).
+- **Tracking.** Canvas inherits no CSS, so the title was drawn at the font's natural advances while the app draws
+  it at `tracking-tight`. `ctx.letterSpacing` mirrors it now, set before any `measureText` since advances are what
+  the overflow fit reads back, and rescaled when that fit shrinks the type. This one _is_ visible: it pulls ~1px
+  out of every letter gap at 2x, which reads denser and was briefly mistaken for the weight problem.
+
+The caveat to know: `-webkit-font-smoothing` is a no-op on Windows and Linux, where DOM and canvas already agreed,
+so the correction makes the export slightly **light** there. Accepted because an export is made and reviewed on
+the same machine. The alternative considered was dropping `antialiased` from `<body>`, which would make the two
+agree on every platform by construction — rejected only because it changes the app's own text everywhere.
+
+Inter is variable across 100–900, so the delta is not restricted to multiples of 100; 750 and 780 are real
+instances. Retune by eye against the app at a chart width of 526px or more, since below that the app's title is
+genuinely smaller than the export's pinned one and the comparison is not like-for-like.
+
+### export-margins-crop-the-rows-not-the-columns
+
+The copied PNG is rasterised in **two passes**: the content is drawn onto a scratch canvas, `getInkRowBounds`
+scans it for the first and last row holding a pixel that is not the white ground, and the output canvas is that
+row range plus `exportImagePaddingPx` above and below. The credit line is drawn onto the **output** canvas
+afterwards, not alongside the content. **Horizontally nothing is cropped**: the scratch is already the pinned
+layout width plus its two margins, so it is blitted across at full width.
+
+The composition is **sequential, and the margin is last**: content ink → `exportImageAttributionGapPx` → credit
+ink → `exportImagePaddingPx` around the whole block. Nothing in the band carries padding of its own, so the
+white below the credit is the same margin as the top, and the gap above it is a gap between two pieces of content
+rather than a margin competing with one. The two are independent values, not one shared number. Reason about them
+in that order; a change to either that needs the other adjusted to compensate is a sign something has gone back to
+padding the layout box.
+
+It used to inset the export DOM's **layout box** by one number on all four sides and take the margins on trust.
+They were never equal, because each side has a different slack between the box edge and the nearest painted
+pixel:
+
+- **left** — none at all. The track badge's pill starts flush at the content edge, so the inset _is_ the margin.
+- **top** — half the title row's leftover height, `items-center` splitting `max(1.25em, badge)` around its
+  contents.
+- **right** — whatever the radar reserved for axis labels and did not use. `applyRadarCenterFit` centres the
+  radar on the chart area and holds back **one** `radarLabelReserved` width for both sides, but the two extreme
+  labels are nothing like the same length (`uiUx` at 280° is "UI/UX 👀"; `ai` at 80° is "🤖 AI Leverage"), so the
+  shorter side keeps the difference as white **inside** the canvas — around 30px on a 526px box, on top of the
+  ~25px by which the same mismatch pushes the radar's whole label span right of centre.
+- **bottom** — the credit's unused descender space, `textBaseline: "bottom"` aligning on the em box.
+
+Top and bottom are **pure leading**, so cropping them to ink is safe and exact: the export is a top-to-bottom
+stack, and there is no vertical centring for a trim to disturb.
+
+**The columns are a different problem and must not be cropped**, even though doing so does make all four margins
+measure the same. The layout box is the frame every block aligns to — title row flush at its left edge, radar and
+legend centred on it — so cropping to ink hands the frame to whichever block happens to be widest that render.
+This was tried and shipped briefly, and the failure is immediate: toggle the title row off and the sides pull in
+to the radar's axis labels; type a short profile name instead of a long one and the right edge moves while the
+left does not. A display setting and a profile name should not change the image's width or its composition. An
+uneven margin is the lesser fault, so the box wins.
+
+That leaves the right edge legitimately looser than the left. **Do not add a per-side padding knob** to hide it —
+that was tried too (`exportImageSideExtraPaddingPx`) and cannot converge, because the slack it offsets moves with
+the profile and the track. The gap is the radar's to close, in `applyRadarCenterFit`: that function corrects its
+label span's vertical centring with a measured `shiftY` and has no `shiftX` counterpart, which is why the span
+sits right of centre on screen as well as in the export. Fixing it there fixes both.
+
+Consequences worth knowing: the credit's band is sized from its measured ink (`actualBoundingBoxAscent` +
+`Descent`, which is relative to the current `textBaseline`, so that has to be set at measure time and not only at
+paint time). Output width is a fixed function of the pinned layout width again; only the height varies, as it
+always did.
+
 ### export-geometry-is-measured-after-the-dpr-resize
 
 `rasterizeChart` reads every number it needs — `chartWidthPx`, `contentH`, and so the canvas size and the
@@ -884,11 +1013,12 @@ measured after the resize, the radar was drawn 95px past the bottom of the canva
 sized. Two symptoms, one cause: the export cropped through the lower axis labels, and the credit line was
 positioned against a content edge that had already moved, landing on top of "Communication" / "Ownership".
 
-The band arithmetic was never wrong. `getAttributionBandPx` reserves `gap + line + inset` and
-`renderAttribution` bottom-aligns onto that same inset, which is self-consistent and leaves the credit clear of
-the content — **given a `contentH` that describes the layout being drawn**. Three attempts went into the
-spacing formula and the pin's settle loop before the numbers were actually logged; the formula and the pin
-were both fine.
+The band arithmetic was never wrong. It reserves `gap + line + inset` and bottom-aligns the credit onto that
+same inset, which is self-consistent and leaves the credit clear of the content — **given a `contentH` that
+describes the layout being drawn**. Three attempts went into the spacing formula and the pin's settle loop
+before the numbers were actually logged; the formula and the pin were both fine. (The band is now measured off
+the credit's ink instead — see [export-margins-crop-the-rows-not-the-columns](#export-margins-crop-the-rows-not-the-columns) — but
+`contentH` is still read after the resize, for the same reason.)
 
 `withPinnedExportWidth` still has to run first and still has to settle, but only for the **width**: the fit,
 the label sizes and the credit band all derive from it. The height it happens to converge to there is

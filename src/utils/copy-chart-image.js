@@ -76,32 +76,15 @@ function sanitizeColorForHtml2Canvas(value) {
 }
 
 function getExportImagePaddingPx() {
-  return Math.max(0, Number(FE_UI.chart.exportImagePaddingPx) || 8);
+  return Math.max(0, Number(FE_UI.chart.exportImagePaddingPx) || 12);
 }
 
 /**
- * Height of the credit strip below the chart, or 0 when it is switched off (admin only — see
- * FEATURE_CHART_ATTRIBUTION_SETTING). A height rather than a boolean because every consumer needs the number.
- *
- * The canvas is `padPx + content + bandPx`, where the band is gap + line + bottom inset and REPLACES the
- * trailing `padPx` rather than sitting on top of it. The gap above is its own number because `contentH` ends
- * flush at the cluster legend's border, so it starts at a drawn edge and needs more room than the open white
- * below.
+ * Space between the content's lowest ink and the credit line's highest, in CSS px. Its own number, not a reuse of
+ * the export's margin: this one separates two pieces of content, that one is the image's edge.
  */
-function getAttributionBandPx(hidden, chartWidthPx) {
-  if (hidden || !SITE_COPY.share.imageAttribution) {
-    return 0;
-  }
-  const gapPx = Math.max(0, Number(FE_UI.chart.exportImageAttributionGapPx) || 0);
-  return gapPx + getAttributionFontPx(chartWidthPx) + getAttributionBottomInsetPx();
-}
-
-/**
- * White below the credit line, in CSS px — the same `exportImagePaddingPx` that insets the top and the sides,
- * so the export's four edges are one number.
- */
-function getAttributionBottomInsetPx() {
-  return getExportImagePaddingPx();
+function getAttributionGapPx() {
+  return Math.max(0, Number(FE_UI.chart.exportImageAttributionGapPx) || 0);
 }
 
 /**
@@ -117,30 +100,61 @@ function getAttributionFontPx(chartWidthPx) {
   return Math.round(getChartSecondaryLabelSizePx(chartWidthPx) * ratio);
 }
 
+/** The credit's tracking, pinned so its measure and its paint cannot disagree. See the call sites for why. */
+function setCreditLetterSpacing(ctx) {
+  if ("letterSpacing" in ctx) {
+    ctx.letterSpacing = "0px";
+  }
+}
+
+/**
+ * The credit line plus the INK metrics the foot of the export is laid out from, measured in the exact font it
+ * will be painted in. Null when the credit is switched off (admin only — see
+ * FEATURE_CHART_ATTRIBUTION_SETTING) or empty, which is how callers learn there is no band to reserve.
+ *
+ * `actualBoundingBox*` RATHER THAN THE EM BOX, so the credit is bounded by its glyphs like the top of the export
+ * is (see {@link getInkRowBounds}). The em box carries leading the string does not use, and reserving it put a
+ * few px of nothing below the descenders that no padding number could account for.
+ */
+function measureAttribution(ctx, { hidden, chartWidthPx, scaleY }) {
+  const text = SITE_COPY.share.imageAttribution;
+  if (hidden || !text) {
+    return null;
+  }
+  // Inter to match the rest of the export (ensureInterFontsLoaded has already awaited it), with the same
+  // fallback the DOM-mirrored text uses.
+  const font = `500 ${getAttributionFontPx(chartWidthPx) * scaleY}px Inter, system-ui, sans-serif`;
+  ctx.save();
+  ctx.font = font;
+  // `actualBoundingBox*` IS RELATIVE TO THE CURRENT textBaseline, so it has to be set here and not only at
+  // paint time — renderExportDom leaves the context on `middle`, which would report the ink half a line out.
+  ctx.textBaseline = "alphabetic";
+  // EXPLICITLY UNSPACED, for the same reason: this is measured on the scratch context, where renderExportDom has
+  // left a mirrored `letterSpacing` behind, and painted on a fresh one where it is 0. Measuring and painting at
+  // different advances would size the band from a width the line is not drawn at. Zero rather than the app's
+  // tracking because the credit mirrors no DOM node, and its one-line fit was tuned at the font's own advances.
+  setCreditLetterSpacing(ctx);
+  const m = ctx.measureText(text);
+  ctx.restore();
+  return { text, font, w: m.width, ascent: m.actualBoundingBoxAscent, descent: m.actualBoundingBoxDescent };
+}
+
 /**
  * Paints the credit line into the strip reserved at the foot of the export.
  *
  * NOT MIRRORED FROM THE DOM, unlike everything renderExportDom draws — the line exists only in the exported
- * image, so it is drawn in canvas space the way the white ground and padding are. Centred in its band, which
- * stops short of the canvas edge by the export's bottom padding so the credit sits in a symmetric gutter.
+ * image, so it is drawn in canvas space the way the white ground and the margins are. Drawn onto the FINAL
+ * canvas rather than the scratch, because its baseline is measured from that canvas's foot and the foot is not
+ * known until the row crop has settled the height.
  */
-function renderAttribution(ctx, { exportW, exportH, bandPx, chartWidthPx, scaleY }) {
-  if (bandPx <= 0) {
-    return;
-  }
-  const text = SITE_COPY.share.imageAttribution;
+function renderAttribution(ctx, credit, { centerX, baselineY }) {
   ctx.fillStyle = FE_UI.chart.exportImageAttributionColor || "#94a3b8";
   ctx.textAlign = "center";
-
-  // Inter to match the rest of the export (ensureInterFontsLoaded has already awaited it), with the same
-  // fallback the DOM-mirrored text uses.
-  ctx.font = `500 ${getAttributionFontPx(chartWidthPx) * scaleY}px Inter, system-ui, sans-serif`;
-
-  // BOTTOM-ALIGNED ONTO ITS OWN INSET, not the export's `padPx`. The title's line box carries leading above
-  // the glyphs, but `textBaseline: "bottom"` gives the credit none, so reusing `padPx` made the foot look
-  // tighter than the head at the same measured 8. This constant is the visual match.
-  ctx.textBaseline = "bottom";
-  ctx.fillText(text, exportW / 2, exportH - getAttributionBottomInsetPx() * scaleY);
+  ctx.textBaseline = "alphabetic";
+  ctx.font = credit.font;
+  // Must match what measureAttribution measured at — see its note.
+  setCreditLetterSpacing(ctx);
+  ctx.fillText(credit.text, centerX, baselineY);
 }
 
 function getRelativeRect(el, rootRect, scaleX, scaleY, offsetX = 0, offsetY = 0) {
@@ -153,11 +167,76 @@ function getRelativeRect(el, rootRect, scaleX, scaleY, offsetX = 0, offsetY = 0)
   };
 }
 
-function buildFont(cs, scaleY) {
+/**
+ * The canvas font shorthand mirroring an element's computed type.
+ *
+ * `weightOverride` is for the strings that carry a smoothing correction (see getCanvasWeight); omitted, the
+ * element's own weight is used verbatim, which is what every other mirrored string wants.
+ */
+function buildFont(cs, scaleY, weightOverride = null) {
   const size = Number.parseFloat(cs.fontSize) || 14;
-  const weight = cs.fontWeight || "400";
+  const weight = weightOverride ?? cs.fontWeight ?? "400";
   const family = cs.fontFamily || "system-ui, sans-serif";
   return `${weight} ${size * scaleY}px ${family}`;
+}
+
+/**
+ * The TITLE's font stack: the opsz-pinned face (declared in index.css) ahead of whatever the DOM computed.
+ *
+ * Only the title needs it. `font-optical-sizing: auto` has no canvas equivalent, so canvas resolves the variable
+ * axis to the nearest static instance — which is close enough for the badge and legend at ~12px, and visibly
+ * wrong for a 21px extrabold heading, drawing it with text-size outlines that read thicker than the screen's.
+ * The DOM's own stack stays behind it as the fallback for glyphs the latin-only pinned face does not carry.
+ */
+function buildTitleFontFamily(cs) {
+  return `"Inter Display Canvas", ${cs.fontFamily || "system-ui, sans-serif"}`;
+}
+
+/**
+ * The weight a canvas-drawn string is painted at: the element's own, stepped by the named delta to compensate for
+ * canvas not honouring `-webkit-font-smoothing`. Clamped to the CSS weight range. See the constants in styles/ui
+ * for the full reasoning and the platform caveat.
+ *
+ * Only the title and the badge label have a delta. The cluster legend and score cards are drawn by the same code
+ * at the badge's size and deliberately take none — see the note on `exportImageBadgeWeightDelta`.
+ */
+function getCanvasWeight(cs, deltaKey) {
+  const domWeight = Number.parseFloat(cs.fontWeight) || 400;
+  const delta = Number(FE_UI.chart[deltaKey]) || 0;
+  return Math.max(1, Math.min(1000, domWeight + delta));
+}
+
+/**
+ * Baseline y that centres a string's CAP BAND on the vertical middle of the box it is drawn in.
+ *
+ * `middle` would centre on the EM box, whose midpoint sits below the cap band, painting the text low and making
+ * the badge beside it read high. The cap band is what the eye aligns the pill against.
+ *
+ * MEASURED FROM THE FONT, via a reference capital, NOT from the string's own ink. This used to read the drawn
+ * text's `actualBoundingBoxAscent - actualBoundingBoxDescent`, which varies with whichever glyphs the profile
+ * name happens to contain: "Senior Developer" has a descender and "Chan Qi Han" does not, so the title rose or
+ * fell by half a descender per name while the badge — always "FE"/"BE" — did not move at all. The cap band is a
+ * property of the type, not of the string. Requires the final font already set on the context.
+ */
+function capCenteredBaselineY(ctx, boxTop, boxH) {
+  const capHeight = ctx.measureText("H").actualBoundingBoxAscent;
+  return boxTop + boxH / 2 + capHeight / 2;
+}
+
+/**
+ * Mirror an element's tracking onto the context, in device px.
+ *
+ * Canvas 2D has `letterSpacing` but inherits nothing from CSS, so text drawn without this gets the font's natural
+ * advances while the app draws the same string at Inter's recommended `-0.011em` plus whatever the element adds
+ * (`tracking-tight` on the title) — the export came out wider than the screen. Set BEFORE any measureText, since
+ * advances are what the fit and the cap-band centring read back. A no-op where the property is unsupported.
+ */
+function applyLetterSpacing(ctx, cs, scaleY) {
+  if (!("letterSpacing" in ctx)) {
+    return;
+  }
+  const tracking = Number.parseFloat(cs.letterSpacing);
+  ctx.letterSpacing = Number.isFinite(tracking) ? `${tracking * scaleY}px` : "0px";
 }
 
 function drawRoundedRect(ctx, x, y, w, h, radius, fill, stroke, lineWidth) {
@@ -219,24 +298,26 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY, padX, padY) {
       const { x, y, w, h } = getRelativeRect(title, rootRect, scaleX, scaleY, padX, padY);
       ctx.fillStyle = sanitizeColorForHtml2Canvas(cs.color);
       const baseSize = Number.parseFloat(cs.fontSize) || 14;
-      const weight = cs.fontWeight || "400";
-      const family = cs.fontFamily || "system-ui, sans-serif";
-      // Scale font down if text overflows the element's measured width.
+      const weight = getCanvasWeight(cs, "exportImageTitleWeightDelta");
+      const family = buildTitleFontFamily(cs);
+      // Scale font down if text overflows the element's measured width. Tracking is set before the measure,
+      // because negative tracking is part of what the string's width IS.
       let fontSize = baseSize * scaleY;
+      let spacingScale = scaleY;
       ctx.font = `${weight} ${fontSize}px ${family}`;
+      applyLetterSpacing(ctx, cs, spacingScale);
       const measured = ctx.measureText(text).width;
       if (measured > w && measured > 0) {
-        fontSize = Math.max(8, fontSize * (w / measured));
+        const shrunk = Math.max(8, fontSize * (w / measured));
+        spacingScale *= shrunk / fontSize;
+        fontSize = shrunk;
         ctx.font = `${weight} ${fontSize}px ${family}`;
+        // Tracking is proportional to type size, so the shrink has to reach it too or the letters spread.
+        applyLetterSpacing(ctx, cs, spacingScale);
       }
       ctx.textAlign = cs.textAlign === "center" ? "center" : "left";
-      // `middle` centres on the EM box, whose midpoint sits below the cap band — the title then paints low and
-      // the badge beside it reads high. Centre on the measured cap/baseline extents instead, which is what the
-      // eye aligns the pill against.
       ctx.textBaseline = "alphabetic";
-      const m = ctx.measureText(text);
-      const capMid = (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
-      ctx.fillText(text, ctx.textAlign === "center" ? x + w / 2 : x, y + h / 2 + capMid);
+      ctx.fillText(text, ctx.textAlign === "center" ? x + w / 2 : x, capCenteredBaselineY(ctx, y, h));
     }
   }
 
@@ -286,6 +367,7 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY, padX, padY) {
           const lr = getRelativeRect(label, rootRect, scaleX, scaleY, padX, padY);
           ctx.fillStyle = sanitizeColorForHtml2Canvas(lcs.color);
           ctx.font = buildFont(lcs, scaleY);
+          applyLetterSpacing(ctx, lcs, scaleY);
           ctx.textAlign = "left";
           ctx.textBaseline = "middle";
           ctx.fillText(text, lr.x, lr.y + lr.h / 2);
@@ -303,12 +385,13 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY, padX, padY) {
       const radius = (Number.parseFloat(cs.borderRadius) || 6) * scaleX;
       drawRoundedRect(ctx, x, y, w, h, radius, sanitizeColorForHtml2Canvas(cs.backgroundColor), null, 0);
       ctx.fillStyle = sanitizeColorForHtml2Canvas(cs.color);
-      ctx.font = buildFont(cs, scaleY);
+      ctx.font = buildFont(cs, scaleY, getCanvasWeight(cs, "exportImageBadgeWeightDelta"));
+      applyLetterSpacing(ctx, cs, scaleY);
       ctx.textAlign = "center";
-      // Cap-band centred, as the title above — `middle` would sit the all-caps label low in the pill.
+      // Cap-band centred through the same helper as the title, so the pill and the letters beside it cannot be
+      // centred by two different rules. "FE"/"BE" carry no descender, so this label alone was never the problem.
       ctx.textBaseline = "alphabetic";
-      const bm = ctx.measureText(text);
-      ctx.fillText(text, x + w / 2, y + h / 2 + (bm.actualBoundingBoxAscent - bm.actualBoundingBoxDescent) / 2);
+      ctx.fillText(text, x + w / 2, capCenteredBaselineY(ctx, y, h));
     }
   }
 
@@ -347,6 +430,7 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY, padX, padY) {
         const sr = getRelativeRect(span, rootRect, scaleX, scaleY, padX, padY);
         ctx.fillStyle = sanitizeColorForHtml2Canvas(scs.color);
         ctx.font = buildFont(scs, scaleY);
+        applyLetterSpacing(ctx, scs, scaleY);
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(text, sr.x + sr.w / 2, sr.y + sr.h / 2);
@@ -398,6 +482,55 @@ export async function renderChartImageBlob({ exportRoot, canvas, chart, attribut
   }
 }
 
+/** One pixel of the white ground. All four channels are 0xff, so the platform's byte order does not matter. */
+const WHITE_PIXEL = 0xffffffff;
+
+function rowHasInk(px, rowStart, width) {
+  for (let x = 0; x < width; x++) {
+    if (px[rowStart + x] !== WHITE_PIXEL) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * First and last painted row on a white-filled canvas, or null if nothing was painted.
+ *
+ * THE EXPORT'S TOP AND BOTTOM MARGINS ARE MEASURED FROM THIS, not from the export DOM's layout box, because on
+ * this axis the difference between the two is pure leading and nothing else: half the title row's leftover
+ * height above (`items-center` splitting `max(1.25em, badge)` around its contents) and the credit's unused
+ * descender space below. Trimming it makes `exportImagePaddingPx` the literal distance to the nearest painted
+ * pixel. Nothing can be knocked out of alignment by it either — the export is a top-to-bottom stack, so there is
+ * no vertical centring for a trim to disturb.
+ *
+ * ONLY THE ROWS. Cropping the columns as well is wrong, however even it makes the margins look — see the note in
+ * rasterizeChart. Anti-aliased edges count as ink, which is right: they are the sub-pixel edge of a real glyph.
+ */
+function getInkRowBounds(ctx, width, height) {
+  const px = new Uint32Array(ctx.getImageData(0, 0, width, height).data.buffer);
+
+  // In from each end, so only the blank margins are ever scanned — never the tall painted middle.
+  let top = -1;
+  for (let y = 0; y < height && top < 0; y++) {
+    if (rowHasInk(px, y * width, width)) {
+      top = y;
+    }
+  }
+  if (top < 0) {
+    return null;
+  }
+  let bottom = top;
+  for (let y = height - 1; y > top; y--) {
+    if (rowHasInk(px, y * width, width)) {
+      bottom = y;
+      break;
+    }
+  }
+
+  return { y: top, h: bottom - top + 1 };
+}
+
 /**
  * The capture itself, split out so `renderChartImageBlob` owns only the pinned-width window around it. Assumes
  * `exportRoot` is already pinned to the export WIDTH; the height is this function's own to settle.
@@ -426,27 +559,26 @@ async function rasterizeChart({ exportRoot, canvas, chart, attributionHidden, uh
     // The RADAR's width, which is what the legend's own type size is derived from — not the export root's,
     // which includes the padding and any wider chrome around the chart.
     const chartWidthPx = Math.max(1, Math.round(canvas.getBoundingClientRect().width));
-    const bandPx = getAttributionBandPx(attributionHidden, chartWidthPx);
     const contentW = Math.max(1, Math.round(exportRoot.offsetWidth));
     const contentH = Math.max(1, Math.round(exportRoot.offsetHeight));
-    const cssW = contentW + padPx * 2;
-    // The band is added BELOW the content, so every rect mirrored from the DOM keeps the same offsets and only
-    // the canvas gets taller. It SUPPLIES ITS OWN BOTTOM INSET (gap + line + inset), so it replaces the trailing
-    // `padPx` rather than stacking on it; without a band the layout is the plain `padPx` on both sides.
-    const cssH = contentH + padPx + (bandPx || padPx);
-    const exportW = Math.max(120, Math.round(cssW * cssScale));
-    const exportH = Math.max(2, Math.round(cssH * cssScale));
-    const pxPerCssX = exportW / cssW;
-    const pxPerCssY = exportH / cssH;
 
-    const out = document.createElement("canvas");
-    out.width = exportW;
-    out.height = exportH;
-    const octx = out.getContext("2d");
-    octx.fillStyle = "#ffffff";
-    octx.fillRect(0, 0, exportW, exportH);
-    renderExportDom(octx, exportRoot, pxPerCssX, pxPerCssY, padPx, padPx);
-    renderAttribution(octx, { exportW, exportH, bandPx, chartWidthPx, scaleY: pxPerCssY });
+    // PASS ONE — the content alone, on a white ground, offset by `padPx` on every side. Horizontally that offset
+    // IS the finished margin, since the columns are never cropped; vertically it is only slack, and pass two
+    // replaces it with a margin measured off the ink.
+    const cssW = contentW + padPx * 2;
+    const cssH = contentH + padPx * 2;
+    const scratchW = Math.max(120, Math.round(cssW * cssScale));
+    const scratchH = Math.max(2, Math.round(cssH * cssScale));
+    const pxPerCssX = scratchW / cssW;
+    const pxPerCssY = scratchH / cssH;
+
+    const scratch = document.createElement("canvas");
+    scratch.width = scratchW;
+    scratch.height = scratchH;
+    const sctx = scratch.getContext("2d");
+    sctx.fillStyle = "#ffffff";
+    sctx.fillRect(0, 0, scratchW, scratchH);
+    renderExportDom(sctx, exportRoot, pxPerCssX, pxPerCssY, padPx, padPx);
 
     const rootRect = exportRoot.getBoundingClientRect();
     const canvasRect = canvas.getBoundingClientRect();
@@ -456,9 +588,55 @@ async function rasterizeChart({ exportRoot, canvas, chart, attributionHidden, uh
     const slotH = Math.max(1, Math.round(canvasRect.height * pxPerCssY));
 
     const ratioDiff = Math.abs(slotW / canvas.width - 1) + Math.abs(slotH / canvas.height - 1);
-    octx.imageSmoothingEnabled = ratioDiff > 0.04;
-    octx.imageSmoothingQuality = "high";
-    octx.drawImage(canvas, 0, 0, canvas.width, canvas.height, slotX, slotY, slotW, slotH);
+    sctx.imageSmoothingEnabled = ratioDiff > 0.04;
+    sctx.imageSmoothingQuality = "high";
+    sctx.drawImage(canvas, 0, 0, canvas.width, canvas.height, slotX, slotY, slotW, slotH);
+
+    // PASS TWO — crop the ROWS to the ink, then pad. That makes `padPx` the literal distance from the top and
+    // bottom of the PNG to the nearest painted pixel. See getInkRowBounds.
+    //
+    // THE COLUMNS ARE DELIBERATELY NOT CROPPED, however much more even it would make the four margins look. The
+    // layout box is the frame every block aligns to — the title row flush at its left edge, the radar and the
+    // legend centred on it — so cropping to ink hands the frame to whichever block happens to be widest that
+    // render. Toggle the title row off and the sides pull in to the radar's axis labels; type a short profile
+    // name and the right edge moves but the left does not. Both change the image's width and the composition
+    // from a display setting or a name, which is worse than an uneven margin. The box holds them fixed.
+    //
+    // So the left margin is `padPx` (the track badge's pill sits flush) and the right is `padPx` plus whatever
+    // the radar did not use of the box. Closing THAT gap is a job for the radar's own centring, not for the
+    // export's padding: see docs/DECISIONS.md#export-margins-crop-the-rows-not-the-columns.
+    const ink = getInkRowBounds(sctx, scratchW, scratchH);
+    if (!ink) {
+      return null;
+    }
+
+    const credit = measureAttribution(sctx, { hidden: attributionHidden, chartWidthPx, scaleY: pxPerCssY });
+    const padX = Math.round(padPx * pxPerCssX);
+    const padY = Math.round(padPx * pxPerCssY);
+    // THE BLOCK, IN ORDER: the content's ink, the gap, the credit's ink — and only then `padY`/`padX` around the
+    // whole of it. So the band carries NO padding of its own; the white below the credit is the margin itself.
+    // Zero without a credit, which leaves the foot the plain `padY`, same as the head.
+    const bandPx = credit ? Math.round(getAttributionGapPx() * pxPerCssY) + Math.ceil(credit.ascent + credit.descent) : 0;
+
+    // The scratch is already the layout box plus its two horizontal margins, so it IS the export width. The
+    // `max` only stops a reworded credit wider than the box from being clipped, in which case the box centres
+    // inside the wider canvas rather than sitting at `padX`.
+    const exportW = Math.max(2, scratchW, Math.ceil(credit?.w ?? 0) + padX * 2);
+    const exportH = Math.max(2, ink.h + bandPx + padY * 2);
+
+    const out = document.createElement("canvas");
+    out.width = exportW;
+    out.height = exportH;
+    const octx = out.getContext("2d");
+    octx.fillStyle = "#ffffff";
+    octx.fillRect(0, 0, exportW, exportH);
+    // A 1:1 blit — same source and destination size, so nothing is resampled and no pixel is softened. Full
+    // width, vertically offset only.
+    octx.drawImage(scratch, 0, ink.y, scratchW, ink.h, Math.round((exportW - scratchW) / 2), padY, scratchW, ink.h);
+    if (credit) {
+      // Baseline placed so the DESCENDERS land `padY` above the foot, matching the other three edges.
+      renderAttribution(octx, credit, { centerX: exportW / 2, baselineY: exportH - padY - credit.descent });
+    }
 
     return await new Promise((resolve, reject) => {
       out.toBlob((b) => (b ? resolve(b) : reject(new Error("toBlob failed"))), "image/png", 1);
