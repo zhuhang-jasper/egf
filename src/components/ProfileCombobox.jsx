@@ -28,6 +28,12 @@ function badgeRank(badge) {
 // can tell there's more below (the standard "peek" scroll affordance). Ported from ProfilePicker.
 const VISIBLE_ROWS = 6.5;
 
+// Rows that make a downward menu worth keeping. The direction decision uses this floor, not
+// VISIBLE_ROWS: staying put and showing 5 rows beats flipping over the input to show 6.5, because a
+// menu that jumps sides is more disorienting than one that scrolls slightly sooner. Below this the
+// list is too short to browse, so the extra room above wins. Keeps the ".5" peek for the same reason.
+const MIN_COMFORTABLE_ROWS = 4.5;
+
 // Marquee scroll speed (px/sec) for names too long to fit — lower is slower/calmer.
 const MARQUEE_SPEED_PX_PER_SEC = 45;
 // Gap between the two looping copies of a scrolling name, so it doesn't read as one run-on word.
@@ -232,8 +238,6 @@ export function ProfileCombobox({ titleError = false }) {
       const gap = 4;
       const margin = 8; // keep the menu clear of the viewport edge
       const rootRect = root.getBoundingClientRect();
-      // Natural (uncapped) menu height, so the flip decision isn't skewed by a prior cap.
-      const naturalHeight = menu.scrollHeight;
       // The menu must clear the pinned chrome at BOTH ends — the sticky header above, the fixed bottom nav
       // below. Not a stacking issue (the menu is at LAYER.dropdown, above chrome, so it paints over them) but covering
       // the title, or disappearing behind the navigation, reads as broken either way. The header boundary also
@@ -241,10 +245,6 @@ export function ProfileCombobox({ titleError = false }) {
       const { top: topBoundary, bottom: bottomBoundary } = getPopoverViewportBounds();
       const spaceBelow = bottomBoundary - rootRect.bottom - gap - margin;
       const spaceAbove = rootRect.top - topBoundary - gap - margin;
-      // Prefer down; flip up only when it won't fit below but there's more room above.
-      const up = naturalHeight > spaceBelow && spaceAbove > spaceBelow;
-      const available = Math.floor(up ? spaceAbove : spaceBelow);
-      setOpenUp(up);
 
       // The search box (menu's first child) is a non-scrolling sibling above the list — reserve its
       // height so the whole popover, not just the list, fits within the available space.
@@ -255,8 +255,21 @@ export function ProfileCombobox({ titleError = false }) {
       // List box padding (py-1) + bottom border, so the peek math targets the content area.
       const listChrome = list.offsetHeight - list.clientHeight + 8;
       const peekRows = rowH > 0 ? Math.round(VISIBLE_ROWS * rowH + listChrome) : Infinity;
-      const listCap = Math.min(peekRows, Math.max(0, available - searchH));
       const naturalListH = list.scrollHeight;
+
+      // Direction is decided against a SUFFICIENT height, not the ideal one: the menu only needs room
+      // for MIN_COMFORTABLE_ROWS (or the whole list, when it's shorter) to be worth opening downward.
+      // It then stretches into whatever space is actually there, up to the VISIBLE_ROWS cap. Deciding
+      // on the ideal height instead flipped menus upward that could have shown 5 or 6 rows below.
+      const comfortableRows = rowH > 0 ? Math.round(MIN_COMFORTABLE_ROWS * rowH + listChrome) : Infinity;
+      const neededHeight = searchH + Math.min(naturalListH, comfortableRows);
+      // Down whenever the floor fits below, however much room is above. Only when it does not fit
+      // does the roomier side win (and if above is no better, stay down and squeeze).
+      const up = neededHeight > spaceBelow && spaceAbove > spaceBelow;
+      const available = Math.floor(up ? spaceAbove : spaceBelow);
+      setOpenUp(up);
+
+      const listCap = Math.min(peekRows, Math.max(0, available - searchH));
       setListMaxHeight(naturalListH <= listCap ? null : Math.max(0, listCap));
     };
     decide();
