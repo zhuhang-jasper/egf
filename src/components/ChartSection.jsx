@@ -282,16 +282,9 @@ export function ChartSection({ isVisible }) {
   // the part that usually tells two profiles apart). `isVisible` is passed through because the tool tab is
   // `display: none` when Theory is open and nothing can be measured there — see the hook.
   const fittedTitle = useMiddleEllipsis(titleMeasureRef, displayTitle, isVisible);
-  // A function of chart width ALONE, never of what is currently in the row: the title and badge toggles are
-  // independent, so the row must be the same height in all four combinations or toggling one moves the chart.
-  //
-  // `1.25em` ALONE, with no badge term. It used to be `max(1.25em, badgeHeightPx)`, where the badge term was the
-  // px height the pill was handed. That term could never win: it was `0.86em` of the same font size the `1.25em`
-  // resolves against. Dropping it removed a JS number without changing a pixel of layout — and the pill no longer
-  // takes a height at all (see TrackBadge), so there is nothing left to floor the row to.
-  //
-  // Left in `em` rather than resolved in JS so it resolves `leading-tight` from the same font size in the same
-  // layout pass, leaving no JS mirror of the ratio to drift. See docs/DECISIONS.md#chart-type-scale.
+  // Chart width alone, never what is in the row: the title and badge toggle independently, so the row must be one
+  // height in all four combinations or toggling either moves the chart. Kept in `em` so it resolves `leading-tight`
+  // from the same font size in the same layout pass. See docs/DECISIONS.md#chart-type-scale.
   const titleRowMinHeight = "1.25em";
 
   useLayoutEffect(() => {
@@ -411,13 +404,9 @@ export function ChartSection({ isVisible }) {
             className="relative z-[1] mb-3 flex w-full min-w-0 items-center gap-3"
             style={{ fontSize: titleSizePx, minHeight: titleRowMinHeight }}
           >
-            {/* NO HEIGHT IS PASSED. The pill sizes itself from `em` padding off `chartWidth`, like every other
-                badge in the app — it used to be handed `round(titleSize * 0.86)` and that ROUNDING JITTERED,
-                since getChartTitleSizePx is deliberately fractional so the type scales smoothly. See TrackBadge.
-
-                `chartWidth` is still passed and is what keeps the pill in proportion to the title beside it, and
-                it is UNCONDITIONAL — it does not check whether the title is currently shown. It was conditional
-                once, which meant hiding the title also resized the pill, so one toggle changed two things. */}
+            {/* No height passed — the pill sizes itself from `em` padding (see TrackBadge). `chartWidth` keeps it in
+                proportion to the title, and is unconditional: gating it on `showVisibleTitle` made one toggle
+                resize the pill as well. */}
             {showBadge ? <TrackBadge variant={attachedBadge} size="md" className="shrink-0" chartWidth={chartWidth} /> : null}
             {showVisibleTitle ? (
               <h2

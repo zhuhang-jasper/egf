@@ -52,12 +52,8 @@ function rescaleChromeForWidth(root, widthPx) {
 
   const badge = root.querySelector("[data-chart-export='track-badge']");
   if (badge instanceof HTMLElement && badge.style.fontSize) {
-    // Only the `md` badge scales — `sm` sets no fontSize, which is what this guard tests.
-    //
-    // FONT SIZE IS ALL THERE IS TO RESET. Padding, radius, min-width and height used to be re-derived here in px
-    // because the component wrote them as computed px inline styles and `cloneNode` copies those literally. They
-    // are all `em` ratios in the class list now, so setting the font rescales every one of them — and the height
-    // is not set at all, it falls out of the padding. See TrackBadge.
+    // Only the `md` badge scales — `sm` sets no fontSize, which is what this guard tests. Font size is all there
+    // is to reset: every other badge dimension is an `em` ratio, so it rescales from this.
     badge.style.fontSize = `${labelPx}px`;
   }
 

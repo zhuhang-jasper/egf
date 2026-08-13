@@ -108,31 +108,23 @@ function setCreditLetterSpacing(ctx) {
 }
 
 /**
- * The credit line plus the INK metrics the foot of the export is laid out from, measured in the exact font it
- * will be painted in. Null when the credit is switched off (admin only — see
- * FEATURE_CHART_ATTRIBUTION_SETTING) or empty, which is how callers learn there is no band to reserve.
+ * The credit line plus the ink metrics the foot of the export is laid out from. Null when the credit is switched
+ * off (admin only — see FEATURE_CHART_ATTRIBUTION_SETTING) or empty, which is how callers learn there is no band.
  *
- * `actualBoundingBox*` RATHER THAN THE EM BOX, so the credit is bounded by its glyphs like the top of the export
- * is (see {@link getInkRowBounds}). The em box carries leading the string does not use, and reserving it put a
- * few px of nothing below the descenders that no padding number could account for.
+ * `actualBoundingBox*` rather than the em box, so the credit is bounded by its glyphs like the top of the export
+ * is — the em box carries leading the string does not use.
  */
 function measureAttribution(ctx, { hidden, chartWidthPx, scaleY }) {
   const text = SITE_COPY.share.imageAttribution;
   if (hidden || !text) {
     return null;
   }
-  // Inter to match the rest of the export (ensureInterFontsLoaded has already awaited it), with the same
-  // fallback the DOM-mirrored text uses.
   const font = `500 ${getAttributionFontPx(chartWidthPx) * scaleY}px Inter, system-ui, sans-serif`;
   ctx.save();
   ctx.font = font;
-  // `actualBoundingBox*` IS RELATIVE TO THE CURRENT textBaseline, so it has to be set here and not only at
-  // paint time — renderExportDom leaves the context on `middle`, which would report the ink half a line out.
+  // Both matter to the measure: `actualBoundingBox*` is relative to textBaseline, and renderExportDom leaves the
+  // scratch context carrying a mirrored letterSpacing that the fresh output context will not have.
   ctx.textBaseline = "alphabetic";
-  // EXPLICITLY UNSPACED, for the same reason: this is measured on the scratch context, where renderExportDom has
-  // left a mirrored `letterSpacing` behind, and painted on a fresh one where it is 0. Measuring and painting at
-  // different advances would size the band from a width the line is not drawn at. Zero rather than the app's
-  // tracking because the credit mirrors no DOM node, and its one-line fit was tuned at the font's own advances.
   setCreditLetterSpacing(ctx);
   const m = ctx.measureText(text);
   ctx.restore();
@@ -140,12 +132,9 @@ function measureAttribution(ctx, { hidden, chartWidthPx, scaleY }) {
 }
 
 /**
- * Paints the credit line into the strip reserved at the foot of the export.
- *
- * NOT MIRRORED FROM THE DOM, unlike everything renderExportDom draws — the line exists only in the exported
- * image, so it is drawn in canvas space the way the white ground and the margins are. Drawn onto the FINAL
- * canvas rather than the scratch, because its baseline is measured from that canvas's foot and the foot is not
- * known until the row crop has settled the height.
+ * Paints the credit line into the strip reserved at the foot of the export. Not mirrored from the DOM — it exists
+ * only in the exported image. Drawn on the final canvas, since its baseline is measured from that canvas's foot
+ * and the foot is not known until the row crop has settled the height.
  */
 function renderAttribution(ctx, credit, { centerX, baselineY }) {
   ctx.fillStyle = FE_UI.chart.exportImageAttributionColor || "#94a3b8";
@@ -167,12 +156,7 @@ function getRelativeRect(el, rootRect, scaleX, scaleY, offsetX = 0, offsetY = 0)
   };
 }
 
-/**
- * The canvas font shorthand mirroring an element's computed type.
- *
- * `weightOverride` is for the strings that carry a smoothing correction (see getCanvasWeight); omitted, the
- * element's own weight is used verbatim, which is what every other mirrored string wants.
- */
+/** The canvas font shorthand mirroring an element's computed type. `weightOverride`: see getCanvasWeight. */
 function buildFont(cs, scaleY, weightOverride = null) {
   const size = Number.parseFloat(cs.fontSize) || 14;
   const weight = weightOverride ?? cs.fontWeight ?? "400";
@@ -181,24 +165,18 @@ function buildFont(cs, scaleY, weightOverride = null) {
 }
 
 /**
- * The TITLE's font stack: the opsz-pinned face (declared in index.css) ahead of whatever the DOM computed.
- *
- * Only the title needs it. `font-optical-sizing: auto` has no canvas equivalent, so canvas resolves the variable
- * axis to the nearest static instance — which is close enough for the badge and legend at ~12px, and visibly
- * wrong for a 21px extrabold heading, drawing it with text-size outlines that read thicker than the screen's.
- * The DOM's own stack stays behind it as the fallback for glyphs the latin-only pinned face does not carry.
+ * The title's font stack: the opsz-pinned face (declared in index.css) ahead of whatever the DOM computed, since
+ * `font-optical-sizing: auto` has no canvas equivalent. Only the title is big enough for it to show. The DOM's own
+ * stack stays behind as the fallback for glyphs the latin-only pinned face lacks.
  */
 function buildTitleFontFamily(cs) {
   return `"Inter Display Canvas", ${cs.fontFamily || "system-ui, sans-serif"}`;
 }
 
 /**
- * The weight a canvas-drawn string is painted at: the element's own, stepped by the named delta to compensate for
- * canvas not honouring `-webkit-font-smoothing`. Clamped to the CSS weight range. See the constants in styles/ui
- * for the full reasoning and the platform caveat.
- *
- * Only the title and the badge label have a delta. The cluster legend and score cards are drawn by the same code
- * at the badge's size and deliberately take none — see the note on `exportImageBadgeWeightDelta`.
+ * The element's own weight, stepped by the named delta to compensate for canvas not honouring
+ * `-webkit-font-smoothing`. Only the title and badge have one — see the constants in styles/ui for the reasoning
+ * and the platform caveat.
  */
 function getCanvasWeight(cs, deltaKey) {
   const domWeight = Number.parseFloat(cs.fontWeight) || 400;
@@ -209,14 +187,12 @@ function getCanvasWeight(cs, deltaKey) {
 /**
  * Baseline y that centres a string's CAP BAND on the vertical middle of the box it is drawn in.
  *
- * `middle` would centre on the EM box, whose midpoint sits below the cap band, painting the text low and making
- * the badge beside it read high. The cap band is what the eye aligns the pill against.
+ * `middle` would centre on the em box, whose midpoint sits below the cap band, painting the text low against the
+ * badge beside it.
  *
- * MEASURED FROM THE FONT, via a reference capital, NOT from the string's own ink. This used to read the drawn
- * text's `actualBoundingBoxAscent - actualBoundingBoxDescent`, which varies with whichever glyphs the profile
- * name happens to contain: "Senior Developer" has a descender and "Chan Qi Han" does not, so the title rose or
- * fell by half a descender per name while the badge — always "FE"/"BE" — did not move at all. The cap band is a
- * property of the type, not of the string. Requires the final font already set on the context.
+ * Measured from the font via a reference capital, NOT from the string's own ink: reading the drawn text's
+ * `actualBoundingBox*` moved the title by half a descender depending on whether the profile name happened to
+ * contain one. Requires the final font already set on the context.
  */
 function capCenteredBaselineY(ctx, boxTop, boxH) {
   const capHeight = ctx.measureText("H").actualBoundingBoxAscent;
@@ -224,12 +200,9 @@ function capCenteredBaselineY(ctx, boxTop, boxH) {
 }
 
 /**
- * Mirror an element's tracking onto the context, in device px.
- *
- * Canvas 2D has `letterSpacing` but inherits nothing from CSS, so text drawn without this gets the font's natural
- * advances while the app draws the same string at Inter's recommended `-0.011em` plus whatever the element adds
- * (`tracking-tight` on the title) — the export came out wider than the screen. Set BEFORE any measureText, since
- * advances are what the fit and the cap-band centring read back. A no-op where the property is unsupported.
+ * Mirror an element's tracking onto the context, in device px — canvas has `letterSpacing` but inherits nothing
+ * from CSS, so without this the export comes out wider than the screen. Set BEFORE any measureText, since advances
+ * are what the fit and the cap-band centring read back. No-op where unsupported.
  */
 function applyLetterSpacing(ctx, cs, scaleY) {
   if (!("letterSpacing" in ctx)) {
@@ -495,17 +468,11 @@ function rowHasInk(px, rowStart, width) {
 }
 
 /**
- * First and last painted row on a white-filled canvas, or null if nothing was painted.
+ * First and last painted row on a white-filled canvas, or null if nothing was painted. The export's top and bottom
+ * margins are measured from this rather than the layout box, since on this axis the gap between the two is pure
+ * leading. Anti-aliased edges count as ink, which is right.
  *
- * THE EXPORT'S TOP AND BOTTOM MARGINS ARE MEASURED FROM THIS, not from the export DOM's layout box, because on
- * this axis the difference between the two is pure leading and nothing else: half the title row's leftover
- * height above (`items-center` splitting `max(1.25em, badge)` around its contents) and the credit's unused
- * descender space below. Trimming it makes `exportImagePaddingPx` the literal distance to the nearest painted
- * pixel. Nothing can be knocked out of alignment by it either — the export is a top-to-bottom stack, so there is
- * no vertical centring for a trim to disturb.
- *
- * ONLY THE ROWS. Cropping the columns as well is wrong, however even it makes the margins look — see the note in
- * rasterizeChart. Anti-aliased edges count as ink, which is right: they are the sub-pixel edge of a real glyph.
+ * ONLY THE ROWS — cropping the columns too is wrong however even it looks; see the note in rasterizeChart.
  */
 function getInkRowBounds(ctx, width, height) {
   const px = new Uint32Array(ctx.getImageData(0, 0, width, height).data.buffer);
@@ -592,19 +559,12 @@ async function rasterizeChart({ exportRoot, canvas, chart, attributionHidden, uh
     sctx.imageSmoothingQuality = "high";
     sctx.drawImage(canvas, 0, 0, canvas.width, canvas.height, slotX, slotY, slotW, slotH);
 
-    // PASS TWO — crop the ROWS to the ink, then pad. That makes `padPx` the literal distance from the top and
-    // bottom of the PNG to the nearest painted pixel. See getInkRowBounds.
+    // PASS TWO — crop the ROWS to the ink, then pad, making `padPx` the literal top and bottom margin.
     //
-    // THE COLUMNS ARE DELIBERATELY NOT CROPPED, however much more even it would make the four margins look. The
-    // layout box is the frame every block aligns to — the title row flush at its left edge, the radar and the
-    // legend centred on it — so cropping to ink hands the frame to whichever block happens to be widest that
-    // render. Toggle the title row off and the sides pull in to the radar's axis labels; type a short profile
-    // name and the right edge moves but the left does not. Both change the image's width and the composition
-    // from a display setting or a name, which is worse than an uneven margin. The box holds them fixed.
-    //
-    // So the left margin is `padPx` (the track badge's pill sits flush) and the right is `padPx` plus whatever
-    // the radar did not use of the box. Closing THAT gap is a job for the radar's own centring, not for the
-    // export's padding: see docs/DECISIONS.md#export-margins-crop-the-rows-not-the-columns.
+    // THE COLUMNS ARE DELIBERATELY NOT CROPPED, however much more even it would make the margins look: the layout
+    // box is the frame the blocks align to, so cropping to ink lets a display toggle or a short profile name
+    // redefine the image's width. The right edge reads looser than the left as a result, and closing that is the
+    // radar's job, not the padding's. See docs/DECISIONS.md#export-margins-crop-the-rows-not-the-columns.
     const ink = getInkRowBounds(sctx, scratchW, scratchH);
     if (!ink) {
       return null;

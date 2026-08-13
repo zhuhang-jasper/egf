@@ -252,45 +252,18 @@
   }
 }
 
-/* BADGE INK CENTRING — `align-items: center` centres the LINE BOX, and the line box is not the ink. "FE"/"BE"
-   are all-caps with no descender, so the glyphs sit in its upper part and the pill reads top-heavy.
-
-   THIS IS THE LINE-HEIGHT APPROACH, CHOSEN OVER `text-box: trim-both cap alphabetic`, which was here before and
-   is the more correct rule. The trim resolves the cap box from whichever font actually loaded, so it centred the
-   ink per platform with no constant to dial. It was replaced because it made every dimension of the pill
-   subpixel: at a 10px font the cap box is ~7.2px and `py-[0.45em]` is 9px, so nothing landed on a whole pixel
-   and the glyph rounded up or down as ancestors reflowed — the label visibly jumped while resizing the window.
-
-   A taller line box is less sensitive to a fractional origin, which is the whole reason this is back. The
-   KNOWN COST is that the residual offset is the font's own descent and `system-ui` resolves differently per
-   platform (SF / Segoe / Roboto), so the pill is slightly top-heavy by an amount that varies by device rather
-   than being corrected. See docs/DECISIONS.md#badge-ink-centring.
-
-   `1lh` ROUNDED TO A WHOLE PIXEL IS WHAT STOPS THE LABEL JITTERING, and it is the last fractional term in the
-   pill. `line-height: 1.4` against md's integer font size gives a FRACTIONAL line box — 15.4px at font 11 — and
-   `align-items: center` then centres it in an integer content box, leaving a half-pixel that rounds up or down
-   with wherever the row lands on the device-pixel grid. The pill held still and the glyphs moved 1px, per pixel
-   of window width. `round(1.4em)` snaps the line box itself, so the leftover is a whole number and there is
-   nothing left to resolve inconsistently. sm never showed this: 10px * 1.4 is exactly 14. */
+/* BADGE INK CENTRING. `round()` keeps the line box a whole pixel — a fractional one leaves `align-items: center`
+   a half-pixel to resolve, which moves the glyphs 1px as the window resizes. Replaced a `text-box` trim, which
+   centred the ink more correctly but was subpixel throughout. See docs/DECISIONS.md#badge-ink-centring.
+   Declared twice: without `round()` support the second line drops and the plain ratio stands. */
 [data-badge-ink] {
-  /* Declared twice on purpose: a browser without `round()` drops that line as invalid and keeps the plain ratio,
-     which is the pre-fix behaviour rather than no leading at all. */
   line-height: 1.4;
   line-height: round(1.4em, 1px);
 }
 
-/* NO `text-box` TRIM ON THE HEADING, deliberately — it was here and it CLIPPED THE DESCENDERS.
-   `trim-both cap alphabetic` puts the block's bottom edge on the alphabetic baseline, so everything below the
-   baseline is outside the box; the <h2> also carries `overflow-hidden` for useMiddleEllipsis's fitting, so the
-   tails of p/g/y/J were cut off rather than merely overflowing. The comment that used to sit here claimed
-   "height is unaffected", which was the mistake: the trim changes the block's own box, and an overflow-hidden
-   box is exactly where that becomes visible.
-
-   The trim was reaching for something real — `align-items: center` centres the title's LINE BOX against the
-   pill's, and `leading-tight`'s half-leading is split evenly while the ascent/descent it wraps is not, so the two
-   ink bands are not what gets centred. If that misalignment needs correcting again, do it WITHOUT resizing the
-   heading's box: `trim-start cap` alone leaves the descenders inside, or offset the pill instead — the pill has no
-   overflow constraint and nothing measures its box. See docs/DECISIONS.md#badge-ink-centring. */
+/* NO `text-box` TRIM ON `#competency-chart-heading`. It was here and it clipped the descenders: the trim puts the
+   block's bottom edge on the baseline, and the <h2> is `overflow-hidden` for useMiddleEllipsis. If the pill/title
+   centring needs correcting again, move the pill — do not resize a box something else clips or measures. */
 
 /* PRINT: rescale each radar's bitmap to its frame, since print rasterizes before the fit rAF runs. Scoped so
    the poster/social export canvases are untouched. See docs/DECISIONS.md#print-chart-frame-height-is-stale. */

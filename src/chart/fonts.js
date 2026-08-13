@@ -41,17 +41,8 @@ export function getChartSecondaryLabelSizePx(chartWidthPx) {
   return Math.max(min, Math.round(getChartPointLabelSizePx(chartWidthPx) * FE_UI.chart.secondaryLabelMultiplier));
 }
 
-/* NO BADGE-HEIGHT HELPER LIVES HERE ANY MORE, and adding one back is a step backwards.
-   There were two — `getTrackBadgeMdHeightPx` (label + 2 * 0.4 pad) and `getTrackBadgeTitleRowHeightPx`
-   (`round(getChartTitleSizePx * 0.86)`). Both computed a px height for the md pill, which the component then took
-   as `matchHeightPx` and the export clone wrote as an inline style.
-   THE ROUNDING IS WHY THEY ARE GONE. getChartTitleSizePx below is deliberately fractional so the type scales
-   smoothly, so rounding any ratio of it steps between two integers as the chart resizes — the pill's height
-   flipped back and forth and its label re-centred each time, visible as jitter while dragging the window. No
-   multiplier avoids that; rounding a continuous value is discontinuous by nature.
-   The pill now derives its height from `em` padding like every other badge, so the number is not needed by the
-   component, by the title row's `min-height` (plain `1.25em`, which the badge term never beat anyway), or by the
-   export clone (setting the font rescales the `em` ratios). See components/TrackBadge.jsx. */
+/* No badge-height helper here on purpose: rounding a ratio of the fractional getChartTitleSizePx made the md
+   pill's height step as the chart resized. It sizes from `em` padding now — see components/TrackBadge.jsx. */
 
 export function getPointLabelPaddingPx(chartWidthPx) {
   const u = getChartWidthUnit(chartWidthPx);
