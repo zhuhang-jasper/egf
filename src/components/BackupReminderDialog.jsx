@@ -53,7 +53,7 @@ export function BackupReminderDialog({ open, onClose }) {
           <Wrench className="size-3.5 -scale-x-100" aria-hidden />
           Manage
         </span>{" "}
-        below the chart form and choose <span className="font-semibold text-slate-900">Export profiles</span> to save them all to a file. You can
+        at the top of the form and choose <span className="font-semibold text-slate-900">Export profiles</span> to save them all to a file. You can
         import that file again any time.
       </p>
     </SimpleModal>
