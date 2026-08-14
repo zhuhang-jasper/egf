@@ -82,6 +82,11 @@ export function canSaveWithPicker() {
  *   - "saved"     — file written and confirmed (File System Access API path).
  *   - "cancelled" — user dismissed the save dialog; no file written, show nothing.
  *   - "started"   — anchor-download fallback fired; completion is unobservable in this browser.
+ *
+ * ONLY "saved" WARRANTS A SUCCESS MESSAGE. "started" is not a weaker "saved" — it carries no
+ * information about the outcome at all, since the anchor click returns before the platform's own save
+ * sheet is even up (iOS Safari), so a dismissal is indistinguishable from a save. Report nothing there
+ * and let the platform, which does know, do the reporting.
  */
 export async function exportProfilesToFile(profiles) {
   const json = JSON.stringify(toExportPayload(profiles), null, 2);

@@ -29,6 +29,22 @@ const initialProfiles = loadProfilesFromStorage();
 let toastSeq = 0;
 // Per-toast auto-dismiss timers, so a coalescing toast can reset its own countdown.
 const toastTimers = new Map();
+
+/**
+ * (Re)arm one toast's auto-dismiss timer, clearing any prior one so a coalesced or restarted toast
+ * begins a fresh window rather than inheriting a part-spent one. `duration` of 0 leaves it sticky.
+ */
+function armToastTimer(id, duration, onExpire) {
+  const prev = toastTimers.get(id);
+  if (prev) {
+    clearTimeout(prev);
+    toastTimers.delete(id);
+  }
+  if (duration > 0) {
+    toastTimers.set(id, setTimeout(onExpire, duration));
+  }
+}
+
 // Shared by every undoable action so a newer one REPLACES the older: only one Undo toast is ever on
 // screen, and a stale one must never sit beside the undo the user is actually looking for.
 export const UNDO_TOAST_KEY = "undo";
@@ -133,24 +149,44 @@ export const useAppStore = create((set, get) => ({
     // `cycle` bumps every time a coalescing toast is refreshed, so the dismiss button's countdown
     // ring can key off it and restart its animation in lockstep with the re-armed timer below.
     const cycle = existing ? existing.cycle + 1 : 0;
+    // WHEN the dismiss clock below starts. The ring animates from the toast's first PAINT, which lands
+    // an unpredictable amount later — the producing handler may have just blocked the main thread (the
+    // chart export rasterizes a high-res canvas before it toasts). Publishing the arm time lets the ring
+    // seek to where it already should be, so the arc empties as the toast leaves rather than before it.
+    const armedAt = performance.now();
+    const fields = { message: text, variant, action, key, duration, cycle, armedAt };
     if (existing) {
-      set((state) => ({ toasts: state.toasts.map((t) => (t.id === id ? { ...t, message: text, variant, action, key, duration, cycle } : t)) }));
+      set((state) => ({ toasts: state.toasts.map((t) => (t.id === id ? { ...t, ...fields } : t)) }));
     } else {
-      set((state) => ({ toasts: [...state.toasts, { id, message: text, variant, action, key, duration, cycle }] }));
+      set((state) => ({ toasts: [...state.toasts, { id, ...fields }] }));
     }
-    // (Re)arm the auto-dismiss timer — clearing any prior one so a coalesced toast restarts its clock.
-    const prevTimer = toastTimers.get(id);
-    if (prevTimer) {
-      clearTimeout(prevTimer);
-      toastTimers.delete(id);
-    }
-    if (duration > 0) {
-      toastTimers.set(
-        id,
-        setTimeout(() => get().dismissToast(id), duration),
-      );
-    }
+    armToastTimer(id, duration, () => get().dismissToast(id));
     return id;
+  },
+
+  /**
+   * Restart every live toast's dismiss window. Called when the page becomes visible again, from the
+   * resume listener in components/ui/Toaster.jsx (which owns it, being mounted exactly once).
+   *
+   * A toast's duration is meant to be time the user could have READ it, and a backgrounded tab paints
+   * nothing while its timers keep running. So a notice raised just before the page was suspended (a
+   * file picker or a share/save sheet is the usual cause) would otherwise surface with most or all of
+   * its window already spent, flashing on screen and taking any Undo with it. Restarting is the
+   * conservative read: the toast gets its full window from the moment it can actually be seen.
+   *
+   * `cycle` is bumped so the countdown ring remounts and animates the fresh window rather than
+   * finishing the stale one.
+   */
+  restartToastTimers: () => {
+    const live = get().toasts;
+    if (live.length === 0) {
+      return;
+    }
+    const armedAt = performance.now();
+    set((state) => ({ toasts: state.toasts.map((t) => ({ ...t, armedAt, cycle: t.cycle + 1 })) }));
+    for (const t of live) {
+      armToastTimer(t.id, t.duration, () => get().dismissToast(t.id));
+    }
   },
 
   dismissToast: (id) => {

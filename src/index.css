@@ -169,9 +169,13 @@
   }
 }
 
+/* The delay is NEGATIVE and set from JS (see CountdownRing): it seeks the arc forward by however long the
+   toast took to reach its first paint, so the ring empties when the toast leaves rather than before it.
+   Defaults to 0 so a missing value simply starts the arc full. */
 .toast-ring-track {
   animation: toast-ring-drain linear forwards;
   animation-duration: var(--toast-ring-duration);
+  animation-delay: var(--toast-ring-delay, 0ms);
 }
 
 @media (prefers-reduced-motion: reduce) {

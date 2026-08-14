@@ -185,12 +185,17 @@ const CAN_SHARE_FILES = (() => {
   }
 })();
 
-// Outcome messages for the export buttons. Share's fallbacks land on the clipboard or a download —
-// literally what Copy does — so they report it in Copy's words. Two phrasings for one result would
-// only tell the user the app took a different path, which is not something they need to know.
+// Outcome messages for the export buttons. Share's clipboard fallback lands on literally what Copy
+// does, so it reports it in Copy's words. Two phrasings for one result would only tell the user the
+// app took a different path, which is not something they need to know.
+//
+// THE DOWNLOAD PATH HAS NO ENTRY, deliberately — it is not an oversight to fill in. Handing the blob
+// to an <a download> tells us nothing about what happened next: on iOS the tap opens the system's own
+// save sheet, which the user may dismiss, and the click() returns long before they decide. Any toast
+// there is a claim the app cannot check, and it fired on a cancel. The platform is already reporting
+// the outcome itself, correctly, so we say nothing and let it. See the branches in handleCopy/handleShare.
 const EXPORT_TOAST = {
   clipboard: "Copied to clipboard",
-  download: "Image saved",
 };
 
 /**
@@ -314,8 +319,8 @@ export function ChartSection({ isVisible }) {
         track("chart_copied", { method: "clipboard" });
         showToast(EXPORT_TOAST.clipboard, { variant: "success", key: CHART_EXPORT_TOAST_KEY });
       } else if (result?.method === "download") {
+        // Tracked but NOT toasted — the save is the platform's to confirm, not ours. See EXPORT_TOAST.
         track("chart_copied", { method: "download" });
-        showToast(EXPORT_TOAST.download, { variant: "success", key: CHART_EXPORT_TOAST_KEY });
       } else {
         showToast("Couldn't copy the image", { variant: "error", key: CHART_EXPORT_TOAST_KEY });
       }
@@ -344,8 +349,8 @@ export function ChartSection({ isVisible }) {
         track("chart_shared", { method: "fallback-clipboard" });
         showToast(EXPORT_TOAST.clipboard, { variant: "success", key: CHART_EXPORT_TOAST_KEY });
       } else if (result?.method === "share-fallback-download") {
+        // Silent for the same reason as Copy's download branch — see EXPORT_TOAST.
         track("chart_shared", { method: "fallback-download" });
-        showToast(EXPORT_TOAST.download, { variant: "success", key: CHART_EXPORT_TOAST_KEY });
       } else {
         showToast("Couldn't share the image", { variant: "error", key: CHART_EXPORT_TOAST_KEY });
       }

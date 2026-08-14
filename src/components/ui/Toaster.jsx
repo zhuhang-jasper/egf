@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "react";
+
 import { AlertCircle, Check, X } from "lucide-react";
 
 import { useAppStore } from "@/store/useAppStore";
@@ -43,13 +45,53 @@ const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
  * re-armed. Under `prefers-reduced-motion` the animation is off and the ring simply sits full,
  * acting as a static border on the button.
  *
+ * `armedAt` IS WHAT KEEPS THE ARC HONEST. A CSS animation starts at its element's first paint, while
+ * the store's dismiss timer started back when `showToast` was called; anything that delays the commit
+ * in between (a producing handler that blocks the main thread, such as the chart export rasterizing a
+ * high-res canvas) is time the ring would otherwise still have to run after the toast is already gone.
+ * A NEGATIVE `animation-delay` of the elapsed span seeks the animation to where it should already be,
+ * so both end together however late the paint lands.
+ *
+ * A page SUSPENSION is the other way the two clocks part, and it is not this compensation's to absorb —
+ * seeking would just show an already-empty ring on a toast about to vanish. `restartToastTimers` gives
+ * the whole window back instead, and bumps `cycle` to remount this ring onto it.
+ *
+ * The elapsed span is read in a rAF callback rather than during render — see the note at the measurement
+ * for why that specific moment. Not the render body in any case: that charges the ring for React work
+ * which has not happened yet, and double-counts under StrictMode's re-render.
+ *
  * The dash values are pushed through CSS custom properties as `px` strings, NOT bare numbers: the
  * keyframes feed them to `stroke-dashoffset` via `calc()`, and an unitless custom property makes
  * that calc invalid, which silently drops the whole animation.
  */
-function CountdownRing({ duration }) {
+function CountdownRing({ duration, armedAt }) {
+  const svgRef = useRef(null);
+
+  useEffect(() => {
+    if (!(armedAt > 0)) {
+      return undefined;
+    }
+    // MEASURED IN A rAF CALLBACK, not in the effect body: a CSS animation starts at the frame its
+    // element is PAINTED in, and effects (layout or otherwise) run before that paint. Reading the clock
+    // in the effect therefore stops short of the animation's real start and leaves the gap between
+    // commit and paint uncounted — which on mobile Safari, right after the export's canvas work, is
+    // where most of the stall actually is. The rAF callback runs in the painting frame itself.
+    const id = requestAnimationFrame(() => {
+      const el = svgRef.current;
+      if (!el) {
+        return;
+      }
+      // Clamped to the duration so a paint delayed past the whole window leaves the ring empty rather
+      // than seeking past the end, and to <= 0 so it can only ever pull the animation forward.
+      const elapsed = Math.min(Math.max(performance.now() - armedAt, 0), duration);
+      el.style.setProperty("--toast-ring-delay", `${-elapsed}ms`);
+    });
+    return () => cancelAnimationFrame(id);
+  }, [duration, armedAt]);
+
   return (
     <svg
+      ref={svgRef}
       className="pointer-events-none absolute inset-0 -rotate-90"
       viewBox="0 0 20 20"
       fill="none"
@@ -81,6 +123,31 @@ function CountdownRing({ duration }) {
 export function Toaster() {
   const toasts = useAppStore((s) => s.toasts);
   const dismissToast = useAppStore((s) => s.dismissToast);
+  const restartToastTimers = useAppStore((s) => s.restartToastTimers);
+
+  // GIVE A TOAST ITS WINDOW BACK WHEN THE PAGE RETURNS FROM THE BACKGROUND. Timers keep running while
+  // the page is suspended but nothing paints, so a notice raised just before a native sheet took over
+  // (iOS share/save, a file picker) would surface with its window already spent — visibly flashing, and
+  // dropping any Undo before it could be tapped. `restartToastTimers` re-arms from now instead.
+  //
+  // `pageshow` alongside `visibilitychange` because iOS does not reliably deliver the latter on restore
+  // — the same pairing, for the same reason, as the resume repaint in hooks/useChartFrameFit.js.
+  //
+  // Mounted unconditionally, ABOVE the empty-stack early return below: an effect cannot live behind a
+  // conditional return, and with nothing on screen the handler is a no-op anyway.
+  useEffect(() => {
+    const onResume = () => {
+      if (document.visibilityState === "visible") {
+        restartToastTimers();
+      }
+    };
+    document.addEventListener("visibilitychange", onResume);
+    window.addEventListener("pageshow", onResume);
+    return () => {
+      document.removeEventListener("visibilitychange", onResume);
+      window.removeEventListener("pageshow", onResume);
+    };
+  }, [restartToastTimers]);
 
   if (toasts.length === 0) {
     return null;
@@ -132,7 +199,7 @@ export function Toaster() {
               className={cn("relative ml-1 grid shrink-0 place-items-center rounded-full", RING_BOX, meta.dismissClass)}
               onClick={() => dismissToast(t.id)}
             >
-              {t.duration > 0 ? <CountdownRing key={t.cycle} duration={t.duration} /> : null}
+              {t.duration > 0 ? <CountdownRing key={t.cycle} duration={t.duration} armedAt={t.armedAt} /> : null}
               <X className="h-3 w-3" />
             </button>
           </output>

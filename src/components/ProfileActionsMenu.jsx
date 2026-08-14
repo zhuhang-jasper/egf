@@ -46,9 +46,15 @@ export function ProfileActionsMenu() {
       showToast("Couldn't save the file", { variant: "error", key: PROFILE_IO_TOAST_KEY });
       return;
     }
-    // "saved" (file confirmed written) or "started" (download fired, no completion signal).
     track("profiles_exported", { count, outcome });
-    showToast(`Exported ${count} profile${count === 1 ? "" : "s"}`, { variant: "success", key: PROFILE_IO_TOAST_KEY });
+    // ONLY "saved" IS TOASTED. "started" means the anchor-download fallback fired (no
+    // `showSaveFilePicker` — iOS Safari is the case that matters), and that returns before the platform
+    // has even shown its save sheet: we cannot tell a save from a dismissal, and the toast claimed one
+    // either way. Where the outcome is unobservable the platform is already reporting it correctly, so
+    // say nothing rather than guess. The picker path ("saved") awaits the real write, so it still speaks.
+    if (outcome === "saved") {
+      showToast(`Exported ${count} profile${count === 1 ? "" : "s"}`, { variant: "success", key: PROFILE_IO_TOAST_KEY });
+    }
   };
 
   const handleImportFile = async (e) => {
