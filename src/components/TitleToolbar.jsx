@@ -12,7 +12,14 @@ import { Tooltip } from "@/components/ui/Tooltip";
 
 import { useTouchPrimary } from "@/hooks/useTouchPrimary";
 
-import { selectHasUnsavedWork, selectProfileSaveStatus, TOAST_DURATION, UNDO_TOAST_KEY, useAppStore } from "@/store/useAppStore";
+import {
+  PROFILE_SAVE_TOAST_KEY,
+  selectHasUnsavedWork,
+  selectProfileSaveStatus,
+  TOAST_DURATION,
+  UNDO_TOAST_KEY,
+  useAppStore,
+} from "@/store/useAppStore";
 
 import { LAYER } from "@/constants";
 import { cn } from "@/utils";
@@ -54,6 +61,16 @@ const SAVE_STATUS_META = {
     className: "",
     disabled: false,
   },
+};
+
+// Past-tense verb for the save-confirmation toast, keyed by the store's `mode` (see writeProfile).
+// DELIBERATELY ECHOES THE BUTTON that produced the save — `new`/`renaming`/`modified` above are
+// labelled Save/Rename/Update — so the notice reads as an answer to the thing the user just pressed
+// rather than as the app's own separate account of what happened.
+const SAVE_TOAST_VERB = {
+  created: "Saved",
+  renamed: "Renamed",
+  updated: "Updated",
 };
 
 // Status-aware Save button, sitting on Row 1 next to the title input.
@@ -267,8 +284,9 @@ export function TitleToolbar() {
   // title / normalize errors fall through silently (the input already flags the empty-title case).
   // `analytics` carries any flags (e.g. overwrite) onto the profile_saved event.
   //
-  // A destructive save (result.undo present — an existing profile was overwritten and/or merged
-  // away) shows an "Undo" toast so an accidental Update/Rename/Overwrite is recoverable.
+  // Every successful save confirms itself in a toast; a destructive one (result.undo present — an
+  // existing profile was overwritten and/or merged away) carries an "Undo" with it, so an accidental
+  // Update/Rename/Overwrite is recoverable. See the notes at the toast itself.
   const handleResult = (result, analytics = {}) => {
     if (result?.status === "collision") {
       setPendingCollision({ ...result, analytics });
@@ -282,8 +300,17 @@ export function TitleToolbar() {
         setBackupReminderOpen(true);
         track("backup_reminder_shown", { count: readProfileCreateCount() });
       }
+      // EVERY SAVE CONFIRMS ITSELF, because the button it came from does not: "Save" and "Update" leave
+      // the toolbar looking much as they found it, and on a rename the only visible change is text the
+      // user typed themselves. The verb comes from the store's `mode` so the notice describes what the
+      // write actually DID — a rename that said "Updated" was telling the user the wrong thing.
+      //
+      // Only a DESTRUCTIVE save carries the Undo (an existing row was overwritten and/or a merged source
+      // removed). A plain create has nothing to reverse, so it takes the short window instead of sitting
+      // there for 8s offering an action it does not have.
+      const savedMessage = `${SAVE_TOAST_VERB[result.mode] ?? "Saved"} “${result.savedTitle}”`;
       if (result.undo) {
-        showToast(`Updated “${result.savedTitle}”`, {
+        showToast(savedMessage, {
           variant: "dark",
           key: UNDO_TOAST_KEY, // only one Undo toast at a time — replaces any live delete/discard/import undo
           action: {
@@ -294,6 +321,15 @@ export function TitleToolbar() {
             },
           },
         });
+      } else {
+        // DARK, MATCHING THE UNDO BRANCH ABOVE, though nothing here is undoable: a create and an update
+        // are the same act to the user, and colouring them apart would say the app considers them
+        // different kinds of event. Green is left to mean "finished, nothing further" — the clipboard
+        // and file-export confirmations — which a save, being the start of a profile's life, is not.
+        //
+        // Keyed so a run of quick saves replaces in place rather than stacking. NOT the undo key: this
+        // one has no action, and taking that slot would evict a live Undo the user might still want.
+        showToast(savedMessage, { variant: "dark", key: PROFILE_SAVE_TOAST_KEY });
       }
     }
   };

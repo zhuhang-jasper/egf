@@ -54,6 +54,9 @@ export const UNDO_TOAST_KEY = "undo";
 // mutually exclusive answers to one press, so the newest is the only true one.
 export const CHART_EXPORT_TOAST_KEY = "chart-export"; // Copy + Share on the chart
 export const PROFILE_IO_TOAST_KEY = "profile-io"; // Export / Import failures in the profiles menu
+// Non-destructive save confirmations (create / rename / update). A DESTRUCTIVE save takes
+// UNDO_TOAST_KEY instead, since it carries an Undo and must contend for that single slot.
+export const PROFILE_SAVE_TOAST_KEY = "profile-save";
 
 /**
  * THE THREE TOAST WINDOWS. Every toast in the app takes one of these — there are no other durations, and
