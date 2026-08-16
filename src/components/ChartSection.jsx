@@ -48,10 +48,14 @@ function DisplayCheckbox({ label, checked, onChange, adminOnly = false }) {
       {/* The one site that badges inline rather than at a corner, because a column of padlocks down a list of
           near-identical rows cannot be attributed to any of them. `static` switches AdminLockBadge out of its
           absolute default; `-translate-y-1` is a fixed nudge tied to its disc size, so re-judge it if that
-          changes. `label=""` because the row's own `aria-label` is already the checkbox's accessible name. */}
+          changes. `label=""` because the row's own `aria-label` is already the checkbox's accessible name.
+
+          Do NOT add a `display` class here. The badge centres itself with grid, and tailwind-merge treats any
+          display utility as the same group, so an `inline-flex` here silently replaces `inline-grid` and the
+          lock falls out of centre. `inline` vs block is the badge's own job via its `static` branch. */}
       <span>
         {label}
-        {adminOnly ? <AdminLockBadge label="" className="static ml-0.5 inline-flex -translate-y-1 align-middle" /> : null}
+        {adminOnly ? <AdminLockBadge label="" className="static ml-0.5 -translate-y-1 align-middle" /> : null}
       </span>
     </label>
   );

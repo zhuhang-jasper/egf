@@ -25,11 +25,15 @@ export function AdminLockBadge({ className, label = "Admin only" }) {
         // The disc size lives here rather than in each caller, where it immediately drifted to two values. It
         // is derived from the 8px glyph below rather than chosen independently: 2px of fill each side is the
         // least that reads as a disc-with-a-mark. The two move together.
-        "pointer-events-none absolute z-10 grid size-3 place-items-center rounded-full bg-slate-500 text-white ring-0 print:hidden",
+        "pointer-events-none absolute z-10 inline-grid size-3 place-items-center rounded-full bg-slate-500 text-white ring-0 print:hidden",
         // Both children land in the same 1x1 grid cell, so the disc and the glyph are rasterized off one
         // origin. With flex the 12px box and the 8px child rounded to the device grid separately, and on a
         // fractional anchor (the nav's `flex-1` buttons never land on whole pixels) they rounded opposite
         // ways, so the lock sat 1px off-centre and the direction flipped on resize.
+        //
+        // `inline-grid` rather than `grid` so the one inline caller (ChartSection's display menu) needs no
+        // display class of its own. Callers must not pass one: tailwind-merge would replace this and the
+        // centring silently dies. Inline-ness is irrelevant to the absolutely-positioned corner callers.
         "[&>*]:col-start-1 [&>*]:row-start-1",
         className,
       )}
