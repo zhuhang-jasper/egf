@@ -208,27 +208,40 @@
   }
 }
 
-/* TAB CROSS-SLIDE. Only the ARRIVING tab animates: an exit animation ghosts. The 3% is a percentage, not px,
-   and is small on purpose. See docs/DECISIONS.md#tab-transition-duration. */
+/* TAB CROSS-SLIDE. Only the ARRIVING tab animates: an exit animation ghosts. A percentage, not px, so the
+   travel scales with the panel. 20%: at 3% it was ~11px on a phone and read as an instant swap. Distance is the
+   knob for presence here, NOT duration. See docs/DECISIONS.md#tab-transition-duration.
+
+   TRANSFORM ONLY — no opacity. The panel is fully opaque from its first frame, so this is a slide and not a
+   slide-and-fade. The strip the arriving panel has not covered yet shows `main`, which is the same white the
+   panel content sits on, so there is no seam to see. That is what makes a travel this large survivable without
+   a fade. See docs/DECISIONS.md#tab-transition-duration before adding opacity back. */
 @keyframes tab-slide-in-left {
   from {
-    opacity: 0;
-    transform: translateX(3%);
+    transform: translateX(20%);
   }
   to {
-    opacity: 1;
     transform: translateX(0);
   }
 }
 
 @keyframes tab-slide-in-right {
   from {
+    transform: translateX(-20%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* Reduced motion's substitute: no travel, so opacity is all that is left to animate. The one place a tab
+   entrance still fades. See the media query below. */
+@keyframes tab-fade-in {
+  from {
     opacity: 0;
-    transform: translateX(-3%);
   }
   to {
     opacity: 1;
-    transform: translateX(0);
   }
 }
 
@@ -249,12 +262,16 @@
   opacity: 0;
 }
 
-/* Reduced motion gets NO animation, not a shortened one. The JS phase timer still runs its full duration,
-   which changes nothing visible — the leave rule above is plain CSS, not an animation. */
+/* Reduced motion drops the TRAVEL, not the feedback: same duration, opacity only. It used to be
+   `animation: none`, which left the switch as an instant swap with no signal that anything had happened.
+   That is not what the preference asks for; it asks for no vestibular motion, and a fade has none.
+   This path is common, not an edge case: iOS forces `reduce` while LOW POWER MODE is on, so a phone that is
+   merely low on battery takes this branch. Do not put the transform back behind a shorter duration.
+   The JS phase timer is unaffected either way, and the leave rule above is plain CSS, not an animation. */
 @media (prefers-reduced-motion: reduce) {
   .tab-enter-left,
   .tab-enter-right {
-    animation: none;
+    animation-name: tab-fade-in;
   }
 }
 

@@ -947,27 +947,54 @@ document-flow header means reintroducing an anchor-relative offset.**
 
 ### tab-transition-duration
 
-160ms, with the exit at 60% of it.
+160ms, over 20% of the panel's width. There is no exit animation; see the one-sidedness note below.
 
 Short on purpose. This fires on every navigation between two tabs the user moves between constantly, and a
 transition long enough to notice as an animation is long enough to be in the way by the tenth time. It should
 convey which direction you moved, not be watched.
 
-It was 220ms, which read as a **delay** rather than as motion. The duration was only half of why — the
-entrance also used to start fully transparent, which withheld a page that was already laid out — but at 220ms
-the tail of the settle was still perceptible as waiting for a page that was demonstrably already there.
+It was 220ms, which read as a **delay** rather than as motion. The duration was only half of why: the entrance
+started fully transparent back then, which withheld a page that was already laid out. That opacity ramp is
+gone now (see below), but at 220ms the tail of the settle was still perceptible as waiting for a page that was
+demonstrably already there.
 
 **Do not raise this to make the slide more visible.** If the motion needs more presence, the distance in the
 keyframes is the knob; time is the part the user feels as lag.
 
+That knob has since been turned, which is where the 20% comes from. It was 3%, and on a phone 3% of a 390px
+viewport is about 11px: the switch read as instant on iOS and as barely-there on Android. 20% is roughly 78px
+on the same screen, which is unmistakably movement while still finishing inside the same 160ms. The percentage
+is deliberate over a px value so a desktop panel, which is several times wider, travels proportionally.
+
+A travel this large was expected to expose a bare strip on the leading edge, since the outgoing panel is
+hidden with no ramp and the arriving one has not covered that ground yet. **It does not, and the reason is
+worth keeping:** what shows through is `main`, which is `bg-white`, and the panel content sits on that same
+white. White on white, no seam. This holds only while those two backgrounds match — if `main` or a panel ever
+takes its own colour, the strip becomes visible and the travel is what will need reducing.
+
 One constant drives both the CSS animation and the timer that keeps the outgoing panel mounted. A shorter
 timer cuts the exit off mid-flight; a longer one leaves the panel sitting on a finished frame.
 
-The transition is **one-sided**: the arriving tab slides and fades in, the departing one is not animated at
-all, just hidden. It started as a cross-fade and that **ghosted** — two semi-transparent copies of the app
-overlaid, the old tab's headings legible through the new one's. Cross-fading two opaque full-page layouts
-always does; no pair of intermediate opacities shows only one of them. Do not reintroduce an exit animation
-to "balance" the entrance.
+The transition is **one-sided**: the arriving tab slides in, the departing one is not animated at all, just
+hidden. It started as a cross-fade and that **ghosted** — two semi-transparent copies of the app overlaid, the
+old tab's headings legible through the new one's. Cross-fading two opaque full-page layouts always does; no
+pair of intermediate opacities shows only one of them. Do not reintroduce an exit animation to "balance" the
+entrance.
+
+The entrance is **transform only**. It used to also ramp opacity 0 → 1, which was left over from that
+cross-fade and went unnoticed while the travel was 3%; at 10% the fade became the more visible half of the
+motion, and what was wanted was a slide. Removing it has a cost worth knowing before it gets "fixed": since
+the outgoing panel is hidden with no ramp, the strip the arriving panel has not covered yet shows `main`'s
+white for the length of the animation, and that strip is as wide as the travel. Softening it was the fade's
+only real job. If it becomes a problem, the move is a shorter opacity ramp that finishes early in the
+animation, not a full-length one — or less travel. Not both a fade and 10%.
+
+Under `prefers-reduced-motion: reduce` the entrance keeps its duration and loses only its travel, fading in
+via `tab-fade-in`. It used to be `animation: none`, which made a switch an instant swap with no signal that
+anything had happened. The preference asks for no vestibular motion, not for no feedback, and an opacity ramp
+has none of the former. This branch is common rather than an edge case: **iOS forces `reduce` while Low Power
+Mode is on**, so a phone that is merely low on battery gets it, which is how the dead transition was found in
+the first place. Do not "restore" the transform here behind a shorter duration.
 
 ### export-title-weight-is-corrected-for-font-smoothing
 

@@ -124,8 +124,8 @@ const PREFIT_WINDOW_MS = 300;
  * timer keeping the outgoing panel mounted, so it is one constant rather than a value in the stylesheet.
  *
  * Short on purpose: this fires on every navigation, and it should convey direction, not be watched. Do not
- * raise it to make the slide more visible; the keyframe distance is that knob. See
- * docs/DECISIONS.md#tab-transition-duration.
+ * raise it to make the slide more visible; the keyframe distance is that knob, and it is the one that was
+ * turned when the slide read as invisible on a phone. See docs/DECISIONS.md#tab-transition-duration.
  */
 const TAB_TRANSITION_MS = 160;
 
