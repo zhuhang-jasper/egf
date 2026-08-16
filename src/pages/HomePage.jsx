@@ -374,10 +374,13 @@ export default function HomePage() {
           >
             CC BY-NC 4.0
           </a>
-          {/* Screen only, and the separator hides WITH it so print does not end on a dangling `·`. */}
+          {/* Screen only, and the separator hides WITH it so print does not end on a dangling `·`.
+              LABELLED `Build-`, and deliberately not `v`: the Theory tab in the nav carries `v4.2` a thumb
+              away from here, so a bare `v7.9.4` read as the same framework jumping five majors. One word
+              gives each number an owner, the way the nav's own `Theory` prefix already does. */}
           <span className="print:hidden">
             {" "}
-            · <span className="tabular-nums">v{appVersion}</span>
+            · Build-<span className="tabular-nums">{appVersion}</span>
           </span>
           {/* Its PRINT counterpart, carrying a DIFFERENT number: the app build above means nothing on paper,
               while the framework's version and date are what a printout gets asked for months later.
