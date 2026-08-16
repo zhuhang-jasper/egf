@@ -14,6 +14,7 @@ import { useTheoryUpdates } from "@/hooks/useTheoryUpdates";
 import { FE_UI, FRAMEWORK_UPDATED, FRAMEWORK_VERSION, IS_ADMIN, SITE_COPY } from "@/constants";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
+import { getWindowScrollY, scrollWindowToTop } from "@/utils/scroll";
 import { cleanTheoryDeepLinkParams, getTabFromUrl, parseTheoryDeepLink, syncTabInUrl } from "@/utils/theory-url";
 
 const appVersion = import.meta.env.VITE_APP_VERSION;
@@ -237,9 +238,19 @@ export default function HomePage() {
 
   const handleTabChange = (nextTab) => {
     if (nextTab === activeTab) {
-      // Re-tapping the active tab does nothing, deliberately. From a bottom bar under the thumb, the active
-      // item is the easiest thing to hit by accident, and a hidden action that discards your scroll position
-      // is the wrong thing to put there. (It used to scroll to top, back when nav was a header control.)
+      // Re-tapping the active tab scrolls it to the top, the platform convention, but ONLY on the tool tab.
+      // From a bottom bar under the thumb the active item is the easiest thing to hit by accident, so this is
+      // only worth its risk where a mis-tap is cheap: the tool is two screenfuls, and theory is a long read
+      // where losing your place costs real effort (it has the ScrollTopFab instead, which cannot be hit by
+      // accident). Smooth, matching the FAB: the motion is the feedback, and it makes a stray tap legible
+      // rather than a teleport.
+      //
+      // This is shorthand for the user flicking to the top themselves, so it takes over from a restore burst
+      // still in flight exactly as a real gesture would — via the same `cancelRestoreRef` the matrix jump uses.
+      if (activeTab === "tool" && getWindowScrollY() > 0) {
+        cancelRestoreRef.current = true;
+        scrollWindowToTop({ behavior: "smooth" });
+      }
       return;
     }
     track("tab_view", { tab: nextTab });
