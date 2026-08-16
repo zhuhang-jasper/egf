@@ -270,7 +270,7 @@ export function ChartSection({ isVisible }) {
   // and it publishes the width it measured — so the chrome that scales with the chart (title size,
   // track badge, cluster legend) reads that instead of adding a second ResizeObserver to the same box
   // and a second `offsetWidth` read per frame.
-  const { chartRef, relayout, frameWidth: chartWidth } = useCompetencyChart(canvasRef, frameRef);
+  const { chartRef, relayout, frameWidth: chartWidth, canvasEpoch } = useCompetencyChart(canvasRef, frameRef);
 
   const trimmedTitle = String(title).trim();
   // When the title is enabled but blank, show a muted placeholder on the chart (it also bakes into
@@ -477,7 +477,10 @@ export function ChartSection({ isVisible }) {
           style={{ minHeight: FE_UI.chartFrame.minChartHeightPx }}
         >
           <div className="absolute inset-0 min-h-0 min-w-0">
-            <canvas ref={canvasRef} id="competencyChart" data-radar-canvas aria-labelledby="competency-chart-heading" />
+            {/* `key` IS THE RECOVERY, not a list key: bumping it discards a canvas whose 2D context the
+                browser lost while the app was backgrounded and mounts a fresh one — see
+                hooks/useCanvasContextRecovery.js. */}
+            <canvas key={canvasEpoch} ref={canvasRef} id="competencyChart" data-radar-canvas aria-labelledby="competency-chart-heading" />
           </div>
         </div>
 

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 
+import { isCanvasContextLost, useCanvasContextRecovery } from "@/hooks/useCanvasContextRecovery";
 import { useChartFrameFit } from "@/hooks/useChartFrameFit";
 
 import { useAppStore } from "@/store/useAppStore";
@@ -108,6 +109,11 @@ export function useCompetencyChart(canvasRef, frameRef) {
 
   const fit = useCallback((frame, width, cachedHeight) => {
     const chart = chartRef.current;
+    // Sit out while the context is lost: nothing drawn through it lands, and nothing measured through
+    // it is real (see isCanvasContextLost). The recovery hook repaints once the canvas is live again.
+    if (chart && isCanvasContextLost(chart.canvas)) {
+      return null;
+    }
     if (cachedHeight != null) {
       // This width has already been converged for, and nothing that feeds the fit has changed since.
       // Re-apply the height and let the chart pick up the canvas size in one render. Applied even with
@@ -131,6 +137,9 @@ export function useCompetencyChart(canvasRef, frameRef) {
   const relayoutRef = useRef(relayout);
   relayoutRef.current = relayout;
 
+  const repaint = useCallback(() => relayoutRef.current({ force: true }), []);
+  const canvasEpoch = useCanvasContextRecovery(canvasRef, repaint, "tool");
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) {
@@ -146,7 +155,10 @@ export function useCompetencyChart(canvasRef, frameRef) {
         if (chartRef.current !== chart) {
           return;
         }
-        relayoutRef.current();
+        // Forced past the first epoch: this is a canvas rebuilt after a lost context, and the fit memo
+        // still holds the pre-loss height — taking its fast path would skip the converge the new chart
+        // has never had.
+        relayoutRef.current(canvasEpoch > 0 ? { force: true } : undefined);
       });
     });
 
@@ -154,7 +166,7 @@ export function useCompetencyChart(canvasRef, frameRef) {
       chart.destroy();
       chartRef.current = null;
     };
-  }, [canvasRef]);
+  }, [canvasRef, canvasEpoch]);
 
   useEffect(() => {
     const chart = chartRef.current;
@@ -176,5 +188,5 @@ export function useCompetencyChart(canvasRef, frameRef) {
     }
   }, [pillarEmojiHidden, relayout]);
 
-  return { chartRef, relayout, frameWidth };
+  return { chartRef, relayout, frameWidth, canvasEpoch };
 }

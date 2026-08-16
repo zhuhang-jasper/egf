@@ -385,13 +385,16 @@ There is deliberately **no `window.resize` listener**. A width-flexible frame al
 whenever the window resize changes its width, and everything the fit derives comes from the chart's own
 width rather than the viewport's, so a listener could only duplicate a pass already scheduled.
 
-**Resuming from background force-refits, and it is a repaint rather than a re-fit.** Mobile browsers discard
-canvas backing stores under memory pressure, which empties the canvas while leaving its dimensions intact —
-so the memo still looks valid, no geometry check can detect it, and nothing schedules another pass because
-no width ever changed. The chart is simply gone until something redraws it. Forcing clears the memo, which
-sends the fit down its full `refreshChart` path and repaints. It listens to `pageshow` as well as
-`visibilitychange` because iOS does not reliably deliver the latter on restore from a frozen state, and
-defers to a rAF because the frame may not be laid out at event time.
+**Resuming from background force-refits, and it is a repaint rather than a re-fit.** Mobile browsers drop
+what a background canvas was showing while leaving its dimensions intact — so the memo still looks valid, no
+geometry check can detect it, and nothing schedules another pass because no width ever changed. The chart is
+simply gone until something redraws it. Forcing clears the memo, which sends the fit down its full
+`refreshChart` path and repaints. It listens to `pageshow` as well as `visibilitychange` because iOS does not
+reliably deliver the latter on restore from a frozen state, and defers to a rAF because the frame may not be
+laid out at event time.
+
+**This handles a cleared canvas, not a lost one, and that distinction is the whole of the Android PWA bug it
+was first (wrongly) written to fix.** See #canvas-context-loss-is-not-a-repaint-problem.
 
 Note that a plain `chart.resize()` is enough everywhere else, and deliberately so: `resizeDelay` is unset,
 so Chart.js's `_doResize` is `debounce(update, 0)`, which calls through **synchronously**. Any real size
@@ -399,6 +402,65 @@ change therefore re-fits the scales (and re-runs `applyRadarCenterFit`) inside t
 `retinaScale` early-return above it only triggers when the new device pixel dimensions equal the old, i.e.
 when there is no geometry to re-derive — so wrapping `resize()` in a follow-up `update()` buys nothing and
 costs a second full render per pass.
+
+### canvas-context-loss-is-not-a-repaint-problem
+
+Symptom, reported repeatedly on the Android PWA and mobile Chrome: leave the app in the background long
+enough and the chart comes back either as a **broken-image glyph** or as an **empty box**, while everything
+around it (title, legend, form) is intact.
+
+The first fix assumed one failure mode — the browser had emptied the bitmap — and answered it with a forced
+refit on resume (see #chart-frame-fit-memo). That was the wrong model, and it is why the bug survived it.
+There are two failure modes and the repaint only addresses the second:
+
+1. **Context lost.** Chrome does not merely clear the bitmap under memory pressure, it loses the 2D context.
+   The canvas enters a broken state — that glyph is the spec'd rendering for it — and from then on **every
+   draw call is a no-op**. `chart.update()` paints into a dead context and nothing appears. Worse, so does
+   every measurement: `measureText` returns zeros, so the converge loop run by the forced refit measures a
+   radar that has no extents and can collapse the frame. The old fix therefore did not just fail to help, it
+   ran the fit at the one moment it could not be trusted.
+2. **Context restored, bitmap blank.** The browser restores the context on its own schedule and fires
+   `contextrestored` with an empty bitmap. Chart.js does not listen for that event, so the chart stays gone
+   even though the canvas is healthy. The forced refit *does* fix this one — but only if it happens to run
+   after the restore, and being a single rAF off `visibilitychange`, it usually runs before.
+
+The two symptoms are those two states: glyph = still lost, empty box = restored and never redrawn.
+
+`hooks/useCanvasContextRecovery.js` owns the answer, and it has three parts.
+
+**It never cancels `contextlost`.** Calling `preventDefault()` on that event is the page declaring it will
+restore the context itself, and the UA then never does. The default is what we want, so the listener exists
+only to record the state for browsers that fire the events but predate `isContextLost()`.
+
+**`contextrestored` forces the refit.** That is the correct trigger for case 2, replacing a resume-time guess
+that raced the restore. The resume refit stays for the plain cleared-bitmap case, but it is no longer what
+this bug depends on.
+
+**A canvas the UA declines to restore is replaced, not repaired.** There is no API that forces a lost 2D
+context back, so after a grace period on resume the hook bumps a `canvasEpoch`, which is the `<canvas>`'s
+React `key` and a dep of the chart-creation effect. The element is discarded and the chart rebuilt onto a
+fresh backing store. It is the heavy option and deliberately last.
+
+The fit loops in both chart hooks now decline to run at all while the context is lost, so nothing measures
+through a dead context in the window before recovery.
+
+**The whole of this is reasoned from the symptom, not from an observed device.** Nobody has watched a real
+Android PWA lose a context here — the diagnosis is inferred from the broken-image glyph being the spec'd
+rendering for a lost canvas, and the fix went out instrumented specifically so that inference can be checked.
+Three GA events carry it: `canvas_context_lost`, `canvas_context_restored` (`recovered_by: "browser"`), and
+`canvas_context_rebuilt` (`detected_by: "event" | "probe"`). What they are meant to settle:
+
+- **No `canvas_context_lost` at all, while the bug still reproduces** → the diagnosis is wrong, the context is
+  not being lost, and this whole section is treating the wrong thing.
+- **`restored` events with no `rebuilt` events** → the browser always restores on its own, and the remount
+  path is dead weight that can be deleted. This is the outcome to hope for.
+- **`rebuilt` with `detected_by: "probe"`** → `contextlost` never fired and only `isContextLost()` caught it,
+  so the event-driven half is not doing the work on that device.
+- **`rebuilt` events in bulk** → the grace period is too short and is pre-empting real restores.
+
+`RESTORE_GRACE_MS` is likewise a guess (1000ms), erring long on purpose: the user is already looking at a
+broken chart, so waiting costs nothing, while rebuilding early throws away a restore that was on its way.
+Tighten it once the events say what the real latency is.
 
 ### career-radar-emoji-breakpoint
 

@@ -79,10 +79,15 @@ export function useChartFrameFit(frameRef, fit) {
       ro.observe(frameRef.current);
     }
 
-    // Repaint on resume from background: mobile browsers discard canvas backing stores under memory
-    // pressure, which empties the canvas while leaving its dimensions (and so the fit memo, and every
-    // geometry check) looking correct — only a redraw fixes it. Forcing clears the memo, which sends
-    // the fit down its full refreshChart path and repaints.
+    // Repaint on resume from background, for the case where the browser dropped what the canvas was
+    // showing but left the context alive: the bitmap is empty while its dimensions (and so the fit
+    // memo, and every geometry check) still look correct, so nothing schedules another pass. Forcing
+    // clears the memo, which sends the fit down its full refreshChart path and repaints.
+    //
+    // THIS ONLY COVERS HALF THE PROBLEM, and on its own it did not fix the reported bug. When the
+    // context is LOST rather than cleared, the repaint below is a no-op — that case belongs to
+    // hooks/useCanvasContextRecovery.js, which owns the recovery and forces this same refit once the
+    // canvas is live again.
     //
     // rAF-deferred because at event time the frame may not be laid out yet, and relayout declines at
     // width 0. `pageshow` covers iOS, which does not reliably deliver visibilitychange on restore.

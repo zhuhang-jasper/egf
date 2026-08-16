@@ -103,7 +103,7 @@ export function StaticCompetencyChart({
     ],
   );
 
-  const { frameWidth } = useStaticCompetencyChart(canvasRef, frameRef, chartState);
+  const { frameWidth, canvasEpoch } = useStaticCompetencyChart(canvasRef, frameRef, chartState);
 
   // Effect rather than a call during render: this notifies a PARENT, and setting parent state while this
   // component is rendering is the "cannot update a component while rendering a different component" warning.
@@ -130,7 +130,8 @@ export function StaticCompetencyChart({
       )}
     >
       <div className="absolute inset-0 min-h-0 min-w-0">
-        <canvas ref={canvasRef} data-radar-canvas aria-label={ariaLabel ?? title} />
+        {/* `key` IS THE RECOVERY — see the same canvas in ChartSection.jsx. */}
+        <canvas key={canvasEpoch} ref={canvasRef} data-radar-canvas aria-label={ariaLabel ?? title} />
       </div>
     </div>
   );

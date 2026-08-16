@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 
+import { isCanvasContextLost, useCanvasContextRecovery } from "@/hooks/useCanvasContextRecovery";
 import { useChartFrameFit } from "@/hooks/useChartFrameFit";
 
 import { applyChartFrameLayout, getChartFrameEstimatedHeightPx } from "@/chart/fonts";
@@ -69,6 +70,10 @@ export function useStaticCompetencyChart(canvasRef, frameRef, chartState) {
 
   const fit = useCallback((frame, width, cachedHeight) => {
     const chart = chartRef.current;
+    // Sit out while the context is lost — see the same guard in useCompetencyChart.
+    if (chart && isCanvasContextLost(chart.canvas)) {
+      return null;
+    }
     if (cachedHeight != null) {
       // Already converged for this width, and nothing feeding the fit has changed since — re-apply
       // the known height and let the chart take the canvas size in a single render. Applied even with
@@ -92,6 +97,12 @@ export function useStaticCompetencyChart(canvasRef, frameRef, chartState) {
   const relayoutRef = useRef(relayout);
   relayoutRef.current = relayout;
 
+  const repaint = useCallback(() => relayoutRef.current({ force: true }), []);
+  // `purpose` is the only thing distinguishing these instances, and the theory tab renders ~10 of them —
+  // so the hero and the career-track radars all report as "theory". Fine for the question being asked
+  // (does this fire at all, and does the browser restore), not enough to tell one theory chart apart.
+  const canvasEpoch = useCanvasContextRecovery(canvasRef, repaint, chartStateRef.current.purpose ?? "theory");
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) {
@@ -107,7 +118,8 @@ export function useStaticCompetencyChart(canvasRef, frameRef, chartState) {
         if (chartRef.current !== chart) {
           return;
         }
-        relayoutRef.current();
+        // Forced past the first epoch — see the same call in useCompetencyChart.
+        relayoutRef.current(canvasEpoch > 0 ? { force: true } : undefined);
       });
     });
 
@@ -115,7 +127,7 @@ export function useStaticCompetencyChart(canvasRef, frameRef, chartState) {
       chart.destroy();
       chartRef.current = null;
     };
-  }, [canvasRef]);
+  }, [canvasRef, canvasEpoch]);
 
   useEffect(() => {
     const chart = chartRef.current;
@@ -155,5 +167,5 @@ export function useStaticCompetencyChart(canvasRef, frameRef, chartState) {
     }
   }, [geometryKey, relayout]);
 
-  return { chartRef, relayout, frameWidth };
+  return { chartRef, relayout, frameWidth, canvasEpoch };
 }
