@@ -11,7 +11,7 @@ import { Toaster } from "@/components/ui/Toaster";
 import { getPersistedActiveTab, useTabScrollMemory } from "@/hooks/useTabScrollMemory";
 import { useTheoryUpdates } from "@/hooks/useTheoryUpdates";
 
-import { FE_UI, IS_ADMIN, SITE_COPY } from "@/constants";
+import { FE_UI, FRAMEWORK_UPDATED, FRAMEWORK_VERSION, IS_ADMIN, SITE_COPY } from "@/constants";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
 import { cleanTheoryDeepLinkParams, getTabFromUrl, parseTheoryDeepLink, syncTabInUrl } from "@/utils/theory-url";
@@ -359,11 +359,13 @@ export default function HomePage() {
             crisp) puts a second separator 56px from the first. See docs/DECISIONS.md#footer-has-no-chrome.
 
             `data-print-running` makes this a running footer on paper, repeated at the foot of every sheet. The
-            print form differs from the screen one in both directions — it names the framework and drops the
-            version — because paper travels without the header, tab bar and URL that identify this on screen.
+            print form differs from the screen one in both directions, because paper travels without the header,
+            tab bar and URL that identify this on screen: it names the framework and stamps its version and date,
+            while dropping the app build number (see the two spans below). Both forms read ownership first
+            (copyright, licence) and identity second, so only the tail of the line swaps.
             See docs/DECISIONS.md#print-running-footer and the `@page` rules in index.css. */}
         <footer data-print-running className="mt-auto px-3 py-2 text-center text-[11px] text-slate-500">
-          © 2026 Jasper Loo Zhu Hang · <span className="hidden print:inline">{SITE_COPY.title} · </span>
+          © 2026 Jasper Loo Zhu Hang ·{" "}
           <a
             href="https://creativecommons.org/licenses/by-nc/4.0/"
             target="_blank"
@@ -376,6 +378,14 @@ export default function HomePage() {
           <span className="print:hidden">
             {" "}
             · <span className="tabular-nums">v{appVersion}</span>
+          </span>
+          {/* Its PRINT counterpart, carrying a DIFFERENT number: the app build above means nothing on paper,
+              while the framework's version and date are what a printout gets asked for months later.
+              Name and stamp are one span because they are one thought — which document this is, and which
+              revision of it — held apart from the ownership half the line opens with. */}
+          <span className="hidden print:inline">
+            {" "}
+            · {SITE_COPY.title} · <span className="tabular-nums">v{FRAMEWORK_VERSION}</span> · {FRAMEWORK_UPDATED}
           </span>
         </footer>
       </main>

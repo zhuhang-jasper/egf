@@ -132,6 +132,15 @@ export const SECTION_LATEST_VERSION = (() => {
 export const FRAMEWORK_VERSION = CHANGELOG[0].version;
 
 /**
+ * The date of the newest changelog entry, derived for the same reason as {@link FRAMEWORK_VERSION}.
+ *
+ * Display only, and print-only at that: it is NOT a key, and nothing compares or parses it. Screen surfaces
+ * reach the date through ChangelogModal, so only the printed hero plate renders it (see TheoryContent).
+ * Free-form, matching the `date` field it reads.
+ */
+export const FRAMEWORK_UPDATED = CHANGELOG[0].date;
+
+/**
  * Ordering key for a changelog version: its POSITION in {@link CHANGELOG}, where 0 is newest, so a SMALLER
  * rank means newer. Indexed rather than parsed, which cannot misorder "4.10" vs "4.2".
  *
