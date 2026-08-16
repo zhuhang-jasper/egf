@@ -55,14 +55,28 @@ export const UNDO_TOAST_KEY = "undo";
 export const CHART_EXPORT_TOAST_KEY = "chart-export"; // Copy + Share on the chart
 export const PROFILE_IO_TOAST_KEY = "profile-io"; // Export / Import failures in the profiles menu
 
-// How long a toast that only reports something stays up — long enough to read, then gone.
-const DEFAULT_TOAST_DURATION = 2600;
+/**
+ * THE THREE TOAST WINDOWS. Every toast in the app takes one of these — there are no other durations, and
+ * a call site should reach for {@link TOAST_DURATION} rather than inventing a number, so the set stays
+ * three and the countdown rings all read at comparable speeds.
+ *
+ * The split is by what the toast ASKS OF THE READER, not by severity or by who raised it:
+ *   short  — a few words confirming something already done ("Copied to clipboard"). Recognised, not read.
+ *   long   — a full sentence that has to be read to be useful, with nothing to act on.
+ *   undo   — carries an action. Long enough to notice the toast AND decide, which is a slower thing again.
+ *
+ * `undo` is applied automatically to any toast with an `action` (see showToast), so that bucket is never
+ * chosen by hand. The dismiss button's countdown ring animates over exactly the chosen window (see
+ * components/ui/Toaster.jsx).
+ */
+export const TOAST_DURATION = {
+  short: 2000,
+  long: 4000,
+  undo: 8000,
+};
 
-// How long a toast carrying an action stays up. Longer than the default — acting on it is a
-// decision, and the user needs time to notice the toast and react. Applied automatically to any
-// toast with an `action` (see showToast). The dismiss button's countdown ring animates over
-// exactly this window (see src/components/ui/Toaster.jsx).
-const UNDO_TOAST_DURATION = 8000;
+const DEFAULT_TOAST_DURATION = TOAST_DURATION.short;
+const UNDO_TOAST_DURATION = TOAST_DURATION.undo;
 
 // Accumulator for the batched single-delete Undo toast, reset when that toast is gone or replaced.
 // `deleteBatchLive` is what the coalescing check keys off, since the shared key no longer implies a
@@ -118,8 +132,14 @@ export const useAppStore = create((set, get) => ({
    * Show a transient toast. `variant` is "default" (dark neutral; "dark" is an alias) | "success" |
    * "error". `action`, if
    * given, is `{ label, onAction }` and renders a button (e.g. "Undo") that fires `onAction` then
-   * dismisses — and lengthens the toast to {@link UNDO_TOAST_DURATION}, so an actionable toast never
+   * dismisses — and lengthens the toast to {@link TOAST_DURATION}.undo, so an actionable toast never
    * has to ask for that. `duration` ms until auto-dismiss (0 = sticky), overriding the above.
+   *
+   * LEAVE `duration` UNSET unless the message is a full sentence that has to be READ rather than
+   * recognised — the default already covers a short confirmation, and an action already covers itself.
+   * When you do pass one, pass a {@link TOAST_DURATION} member (`long` is the case this exists for) so
+   * the app keeps exactly three windows. Note the buckets go by what the message asks of the reader,
+   * NOT by variant: a brief error is still short.
    *
    * `key` coalesces: a live toast with the same key has its content replaced and countdown reset in
    * place, rather than a second toast stacking (see {@link UNDO_TOAST_KEY}).

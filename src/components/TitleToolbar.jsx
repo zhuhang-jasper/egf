@@ -12,7 +12,7 @@ import { Tooltip } from "@/components/ui/Tooltip";
 
 import { useTouchPrimary } from "@/hooks/useTouchPrimary";
 
-import { selectHasUnsavedWork, selectProfileSaveStatus, UNDO_TOAST_KEY, useAppStore } from "@/store/useAppStore";
+import { selectHasUnsavedWork, selectProfileSaveStatus, TOAST_DURATION, UNDO_TOAST_KEY, useAppStore } from "@/store/useAppStore";
 
 import { LAYER } from "@/constants";
 import { cn } from "@/utils";
@@ -212,9 +212,9 @@ export function TitleToolbar() {
     toggleLevelKeyboardInputEnabled();
     showToast(useAppStore.getState().levelKeyboardInputEnabled ? "Tap a number to type it in" : "Use the − and + buttons to change a number", {
       key: "keypad-toggle",
-      // Longer than the default: this one teaches rather than confirms, so it has to be read, not
-      // just noticed. Still short of an Undo — there's nothing to act on before it goes.
-      duration: 4500,
+      // `long` because this one teaches rather than confirms: it is a full sentence that has to be read,
+      // not a couple of words to be recognised. Still short of an Undo — there's nothing to act on.
+      duration: TOAST_DURATION.long,
     });
   };
 
