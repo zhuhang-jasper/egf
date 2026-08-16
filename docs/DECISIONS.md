@@ -421,7 +421,7 @@ There are two failure modes and the repaint only addresses the second:
    ran the fit at the one moment it could not be trusted.
 2. **Context restored, bitmap blank.** The browser restores the context on its own schedule and fires
    `contextrestored` with an empty bitmap. Chart.js does not listen for that event, so the chart stays gone
-   even though the canvas is healthy. The forced refit *does* fix this one — but only if it happens to run
+   even though the canvas is healthy. The forced refit _does_ fix this one — but only if it happens to run
    after the restore, and being a single rAF off `visibilitychange`, it usually runs before.
 
 The two symptoms are those two states: glyph = still lost, empty box = restored and never redrawn.
@@ -539,24 +539,23 @@ centre the ink, for the reasons below, and it was withdrawn for two concrete fai
 **EVERY VERTICAL TERM IN THE PILL MUST BE A WHOLE PIXEL, and there are three of them.** This took three passes to
 get right because each pass fixed one and left another fractional, and the symptom is identical either way:
 
-| Term | Fractional form | Fix |
-| --- | --- | --- |
-| padding-y | `py-[0.45em]` → 4.5px at font 10 | `py-[2px]` |
-| pill height | `round(getChartTitleSizePx(w) * 0.86)` — rounding a *deliberately* fractional input, so it stepped between integers as the chart resized | removed; height falls out of padding |
-| **line box** | `line-height: 1.4` → 15.4px at font 11, and `align-items: center` halves the remainder | `line-height: round(1.4em, 1px)` |
+| Term         | Fractional form                                                                                                                          | Fix                                  |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| padding-y    | `py-[0.45em]` → 4.5px at font 10                                                                                                         | `py-[2px]`                           |
+| pill height  | `round(getChartTitleSizePx(w) * 0.86)` — rounding a _deliberately_ fractional input, so it stepped between integers as the chart resized | removed; height falls out of padding |
+| **line box** | `line-height: 1.4` → 15.4px at font 11, and `align-items: center` halves the remainder                                                   | `line-height: round(1.4em, 1px)`     |
 
 The line box was the last and the most misleading. **The pill held perfectly still and only the glyphs moved**,
-which sends you looking at the box — twice, in this case. The tell to ask for first: *does the pill move, or only
-the text inside it?* If only the text, the fraction is in the line box or the centring, never in the box.
+which sends you looking at the box — twice, in this case. The tell to ask for first: _does the pill move, or only
+the text inside it?_ If only the text, the fraction is in the line box or the centring, never in the box.
 
 `sm` never showed the line-box symptom because `10 * 1.4` is exactly 14. `md`'s font comes from
 `getChartSecondaryLabelSizePx`, which is integral but lands on 11/12/13/14 — every one of which gives a
-fractional `1.4em`. An integer font size does **not** imply an integer line box.
-2. **On the chart title it clipped the descenders.** The same rule was applied to `#competency-chart-heading`,
-   where `trim-both cap alphabetic` puts the block's bottom edge on the alphabetic baseline. The `<h2>` also
-   carries `overflow-hidden` for `useMiddleEllipsis`, so the tails of p/g/y/J were cut off. The comment on that
-   rule asserted "height is unaffected", which was precisely the error: the trim resizes the block's own box, and
-   an overflow-hidden box is where that becomes visible.
+fractional `1.4em`. An integer font size does **not** imply an integer line box. 2. **On the chart title it clipped the descenders.** The same rule was applied to `#competency-chart-heading`,
+where `trim-both cap alphabetic` puts the block's bottom edge on the alphabetic baseline. The `<h2>` also
+carries `overflow-hidden` for `useMiddleEllipsis`, so the tails of p/g/y/J were cut off. The comment on that
+rule asserted "height is unaffected", which was precisely the error: the trim resizes the block's own box, and
+an overflow-hidden box is where that becomes visible.
 
 The lesson generalises past this property: **do not resize the box of an element that something else measures or
 clips.** If the centring needs correcting again, `trim-start cap` leaves the descenders inside, or move the pill
@@ -1145,7 +1144,7 @@ would fit the radar to a box it is not in.
 
 **The inherited frame HEIGHT has to be cleared too**, and this is the subtler half. `applyChartFrameLayout`
 writes the frame's height as an inline px value, so the clone is born carrying the viewport's height. The
-converge loop measures label extents *inside the box it is given* and settles near whatever it starts from, so
+converge loop measures label extents _inside the box it is given_ and settles near whatever it starts from, so
 a phone's ~330px came out ~330px even at a 526px width. The radar is height-limited, not width-limited, so the
 visible result was a small radar with its label ring pulled in, floating in white at the correct overall
 width — width and chrome right, radar wrong. Calling `applyChartFrameLayout(frame, width, null)` before the

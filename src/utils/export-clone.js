@@ -1,11 +1,6 @@
 import { chartState, fitFrameToChart } from "@/hooks/useCompetencyChart";
 
-import {
-  applyChartFrameLayout,
-  getChartSecondaryLabelSizePx,
-  getChartTitleSizePx,
-  getClusterLegendSwatchPx,
-} from "@/chart/fonts";
+import { applyChartFrameLayout, getChartSecondaryLabelSizePx, getChartTitleSizePx, getClusterLegendSwatchPx } from "@/chart/fonts";
 import { applyChartState, createCompetencyChart } from "@/chart/instance";
 
 /**

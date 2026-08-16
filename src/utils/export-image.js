@@ -20,12 +20,7 @@ import interLatinNormalUrl from "@fontsource-variable/inter/files/inter-latin-op
 // It is listed here because NOTHING ON SCREEN USES IT: with no DOM node referencing it, the face is never
 // triggered, and a canvas fillText against an unloaded face silently falls back — which for the title means
 // landing on the very unpinned instance the face exists to avoid, invisibly.
-const FONT_SPECS = [
-  '700 26px "Inter Variable"',
-  '800 26px "Inter Variable"',
-  'italic 700 20px "Inter Variable"',
-  '800 21px "Inter Display Canvas"',
-];
+const FONT_SPECS = ['700 26px "Inter Variable"', '800 26px "Inter Variable"', 'italic 700 20px "Inter Variable"', '800 21px "Inter Display Canvas"'];
 
 // snapdom's auto `embedFonts` discovery + document.fonts.load timing is unreliable on Android
 // Chrome for VARIABLE fonts: fonts.ready can resolve before a given weight's face is committed, so
