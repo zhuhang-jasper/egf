@@ -72,8 +72,13 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
               )}
             >
               {/* Badges anchor to this span, not the button, so they sit on the glyph rather than the segment.
-                  Their offsets are measured against `size-6`; re-judge them if it changes. */}
-              <span className="relative shrink-0">
+                  Their offsets are measured against `size-6`; re-judge them if it changes.
+
+                  Sized `size-6` and made a block-level flex box rather than left inline: as an inline span its
+                  box came off the text baseline and inherited the button's fractional width from `flex-1`, so
+                  the badges' containing block started mid-device-pixel and the lock rasterized 1px off,
+                  flipping direction on resize. A fixed 24px box gives them a whole-pixel origin to sit on. */}
+              <span className="relative flex size-6 shrink-0 items-center justify-center">
                 <Icon className={cn("size-6 shrink-0", selected ? "text-black" : "text-slate-400")} aria-hidden />
                 {showUnseenDot ? (
                   // No ring: it needs both a width and a colour, and every past colour became a halo on the
