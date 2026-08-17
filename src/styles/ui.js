@@ -126,7 +126,13 @@ export const FE_UI = {
        Larger than exportImagePaddingPx, and a SEPARATE knob rather than a duplicate of it: this one separates two
        pieces of content, that one is the image's edge. Retune either without touching the other. */
     exportImageAttributionGapPx: 18,
-    exportImageAttributionColor: "#94a3b8",
+    /* slate-500, THE ONE CREDIT GREY, shared with the app footer (screen and print, pages/HomePage.jsx) and the
+       poster's footer. Every credit line in the app reads at this weight, so it is a single decision rather than
+       a per-surface taste call.
+       Was slate-400, which looked right beside a small chart but sat at ~2.8:1 on white — under WCAG AA, and
+       these lines carry the CC BY-NC attribution on artifacts that get printed and projected. slate-500 is
+       ~4.8:1 and still clearly secondary to the slate-600/700 content around it. */
+    exportImageAttributionColor: "#64748b",
     /* Weight the copied image's TITLE is drawn at, as an OFFSET from whatever the <h2> itself computes
        (`font-extrabold` = 800, so -100 draws it at 700). A delta rather than an absolute so restyling the
        heading carries through instead of being silently overridden here. 0 disables the correction.

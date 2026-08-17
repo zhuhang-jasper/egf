@@ -175,13 +175,16 @@ const downloadPosterPng = (node, height) => downloadSharePng(node, CANVAS_W, hei
  *
  * `spaced` is false only when every band is off, leaving the credit alone on the paper with the top padding as
  * its whole margin.
+ *
+ * SLATE-500 AND WEIGHT 400, the one credit grey and the one credit weight, shared by every footer in the app:
+ * this one, the app footer's screen and print forms (pages/HomePage.jsx), and the chart export's painted band
+ * (exportImageAttributionColor in styles/ui.js and measureAttribution in utils/copy-chart-image.js, where the
+ * reasoning lives). No `font-medium` here for that reason. Tailwind's class rather than the constant because this
+ * footer is ordinary DOM — but if the grey changes, it changes in both.
  */
 function PosterCredit({ spaced }) {
   return (
-    <p
-      className={`shrink-0 text-center text-[19px] font-medium ${spaced ? "mt-10" : ""}`}
-      style={{ color: FE_UI.chart.exportImageAttributionColor }}
-    >
+    <p className={`shrink-0 text-center text-[19px] text-slate-500 ${spaced ? "mt-10" : ""}`}>
       {SITE_COPY.share.posterAttribution}
     </p>
   );

@@ -119,7 +119,16 @@ function measureAttribution(ctx, { hidden, chartWidthPx, scaleY }) {
   if (hidden || !text) {
     return null;
   }
-  const font = `500 ${getAttributionFontPx(chartWidthPx) * scaleY}px Inter, system-ui, sans-serif`;
+  // FAMILY IS "Inter Variable", the name index.css actually declares. It read plain `Inter` for a long time —
+  // a family that does not exist here, so canvas fell silently through to system-ui (SF Pro on macOS) and the
+  // credit was the one piece of the export not set in Inter. Nothing looked broken, which is why it survived:
+  // SF Pro at this size merely reads a little heavier and wider, and it made weight changes here look inert.
+  //
+  // Weight 500, matching the poster's footer and the app's, both of which inherit `font-medium` from body — every
+  // credit line reads at one weight and one grey (see exportImageAttributionColor in styles/ui.js). Canvas text
+  // rasterizes thinner than the DOM's (the reason the TITLE carries a weight delta), so this is the number to
+  // retune if the credit reads faint in the PNG; the on-screen footers should not follow it.
+  const font = `500 ${getAttributionFontPx(chartWidthPx) * scaleY}px "Inter Variable", system-ui, sans-serif`;
   ctx.save();
   ctx.font = font;
   // Both matter to the measure: `actualBoundingBox*` is relative to textBaseline, and renderExportDom leaves the
