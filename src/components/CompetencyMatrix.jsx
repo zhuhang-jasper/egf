@@ -165,7 +165,7 @@ function PillarMatrixCard({
          has a width — see CARD_TINTED. */
       style={{
         "--card-surface": surfaceBg,
-        "--card-surface-hover": `color-mix(in srgb, ${color} 12%, ${surfaceBg})`,
+        "--card-surface-hover": `color-mix(in srgb, ${color} 6%, ${surfaceBg})`,
         "borderLeftColor": color,
       }}
     >
