@@ -6,6 +6,7 @@ import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 import { CLUSTERS, FE_UI, getClusterSurfaceBg } from "@/constants";
 import { CAREER_TRACK_PROFILES, FOUNDATIONAL_PHASE, JUNIOR_TO_SENIOR, SENIOR_FORK, sortKeyFocusPillars } from "@/constants/theory-data";
+import { CARD_SHADOW } from "@/styles/card";
 import { DOC_SECTION, DOC_TEXT } from "@/styles/doc-typography";
 import { cn } from "@/utils";
 
@@ -36,7 +37,10 @@ const TRACK_CHART_EMOJI_QUERY = "(min-width: 640px) and (max-width: 819px)";
  */
 const FOUNDATION_GRID_QUERY = "(min-width: 640px)";
 
-const cardClass = "rounded-xl border border-white/70 shadow-md shadow-slate-200/40";
+// Matches CARD_TINTED's edge treatment: a 3px left bezel, nothing on the other three sides (they used to carry
+// `border-white/70`, which haloed once the page took its own tint — see CARD_TINTED). The bezel colour is per
+// track rather than per cluster, so these two cards set it inline themselves instead of via clusterCardStyle.
+const cardClass = `rounded-xl border-y-0 border-r-0 border-l-[3px] ${CARD_SHADOW}`;
 const levelBadgeClass = cn(
   "inline-flex min-w-[1.5rem] shrink-0 items-center justify-center rounded-md px-1.5 py-0.5 text-white",
   DOC_TEXT.badgeMicro,
@@ -227,7 +231,7 @@ function FoundationalPhase({ isVisible, emojiSpokes, gridLayout }) {
       // `print:overflow-visible` so this card can be split across a page break — a clipped box is
       // monolithic in paged media and gets shunted whole to the next sheet (leaving a blank gap behind)
       // or allowed to overlap what follows. See the fuller note in CompetencyMatrix.
-      className={cn(cardClass, "overflow-hidden border-l-[3px] p-3 print:overflow-visible")}
+      className={cn(cardClass, "overflow-hidden p-3 print:overflow-visible")}
       style={{ borderLeftColor: style.accent, backgroundColor: style.chipBg }}
     >
       {/* `gap`, not `space-y`: gap only applies BETWEEN rendered flex items, and an ABSOLUTELY POSITIONED
@@ -315,7 +319,7 @@ function CareerTrackCard({ track, number, emojiSpokes }) {
       // paged-media clipping reason documented in CompetencyMatrix.
       className={cn(
         cardClass,
-        "flex flex-col gap-3 overflow-hidden border-l-[3px] p-3 sm:row-span-5 sm:grid sm:grid-rows-subgrid print:overflow-visible print:break-inside-avoid",
+        "flex flex-col gap-3 overflow-hidden p-3 sm:row-span-5 sm:grid sm:grid-rows-subgrid print:overflow-visible print:break-inside-avoid",
       )}
       style={{ borderLeftColor: style.accent, backgroundColor: style.chipBg }}
     >

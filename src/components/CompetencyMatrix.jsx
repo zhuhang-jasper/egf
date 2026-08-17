@@ -7,6 +7,7 @@ import { ShareLinkButton } from "@/components/ShareLinkButton";
 
 import { getClusterSurfaceBg, getClusterSurfaceHoverBg } from "@/constants";
 import { COMPETENCY_MATRIX, SENIORITY_LEVEL_DEFINITIONS, SKILL_TIERS } from "@/constants/theory-data";
+import { CARD_TINTED } from "@/styles/card";
 import { DOC_TEXT, WHATS_NEW_HIGHLIGHT_CLASS } from "@/styles/doc-typography";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
@@ -155,10 +156,14 @@ function PillarMatrixCard({
          `background-color` would beat any `hover:bg-*` utility, so the value that varies is the *variable*
          and `background-color` itself stays in CSS where the hover variant can win. */
       className={cn(
-        "overflow-hidden rounded-xl border border-white/70 border-l-[3px] shadow-md shadow-slate-200/40 print:overflow-visible",
+        CARD_TINTED,
+        "overflow-hidden print:overflow-visible",
         "group/card bg-(--card-surface) transition-colors has-[[data-matrix-toggle]:hover]:bg-(--card-surface-hover)",
         printBreakBefore && "print:break-before-page",
       )}
+      /* The two surfaces stay custom properties (the hover variant below switches between them); the bezel is a
+         plain `borderLeftColor` because it does not change on hover, so it needs no variable. Only the LEFT side
+         has a width — see CARD_TINTED. */
       style={{
         "--card-surface": getClusterSurfaceBg(color),
         "--card-surface-hover": getClusterSurfaceHoverBg(color),

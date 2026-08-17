@@ -28,6 +28,7 @@ import {
   SKILL_TIERS_INTRO,
   THEORY_SECTION_COPY,
 } from "@/constants/theory-data";
+import { CARD_PLAIN } from "@/styles/card";
 import { DOC_SECTION, DOC_TEXT } from "@/styles/doc-typography";
 import { TOOLBAR_SURFACE } from "@/styles/toolbar";
 import { cn } from "@/utils";
@@ -43,7 +44,7 @@ import {
   THEORY_SECTIONS,
 } from "@/utils/theory-url";
 
-const cardClass = "rounded-xl border border-slate-300 bg-white shadow-md shadow-slate-200/40";
+const cardClass = CARD_PLAIN;
 
 /**
  * Whether the OS share sheet can be opened at all, computed once at module load.
@@ -407,7 +408,7 @@ function TheoryContent({
           column `gap-2` plus its own `mb-2` until that was collapsed into this one class, so the two tabs now
           state the spacing identically instead of only agreeing on the total. Keep them in step, or the page
           appears to shift when you switch tabs. */}
-      <div className="mb-4 flex items-center justify-between gap-2 print:hidden">
+      <div className="mb-3 flex items-center justify-between gap-2 print:hidden">
         {/* `gap-2` MATCHES THE TOOL TAB'S EXPORT GROUP (see ChartSection's ExportMenu), which is the same row of
             same-sized pills at the same place in the other tab. This was `gap-1.5` against that group's `gap-2` —
             a 2px difference nobody chose, but visible as the buttons shifting when you flip tabs, which is the
@@ -560,7 +561,24 @@ function TheoryContent({
             NO BOTTOM MARGIN: this is a sibling of the four sections now, so the parent column's `gap-6`
             sets the distance to section I, the same distance that separates every other pair. It used to
             carry `mb-4` because it lived in a nested `gap-2` column with section I inside it. */}
-        <div className="flex flex-col print:mt-[18vh] gap-3">
+        {/* A CARD ON SCREEN, THE COVER PAGE ON PAPER. On screen this trio is a hero plate and takes the same
+            `CARD_PLAIN` surface as the tool tab's chart card, so both tabs open with a titled radar on a white
+            card over the tinted page. On paper it is the printed document's cover — a full sheet holding three
+            elements — where a bordered box around them would read as furniture rather than a cover, so every
+            part of the card is stripped: `print:border-0 print:bg-transparent print:p-0 print:shadow-none
+            print:rounded-none`.
+
+            `print:bg-transparent` matters as much as the border: the cover inherits the sheet's white, and a
+            painted card background would print as a subtly different white block behind the title.
+
+            The `print:mt-[18vh]` cover reserve stays on THIS element (it moved out here with the padding), so
+            the sheet's top margin is still declared in one place. */}
+        <div
+          className={cn(
+            CARD_PLAIN,
+            "flex flex-col gap-3 p-4 print:mt-[18vh] print:rounded-none print:border-0 print:bg-transparent print:p-0 print:shadow-none",
+          )}
+        >
           {/* NOT A HEADING ELEMENT, and `aria-hidden`: the page's <h1> is the lockup in the sticky header
               (see AppShellBrandMark), which announces this exact string and is present on both tabs. A
               second h1 here would compete with it, and an h2 would sit above section I's own h2 for no

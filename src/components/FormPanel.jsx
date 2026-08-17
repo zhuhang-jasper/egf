@@ -8,7 +8,10 @@ import { getPillarGroups } from "@/constants";
 // toolbar's open gear menu. See `LAYER` in constants/layers.js.
 export function FormPanel({ onOpenPillarInMatrix }) {
   return (
-    <aside className="relative w-full min-w-0 border-t border-border pt-3 mt-3">
+    // `border-slate-300`, not `border-border`: that token is a neutral 90% grey, which was a visible hairline on
+    // a white page and is nearly the page's own value now that the base carries a tint. A divider has to be a
+    // step DARKER than the surface it divides, so it moves with the base rather than staying an absolute grey.
+    <aside className="relative w-full min-w-0 border-t border-slate-300 pt-3 mt-3">
       {/* <h2 className="mb-2 text-sm font-semibold text-slate-900">Build Your Profile</h2> */}
       <TitleToolbar />
       <div className="mt-2 flex flex-col gap-2">

@@ -5,7 +5,9 @@ import { Tooltip } from "@/components/ui/Tooltip";
 
 import { useAppStore } from "@/store/useAppStore";
 
-import { CLUSTERS, getClusterSurfaceBg } from "@/constants";
+import { CLUSTERS } from "@/constants";
+import { CARD_TINTED, clusterCardStyle } from "@/styles/card";
+import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
 
 export function PillarCluster({ group, onOpenPillarInMatrix }) {
@@ -18,12 +20,9 @@ export function PillarCluster({ group, onOpenPillarInMatrix }) {
       // `print:break-inside-avoid` keeps a cluster's pillars together on one sheet — a cluster is at most
       // four rows, so it either fits or moves whole. `print:overflow-visible` for the paged-media
       // clipping reason documented in CompetencyMatrix.
-      className="relative w-full overflow-hidden rounded-xl border border-white/70 border-l-[3px] px-4 py-3 shadow-sm shadow-slate-200/40 print:overflow-visible print:break-inside-avoid"
+      className={cn(CARD_TINTED, "relative w-full overflow-hidden px-4 py-3 print:overflow-visible print:break-inside-avoid")}
       data-cluster={group.id}
-      style={{
-        backgroundColor: getClusterSurfaceBg(cluster.color),
-        borderLeftColor: cluster.textColor,
-      }}
+      style={clusterCardStyle(cluster.color, cluster.textColor)}
     >
       <div
         className="mb-2 text-[10px] sm:text-[11px] md:text-[12px] font-semibold uppercase leading-tight tracking-[0.06em]"

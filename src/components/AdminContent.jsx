@@ -1,5 +1,7 @@
 import { Image, Share2 } from "lucide-react";
 
+import { CARD_PLAIN } from "@/styles/card";
+import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
 import { hrefForRoute } from "@/utils/route";
 
@@ -40,7 +42,10 @@ export function AdminContent() {
             // Records the ENTRY POINT, which the destination's own page_view cannot: those routes are also
             // reachable by typing the URL.
             onClick={() => track("admin_card_clicked", { route })}
-            className="group row-span-3 grid select-none grid-rows-subgrid justify-items-center gap-2 rounded-xl border border-slate-300 bg-white p-6 text-center shadow-md shadow-slate-200/40 transition-colors hover:border-slate-400 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+            className={cn(
+              CARD_PLAIN,
+              "group row-span-3 grid select-none grid-rows-subgrid justify-items-center gap-2 p-6 text-center transition-colors hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2",
+            )}
           >
             <Icon className="size-8 shrink-0 text-slate-500 transition-colors group-hover:text-slate-900" aria-hidden />
             <span className="text-base font-bold text-slate-900">{label}</span>

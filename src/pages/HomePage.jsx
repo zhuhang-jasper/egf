@@ -275,10 +275,10 @@ export default function HomePage() {
   // shape on tab switch. `flex-1`, not a viewport height, keeps viewport units out of this box — see
   // docs/DECISIONS.md#tab-switch-scrollbar-jump for why that matters.
   return (
-    /* `bg-slate-100` matches `body` in index.css, and the pairing is the point: this wrapper paints the surround
-       beside the content measure, and `body`'s identical value is what an over-pull past the document reveals.
-       Change them together or an over-pull opens a gap that reads as a hole behind the chrome. */
-    <div className="flex min-h-dvh flex-col bg-slate-100 print:block print:min-h-0 print:bg-white print:p-0">
+    /* `bg-page-base` matches `body` in index.css, and the pairing is the point: this wrapper paints the
+       surround beside the content measure, and `body`'s identical value is what an over-pull past the document
+       reveals. Both now read ONE token, so they cannot drift the way two literals could. */
+    <div className="flex min-h-dvh flex-col bg-page-base print:block print:min-h-0 print:bg-white print:p-0">
       {/* The bottom nav's height is reserved with padding alone, deliberately NOT a matching
           `min-h-[calc(100dvh - …)]`: arithmetic on a viewport unit in the box the fixed nav's `bottom: 0` anchor
           is compared against makes the bar paint high for a frame on every tab switch. Bare `min-h-dvh` is safe;
@@ -289,7 +289,10 @@ export default function HomePage() {
         /* `relative` anchors a leaving tab panel, which goes `absolute` for the frames it lingers so it does not
            stack below the incoming one. `absolute` alone does not keep it out of the layout, which is why the
            panel is also `h-0 overflow-hidden` (see TabPanel). No z-index, so no stacking context. */
-        className="relative flex w-full flex-1 flex-col bg-white pb-[calc(3.5rem+env(safe-area-inset-bottom))] print:max-w-none print:p-0 print:pb-0 print:shadow-none"
+        /* `bg-page-base`, THE SAME TOKEN AS THE WRAPPER AND `body` — not a lighter surface. The cards are what
+           lift off the page here; this column is the page. It carried the light surface for one pass and the
+           result was the chrome reading as a dark frame around a pale middle. */
+        className="relative flex w-full flex-1 flex-col bg-page-base pb-[calc(3.5rem+env(safe-area-inset-bottom))] print:max-w-none print:p-0 print:pb-0 print:shadow-none"
         style={{ minWidth: FE_UI.page.minWidthPx }}
       >
         {/* The sticky app header: brand lockup plus install pill, full-width and propless. Neither navigation

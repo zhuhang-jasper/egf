@@ -27,6 +27,7 @@ import {
   LAYER,
   SITE_COPY,
 } from "@/constants";
+import { CARD_PLAIN } from "@/styles/card";
 import { TOOLBAR_ICON_SURFACE, TOOLBAR_SURFACE } from "@/styles/toolbar";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
@@ -392,7 +393,7 @@ export function ChartSection({ isVisible }) {
           this row a stacking context and cap those menus inside it, so the gear's menu lost to the form panel
           below (`LAYER` in constants/layers.js has the full rule). Bare `relative` still paints above the
           static chart. */}
-      <div className="relative mb-4 flex w-full min-w-0 items-center justify-between gap-2 print:hidden">
+      <div className="relative mb-3 flex w-full min-w-0 items-center justify-between gap-2 print:hidden">
         <ExportMenu onCopy={handleCopy} onShare={handleShare} />
         <ChartDisplayMenu />
       </div>
@@ -402,9 +403,9 @@ export function ChartSection({ isVisible }) {
           cropped card frame into every copied image. The surface is this element's; the export root stays the
           bare content column it was.
 
-          Same surface as the theory tab's plain cards (TheoryContent's `cardClass`): `rounded-xl`,
-          `border-slate-300`, white, `shadow-md shadow-slate-200/40`. No left bezel — the bezel means "member of
-          a colour-coded cluster" (see PillarGrid/CompetencyMatrix) and the chart belongs to no cluster.
+          `CARD_PLAIN` — the same token the theory tab's cards take, so the two tabs' surfaces cannot drift.
+          No left bezel: that marks membership of a colour-coded cluster (see PillarGrid/CompetencyMatrix) and
+          the chart belongs to no cluster, which is why this is the PLAIN token and not the tinted one.
 
           `overflow-hidden` keeps the radar's corners inside the radius; `print:*` strips the card on paper,
           where the chart is the document and a box around it is furniture.
@@ -414,7 +415,12 @@ export function ChartSection({ isVisible }) {
           (574) and `minWidthPx` (374) are both sized to land the frame on 526 and 326. A responsive step would
           make that subtraction change at one breakpoint, so 526 — the number the theory hero radar matches
           itself to — would only be true above `sm`. Change this and you must change both measures with it. */}
-      <div className="w-full min-w-0 self-stretch overflow-hidden rounded-xl border border-slate-300 bg-white p-3 shadow-md shadow-slate-200/40 print:overflow-visible print:rounded-none print:border-0 print:p-0 print:shadow-none">
+      <div
+        className={cn(
+          CARD_PLAIN,
+          "w-full min-w-0 self-stretch overflow-hidden p-3 print:overflow-visible print:rounded-none print:border-0 print:p-0 print:shadow-none",
+        )}
+      >
         <div ref={exportRef} className="relative flex w-full min-w-0 flex-col self-stretch">
           {/* `fontSize` ON THE ROW IS WHAT THE `1.25em` FLOOR RESOLVES AGAINST — see `titleRowMinHeight`. The row
             carries the title's size so the browser can compute the same line box `leading-tight` will produce,

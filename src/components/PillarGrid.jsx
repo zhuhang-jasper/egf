@@ -1,7 +1,7 @@
 import { EmphasizedText } from "@/components/EmphasizedText";
 
-import { getClusterSurfaceBg } from "@/constants";
 import { PILLAR_CLUSTER_GROUPS } from "@/constants/theory-data";
+import { CARD_TINTED, clusterCardStyle } from "@/styles/card";
 import { DOC_TEXT, WHATS_NEW_HIGHLIGHT_CLASS } from "@/styles/doc-typography";
 import { cn } from "@/utils";
 
@@ -16,10 +16,10 @@ function PillarCard({ pillar, clusterLabel, color, textColor, showLatestChanges 
   const { emoji, name } = splitEmoji(pillar.pillar);
   return (
     <article
-      // The 3px left edge is the cluster marker used on every cluster-tinted card in the app — matrix
-      // cards, track cards, the tool form's clusters. These were the only ones without it.
-      className="overflow-hidden rounded-xl border border-white/70 border-l-[3px] p-3 shadow-sm shadow-slate-200/40 xs:row-span-4 xs:grid xs:grid-rows-subgrid gap-2 print:overflow-visible"
-      style={{ backgroundColor: getClusterSurfaceBg(color), borderLeftColor: textColor }}
+      // Surface and left bezel both from CARD_TINTED + clusterCardStyle, the same pair the tool form's cluster
+      // cards and the matrix cards use, so every cluster-tinted card in the app stays one look.
+      className={cn(CARD_TINTED, "overflow-hidden p-3 xs:row-span-4 xs:grid xs:grid-rows-subgrid gap-2 print:overflow-visible")}
+      style={clusterCardStyle(color, textColor)}
     >
       {/* single-col: title left + cluster label right; col: title only */}
       <div className="flex flex-row-reverse items-start justify-between gap-3 xs:block">

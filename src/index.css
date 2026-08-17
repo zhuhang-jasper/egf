@@ -21,6 +21,32 @@
   --color-border: hsl(0 0% 90%);
   --color-input: hsl(0 0% 90%);
   --color-ring: hsl(0 0% 63%);
+  /* THE PAGE BASE — the off-white the whole app sits on, and the value `slate-100` used to be written as four
+     separate literals.
+
+     WHAT MATTERS HERE IS THE DIRECTION, NOT THE HUE. The tint belongs to the BASE and the cards are the light
+     thing on top of it. That is easy to get backwards: an earlier pass tinted only the header and nav and left
+     the content column lighter than them, which made the chrome the darkest thing on screen — a dark frame
+     around a pale middle, the opposite of chrome that recedes. Cards lift off the page; the chrome sits level
+     with it.
+
+     The hue is taste and can move freely. This is slate's own hue (215), a touch deeper than `slate-100` so
+     white cards read as cards. A warm off-white (~`hsl(40 22% 95%)`) was tried and also works — the cluster
+     tints are translucent (see getClusterSurfaceBg) so they composite with whatever is behind them, but at a
+     5% base tint that shift is small either way, and these three tints were originally tuned against slate.
+
+     IT PROPAGATES TO THE CANVAS, so `body`, `main` and HomePage's wrapper must all resolve to exactly this:
+     an over-pull past either end of the document reveals it, and any disagreement opens a visible seam. See
+     docs/DECISIONS.md#body-background-propagates-to-the-canvas. Change it in one place: here.
+
+     The sticky header and bottom nav are deliberately NOT in that list any more. They take `page-surface` —
+     chrome is a layer ABOVE the page, the same relationship the cards have to it, so the app has one rule
+     rather than two: tinted page, white layers on top. */
+  --color-page-base: hsl(215 22% 95%);
+  /* Cards, PURE WHITE, and for one concrete reason beyond contrast: the chart card is the on-screen counterpart
+     of the exported PNG, which renders on white (see chart.exportImageLayoutWidthPx and the export clone). A
+     tinted card would mean the copied image never quite matches the card it came from. */
+  --color-page-surface: hsl(0 0% 100%);
   --color-cluster-technical: #cdbdd8;
   --color-cluster-product: #f5b39d;
   --color-cluster-operational: #bddbb5;
@@ -93,10 +119,11 @@
     letter-spacing: -0.011em;
   }
 
-  /* `bg-slate-100` must match the header's and bottom nav's tint — it propagates to the canvas, so it is what
-     an over-pull reveals. See docs/DECISIONS.md#body-background-propagates-to-the-canvas. */
+  /* `bg-page-base` must match the header's and bottom nav's tint — it propagates to the canvas, so it is
+     what an over-pull reveals. Now a token (see @theme above) rather than four literals agreeing by hand.
+     See docs/DECISIONS.md#body-background-propagates-to-the-canvas. */
   body {
-    @apply bg-slate-100 text-foreground font-medium antialiased;
+    @apply bg-page-base text-foreground font-medium antialiased;
     /* PWA: kill double-tap-to-zoom and pinch-zoom gestures. The viewport meta
        handles most browsers; this covers iOS Safari which ignores user-scalable=no. */
     touch-action: pan-x pan-y;

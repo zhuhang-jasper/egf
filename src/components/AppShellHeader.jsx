@@ -18,10 +18,11 @@ import { clearStickyScrollOffset, setStickyScrollOffset } from "@/utils/scroll";
  * for on every screen; that is what made a collapsible title necessary before, and then made the collapse state
  * contested. The title and tagline now open the Theory tab.
  *
- * `bg-slate-100` must be OPAQUE (content scrolls underneath) and must be `100` rather than `50`, which is only a
- * ~3% step off white and does not read as a tint at all. This value has six dependents that must move with it:
- * AppBottomNav's bar, its active segment, its inactive hover, the unseen-dot ring, `body` in index.css, and
- * HomePage's wrapper. The last two want it IDENTICAL, not merely legible against it.
+ * `bg-page-surface` must be OPAQUE, because content scrolls underneath. The bar is WHITE against the tinted
+ * page (`--color-page-base`), not tinted against a white page as it was for most of this app's life: chrome is
+ * a layer above the page, the same relationship the cards have to it. Three dependents move with it —
+ * AppBottomNav's bar (which must be IDENTICAL, not merely similar, since both abut the same page) and that
+ * bar's active fill and inactive hover, which are read against it.
  *
  * `p-3` is one 12px inset declared once here (it is also what the corner controls' `top-3` resolves against).
  * `min-h-14` is the header's entire height, since both children are absolutely positioned and contribute none:
@@ -63,7 +64,7 @@ function AppShellHeaderStack() {
       // on this box, since its bottom edge IS the boundary; on a child the shadow drew a line across the header.
       //
       // No `relative` needed for the corner controls: `sticky` already establishes a containing block.
-      className={cn("sticky top-0 min-h-14 border-b border-slate-200 bg-slate-100 p-3 shadow-sm print:hidden", LAYER.chrome)}
+      className={cn("sticky top-0 min-h-14 border-b border-slate-200 bg-page-surface p-3 shadow-sm print:hidden", LAYER.chrome)}
     >
       <AppShellBrandMark />
       {/* Renders nothing unless this browser can install the app, so the corner is simply empty where there is

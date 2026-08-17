@@ -20,7 +20,9 @@ const NAV_ITEMS = [
  * Two things break silently if touched:
  *   - The safe-area padding resolves to 0 unless index.html keeps BOTH `viewport-fit=cover` and
  *     `apple-mobile-web-app-capable`.
- *   - `bg-slate-100` must stay opaque, and the active fill, hover and unseen dot are all read against it.
+ *   - `bg-page-surface` must stay opaque, and the active fill, hover and unseen dot are all read against it.
+ *     Same token as the sticky header, and it must stay identical to it: both are chrome sitting above the
+ *     tinted page (`--color-page-base`), at opposite ends of the same screen.
  */
 export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = false }) {
   return (
@@ -35,7 +37,7 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
       // The gutter must move the right EDGE, not add padding: padding would inset the row while the
       // background kept painting to the viewport edge. See docs/DECISIONS.md#scroll-lock-gutter.
       className={cn(
-        "fixed left-0 right-[var(--scroll-lock-gutter)] bottom-0 bg-slate-100 shadow-[0_-1px_3px_0_rgb(0_0_0/0.1),0_-1px_2px_1px_rgb(0_0_0/0.1)] pb-[env(safe-area-inset-bottom)] print:hidden",
+        "fixed left-0 right-[var(--scroll-lock-gutter)] bottom-0 bg-page-surface shadow-[0_-1px_3px_0_rgb(51_65_92_/_0.12),0_-1px_2px_1px_rgb(51_65_92_/_0.10)] pb-[env(safe-area-inset-bottom)] print:hidden",
         LAYER.chrome,
       )}
     >
@@ -76,6 +78,9 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
                 // Three gaps must hold at once against the bar's tint, and none of these values can move alone.
                 // `slate-300` for active has been tried and rejected twice. The icon below takes `text-black`
                 // with these as one mark. See docs/DECISIONS.md#bottom-nav-colour-system before retuning.
+                // Both fills are read AGAINST the bar's own `page-base` and must stay in ITS family, one rung
+                // down, so the active segment reads as a darker step of the bar rather than a different
+                // material. If the base hue moves, these move with it.
                 selected ? "border-black bg-slate-200 text-black" : "border-transparent text-slate-400 hover:bg-slate-200/50",
               )}
             >
@@ -87,6 +92,8 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
                   the badges' containing block started mid-device-pixel and the lock rasterized 1px off,
                   flipping direction on resize. A fixed 24px box gives them a whole-pixel origin to sit on. */}
               <span className="relative flex size-6 shrink-0 items-center justify-center">
+                {/* Matches the label's colour exactly — the glyph and the word are one mark (see the note on
+                    the button), so the inactive grey moved to `stone` with it. */}
                 <Icon className={cn("size-6 shrink-0", selected ? "text-black" : "text-slate-400")} aria-hidden />
                 {showUnseenDot ? (
                   // No ring: it needs both a width and a colour, and every past colour became a halo on the
