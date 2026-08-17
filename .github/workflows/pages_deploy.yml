@@ -30,6 +30,7 @@ jobs:
       run: npm run build
       env:
         GITHUB_PAGES: "true"
+        GITHUB_PAGES_BASE: /${{ github.event.repository.name }}/
         NODE_OPTIONS: --max-old-space-size=5632
         VITE_GA_ID: ${{ vars.VITE_GA_ID }}
 

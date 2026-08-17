@@ -11,8 +11,12 @@ import { manualChunks } from "./vite.chunksplit";
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 
-/** Project site: https://<owner>.github.io/egf/ */
-const pagesBase = process.env.GITHUB_PAGES === "true" ? "/egf/" : "/";
+/**
+ * Project site: https://<owner>.github.io/<repo>/
+ * GITHUB_PAGES_BASE is set by the deploy workflow from the repo name, so
+ * forks (e.g. egf-stage) deploy under their own path without editing this file.
+ */
+const pagesBase = process.env.GITHUB_PAGES === "true" ? (process.env.GITHUB_PAGES_BASE ?? "/egf/") : "/";
 
 export default defineConfig({
   base: pagesBase,
