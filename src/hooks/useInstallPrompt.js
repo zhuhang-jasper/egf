@@ -61,7 +61,15 @@ function isStandalone() {
 // MUST SHIP `false`, or Android and desktop users get iOS instructions they cannot follow.
 const FORCE_IOS_PREVIEW = false;
 
+// iOS's installed-PWA experience is broken enough (no push, flaky standalone detection, silent cache
+// staleness) that we no longer invite the install. Kept as a kill switch rather than deleted: flip back to
+// `true` if iOS PWA support improves enough to offer again.
+const IOS_INSTALL_ENABLED = false;
+
 function isIosSafari() {
+  if (!IOS_INSTALL_ENABLED) {
+    return false;
+  }
   if (FORCE_IOS_PREVIEW) {
     return true;
   }
