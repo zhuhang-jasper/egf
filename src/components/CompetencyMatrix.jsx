@@ -169,7 +169,7 @@ function PillarMatrixCard({
         "--card-surface-hover": `color-mix(in srgb, ${color} 6%, ${surfaceBg})`,
         "borderColor": `color-mix(in srgb, ${color} 20%, white)`,
         "borderLeftColor": color,
-        "boxShadow": `0 1px 2px -1px color-mix(in srgb, ${color} 10%, transparent), 0 4px 12px -2px color-mix(in srgb, ${color} 10%, transparent)`,
+        "boxShadow": "none",
       }}
     >
       {/* THE HEADER IS A SECOND, SILENT TRIGGER. The visible control is the strip at the foot of the card; this

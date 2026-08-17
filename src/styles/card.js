@@ -1,8 +1,9 @@
 /**
  * Shared card surface for every card in the app, so the six files that used to spell it out cannot drift.
- * The shadow is two layers on the page base's own hue (215) — retint it if `--color-page-base` moves.
+ * Shadow-less for now (an experiment in flattening every card at once) — restore the two-layer tinted
+ * shadow here to bring elevation back everywhere in one edit.
  */
-const CARD_SHADOW = "shadow-[0_1px_2px_-1px_rgb(51_65_92_/_0.10),0_4px_12px_-2px_rgb(51_65_92_/_0.10)]";
+const CARD_SHADOW = "shadow-none";
 
 /** Plain card: the chart card, the theory tab's level/tier cards, the admin tiles. */
 export const CARD_PLAIN = `rounded-xl border border-slate-200 bg-page-surface ${CARD_SHADOW}`;
@@ -29,7 +30,7 @@ export function clusterCardStyle(surfaceBg, color) {
     backgroundColor: surfaceBg,
     borderColor,
     borderLeftColor: color,
-    boxShadow: `0 1px 2px -1px color-mix(in srgb, ${color} 10%, transparent), 0 4px 12px -2px color-mix(in srgb, ${color} 10%, transparent)`,
+    boxShadow: "none",
   };
 }
 
