@@ -7,17 +7,23 @@ export const CARD_PLAIN = `rounded-xl border border-slate-200 bg-page-surface ${
 /** Cluster-tinted card: colour comes from the inline style below, this only sets widths. */
 export const CARD_TINTED = "rounded-xl border border-l-[3px] shadow-none";
 
-/**
- * Surface fill, a brightened left bezel, and a border tinted toward `bezel` but kept near slate-200's
- * lightness. `bezel` is CLUSTERS[id].bezel — a precomputed static colour, not derived at render, so the
- * theory tab, tool tab, and poster all draw from the same source.
- */
+/** Border mix vs. slate-200: 20% read as ~invisible against a tinted (non-white) fill. */
+const BORDER_MIX = "40%";
+
+/** Border only, split from the fill since CompetencyMatrix needs the fill as a custom property for hover. */
+export function clusterCardBorder(bezel) {
+  return {
+    borderColor: `color-mix(in srgb, ${bezel} ${BORDER_MIX}, white)`,
+    borderLeftColor: bezel,
+    boxShadow: "none",
+  };
+}
+
+/** The usual pairing: cluster surface fill plus the shared border. */
 export function clusterCardStyle(surfaceBg, bezel) {
   return {
     backgroundColor: surfaceBg,
-    borderColor: `color-mix(in srgb, ${bezel} 20%, white)`,
-    borderLeftColor: bezel,
-    boxShadow: "none",
+    ...clusterCardBorder(bezel),
   };
 }
 

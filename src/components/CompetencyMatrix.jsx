@@ -6,7 +6,7 @@ import { EmphasizedText } from "@/components/EmphasizedText";
 import { ShareLinkButton } from "@/components/ShareLinkButton";
 
 import { COMPETENCY_MATRIX, SENIORITY_LEVEL_DEFINITIONS, SKILL_TIERS } from "@/constants/theory-data";
-import { CARD_TINTED } from "@/styles/card";
+import { CARD_TINTED, clusterCardBorder } from "@/styles/card";
 import { DOC_TEXT, WHATS_NEW_HIGHLIGHT_CLASS } from "@/styles/doc-typography";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
@@ -160,14 +160,11 @@ function PillarMatrixCard({
         "group/card bg-(--card-surface) transition-colors has-[[data-matrix-toggle]:hover]:bg-(--card-surface-hover)",
         printBreakBefore && "print:break-before-page",
       )}
-      /* Mirrors clusterCardStyle — this card builds its own inline style for the hover custom properties above,
-         so it can't call the shared helper and repeats its border/bezel formula instead. */
+      /* Border from the same helper as every other cluster card; only the fill is special here. */
       style={{
         "--card-surface": surfaceBg,
         "--card-surface-hover": `color-mix(in srgb, ${bezel} 6%, ${surfaceBg})`,
-        "borderColor": `color-mix(in srgb, ${bezel} 20%, white)`,
-        "borderLeftColor": bezel,
-        "boxShadow": "none",
+        ...clusterCardBorder(bezel),
       }}
     >
       {/* THE HEADER IS A SECOND, SILENT TRIGGER. The visible control is the strip at the foot of the card; this
