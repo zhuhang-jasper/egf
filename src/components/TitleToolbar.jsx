@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { Calculator, CircleCheck, Copy, FilePlus, MoreVertical, Pencil, Save, Undo2 } from "lucide-react";
 
@@ -24,6 +24,7 @@ import {
 import { LAYER } from "@/constants";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
+import { getPopoverViewportBounds } from "@/utils/scroll";
 import { readProfileCreateCount } from "@/utils/storage";
 
 // The Save button doubles as the save-status indicator. Each status sets the button's icon, label,
@@ -84,7 +85,9 @@ const SAVE_TOAST_VERB = {
 function SaveButton({ statusMeta, showMenu, onSave, copyAction, undoAction }) {
   const StatusIcon = statusMeta.icon;
   const rootRef = useRef(null);
+  const menuRef = useRef(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [openUp, setOpenUp] = useState(false);
 
   useEffect(() => {
     if (!menuOpen) {
@@ -107,6 +110,34 @@ function SaveButton({ statusMeta, showMenu, onSave, copyAction, undoAction }) {
       document.removeEventListener("mousedown", onMouse);
     };
   }, [menuOpen]);
+
+  // Flip above the button when the menu doesn't fit below and there's more room above — the same
+  // bounded band the profile dropdown uses (sticky header above, fixed bottom nav below). Re-measured
+  // when the undo item appears/disappears, since that changes the menu's height.
+  useLayoutEffect(() => {
+    if (!menuOpen) {
+      setOpenUp(false);
+      return undefined;
+    }
+    const decide = () => {
+      const root = rootRef.current;
+      const menu = menuRef.current;
+      if (!root || !menu) {
+        return;
+      }
+      const gap = 4;
+      const margin = 8; // keep the menu clear of the viewport edge
+      const rootRect = root.getBoundingClientRect();
+      const { top: topBoundary, bottom: bottomBoundary } = getPopoverViewportBounds();
+      const spaceBelow = bottomBoundary - rootRect.bottom - gap - margin;
+      const spaceAbove = rootRect.top - topBoundary - gap - margin;
+      const needed = menu.offsetHeight;
+      setOpenUp(needed > spaceBelow && spaceAbove > spaceBelow);
+    };
+    decide();
+    window.addEventListener("resize", decide);
+    return () => window.removeEventListener("resize", decide);
+  }, [menuOpen, Boolean(undoAction)]);
 
   // The label sizes to its own text — the row is allowed to shift as the status changes so the
   // control stays as narrow as possible, leaving more room for the title input.
@@ -169,11 +200,13 @@ function SaveButton({ statusMeta, showMenu, onSave, copyAction, undoAction }) {
       </Button>
       {menuOpen && (
         <div
+          ref={menuRef}
           role="menu"
           aria-label="Save options"
           className={cn(
-            "absolute right-0 top-[calc(100%+4px)] flex w-max min-w-[100px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border border-border bg-card shadow-md",
+            "absolute right-0 flex w-max min-w-[100px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border border-border bg-card shadow-md",
             LAYER.dropdown,
+            openUp ? "bottom-[calc(100%+4px)]" : "top-[calc(100%+4px)]",
           )}
         >
           <MenuItem

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { ChevronDown } from "lucide-react";
 
@@ -7,6 +7,7 @@ import { useAppStore } from "@/store/useAppStore";
 import { LAYER, normalizeAttachedBadge, TRACK_BADGE_OPTIONS, TRACK_BADGE_UI } from "@/constants";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
+import { getPopoverViewportBounds } from "@/utils/scroll";
 
 /**
  * The colored pill for a badge id — the same rounded FE/BE chip shown on the chart, in miniature.
@@ -47,7 +48,9 @@ export function BadgePicker({ onOpen }) {
   const attachedBadge = useAppStore((s) => normalizeAttachedBadge(s.attachedBadge));
   const setAttachedBadge = useAppStore((s) => s.setAttachedBadge);
   const [open, setOpen] = useState(false);
+  const [openUp, setOpenUp] = useState(false);
   const rootRef = useRef(null);
+  const menuRef = useRef(null);
 
   const current = TRACK_BADGE_UI[attachedBadge];
 
@@ -71,6 +74,34 @@ export function BadgePicker({ onOpen }) {
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("mousedown", onMouse);
     };
+  }, [open]);
+
+  // Flip above the trigger when the menu doesn't fit below and there's more room above — the same
+  // bounded band the profile dropdown uses (sticky header above, fixed bottom nav below). The menu is
+  // three fixed rows, so there's nothing to cap: it either fits on a side or it doesn't.
+  useLayoutEffect(() => {
+    if (!open) {
+      setOpenUp(false);
+      return undefined;
+    }
+    const decide = () => {
+      const root = rootRef.current;
+      const menu = menuRef.current;
+      if (!root || !menu) {
+        return;
+      }
+      const gap = 4;
+      const margin = 8; // keep the menu clear of the viewport edge
+      const rootRect = root.getBoundingClientRect();
+      const { top: topBoundary, bottom: bottomBoundary } = getPopoverViewportBounds();
+      const spaceBelow = bottomBoundary - rootRect.bottom - gap - margin;
+      const spaceAbove = rootRect.top - topBoundary - gap - margin;
+      const needed = menu.offsetHeight;
+      setOpenUp(needed > spaceBelow && spaceAbove > spaceBelow);
+    };
+    decide();
+    window.addEventListener("resize", decide);
+    return () => window.removeEventListener("resize", decide);
   }, [open]);
 
   const select = (next) => {
@@ -101,11 +132,13 @@ export function BadgePicker({ onOpen }) {
       </button>
       {open ? (
         <div
+          ref={menuRef}
           role="menu"
           aria-label="Attached badge"
           className={cn(
-            "absolute left-0 top-[calc(100%+4px)] flex min-w-[9rem] flex-col overflow-hidden rounded-lg border border-border bg-card py-1 shadow-md",
+            "absolute left-0 flex min-w-[9rem] flex-col overflow-hidden rounded-lg border border-border bg-card py-1 shadow-md",
             LAYER.dropdown,
+            openUp ? "bottom-[calc(100%+4px)]" : "top-[calc(100%+4px)]",
           )}
         >
           {TRACK_BADGE_OPTIONS.map((id) => {
