@@ -133,6 +133,20 @@ export function getPillarLabelWithoutOrgan(pillarId) {
 }
 
 /**
+ * Label split into its three parts — leading emoji, pillar name, "(Organ)" metaphor — so the form
+ * can space and style each one. Missing parts come back as "".
+ */
+export function splitPillarLabelParts(pillarId) {
+  const label = getPillarLabel(pillarId);
+  const m = label.match(/^(?<emoji>\S+)?\s*(?<name>.*?)\s*(?<organ>\([^)]*\))?\s*$/u);
+  return {
+    emoji: m?.groups.emoji ?? "",
+    name: m?.groups.name ?? label,
+    organ: m?.groups.organ ?? "",
+  };
+}
+
+/**
  * Chart axis labels omit the organ name in parentheses (e.g. "🤲 Coding" not "🤲 Coding (Hands)").
  * They also strip emoji variation selectors (U+FE0F): the only pillar emoji that carries one is
  * 🗣️ Communication, and mobile Safari's canvas mis-measures/-anchors that grapheme cluster, shifting

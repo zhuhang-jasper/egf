@@ -5,10 +5,22 @@ import { Tooltip } from "@/components/ui/Tooltip";
 
 import { useAppStore } from "@/store/useAppStore";
 
-import { CLUSTERS } from "@/constants";
+import { CLUSTERS, splitPillarLabelParts } from "@/constants";
 import { CARD_TINTED, clusterCardStyle } from "@/styles/card";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
+
+/** Emoji, pillar name in bold, then the "(Organ)" metaphor muted — each spaced on its own. */
+function PillarLabel({ pillarId }) {
+  const { emoji, name, organ } = splitPillarLabelParts(pillarId);
+  return (
+    <span className="min-w-0">
+      {emoji ? <span className="">{emoji}</span> : null}
+      <span className="font-semibold mx-1">{name}</span>
+      {organ ? <span className="font-normal text-slate-500">{organ}</span> : null}
+    </span>
+  );
+}
 
 export function PillarCluster({ group, onOpenPillarInMatrix }) {
   const levels = useAppStore((s) => s.levels);
@@ -20,7 +32,7 @@ export function PillarCluster({ group, onOpenPillarInMatrix }) {
       // `print:break-inside-avoid` keeps a cluster's pillars together on one sheet — a cluster is at most
       // four rows, so it either fits or moves whole. `print:overflow-visible` for the paged-media
       // clipping reason documented in CompetencyMatrix.
-      className={cn(CARD_TINTED, "relative w-full overflow-hidden px-4 py-3 print:overflow-visible print:break-inside-avoid")}
+      className={cn(CARD_TINTED, "relative w-full overflow-hidden px-3 xs:px-4 py-3 print:overflow-visible print:break-inside-avoid")}
       data-cluster={group.id}
       style={clusterCardStyle(cluster.surfaceBg, cluster.bezel)}
     >
@@ -35,8 +47,8 @@ export function PillarCluster({ group, onOpenPillarInMatrix }) {
           key={pillar.index}
           className="grid grid-cols-[1fr_auto] items-center w-full gap-1 sm:gap-3 leading-[1.35] text-slate-800 text-[12px] sm:text-[13px] md:text-[14px]"
         >
-          <span className="min-w-0">{pillar.label}</span>
-          <span className="flex flex-row items-center justify-end shrink-0 gap-3 sm:gap-6">
+          <PillarLabel pillarId={pillar.id} />
+          <span className="flex flex-row items-center justify-end shrink-0 gap-3 xs:gap-4 sm:gap-5 md:gap-6">
             {onOpenPillarInMatrix ? (
               <button
                 type="button"
@@ -47,7 +59,7 @@ export function PillarCluster({ group, onOpenPillarInMatrix }) {
                 aria-label={`View ${pillar.label} in the competency matrix`}
                 // `print:hidden` — a cross-tab jump into the matrix is an action, and the matrix it
                 // jumps to isn't on this printed page anyway.
-                className="group relative inline-flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full text-slate-600 transition-colors hover:text-slate-800 active:text-slate-800 print:hidden"
+                className="group relative inline-flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full text-slate-700 transition-colors hover:text-slate-900 active:text-slate-900 print:hidden"
               >
                 <HelpCircle className="size-3.5" aria-hidden />
                 <Tooltip text="View in matrix" />

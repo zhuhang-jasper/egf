@@ -21,6 +21,7 @@ export {
   PILLAR_GROUPS,
   PILLAR_ORDER,
   PILLARS,
+  splitPillarLabelParts,
   TRACK_BADGE_OPTIONS,
   TRACK_BADGE_UI,
 } from "@/constants/framework";
