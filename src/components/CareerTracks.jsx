@@ -4,7 +4,7 @@ import { StaticCompetencyChart } from "@/components/StaticCompetencyChart";
 
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 
-import { CLUSTERS, FE_UI, getClusterSurfaceBg } from "@/constants";
+import { CLUSTERS, FE_UI } from "@/constants";
 import { CAREER_TRACK_PROFILES, FOUNDATIONAL_PHASE, JUNIOR_TO_SENIOR, SENIOR_FORK, sortKeyFocusPillars } from "@/constants/theory-data";
 import { CARD_SHADOW } from "@/styles/card";
 import { DOC_SECTION, DOC_TEXT } from "@/styles/doc-typography";
@@ -56,10 +56,14 @@ function LevelBadge({ level, backgroundColor, color }) {
 }
 
 function buildTrackStyle(cluster, accent) {
-  const resolvedAccent = accent ?? cluster.textColor;
+  // `cluster.color`, the saturated one — this is the card's left bezel and its title, so it must match the
+  // bezel every other cluster card paints (and the legend swatch, and the radar's wedges). It was
+  // `cluster.textColor`, which is now a step darker than the bezel colour and made these two cards' edges
+  // disagree with the rest.
+  const resolvedAccent = accent ?? cluster.color;
   return {
     accent: resolvedAccent,
-    chipBg: getClusterSurfaceBg(cluster.color),
+    chipBg: cluster.surfaceBg,
     // Chip: white pill with a colored inset ring + colored text (matches the poster).
     ringColor: cluster.color,
     textColor: cluster.textColor,

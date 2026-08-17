@@ -12,14 +12,14 @@ function splitEmoji(title) {
   return match ? { emoji: match.groups.emoji, name: match.groups.name } : { emoji: "", name: title };
 }
 
-function PillarCard({ pillar, clusterLabel, color, textColor, showLatestChanges }) {
+function PillarCard({ pillar, clusterLabel, color, surfaceBg, textColor, showLatestChanges }) {
   const { emoji, name } = splitEmoji(pillar.pillar);
   return (
     <article
       // Surface and left bezel both from CARD_TINTED + clusterCardStyle, the same pair the tool form's cluster
       // cards and the matrix cards use, so every cluster-tinted card in the app stays one look.
       className={cn(CARD_TINTED, "overflow-hidden p-3 xs:row-span-4 xs:grid xs:grid-rows-subgrid gap-2 print:overflow-visible")}
-      style={clusterCardStyle(color, textColor)}
+      style={clusterCardStyle(surfaceBg, color)}
     >
       {/* single-col: title left + cluster label right; col: title only */}
       <div className="flex flex-row-reverse items-start justify-between gap-3 xs:block">
@@ -70,6 +70,7 @@ export function PillarGrid({ showLatestChanges = false }) {
             pillar={pillar}
             clusterLabel={group.label}
             color={group.color}
+            surfaceBg={group.surfaceBg}
             textColor={group.textColor}
             showLatestChanges={showLatestChanges}
           />

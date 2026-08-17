@@ -2,7 +2,7 @@ import { Tooltip } from "@/components/ui/Tooltip";
 
 import { useAppStore } from "@/store/useAppStore";
 
-import { BREADTH_TOP_RATIO, CAREER_BREADTH_WEIGHT, CAREER_PEAK_WEIGHT, CLUSTERS, getClusterSurfaceBg, getPillarGroupOrder } from "@/constants";
+import { BREADTH_TOP_RATIO, CAREER_BREADTH_WEIGHT, CAREER_PEAK_WEIGHT, CLUSTERS, getPillarGroupOrder } from "@/constants";
 import { computeAverages, formatAvgScore } from "@/constants/scores";
 import { cn } from "@/utils";
 
@@ -14,7 +14,7 @@ function getClusterScoreCardTheme(id) {
   }
   return {
     cardStyle: {
-      backgroundColor: getClusterSurfaceBg(cluster.color),
+      backgroundColor: cluster.surfaceBg,
       borderColor: cluster.textColor,
       color: cluster.textColor,
     },

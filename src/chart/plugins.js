@@ -96,14 +96,22 @@ export function createClusterBackgroundPlugin() {
       const pillarOrder = getPillarOrder();
       for (const group of getPillarGroupOrder()) {
         const cluster = CLUSTERS[group.id];
-        if (!cluster?.color) {
+        // `chartBg` — the cluster weight that exists FOR this, and the same value ClusterLegend paints its
+        // swatch with, so the key and the chart it explains are literally the same colour.
+        //
+        // Neither neighbour works here, and both were tried: `drawClusterWedge` fills at FULL OPACITY (there
+        // is no alpha anywhere in this plugin), so the saturated `color` painted three mid-tone blocks that
+        // fought the data polygon, while the pale `surfaceBg` disappeared under it and left the chart looking
+        // like it had no clusters at all. A wedge is a large area behind live data: it needs less saturation
+        // than a bezel and more than a card.
+        if (!cluster?.chartBg) {
           continue;
         }
         const indices = sortClusterArc(
           group.pillars.map((pillarId) => pillarOrder.indexOf(pillarId)),
           count,
         );
-        drawClusterWedge(ctx, scale, indices, cluster.color, count);
+        drawClusterWedge(ctx, scale, indices, cluster.chartBg, count);
       }
       drawRadarPolygonBorder(ctx, scale, count);
       ctx.restore();

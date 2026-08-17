@@ -5,7 +5,6 @@ import { ChevronDown } from "lucide-react";
 import { EmphasizedText } from "@/components/EmphasizedText";
 import { ShareLinkButton } from "@/components/ShareLinkButton";
 
-import { getClusterSurfaceBg, getClusterSurfaceHoverBg } from "@/constants";
 import { COMPETENCY_MATRIX, SENIORITY_LEVEL_DEFINITIONS, SKILL_TIERS } from "@/constants/theory-data";
 import { CARD_TINTED } from "@/styles/card";
 import { DOC_TEXT, WHATS_NEW_HIGHLIGHT_CLASS } from "@/styles/doc-typography";
@@ -113,7 +112,7 @@ function PillarMatrixCard({
   focusTiers,
   note,
   color,
-  textColor,
+  surfaceBg,
   levels,
   expanded,
   onToggle,
@@ -165,9 +164,9 @@ function PillarMatrixCard({
          plain `borderLeftColor` because it does not change on hover, so it needs no variable. Only the LEFT side
          has a width — see CARD_TINTED. */
       style={{
-        "--card-surface": getClusterSurfaceBg(color),
-        "--card-surface-hover": getClusterSurfaceHoverBg(color),
-        "borderLeftColor": textColor,
+        "--card-surface": surfaceBg,
+        "--card-surface-hover": `color-mix(in srgb, ${color} 12%, ${surfaceBg})`,
+        "borderLeftColor": color,
       }}
     >
       {/* THE HEADER IS A SECOND, SILENT TRIGGER. The visible control is the strip at the foot of the card; this

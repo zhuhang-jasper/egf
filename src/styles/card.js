@@ -51,19 +51,18 @@ export const CARD_PLAIN = `rounded-xl border border-slate-200 bg-page-surface ${
 export const CARD_TINTED = `rounded-xl border-y-0 border-r-0 border-l-[3px] ${CARD_SHADOW}`;
 
 /**
- * The inline half of {@link CARD_TINTED}: the per-cluster tint and bezel. Pass a cluster's `color` (the pale
- * fill hex) and its `textColor` (the saturated one used for its label).
+ * The inline half of {@link CARD_TINTED}: a cluster's card background and its left bezel.
  *
- * `borderLeftColor` ONLY — the other three sides have no width, so colouring them would be inert, and naming
- * just the one that paints keeps this honest about what it does.
+ * TWO INDEPENDENT COLOURS, in the order the design thinks about them: `surfaceBg` is the pale card fill,
+ * `color` is the saturated cluster colour the bezel paints (the same one the legend swatch and the radar's
+ * wedges use, so the card's edge and the chart agree). Neither is derived from the other — see the note on
+ * CLUSTERS in constants/framework.js for why that mattered.
  *
- * The bezel takes the cluster's TEXT colour at FULL strength, not its fill: the fill is already the card's
- * background, so a bezel in the same hex would be invisible by construction. The text colour is that hue
- * several steps darker, which is what an edge wants — and unlike the four-side version this is a 3px mark
- * rather than an outline, so it takes no alpha.
+ * `borderLeftColor` ONLY: the other three sides have no width, so colouring them would be inert, and naming
+ * just the side that paints keeps this honest about what it does.
  */
-export function clusterCardStyle(color, textColor) {
-  return { backgroundColor: `${color}55`, borderLeftColor: textColor };
+export function clusterCardStyle(surfaceBg, color) {
+  return { backgroundColor: surfaceBg, borderLeftColor: color };
 }
 
 /**

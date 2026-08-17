@@ -26,10 +26,13 @@ export function ClusterLegend({ className, hidden = false, chartWidth = 0 }) {
         }
         return (
           <li key={id} data-chart-export="cluster-legend-item" className="inline-flex items-center gap-2">
+            {/* `chartBg`, the same value the radar's wedges are filled with (chart/plugins.js) — a legend
+                swatch has to be the colour actually on the chart, or it is explaining something else. It was
+                the saturated `color`, which left vivid swatches sitting under noticeably paler wedges. */}
             <span
               data-chart-export="cluster-legend-swatch"
               className="shrink-0 border border-black/20"
-              style={{ backgroundColor: cluster.color, width: swatchPx, height: swatchPx }}
+              style={{ backgroundColor: cluster.chartBg, width: swatchPx, height: swatchPx }}
               aria-hidden
             />
             <span data-chart-export="cluster-legend-label" className="font-bold text-foreground/90" style={{ fontSize: labelPx }}>
