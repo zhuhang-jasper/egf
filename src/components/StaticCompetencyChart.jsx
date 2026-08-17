@@ -26,7 +26,7 @@ export function StaticCompetencyChart({
   maxWidthPx,
   focusedPillars,
   // Color each pillar axis label by its cluster (the poster's pillar-name palette,
-  // CLUSTERS[cluster].textColor) instead of the flat preset color.
+  // CLUSTERS[cluster].midtone) instead of the flat preset color.
   clusterLabelColors = false,
   maxHeightPx,
   // Which chart preset to render. "theory" (default) = compact labels, plain pillar names, no L

@@ -208,9 +208,9 @@ function buildPillarClusterGroups() {
     id,
     label: title,
     subtitle: CLUSTER_ABOUT_META[id]?.subtitle ?? "",
-    color: CLUSTERS[id].color,
     surfaceBg: CLUSTERS[id].surfaceBg,
-    textColor: CLUSTERS[id].textColor,
+    bezel: CLUSTERS[id].bezel,
+    midtone: CLUSTERS[id].midtone,
     pillars: pillars.map(({ id: pillarId }) => {
       const focusTiers = PILLAR_ABOUT_COPY[pillarId]?.focusTiers ?? {};
       return {
@@ -309,9 +309,8 @@ function buildCompetencyMatrix() {
         pillarName: getPillarLabelWithoutOrgan(pillar.id),
         focusTiers: pillar.focusTiers,
         note: pillar.note,
-        color: group.color,
         surfaceBg: group.surfaceBg,
-        textColor: group.textColor,
+        bezel: group.bezel,
         clusterLabel: group.label,
         levels: COMPETENCY_LEVEL_COPY[pillar.id],
       };

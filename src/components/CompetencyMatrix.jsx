@@ -111,8 +111,8 @@ function PillarMatrixCard({
   pillarName,
   focusTiers,
   note,
-  color,
   surfaceBg,
+  bezel,
   levels,
   expanded,
   onToggle,
@@ -160,15 +160,13 @@ function PillarMatrixCard({
         "group/card bg-(--card-surface) transition-colors has-[[data-matrix-toggle]:hover]:bg-(--card-surface-hover)",
         printBreakBefore && "print:break-before-page",
       )}
-      /* The two surfaces stay custom properties (the hover variant below switches between them); the bezel is a
-         plain `borderLeftColor` because it does not change on hover, so it needs no variable. Only the LEFT side
-         has a width — see CARD_TINTED. `borderColor`/`boxShadow` mirror `clusterCardStyle` — this card builds its
-         own inline style (for the hover custom properties above) instead of calling it, so it must repeat them. */
+      /* Mirrors clusterCardStyle — this card builds its own inline style for the hover custom properties above,
+         so it can't call the shared helper and repeats its border/bezel formula instead. */
       style={{
         "--card-surface": surfaceBg,
-        "--card-surface-hover": `color-mix(in srgb, ${color} 6%, ${surfaceBg})`,
-        "borderColor": `color-mix(in srgb, ${color} 20%, white)`,
-        "borderLeftColor": color,
+        "--card-surface-hover": `color-mix(in srgb, ${bezel} 6%, ${surfaceBg})`,
+        "borderColor": `color-mix(in srgb, ${bezel} 20%, white)`,
+        "borderLeftColor": bezel,
         "boxShadow": "none",
       }}
     >

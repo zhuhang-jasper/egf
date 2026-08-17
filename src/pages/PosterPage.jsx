@@ -37,22 +37,17 @@ const POSTER_PROFILE = {
 
 const POSTER_LEVELS = getPillarOrder().map((id) => POSTER_PROFILE[id] ?? 3);
 
-const CLUSTER_META = {
-  technical: { color: CLUSTERS.technical.color, accent: CLUSTERS.technical.textColor },
-  product: { color: CLUSTERS.product.color, accent: CLUSTERS.product.textColor },
-  operational: { color: CLUSTERS.operational.color, accent: CLUSTERS.operational.textColor },
-};
-
-// Lookups keyed by pillar id, derived from the theory data, so the ring cards reuse the
-// canonical signature questions and cluster colours.
+// Lookups keyed by pillar id, derived from the theory data, so the ring cards reuse the canonical
+// signature questions and cluster colours straight from CLUSTERS (constants/framework.js) — `midtone` is
+// the same static tone the theory tab's career-track titles/badges use, so no separate poster palette to
+// keep in sync.
 const PILLAR_INFO = Object.fromEntries(
   PILLAR_CLUSTER_GROUPS.flatMap((group) =>
     group.pillars.map((p) => [
       p.id,
       {
         question: p.signatureQuestion,
-        color: CLUSTER_META[group.id].color,
-        accent: CLUSTER_META[group.id].accent,
+        pillarTitle: CLUSTERS[group.id].midtone,
       },
     ]),
   ),
@@ -78,9 +73,12 @@ const RING_PILLARS = getPillarOrder().map((id, i, arr) => {
 // keyFocusPillars (e.g. "Domain Logic") resolve to chips.
 const PILLAR_BY_NAME = Object.fromEntries(RING_PILLARS.map((p) => [p.name, p]));
 
-// Each track's colour follows its dominant cluster.
+// Each track's colour follows its dominant cluster, read straight from CLUSTERS: `surfaceBg`/`bezel` are the
+// card fill/brightened border; `title`/`badge` both use `midtone`, also for the chip ring — no more plain
+// `color`/`accent` anywhere on the poster.
 function clusterTone(id) {
-  return { color: CLUSTERS[id].color, accent: CLUSTERS[id].textColor };
+  const cluster = CLUSTERS[id];
+  return { surfaceBg: cluster.surfaceBg, bezel: cluster.bezel, title: cluster.midtone, badge: cluster.midtone };
 }
 const TRACK_TONE = {
   "deep-technical": clusterTone("technical"),
@@ -259,7 +257,7 @@ function PillarNode({ pillar }) {
   const nameRow = (
     <div className="flex items-center gap-2">
       {!emojiAfter && <span className="text-[30px] leading-none">{pillar.emoji}</span>}
-      <span className="text-[26px] font-extrabold leading-tight tracking-tight" style={{ color: pillar.accent }}>
+      <span className="text-[26px] font-extrabold leading-tight tracking-tight" style={{ color: pillar.pillarTitle }}>
         {pillar.name}
       </span>
       {emojiAfter && <span className="text-[30px] leading-none">{pillar.emoji}</span>}
@@ -429,9 +427,9 @@ function TrackCard({ careerTrack }) {
   return (
     <div
       className="flex min-w-0 flex-col rounded-3xl px-3 py-3"
-      style={{ backgroundColor: `${careerTrack.color}47`, border: `3px solid ${careerTrack.color}` }}
+      style={{ backgroundColor: careerTrack.surfaceBg, border: `3px solid ${careerTrack.bezel}` }}
     >
-      <h4 className="text-center text-[25px] font-extrabold leading-tight tracking-tight" style={{ color: careerTrack.accent }}>
+      <h4 className="text-center text-[25px] font-bold leading-tight tracking-tight" style={{ color: careerTrack.title }}>
         {careerTrack.name}
       </h4>
 
@@ -447,7 +445,7 @@ function TrackCard({ careerTrack }) {
           <span
             key={p.id}
             className="rounded-full bg-white px-2.5 py-[3px] text-[19px] font-bold"
-            style={{ color: careerTrack.accent, boxShadow: `inset 0 0 0 2.5px ${careerTrack.color}` }}
+            style={{ color: careerTrack.title, boxShadow: `inset 0 0 0 2.5px ${careerTrack.title}` }}
           >
             {p.name}
           </span>
@@ -461,7 +459,7 @@ function TrackCard({ careerTrack }) {
           <div key={r.level} className="flex items-center gap-2">
             <span
               className="shrink-0 rounded-md px-2 py-[1px] text-center text-[18px] font-extrabold text-white"
-              style={{ backgroundColor: careerTrack.accent }}
+              style={{ backgroundColor: careerTrack.badge }}
             >
               {r.level}
             </span>
@@ -727,15 +725,15 @@ export default function PosterPage() {
               {/* Foundational phase: everyone starts here, then forks at Senior (S3) */}
               <div
                 className="mt-1 flex items-center gap-4 rounded-2xl px-4 py-2"
-                style={{ backgroundColor: `${CLUSTER_META.technical.color}47`, border: `3px solid ${CLUSTER_META.technical.color}` }}
+                style={{ backgroundColor: CLUSTERS.technical.surfaceBg, border: `3px solid ${CLUSTERS.technical.bezel}` }}
               >
                 <span
                   className="shrink-0 rounded-md px-2 py-[1px] text-center text-[18px] font-extrabold text-white"
-                  style={{ backgroundColor: CLUSTER_META.technical.accent }}
+                  style={{ backgroundColor: CLUSTERS.technical.midtone }}
                 >
                   S1–S2
                 </span>
-                <span className="shrink-0 text-[24px] font-extrabold" style={{ color: CLUSTER_META.technical.accent }}>
+                <span className="shrink-0 text-[24px] font-bold" style={{ color: CLUSTERS.technical.midtone }}>
                   Software Engineer
                 </span>
                 <span className="ml-3 min-w-0 translate-y-[1px] text-[20px] text-slate-700">Build the technical foundation everyone shares.</span>

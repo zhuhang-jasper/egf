@@ -6,7 +6,7 @@ import { BREADTH_TOP_RATIO, CAREER_BREADTH_WEIGHT, CAREER_PEAK_WEIGHT, CLUSTERS,
 import { computeAverages, formatAvgScore } from "@/constants/scores";
 import { cn } from "@/utils";
 
-/** Cluster score cards — surface tint from cluster color; text/border from cluster tokens. */
+/** Cluster score cards — surface tint from cluster color; border from the brightened bezel; text from the midtone (same tokens the career-track cards use). */
 function getClusterScoreCardTheme(id) {
   const cluster = CLUSTERS[id];
   if (!cluster) {
@@ -15,10 +15,10 @@ function getClusterScoreCardTheme(id) {
   return {
     cardStyle: {
       backgroundColor: cluster.surfaceBg,
-      borderColor: cluster.textColor,
-      color: cluster.textColor,
+      borderColor: cluster.bezel,
+      color: cluster.midtone,
     },
-    valueColor: cluster.textColor,
+    valueColor: cluster.midtone,
   };
 }
 

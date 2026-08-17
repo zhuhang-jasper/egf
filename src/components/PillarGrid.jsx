@@ -12,18 +12,18 @@ function splitEmoji(title) {
   return match ? { emoji: match.groups.emoji, name: match.groups.name } : { emoji: "", name: title };
 }
 
-function PillarCard({ pillar, clusterLabel, color, surfaceBg, textColor, showLatestChanges }) {
+function PillarCard({ pillar, clusterLabel, surfaceBg, bezel, midtone, showLatestChanges }) {
   const { emoji, name } = splitEmoji(pillar.pillar);
   return (
     <article
       // Surface and left bezel both from CARD_TINTED + clusterCardStyle, the same pair the tool form's cluster
       // cards and the matrix cards use, so every cluster-tinted card in the app stays one look.
       className={cn(CARD_TINTED, "overflow-hidden p-3 xs:row-span-4 xs:grid xs:grid-rows-subgrid gap-2 print:overflow-visible")}
-      style={clusterCardStyle(surfaceBg, color)}
+      style={clusterCardStyle(surfaceBg, bezel)}
     >
       {/* single-col: title left + cluster label right; col: title only */}
       <div className="flex flex-row-reverse items-start justify-between gap-3 xs:block">
-        <span className={cn("shrink-0 text-right xs:hidden", DOC_TEXT.clusterLabel)} style={{ color: textColor }}>
+        <span className={cn("shrink-0 text-right xs:hidden", DOC_TEXT.clusterLabel)} style={{ color: midtone }}>
           {clusterLabel}
         </span>
         <p className={cn("flex min-w-0 flex-1 items-center gap-1.5", DOC_TEXT.cardTitle, "font-bold")}>
@@ -41,7 +41,7 @@ function PillarCard({ pillar, clusterLabel, color, surfaceBg, textColor, showLat
         <p>&ldquo;{pillar.signatureQuestion}&rdquo;</p>
       </div>
       {/* col only: cluster label at bottom */}
-      <span className={cn("hidden xs:block text-right", DOC_TEXT.clusterLabel)} style={{ color: textColor }}>
+      <span className={cn("hidden xs:block text-right", DOC_TEXT.clusterLabel)} style={{ color: midtone }}>
         {clusterLabel}
       </span>
     </article>
@@ -69,9 +69,9 @@ export function PillarGrid({ showLatestChanges = false }) {
             key={pillar.id}
             pillar={pillar}
             clusterLabel={group.label}
-            color={group.color}
             surfaceBg={group.surfaceBg}
-            textColor={group.textColor}
+            bezel={group.bezel}
+            midtone={group.midtone}
             showLatestChanges={showLatestChanges}
           />
         )),

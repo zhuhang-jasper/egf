@@ -22,11 +22,11 @@ export function PillarCluster({ group, onOpenPillarInMatrix }) {
       // clipping reason documented in CompetencyMatrix.
       className={cn(CARD_TINTED, "relative w-full overflow-hidden px-4 py-3 print:overflow-visible print:break-inside-avoid")}
       data-cluster={group.id}
-      style={clusterCardStyle(cluster.surfaceBg, cluster.color)}
+      style={clusterCardStyle(cluster.surfaceBg, cluster.bezel)}
     >
       <div
-        className="mb-2 text-[10px] sm:text-[11px] md:text-[12px] font-semibold uppercase leading-tight tracking-[0.06em]"
-        style={{ color: cluster.textColor }}
+        className="mb-2 text-[10px] sm:text-[11px] md:text-[12px] font-bold uppercase leading-tight tracking-[0.06em]"
+        style={{ color: cluster.midtone }}
       >
         {group.title}
       </div>

@@ -37,8 +37,8 @@ const TRACK_CHART_EMOJI_QUERY = "(min-width: 640px) and (max-width: 819px)";
  */
 const FOUNDATION_GRID_QUERY = "(min-width: 640px)";
 
-// Same CARD_TINTED shape as every other cluster card; the bezel/border/shadow colour is per TRACK not per
-// cluster, so `clusterCardStyle(chipBg, accent)` is called at each site below instead of at import time.
+// Same CARD_TINTED shape as every other cluster card; the border/shadow colour is per TRACK not per
+// cluster, so `clusterCardStyle(chipBg, bezel)` is called at each site below instead of at import time.
 const cardClass = CARD_TINTED;
 const levelBadgeClass = cn(
   "inline-flex min-w-[1.5rem] shrink-0 items-center justify-center rounded-md px-1.5 py-0.5 text-white",
@@ -54,19 +54,21 @@ function LevelBadge({ level, backgroundColor, color }) {
   );
 }
 
-function buildTrackStyle(cluster, accent) {
-  // `color`, not `textColor`: this paints the bezel and title, so it must match every other cluster card.
-  const resolvedAccent = accent ?? cluster.color;
+function buildTrackStyle(cluster, bezelOverride) {
+  // This paints the card border, so it must match every other cluster card (see clusterCardStyle). The
+  // foundation phase overrides it to a dark slate rather than technical-purple.
+  const resolvedBezel = bezelOverride ?? cluster.bezel;
   return {
-    accent: resolvedAccent,
+    bezel: resolvedBezel,
     chipBg: cluster.surfaceBg,
-    // Chip: white pill with a colored inset ring + colored text (matches the poster).
-    ringColor: cluster.color,
-    textColor: cluster.textColor,
-    // Role badge: solid cluster color with white text (matches the poster). Uses the cluster color
-    // rather than the accent so the foundation badges stay technical-purple, not the dark-slate accent.
-    levelBadgeBg: cluster.textColor,
+    // Everything coloured-but-not-the-border is the cluster's midtone: chip ring and chip text (so the two
+    // match rather than sitting as close-but-different tones), the role badge, and the card title. The badge
+    // uses the cluster's own midtone rather than `resolvedBezel`, so foundation badges stay technical-purple.
+    ringColor: cluster.midtone,
+    textColor: cluster.midtone,
+    levelBadgeBg: cluster.midtone,
     levelBadgeText: "#ffffff",
+    titleColor: cluster.midtone,
   };
 }
 
@@ -232,7 +234,7 @@ function FoundationalPhase({ isVisible, emojiSpokes, gridLayout }) {
       // monolithic in paged media and gets shunted whole to the next sheet (leaving a blank gap behind)
       // or allowed to overlap what follows. See the fuller note in CompetencyMatrix.
       className={cn(cardClass, "overflow-hidden p-3 print:overflow-visible")}
-      style={clusterCardStyle(style.chipBg, style.accent)}
+      style={clusterCardStyle(style.chipBg, style.bezel)}
     >
       {/* `gap`, not `space-y`: gap only applies BETWEEN rendered flex items, and an ABSOLUTELY POSITIONED
           item is not one, so the out-of-flow grid below contributes no gap of its own. `space-y-*` sets
@@ -321,9 +323,9 @@ function CareerTrackCard({ track, number, emojiSpokes }) {
         cardClass,
         "flex flex-col gap-3 overflow-hidden p-3 sm:row-span-5 sm:grid sm:grid-rows-subgrid print:overflow-visible print:break-inside-avoid",
       )}
-      style={clusterCardStyle(style.chipBg, style.accent)}
+      style={clusterCardStyle(style.chipBg, style.bezel)}
     >
-      <h3 className={cn(DOC_TEXT.cardTitlePlain, "font-bold")} style={{ color: style.accent }}>
+      <h3 className={cn(DOC_TEXT.cardTitlePlain, "font-bold")} style={{ color: style.titleColor }}>
         Track {number}: {track.name}
       </h3>
 

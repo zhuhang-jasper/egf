@@ -12,37 +12,34 @@ export const PILLARS = {
 };
 
 /**
- * One slot per job: `color` accents (bezels, titles, chip rings), `chartBg` fills the radar wedges and the
- * legend swatch naming them (keep the two equal), `surfaceBg` is card backgrounds, `textColor` is text.
+ * One slot per job: `chartBg` fills the radar wedges and the legend swatch naming them (keep the two equal),
+ * `surfaceBg` is card backgrounds, `bezel` is card borders and left edges (the brightest, most saturated
+ * tone), `midtone` is every coloured text run — titles, badges, chip text and rings, chart pillar labels —
+ * sitting a step below `bezel` so it stays legible on a light surface.
+ * All are static hex, not derived at render, so the theory tab, tool tab and poster draw from one source.
  * See docs/DECISIONS.md#cluster-colour-slots before collapsing any two of these back into one value.
  */
 export const CLUSTERS = {
   technical: {
     label: "Technical",
-    color: "#756085",
     chartBg: "#cdbdd8",
     surfaceBg: "#EEE9F2",
-    textColor: "#756085",
-    badgeBg: "#c4b5d0",
-    badgeText: "#3f3549",
+    bezel: "#9782A8",
+    midtone: "#7D688D",
   },
   product: {
     label: "Product",
-    color: "#b8653a",
     chartBg: "#f5b39d",
     surfaceBg: "#FCE6DE",
-    textColor: "#b8653a",
-    badgeBg: "#e8b09a",
-    badgeText: "#5c2e14",
+    bezel: "#DF885D",
+    midtone: "#C87348",
   },
   operational: {
     label: "Operational",
-    color: "#4d7356",
     chartBg: "#bddbb5",
     surfaceBg: "#E9F3E6",
-    textColor: "#4d7356",
-    badgeBg: "#b0cdb0",
-    badgeText: "#1f3d28",
+    bezel: "#6E9577",
+    midtone: "#557B5E",
   },
 };
 
@@ -253,11 +250,11 @@ export function getClusterIdForPillar(pillarId) {
 /**
  * Per-axis cluster text colors, positionally aligned with the chart's label array (index i →
  * pillar `getPillarOrder()[i]`). Same palette the poster uses for pillar names
- * (`CLUSTERS[cluster].textColor`). Axes with no cluster fall back to `null`.
+ * (`CLUSTERS[cluster].midtone`). Axes with no cluster fall back to `null`.
  */
 export function getPillarClusterLabelColors() {
   return getPillarOrder().map((id) => {
     const clusterId = getClusterIdForPillar(id);
-    return clusterId ? CLUSTERS[clusterId].textColor : null;
+    return clusterId ? CLUSTERS[clusterId].midtone : null;
   });
 }
