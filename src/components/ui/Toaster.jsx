@@ -116,11 +116,21 @@ function CountdownRing({ duration, armedAt }) {
 }
 
 /**
- * App-wide toast host. Mount once near the app root; it subscribes to the store's `toasts`
+ * App-wide toast host. Mount once per route that raises toasts; it subscribes to the store's `toasts`
  * stack and renders a bottom-centered pile of transient notices (newest nearest the edge). Toasts
  * are added via the store's `showToast` action and auto-dismiss on a timer (see useAppStore).
+ *
+ * `bareBottom` IS FOR ROUTES WITH NO BOTTOM NAV — the standalone share pages (Poster, Social). The default
+ * offset clears AppBottomNav, which those pages do not have, so it would hold the stack a bar's height above
+ * nothing.
+ *
+ * They lift it FURTHER instead, to 80px: those pages are a tall export canvas under a toolbar, and a notice at
+ * the ordinary bottom margin reads as belonging to the artwork rather than to the control that raised it. A FIXED
+ * length, not a `vh` fraction — the lift is clearing the canvas's lower edge, which does not scale with the
+ * viewport, and a proportional value sat near mid-screen on a short window. Plus the safe-area inset, like the
+ * default, so it clears the home indicator.
  */
-export function Toaster() {
+export function Toaster({ bareBottom = false }) {
   const toasts = useAppStore((s) => s.toasts);
   const dismissToast = useAppStore((s) => s.dismissToast);
   const restartToastTimers = useAppStore((s) => s.restartToastTimers);
@@ -161,7 +171,8 @@ export function Toaster() {
       // `bottom` takes one length, so this moves by the bar's DELTA rather than to its new height. See
       // docs/DECISIONS.md#fixed-element-offsets-agree-by-construction.
       className={cn(
-        "pointer-events-none fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] flex flex-col-reverse items-center gap-2 px-4 print:hidden",
+        "pointer-events-none fixed inset-x-0 flex flex-col-reverse items-center gap-2 px-4 print:hidden",
+        bareBottom ? "bottom-[calc(80px+env(safe-area-inset-bottom))]" : "bottom-[calc(4.5rem+env(safe-area-inset-bottom))]",
         LAYER.toast,
       )}
     >

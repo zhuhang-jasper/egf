@@ -3,6 +3,10 @@ import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Chart, Filler, LineElement, PointElement, RadarController, RadialLinearScale } from "chart.js";
 
 import { BackToToolButton } from "@/components/BackToToolButton";
+import { ExportPngControls } from "@/components/ExportPngControls";
+import { Toaster } from "@/components/ui/Toaster";
+
+import { SHARE_EXPORT_TOAST_KEY, useAppStore } from "@/store/useAppStore";
 
 import { createClusterBackgroundPlugin } from "@/chart/plugins";
 import { FE_UI, getEmojiChartLabels, getPillarOrder, SITE_COPY } from "@/constants";
@@ -178,83 +182,59 @@ function useFeaturedLevels() {
 
 export default function SocialPage() {
   const cardRef = useRef(null);
+  const showToast = useAppStore((s) => s.showToast);
+  // Which action (if any) is running. The outcome is a toast, not a button label — see ExportPngControls.
   const [busy, setBusy] = useState(null); // null | "copy" | "download"
-  const [copyState, setCopyState] = useState("idle"); // idle | done | error
-  const [downloadState, setDownloadState] = useState("idle");
-  const [errMsg, setErrMsg] = useState("");
   const scale = useFitScale();
   const { levels, labels } = useFeaturedLevels();
 
-  const runExport = async (action, fn, setState) => {
+  const runExport = async (action, fn) => {
     if (!cardRef.current || busy) {
       return;
     }
     setBusy(action);
-    setErrMsg("");
     try {
       await fn(cardRef.current);
       track("social_exported", { action });
-      setState("done");
-      setTimeout(() => setState("idle"), 2000);
+      // Copy is confirmed, download is not — see the note on PosterPage's runExport for why.
+      if (action === "copy") {
+        showToast("Social image copied to clipboard", { variant: "success", key: SHARE_EXPORT_TOAST_KEY });
+      }
     } catch (err) {
       console.error(`Social PNG ${action} failed:`, err);
-      setErrMsg(String(err?.message || err));
-      setState("error");
-      setTimeout(() => setState("idle"), 4000);
+      showToast(action === "copy" ? "Couldn't copy the image" : "Couldn't save the image", {
+        variant: "error",
+        key: SHARE_EXPORT_TOAST_KEY,
+      });
     } finally {
       setBusy(null);
     }
   };
 
-  const handleCopy = () => runExport("copy", copySocialToClipboard, setCopyState);
-  const handleDownload = () => runExport("download", downloadSocialPng, setDownloadState);
-
-  const copyLabel = busy === "copy" ? "Copying…" : { idle: "⧉ Copy PNG", done: "✓ Copied", error: "Copy failed" }[copyState];
-  const downloadLabel = busy === "download" ? "Saving…" : { idle: "↓ Download", done: "✓ Saved", error: "Save failed" }[downloadState];
+  const handleCopy = () => runExport("copy", copySocialToClipboard);
+  const handleDownload = () => runExport("download", downloadSocialPng);
 
   return (
     /* `min-h-dvh` for the same reason as PosterPage's stage — see the note there. Without it this box stops at
        the canvas and the app's `bg-slate-100` body shows through below. */
     <div className="flex min-h-dvh w-full flex-col items-center overflow-x-hidden overflow-y-auto bg-black p-4">
-      {/* Top chrome row: back link left, canvas size right. See the matching note in PosterPage for why the row
-          lives here, why the label is outside the canvas, and why the numbers come off the constants. */}
-      <div className="mb-4 flex w-full items-center justify-between gap-3">
+      {/* Top chrome row: back link left, export controls right. Same arrangement as PosterPage's (minus its
+          settings menu) — see the matching note there for why the row lives here and why the size label is not
+          in it but pinned to the card's top-right edge below. */}
+      <div className="mb-2 flex w-full items-center justify-between gap-3">
         <BackToToolButton />
-        <span className="shrink-0 select-none text-sm font-semibold tabular-nums text-white">
+        <ExportPngControls onCopy={handleCopy} onDownload={handleDownload} busy={Boolean(busy)} />
+      </div>
+      {/* `relative` + `mt-6` carry the size label pinned above this box's top-right corner — see PosterPage. */}
+      <div className="relative mt-6 shrink-0" style={{ width: CANVAS_W * scale, height: CANVAS_H * scale }}>
+        <span className="pointer-events-none absolute right-0 bottom-full select-none pb-1 text-sm font-semibold tabular-nums text-white">
           {CANVAS_W} × {CANVAS_H}
         </span>
-      </div>
-      <div className="shrink-0" style={{ width: CANVAS_W * scale, height: CANVAS_H * scale }}>
         <article
           ref={cardRef}
           className="relative flex flex-col overflow-hidden bg-white px-12 py-9 shadow-2xl"
           style={{ width: CANVAS_W, height: CANVAS_H, transform: `scale(${scale})`, transformOrigin: "top left" }}
         >
-          {/* Floating export controls — inside the card (scale with it), excluded from the PNG. */}
-          <div className="absolute top-4 right-4 z-10 flex flex-col items-end gap-1" data-export-ignore>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={handleCopy}
-                disabled={Boolean(busy)}
-                className="cursor-pointer select-none rounded-lg bg-slate-400/60 px-4 py-2 text-[18px] font-semibold text-white hover:bg-slate-400 disabled:cursor-wait disabled:opacity-60"
-              >
-                {copyLabel}
-              </button>
-              <button
-                type="button"
-                onClick={handleDownload}
-                disabled={Boolean(busy)}
-                className="cursor-pointer select-none rounded-lg bg-slate-400/60 px-4 py-2 text-[18px] font-semibold text-white hover:bg-slate-400 disabled:cursor-wait disabled:opacity-60"
-              >
-                {downloadLabel}
-              </button>
-            </div>
-            {(copyState === "error" || downloadState === "error") && errMsg ? (
-              <span className="max-w-[320px] rounded-md bg-red-600 px-2 py-1 text-right text-[13px] font-medium text-white">{errMsg}</span>
-            ) : null}
-          </div>
-
           <div className="flex h-full items-center gap-0">
             {/* Left: header lifted from the poster masthead, scaled up to fill the card height. */}
             <header className="flex h-full w-[560px] shrink-0 flex-col justify-center gap-6">
@@ -287,6 +267,8 @@ export default function SocialPage() {
           </div>
         </article>
       </div>
+      {/* Mounted per route, for the same reason as PosterPage's — see the note there. */}
+      <Toaster bareBottom />
     </div>
   );
 }

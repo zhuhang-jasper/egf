@@ -4,7 +4,11 @@ import { Chart, Filler, LineElement, PointElement, RadarController, RadialLinear
 import { Settings } from "lucide-react";
 
 import { BackToToolButton } from "@/components/BackToToolButton";
+import { ExportPngControls } from "@/components/ExportPngControls";
 import { MalaysiaFlag } from "@/components/MalaysiaFlag";
+import { Toaster } from "@/components/ui/Toaster";
+
+import { SHARE_EXPORT_TOAST_KEY, useAppStore } from "@/store/useAppStore";
 
 import { TICK_FONT_FAMILY } from "@/chart/instance";
 import { createClusterBackgroundPlugin } from "@/chart/plugins";
@@ -183,11 +187,7 @@ const downloadPosterPng = (node, height) => downloadSharePng(node, CANVAS_W, hei
  * footer is ordinary DOM — but if the grey changes, it changes in both.
  */
 function PosterCredit({ spaced }) {
-  return (
-    <p className={`shrink-0 text-center text-[19px] text-slate-500 ${spaced ? "mt-10" : ""}`}>
-      {SITE_COPY.share.posterAttribution}
-    </p>
-  );
+  return <p className={`shrink-0 text-center text-[19px] text-slate-500 ${spaced ? "mt-10" : ""}`}>{SITE_COPY.share.posterAttribution}</p>;
 }
 
 /** Big tracking-wide divider label used between the poster's content bands. */
@@ -549,7 +549,10 @@ function PosterSettingsMenu({ showHeader, setShowHeader, showPillars, setShowPil
         <div
           role="menu"
           aria-label="Poster display settings"
-          className={`absolute left-1/2 top-[calc(100%+4px)] w-max -translate-x-1/2 rounded-lg border border-slate-300 bg-white py-1 shadow-lg ${LAYER.dropdown}`}
+          /* RIGHT-ANCHORED, not centred on the button: the cog is the row's right-most control, so a menu
+             centred on it (`left-1/2 -translate-x-1/2`) hangs past the viewport edge — it is far wider than the
+             32px button it drops from. */
+          className={`absolute right-0 top-[calc(100%+4px)] w-max rounded-lg border border-slate-300 bg-white py-1 shadow-lg ${LAYER.dropdown}`}
         >
           <PosterToggle label="Masthead" checked={showHeader} onChange={setShowHeader} />
           <PosterToggle label="The 9 Pillars" checked={showPillars} onChange={setShowPillars} />
@@ -563,11 +566,10 @@ function PosterSettingsMenu({ showHeader, setShowHeader, showPillars, setShowPil
 
 export default function PosterPage() {
   const posterRef = useRef(null);
-  // Which action (if any) is running, and the transient result of the last one.
+  const showToast = useAppStore((s) => s.showToast);
+  // Which action (if any) is running. NO per-action result state: the outcome is a toast, not a button label,
+  // so nothing here feeds the controls' text (see ExportPngControls).
   const [busy, setBusy] = useState(null); // null | "copy" | "download"
-  const [copyState, setCopyState] = useState("idle"); // idle | done | error
-  const [downloadState, setDownloadState] = useState("idle");
-  const [errMsg, setErrMsg] = useState("");
   // Which bands the paper carries. All on by default — the full poster is what this page is for.
   const [showHeader, setShowHeader] = useState(true);
   const [showPillars, setShowPillars] = useState(true);
@@ -579,111 +581,95 @@ export default function PosterPage() {
   const measuredHeight = useMeasuredHeight(posterRef, scale);
   const canvasH = measuredHeight ?? Math.round(CANVAS_W * 1.5);
 
-  const runExport = async (action, fn, setState) => {
+  const runExport = async (action, fn) => {
     if (!posterRef.current || busy) {
       return;
     }
     setBusy(action);
-    setErrMsg("");
     try {
       await fn(posterRef.current, canvasH);
       // Height and bands ride along because the poster is no longer one fixed artifact: without them
       // an export event can't be told apart from any other shape the toggles produce.
-      const bands = [showHeader && "header", showPillars && "pillars", showTracks && "tracks", showCredit && "credit"].filter(Boolean).join("+") || "none";
+      const bands =
+        [showHeader && "header", showPillars && "pillars", showTracks && "tracks", showCredit && "credit"].filter(Boolean).join("+") || "none";
       track("poster_exported", { action, height: canvasH, bands });
-      setState("done");
-      setTimeout(() => setState("idle"), 2000);
+      // COPY IS CONFIRMED, DOWNLOAD IS NOT — the same split as the tool's chart export (see EXPORT_TOAST in
+      // components/ChartSection.jsx): a download hands off to the browser's own save sheet, which reports the
+      // outcome itself and may be cancelled long after this resolves, so a toast there would be a claim we
+      // cannot check. A clipboard write has genuinely finished when the await returns.
+      if (action === "copy") {
+        showToast("Poster copied to clipboard", { variant: "success", key: SHARE_EXPORT_TOAST_KEY });
+      }
     } catch (err) {
       console.error(`Poster PNG ${action} failed:`, err);
-      setErrMsg(String(err?.message || err));
-      setState("error");
-      setTimeout(() => setState("idle"), 4000);
+      showToast(action === "copy" ? "Couldn't copy the poster" : "Couldn't save the poster", {
+        variant: "error",
+        key: SHARE_EXPORT_TOAST_KEY,
+      });
     } finally {
       setBusy(null);
     }
   };
 
-  const handleCopy = () => runExport("copy", copyPosterToClipboard, setCopyState);
-  const handleDownload = () => runExport("download", downloadPosterPng, setDownloadState);
-
-  const copyLabel = busy === "copy" ? "Copying…" : { idle: "⧉ Copy PNG", done: "✓ Copied", error: "Copy failed" }[copyState];
-  const downloadLabel = busy === "download" ? "Saving…" : { idle: "↓ Download", done: "✓ Saved", error: "Save failed" }[downloadState];
+  const handleCopy = () => runExport("copy", copyPosterToClipboard);
+  const handleDownload = () => runExport("download", downloadPosterPng);
 
   return (
     /* `min-h-dvh` IS WHAT KEEPS THE BLACK GOING PAST THE CANVAS — `body` no longer paints black itself (it
        carries the app's `bg-slate-100`), so a portrait canvas in a wide window would leave a pale slab below
        it otherwise. `min-h`, not `h`: a taller canvas still has to grow this box and scroll. */
     <div className="flex min-h-dvh w-full flex-col items-center overflow-x-hidden overflow-y-auto bg-black p-4">
-      {/* TOP CHROME ROW: back link left, settings centred, canvas size right. Spans the viewport rather than
-          the canvas's scaled width, which would mean threading the runtime scale up here.
+      {/* TOP CHROME ROW: back link left, export controls + settings right. Spans the viewport rather than the
+          canvas's scaled width, which would mean threading the runtime scale up here.
 
-          THE SIZE LABEL IS OUT HERE, NOT IN THE EXPORT CLUSTER, so it cannot reach the rasterized PNG at all
-          rather than relying on the `data-export-ignore` opt-out. Its numbers are the export's own.
-
-          THE SETTINGS BUTTON IS ABSOLUTELY CENTRED, not a third flex child — that would centre it in the
-          leftover space between two items of unequal width, which reads as visibly off-centre. */}
-      <div className="relative mb-4 flex w-full items-center justify-between gap-3">
+          THE SIZE LABEL IS NOT IN THIS ROW. It sits on the paper's top-right edge instead (see the stage below):
+          centred here it collided with the export cluster once Copy/Download moved up, and the row has no third
+          slot wide enough to hold it between a back link and three controls. */}
+      <div className="mb-2 flex w-full items-center justify-between gap-3">
         <BackToToolButton />
-        <div className="pointer-events-none absolute inset-x-0 flex justify-center">
-          <div className="pointer-events-auto">
-            <PosterSettingsMenu
-              showHeader={showHeader}
-              setShowHeader={setShowHeader}
-              showPillars={showPillars}
-              setShowPillars={setShowPillars}
-              showTracks={showTracks}
-              setShowTracks={setShowTracks}
-              showCredit={showCredit}
-              setShowCredit={setShowCredit}
-            />
-          </div>
+        {/* Settings sits RIGHT OF DOWNLOAD: the two export actions are the row's primary controls, and the
+            display toggles are what you reach for before exporting rather than instead of it. */}
+        <div className="flex shrink-0 items-center gap-3">
+          <ExportPngControls onCopy={handleCopy} onDownload={handleDownload} busy={Boolean(busy)} />
+          <PosterSettingsMenu
+            showHeader={showHeader}
+            setShowHeader={setShowHeader}
+            showPillars={showPillars}
+            setShowPillars={setShowPillars}
+            showTracks={showTracks}
+            setShowTracks={setShowTracks}
+            showCredit={showCredit}
+            setShowCredit={setShowCredit}
+          />
         </div>
-        <span className="shrink-0 select-none text-sm font-semibold tabular-nums text-white">
-          {CANVAS_W} × {canvasH}
-        </span>
       </div>
       {/* Scaling stage: reserves the scaled footprint so the canvas stays centred and scrolls cleanly; the
           article inside keeps its true pixel size for export. Its height tracks the MEASURED article height,
-          so switching a band off reclaims the page scroll instead of leaving a tall gap below the paper. */}
-      <div className="shrink-0" style={{ width: CANVAS_W * scale, height: canvasH * scale }}>
+          so switching a band off reclaims the page scroll instead of leaving a tall gap below the paper.
+
+          `relative` AND `mt-6` ARE FOR THE SIZE LABEL, which is pinned to this box's top-right corner: the box
+          is the paper's SCALED width, so the label tracks the paper's right edge at any zoom rather than the
+          viewport's. The top margin is the room the label sits in — without it the label would overlap the
+          toolbar's buttons, since it is positioned outside this box's own bounds. */}
+      <div className="relative mt-6 shrink-0" style={{ width: CANVAS_W * scale, height: canvasH * scale }}>
+        {/* Clipped to the paper's top edge: `bottom-full` puts it directly above, touching, and outside the
+            `<article>` entirely so it can never reach the rasterized PNG. */}
+        <span className="pointer-events-none absolute right-0 bottom-full select-none pb-1 text-sm font-semibold tabular-nums text-white">
+          {CANVAS_W} × {canvasH}
+        </span>
         {/* Fixed-WIDTH paper canvas, auto height — rendered 1:1 then visually scaled so the export is
             pixel-exact. `overflow-hidden` STAYS and is load-bearing HORIZONTALLY: the ring's labels are
             `CARD_W`-wide boxes reaching to -85px and 1069px against a 0–1080 canvas, and what hangs over is
             empty box only while clipped. Removing it lets those boxes widen the paper. */}
         <article
           ref={posterRef}
-          /* `pt-10` PAIRS WITH THE MASTHEAD, NOT WITH THE PAPER: a SectionLabel is a divider and wants less
-             air than a title, so with the header off that gap would read deeper than the bottom edge. Bottom
-             padding is unconditional, since the last band ends on ordinary content either way. */
-          className={`relative flex flex-col overflow-hidden bg-white px-10 pb-10 shadow-2xl ${showHeader ? "pt-10" : "pt-6"}`}
+          /* PADDING IS UNIFORM ON ALL FOUR SIDES, whichever bands are on. The top used to drop to `pt-6` with
+             the masthead off, on the reasoning that a SectionLabel is a divider and wants less air than a title;
+             that predates the credit line, which now ends every export 40px off the bottom edge (its own `mt-10`
+             plus this `pb-10`). Against that, 24px above a divider read cramped rather than tidy. */
+          className="relative flex flex-col overflow-hidden bg-white p-10 shadow-2xl"
           style={{ width: CANVAS_W, transform: `scale(${scale})`, transformOrigin: "top left" }}
         >
-          {/* Floating export controls — inside the poster (scale with it), top-right, excluded from
-              the rasterized PNG via the data-export-ignore selector in renderShareBlob. */}
-          <div className="absolute top-5 right-5 z-10 flex flex-col items-end gap-1" data-export-ignore>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={handleCopy}
-                disabled={Boolean(busy)}
-                className="cursor-pointer select-none rounded-lg bg-slate-400/60 px-4 py-2 text-[18px] font-semibold text-white hover:bg-slate-400 disabled:cursor-wait disabled:opacity-60"
-              >
-                {copyLabel}
-              </button>
-              <button
-                type="button"
-                onClick={handleDownload}
-                disabled={Boolean(busy)}
-                className="cursor-pointer select-none rounded-lg bg-slate-400/60 px-4 py-2 text-[18px] font-semibold text-white hover:bg-slate-400 disabled:cursor-wait disabled:opacity-60"
-              >
-                {downloadLabel}
-              </button>
-            </div>
-            {(copyState === "error" || downloadState === "error") && errMsg ? (
-              <span className="max-w-[320px] rounded-md bg-red-600 px-2 py-1 text-right text-[13px] font-medium text-white">{errMsg}</span>
-            ) : null}
-          </div>
-
           {/* Header — poster masthead with oversized "9" mark. Every toggled band is UNMOUNTED rather than
               hidden, because the paper's height is measured (see useMeasuredHeight) and `invisible` would
               leave its full height as a blank strip. Switching this off is what produces the ring-only
@@ -768,6 +754,10 @@ export default function PosterPage() {
           {showCredit ? <PosterCredit spaced={showHeader || showPillars || showTracks} /> : null}
         </article>
       </div>
+      {/* Mounted per route: App renders this page INSTEAD of HomePage, which is where the app's own Toaster
+          lives, so without this the export toasts would be raised into nothing. `bareBottom` because this page
+          has no AppBottomNav for the default offset to clear. */}
+      <Toaster bareBottom />
     </div>
   );
 }

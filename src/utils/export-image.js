@@ -145,7 +145,10 @@ export async function renderShareBlob(node, width, height) {
       // localFonts — this is what makes the bold text (the "9", headings) render Inter, not Roboto.
       embedFonts: true,
       localFonts,
-      exclude: ["[data-export-ignore]"], // the floating copy/download buttons — never in the capture
+      // Opt-out for anything inside a share canvas that must not be rasterized. NOTHING USES IT TODAY — the
+      // copy/download buttons that did are now a row outside the `<article>` — but it is kept as the escape
+      // hatch for the next control that has to live inside the artwork.
+      exclude: ["[data-export-ignore]"],
       excludeMode: "remove",
     });
   } finally {
