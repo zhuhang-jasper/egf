@@ -16,8 +16,10 @@ function PillarCard({ pillar, clusterLabel, color, textColor, showLatestChanges 
   const { emoji, name } = splitEmoji(pillar.pillar);
   return (
     <article
-      className="rounded-xl border border-white/70 p-3 shadow-sm shadow-slate-200/40 xs:row-span-4 xs:grid xs:grid-rows-subgrid gap-2"
-      style={{ backgroundColor: getClusterSurfaceBg(color) }}
+      // The 3px left edge is the cluster marker used on every cluster-tinted card in the app — matrix
+      // cards, track cards, the tool form's clusters. These were the only ones without it.
+      className="overflow-hidden rounded-xl border border-white/70 border-l-[3px] p-3 shadow-sm shadow-slate-200/40 xs:row-span-4 xs:grid xs:grid-rows-subgrid gap-2 print:overflow-visible"
+      style={{ backgroundColor: getClusterSurfaceBg(color), borderLeftColor: textColor }}
     >
       {/* single-col: title left + cluster label right; col: title only */}
       <div className="flex flex-row-reverse items-start justify-between gap-3 xs:block">
