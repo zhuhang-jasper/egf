@@ -378,7 +378,7 @@ export default function HomePage() {
             while dropping the app build number (see the two spans below). Both forms read ownership first
             (copyright, licence) and identity second, so only the tail of the line swaps.
             See docs/DECISIONS.md#print-running-footer and the `@page` rules in index.css. */}
-        <footer data-print-running className="mt-auto px-3 py-2 text-center text-[11px] text-slate-500">
+        <footer data-print-running className="mt-auto px-3 pb-2 pt-4 text-center text-[11px] text-slate-500 print:pt-2">
           © 2026 Jasper Loo Zhu Hang ·{" "}
           <a
             href="https://creativecommons.org/licenses/by-nc/4.0/"
