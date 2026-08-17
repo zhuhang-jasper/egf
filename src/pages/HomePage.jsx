@@ -292,7 +292,7 @@ export default function HomePage() {
         /* `bg-page-base`, THE SAME TOKEN AS THE WRAPPER AND `body` — not a lighter surface. The cards are what
            lift off the page here; this column is the page. It carried the light surface for one pass and the
            result was the chrome reading as a dark frame around a pale middle. */
-        className="relative flex w-full flex-1 flex-col bg-page-base pb-[calc(3.5rem+env(safe-area-inset-bottom))] print:max-w-none print:p-0 print:pb-0 print:shadow-none"
+        className="relative flex w-full flex-1 flex-col bg-page-base pb-[calc(3.5rem+env(safe-area-inset-bottom))] print:max-w-none print:bg-white print:p-0 print:pb-0 print:shadow-none"
         style={{ minWidth: FE_UI.page.minWidthPx }}
       >
         {/* The sticky app header: brand lockup plus install pill, full-width and propless. Neither navigation
