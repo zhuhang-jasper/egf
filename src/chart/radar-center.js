@@ -3,17 +3,9 @@ import { getChartLayoutLabelsForChart, isHeroChart, isTheoryChart, resolveChartU
 import { FE_UI, getPillarOrder } from "@/constants";
 
 /**
- * Per-pillar pixel nudges for the chart axis labels, applied after the radar's automatic
- * placement. Keyed by pillar id: `{ x, y }` shifts the label right/down.
- *
- * THESE ARE THE VALUES AT THE FULL-SIZE CHART (`page.chartMaxWidthPx`, 526px), NOT AT EVERY WIDTH — the
- * FAR endpoint of a two-point ramp whose near end is {@link PILLAR_LABEL_NUDGE_MIN} at `chartMinWidthPx`.
- * A fixed pixel offset that reads as a small correction on desktop is a proportionally much larger shove
- * on a phone (17px against a ~40% smaller radius), so the two ends are tuned separately and interpolated
- * by {@link getPillarLabelNudge}. Tune these against the DESKTOP chart, as before.
- *
- * Shared by the theory hero radar (same render size). The small career-track charts are sized well
- * below the ramp's own floor, so they have their own {@link CAREER_TRACK_PILLAR_LABEL_NUDGE}.
+ * Per-pillar pixel nudges for the chart axis labels, applied after the radar's automatic placement.
+ * Keyed by pillar id: `{ x, y }` shifts the label right/down. Values at the FULL-SIZE chart (526px) — the
+ * far endpoint of a ramp whose near end is {@link PILLAR_LABEL_NUDGE_MIN}; tune against the desktop chart.
  */
 const PILLAR_LABEL_NUDGE = {
   // coding: { x: -5, y: 0 },
@@ -46,20 +38,9 @@ const CAREER_TRACK_PILLAR_LABEL_NUDGE = {
 const HERO_PILLAR_LABEL_NUDGE = PILLAR_LABEL_NUDGE;
 
 /**
- * Per-pillar nudges AT THE NARROW END of the ramp (`page.chartMinWidthPx`, 302px) — the other measured
- * endpoint, interpolated against {@link PILLAR_LABEL_NUDGE}'s values at 526px.
- *
- * TWO HAND-TUNED ENDPOINTS, NOT ONE ENDPOINT AND A RATIO. An earlier version scaled the 526px map by a
- * single invented factor (0.6, from the radius ratio 302/526), which assumed a nudge is proportional to
- * the radar's radius. It is not: a nudge corrects the GAP between a label's text box and the radar's
- * edge, and the two halves of that gap scale differently — the radius tracks the frame width, while the
- * label's font size is clamped to a 12-15px range and so barely shrinks. Any single ratio is therefore
- * wrong somewhere in the middle. Measuring both ends and interpolating is the only way the line is real.
- *
- * ALL ZERO IS THE STARTING HYPOTHESIS, not a finished tuning: the reason nudges exist at all is that
- * Chart.js's automatic placement drifts at large radii, which suggests the correction should vanish as
- * the chart shrinks. If a label collides at 302px, raise ITS entry here — per pillar, in isolation, at
- * the width where you can see it. Anything left at 0 fades the desktop correction linearly to nothing.
+ * Nudges at the NARROW end of the ramp (302px), interpolated against {@link PILLAR_LABEL_NUDGE}'s 526px
+ * values. Two hand-tuned endpoints, not one endpoint and a ratio — see
+ * docs/DECISIONS.md#cluster-nudge-ramp-is-two-endpoints-not-a-ratio before collapsing this back to one.
  */
 const PILLAR_LABEL_NUDGE_MIN = {
   domainLogic: { x: -7, y: 13 },
@@ -73,16 +54,9 @@ const PILLAR_LABEL_NUDGE_MIN = {
 const ZERO_NUDGE = { x: 0, y: 0 };
 
 /**
- * A pillar's nudge at this chart width: linear between {@link PILLAR_LABEL_NUDGE_MIN} at
- * `chartMinWidthPx` and the map's own tuned value at `chartMaxWidthPx`, on `getChartWidthUnit` — the same
- * ramp the label size, label padding, layout padding and label reserve all run off, so a label and its
- * correction move together instead of one holding still while the other shrinks.
- *
- * Not rounded, for the reason every other ramped value here is fractional: an integer offset reaches its
- * target through the intermediate integers, and each crossing pops the label 1px as the chart scales.
- *
- * `preScaled` maps (the career-track profiles, tuned at their own ~180px size, far below the ramp's
- * floor) are returned verbatim — interpolating them would shrink values that are already narrow-end.
+ * A pillar's nudge at this chart width: linear between `PILLAR_LABEL_NUDGE_MIN` and the map's own tuned
+ * value, on the same `getChartWidthUnit` ramp the label size runs off. `preScaled` maps (career-track
+ * profiles, already tuned at their own small size) pass through verbatim.
  */
 function getPillarLabelNudge(nudgeMap, pillarId, widthUnit, preScaled) {
   const far = nudgeMap[pillarId];
@@ -166,12 +140,7 @@ function rebuildRadarPointLabelItems(scale) {
   const layoutLabels = getChartLayoutLabelsForChart(scale.chart);
   const pillarOrder = getPillarOrder();
   // Each chart renders at a different size, so each has its own hand-tuned nudge map: the tool
-  // chart, the theory hero radar, and the small career-track profiles.
-  //
-  // The first two are tuned at the FULL-SIZE (526px) chart and interpolated toward PILLAR_LABEL_NUDGE_MIN
-  // for narrower frames; the career-track map is already tuned at its own ~180px render size, which sits
-  // below the ramp's floor, so it is marked pre-scaled and passed through untouched. Getting that
-  // backwards would shrink values that are already at the narrow end.
+  // chart, the theory hero radar (both interpolated by width), and the pre-scaled career-track profiles.
   let nudgeMap = PILLAR_LABEL_NUDGE;
   let nudgePreScaled = false;
   if (isTheoryChart(scale.chart)) {

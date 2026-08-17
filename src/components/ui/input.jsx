@@ -6,9 +6,7 @@ const Input = forwardRef(({ className, type, ...props }, ref) => (
   <input
     type={type}
     className={cn(
-      // `bg-page-surface`, not `bg-transparent`: an input is a WELL you type into, so it has to read as a
-      // surface of its own. Transparent worked only while every ancestor happened to be white — once the page
-      // took its own tint the field showed the page through and stopped looking like a field at all.
+      // `bg-page-surface`, not `bg-transparent`: it only looked white before because every ancestor was.
       "flex h-9 w-full rounded-md border border-input bg-page-surface px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
       className,
     )}

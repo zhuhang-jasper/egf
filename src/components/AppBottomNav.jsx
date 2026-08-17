@@ -43,14 +43,9 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
     >
       {/* No horizontal padding: it would inset every item, so the active indicator could not reach the row's
           outer edge. Breathing room belongs inside each button. The MAX width bound is per ITEM, not here.
-
-          `minWidth` MATCHES `main`'S OWN FLOOR (HomePage) and must keep matching it. Below that width the page
-          stops shrinking and `body`'s `overflow-x: auto` starts scrolling it, but this bar is `fixed` to the
-          VIEWPORT — so without a floor of its own it kept shrinking while the content did not, and scrolling
-          right slid the bar out of alignment with the page it navigates.
-
-          On the ROW, not the <nav>: the bar's background and its top shadow must still paint to the viewport
-          edges at any width (see the gutter note above), so only the items get the floor. */}
+          `minWidth` matches `main`'s own floor — this bar is `fixed`, so without it the bar kept shrinking
+          past where the page stopped, sliding out of alignment once the page started scrolling horizontally.
+          On the row, not `<nav>`, so the background/shadow still reach the viewport edge below that width. */}
       <div className="mx-auto flex w-full items-stretch justify-center" style={{ minWidth: FE_UI.page.minWidthPx }}>
         {NAV_ITEMS.map(({ id, label, icon: Icon, version, adminOnly }) => {
           const selected = activeTab === id;
@@ -78,9 +73,6 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
                 // Three gaps must hold at once against the bar's tint, and none of these values can move alone.
                 // `slate-300` for active has been tried and rejected twice. The icon below takes `text-black`
                 // with these as one mark. See docs/DECISIONS.md#bottom-nav-colour-system before retuning.
-                // Both fills are read AGAINST the bar's own `page-base` and must stay in ITS family, one rung
-                // down, so the active segment reads as a darker step of the bar rather than a different
-                // material. If the base hue moves, these move with it.
                 selected ? "border-black bg-slate-200 text-black" : "border-transparent text-slate-400 hover:bg-slate-200/50",
               )}
             >
@@ -92,8 +84,6 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
                   the badges' containing block started mid-device-pixel and the lock rasterized 1px off,
                   flipping direction on resize. A fixed 24px box gives them a whole-pixel origin to sit on. */}
               <span className="relative flex size-6 shrink-0 items-center justify-center">
-                {/* Matches the label's colour exactly — the glyph and the word are one mark (see the note on
-                    the button), so the inactive grey moved to `stone` with it. */}
                 <Icon className={cn("size-6 shrink-0", selected ? "text-black" : "text-slate-400")} aria-hidden />
                 {showUnseenDot ? (
                   // No ring: it needs both a width and a colour, and every past colour became a halo on the

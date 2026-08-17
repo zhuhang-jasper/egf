@@ -18,11 +18,8 @@ import { clearStickyScrollOffset, setStickyScrollOffset } from "@/utils/scroll";
  * for on every screen; that is what made a collapsible title necessary before, and then made the collapse state
  * contested. The title and tagline now open the Theory tab.
  *
- * `bg-page-surface` must be OPAQUE, because content scrolls underneath. The bar is WHITE against the tinted
- * page (`--color-page-base`), not tinted against a white page as it was for most of this app's life: chrome is
- * a layer above the page, the same relationship the cards have to it. Three dependents move with it —
- * AppBottomNav's bar (which must be IDENTICAL, not merely similar, since both abut the same page) and that
- * bar's active fill and inactive hover, which are read against it.
+ * `bg-page-surface` must be OPAQUE and match AppBottomNav's bar exactly — see
+ * docs/DECISIONS.md#page-base-vs-chrome-tint for why chrome takes this instead of the tint.
  *
  * `p-3` is one 12px inset declared once here (it is also what the corner controls' `top-3` resolves against).
  * `min-h-14` is the header's entire height, since both children are absolutely positioned and contribute none:

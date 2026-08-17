@@ -1,12 +1,6 @@
 import { FE_UI } from "@/constants";
 
-/**
- * 0 at {@link FE_UI.page.chartMinWidthPx}, 1 at chartMaxWidthPx.
- *
- * CHART widths, not page widths: the argument is the radar frame's measured width, so both ends must be frame
- * widths too. These read `page.minWidthPx`/`maxWidthPx` until the chart moved inside a card, at which point the
- * page measure and the frame width stopped being the same number.
- */
+/** 0 at {@link FE_UI.page.chartMinWidthPx}, 1 at chartMaxWidthPx — frame widths, not page widths. */
 export function getChartWidthUnit(chartWidthPx) {
   const { chartMinWidthPx, chartMaxWidthPx } = FE_UI.page;
   if (chartMaxWidthPx <= chartMinWidthPx) {

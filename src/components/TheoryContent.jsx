@@ -561,18 +561,9 @@ function TheoryContent({
             NO BOTTOM MARGIN: this is a sibling of the four sections now, so the parent column's `gap-6`
             sets the distance to section I, the same distance that separates every other pair. It used to
             carry `mb-4` because it lived in a nested `gap-2` column with section I inside it. */}
-        {/* A CARD ON SCREEN, THE COVER PAGE ON PAPER. On screen this trio is a hero plate and takes the same
-            `CARD_PLAIN` surface as the tool tab's chart card, so both tabs open with a titled radar on a white
-            card over the tinted page. On paper it is the printed document's cover — a full sheet holding three
-            elements — where a bordered box around them would read as furniture rather than a cover, so every
-            part of the card is stripped: `print:border-0 print:bg-transparent print:p-0 print:shadow-none
-            print:rounded-none`.
-
-            `print:bg-transparent` matters as much as the border: the cover inherits the sheet's white, and a
-            painted card background would print as a subtly different white block behind the title.
-
-            The `print:mt-[18vh]` cover reserve stays on THIS element (it moved out here with the padding), so
-            the sheet's top margin is still declared in one place. */}
+        {/* A card on screen (matches ChartSection's), the cover page on paper — every card property stripped
+            with `print:*`, including `bg-transparent` so a painted background doesn't print as an off-white
+            block behind the title. The `print:mt-[18vh]` cover reserve stays on this element. */}
         <div
           className={cn(
             CARD_PLAIN,

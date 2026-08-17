@@ -26,9 +26,7 @@ export function ClusterLegend({ className, hidden = false, chartWidth = 0 }) {
         }
         return (
           <li key={id} data-chart-export="cluster-legend-item" className="inline-flex items-center gap-2">
-            {/* `chartBg`, the same value the radar's wedges are filled with (chart/plugins.js) — a legend
-                swatch has to be the colour actually on the chart, or it is explaining something else. It was
-                the saturated `color`, which left vivid swatches sitting under noticeably paler wedges. */}
+            {/* `chartBg` — the wedges' own fill (chart/plugins.js), or the key explains a colour not on the chart. */}
             <span
               data-chart-export="cluster-legend-swatch"
               className="shrink-0 border border-black/20"

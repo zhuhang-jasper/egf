@@ -202,9 +202,18 @@ launch mode into the shortcut when it is added.
 
 See [tab-switch-scrollbar-jump](#tab-switch-scrollbar-jump), which is the same bug from the nav's side.
 
+### page-base-vs-chrome-tint
+
+The app has one off-white token, `--color-page-base`, and the question of who paints it flipped twice before
+landing. Cards are the light thing (`page-surface`, white); the page underneath them carries the tint. The
+header and bottom nav went through both roles: first they carried the tint while `main` was lighter than them,
+which made the chrome read as the darkest thing on screen — a dark frame around a pale middle, backwards from
+chrome that recedes. They now take `page-surface`, the same white the cards use, and sit as a layer *above*
+the tinted page rather than framing it.
+
 ### bottom-nav-colour-system
 
-Four values in the bar are read **against** its `bg-slate-100` tint, so none of them can be changed alone.
+Four values in the bar are read **against** its `bg-page-surface` tint, so none of them can be changed alone.
 
 **Three gaps have to hold at once**, which is what makes the fills fiddly to retune:
 
@@ -650,6 +659,51 @@ size, and that arithmetic is what keeps them there.
 
 Letter is 816px and lands ~22px wider, which the bitmap rescale absorbs without visible loss. The theory
 panel's own 900px cap never binds, since paper is narrower than that.
+
+### page-min-width-vs-chart-min-width
+
+`FE_UI.page.minWidthPx` used to be one number doing two jobs: the layout floor on `main`, and the narrow end
+of the chart's label-size ramp. When the chart moved inside a card, the ramp's floor genuinely needed to widen
+by the card's padding (the frame really did get narrower) — but raising `minWidthPx` to match also raised the
+*layout* floor, which had no reason to move, since the card only redistributes space the page already had. The
+practical effect was the horizontal-scroll threshold moving from ~365px to ~389px for no benefit. The fix
+split the number in two: `minWidthPx` stayed the layout floor, and `chartMinWidthPx` (the frame width at that
+floor) is what the label-size ramp reads. If a future padding change appears to require widening the layout
+floor, check whether it is actually a chart-ramp problem wearing the wrong name.
+
+### cluster-nudge-ramp-is-two-endpoints-not-a-ratio
+
+The chart's per-pillar label nudges (`radar-center.js`) were fixed pixel offsets, tuned only against the
+desktop-width chart. At a phone-width frame they overcorrected, because a nudge closes the gap between a
+label's text box and the radar's edge, and that gap does not scale uniformly with width: the radius shrinks
+roughly linearly, but the label's own font size is clamped to a narrow px range and barely moves. A single
+scale factor derived from the radius ratio (~0.6, tried once) is therefore wrong somewhere in the middle —
+correct at one end, over- or under-corrected everywhere else depending on which pillar.
+
+The fix keeps two independently hand-tuned endpoints — the existing desktop values, and a matching map for the
+narrowest chart width — and interpolates between them on the same width ramp the label size itself uses. Retune
+by adjusting whichever endpoint is visibly wrong at that width; do not collapse the pair back into one map and
+a multiplier, which is the mistake this replaced.
+
+### cluster-colour-slots
+
+A cluster's colour is not one hex reused at different opacities — it is up to five independent values, each
+with exactly one consumer, because two failure modes showed up when they were collapsed:
+
+- **`chartBg`** fills the radar's cluster wedges and the legend swatch naming them (kept equal on purpose — a
+  legend explaining a colour not on the chart is worse than no legend). Filled at *full opacity* with no alpha
+  in that drawing code, so it has to sit well below the accent's saturation: too vivid and the wedge competes
+  with the data polygon drawn on top of it; too close to white and it disappears under the polygon entirely.
+  Both were shipped and reverted before landing here.
+- **`color`** is the accent — bezels, titles, chip rings — and is deliberately more saturated than `chartBg`.
+- **`surfaceBg`** is the opaque card background. It used to be *derived* from `chartBg` via a fixed alpha
+  suffix, which meant retuning the card tint moved the chart's wedge colour too, and — being translucent — the
+  card tint also drifted whenever the page background changed underneath it. Making it its own opaque value
+  fixed both at once.
+- `textColor` / `badgeBg` / `badgeText` are narrower-purpose (label text, career-track badges).
+
+Changing `chartBg` reaches the exported PNG, since the wedges and legend both live inside the chart's export
+root — check a copied image before shipping a palette edit.
 
 ---
 

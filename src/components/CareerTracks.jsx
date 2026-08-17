@@ -37,9 +37,7 @@ const TRACK_CHART_EMOJI_QUERY = "(min-width: 640px) and (max-width: 819px)";
  */
 const FOUNDATION_GRID_QUERY = "(min-width: 640px)";
 
-// Matches CARD_TINTED's edge treatment: a 3px left bezel, nothing on the other three sides (they used to carry
-// `border-white/70`, which haloed once the page took its own tint — see CARD_TINTED). The bezel colour is per
-// track rather than per cluster, so these two cards set it inline themselves instead of via clusterCardStyle.
+// CARD_TINTED's edge treatment, but the bezel is per TRACK not per cluster, so these set it inline themselves.
 const cardClass = `rounded-xl border-y-0 border-r-0 border-l-[3px] ${CARD_SHADOW}`;
 const levelBadgeClass = cn(
   "inline-flex min-w-[1.5rem] shrink-0 items-center justify-center rounded-md px-1.5 py-0.5 text-white",
@@ -56,10 +54,7 @@ function LevelBadge({ level, backgroundColor, color }) {
 }
 
 function buildTrackStyle(cluster, accent) {
-  // `cluster.color`, the saturated one — this is the card's left bezel and its title, so it must match the
-  // bezel every other cluster card paints (and the legend swatch, and the radar's wedges). It was
-  // `cluster.textColor`, which is now a step darker than the bezel colour and made these two cards' edges
-  // disagree with the rest.
+  // `color`, not `textColor`: this paints the bezel and title, so it must match every other cluster card.
   const resolvedAccent = accent ?? cluster.color;
   return {
     accent: resolvedAccent,

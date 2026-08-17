@@ -4,15 +4,9 @@
  *
  * Surface only: layout, transition and the focus ring come from `buttonVariants`, so this composes onto a
  * `<Button>` rather than replacing what it provides.
- */
-/*
- * WHITE, NOT A SLATE TINT. These used to be `bg-slate-100/80`, which read as a raised control only because the
- * page behind it was white — a tint on white is a button; the same tint on a tinted page is camouflage. The
- * page now carries the tint (see `--color-page-base`), so the buttons take the surface colour instead and the
- * figure/ground relationship is the same one it always was, just the right way round.
  *
- * Hover DARKENS toward the page rather than lightening: at rest these are the lightest thing in the row, so
- * there is nowhere lighter to go.
+ * `bg-page-surface`, not a tint: a tint read as a button only while the page behind it was white. Hover
+ * darkens toward the page instead of lightening, since these are already the lightest thing in the row.
  */
 export const TOOLBAR_SURFACE = "shrink-0 border-slate-200 bg-page-surface text-slate-600 hover:bg-slate-100 hover:text-slate-900";
 

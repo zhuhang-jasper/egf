@@ -12,33 +12,9 @@ export const PILLARS = {
 };
 
 /**
- * The three clusters, and the four colours each one owns. FOUR VALUES, FOUR DIFFERENT JOBS — read this before
- * editing any of them, because only one of the four is "the cluster's colour" in the way you might assume:
- *
- *   color      the ACCENT, used sparingly on small marks that should punch: card left bezels, career-track
- *              titles, chip rings. NOT the chart and NOT the legend.
- *   chartBg    the radar's cluster wedges (chart/plugins.js) AND the legend swatch naming them. THESE TWO MUST
- *              STAY THE SAME VALUE — a legend explains the chart, so its swatch has to be the colour actually
- *              on it. A wedge is also a large area behind live data, so this belongs below `color`: the accent
- *              at wedge size reads as three solid blocks fighting the data polygon.
- *   surfaceBg  card backgrounds — the tool form's cluster cards, the theory tab's pillar cards, the
- *              career-track cards, the score cards. OPAQUE, so it holds its value on any page background.
- *   textColor  cluster label text and the score cards' text/border, plus the chart's coloured axis labels
- *              (getPillarLabelColor). Text first: keep it dark enough to read on `surfaceBg`.
- *   badgeBg / badgeText   the career-track level badges only.
- *
- * WHAT THE SPLIT FIXED, so it does not get undone: `chartBg` and `surfaceBg` used to be ONE field. Card tints
- * were derived from the wedge colour by a `${color}55` alpha helper, so (a) cards could not be retuned without
- * moving the chart and vice versa, and (b) being translucent, every card tint shifted whenever the page
- * background changed. `surfaceBg` is now that same 33%-over-white composite, precomputed opaque — hence pairs
- * like #cdbdd8 → #EEE9F2 that look arbitrary but are exactly what shipped before. `color` is likewise split
- * out of `textColor`, which had been doing bezel duty on top of being text; both still hold the same hex here,
- * and that is now a coincidence the two are free to break.
- *
- * TO RESTYLE: edit the hexes below, nothing else. Two traps, both learned the hard way — keep `chartBg` well
- * below `color` in saturation (a vivid wedge competes with the polygon, a near-white one vanishes under it),
- * and note `chartBg` CHANGES THE EXPORTED PNG, since the wedges and legend both sit inside the chart's export
- * root. Copy an image and look at it before shipping a palette edit.
+ * One slot per job: `color` accents (bezels, titles, chip rings), `chartBg` fills the radar wedges and the
+ * legend swatch naming them (keep the two equal), `surfaceBg` is card backgrounds, `textColor` is text.
+ * See docs/DECISIONS.md#cluster-colour-slots before collapsing any two of these back into one value.
  */
 export const CLUSTERS = {
   technical: {
@@ -69,17 +45,6 @@ export const CLUSTERS = {
     badgeText: "#1f3d28",
   },
 };
-
-/**
- * NO `getClusterSurfaceBg` / `getClusterSurfaceHoverBg` HELPERS ANY MORE. They took a cluster's saturated
- * `color` and appended `55` / `77` alpha to derive the card tint from it, which is exactly the coupling
- * `surfaceBg` exists to break: the tint could not be tuned without moving the colour that paints the chart,
- * and being translucent it also shifted whenever the page background changed.
- *
- * Read `CLUSTERS[id].surfaceBg` directly instead. For the hover step, mix toward the cluster's own colour —
- * `color-mix(in srgb, ${color} 12%, ${surfaceBg})`, as CompetencyMatrix does. NOT a black overlay: washing
- * black over these desaturates all three toward the same grey instead of each going deeper in its own hue.
- */
 
 /**
  * The single chart-axis order and form-cluster grouping (ids reference {@link PILLARS}).

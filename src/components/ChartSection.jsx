@@ -398,23 +398,10 @@ export function ChartSection({ isVisible }) {
         <ChartDisplayMenu />
       </div>
 
-      {/* THE CARD IS A WRAPPER AROUND `exportRef`, NEVER `exportRef` ITSELF. Everything inside that ref is
-          rasterised into the exported PNG, so a border, padding and shadow on the same element would bake a
-          cropped card frame into every copied image. The surface is this element's; the export root stays the
-          bare content column it was.
-
-          `CARD_PLAIN` — the same token the theory tab's cards take, so the two tabs' surfaces cannot drift.
-          No left bezel: that marks membership of a colour-coded cluster (see PillarGrid/CompetencyMatrix) and
-          the chart belongs to no cluster, which is why this is the PLAIN token and not the tinted one.
-
-          `overflow-hidden` keeps the radar's corners inside the radius; `print:*` strips the card on paper,
-          where the chart is the document and a box around it is furniture.
-
-          `p-3` AT EVERY WIDTH, WITH NO `sm:p-4` STEP — this padding is load-bearing arithmetic, not taste. The
-          radar's width is `panel measure − 2×12 (the tab panel's px-3) − 2×this`, and `FE_UI.page.maxWidthPx`
-          (574) and `minWidthPx` (374) are both sized to land the frame on 526 and 326. A responsive step would
-          make that subtraction change at one breakpoint, so 526 — the number the theory hero radar matches
-          itself to — would only be true above `sm`. Change this and you must change both measures with it. */}
+      {/* Wraps `exportRef`, never IS it — everything inside that ref is rasterised into the exported PNG, so a
+          border/padding/shadow here would bake a cropped card frame into every copied image. No left bezel:
+          the chart isn't a cluster member. `p-3` at every width (no `sm:p-4`) because FE_UI.page.maxWidthPx is
+          sized backwards from this exact padding to land the frame on `chartMaxWidthPx` — see ui.js. */}
       <div
         className={cn(
           CARD_PLAIN,
