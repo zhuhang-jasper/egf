@@ -124,8 +124,12 @@ export const FE_UI = {
        exportImagePaddingPx around all four sides of that whole block. The white below the credit is therefore
        the margin, not this number. See measureAttribution in utils/copy-chart-image.js.
        Larger than exportImagePaddingPx, and a SEPARATE knob rather than a duplicate of it: this one separates two
-       pieces of content, that one is the image's edge. Retune either without touching the other. */
-    exportImageAttributionGapPx: 18,
+       pieces of content, that one is the image's edge. Retune either without touching the other.
+       WHY IT IS THIS WIDE: at 18 the credit sat close enough under the cluster legend to read as a second legend
+       row rather than the image's footer — it is only 0.8x the legend's size (the ratio above), so proximity was
+       doing more grouping than the type scale could undo. This is the knob for that, not the credit's colour or
+       weight, which are shared with every other footer in the app and stay put. */
+    exportImageAttributionGapPx: 26,
     /* slate-500, THE ONE CREDIT GREY, shared with the app footer (screen and print, pages/HomePage.jsx) and the
        poster's footer. Every credit line in the app reads at this weight, so it is a single decision rather than
        a per-surface taste call.
