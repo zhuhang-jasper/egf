@@ -18,7 +18,7 @@ export function BackToToolButton() {
       className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-white/20"
     >
       <ArrowLeft className="size-4 shrink-0" aria-hidden />
-      Back to tool
+      Back
     </a>
   );
 }

@@ -14,7 +14,7 @@
  *   1.  tool  bottom → refresh → stays at bottom
  *   2.  theory bottom → refresh → stays at bottom
  *   3.  tool↔theory switch → each tab restores its own last scroll, instantly (no smooth glide)
- *   4.  tool top → theory bottom → back to tool → tab bar stays stuck (pinned)
+ *   4.  tool top → theory bottom → back → tab bar stays stuck (pinned)
  *   5.  theory: click a pillar → collapse old + expand new, smooth-scroll to its card top
  *       (5b: nothing expanded → just expand + scroll)
  *   6.  deep-link ?section= → restore last scroll, then smooth-scroll to the section
@@ -336,7 +336,7 @@ const SCENARIOS = [
         await sleep(600);
         await h.scrollTo(500);
         const theoryY = await h.scrollY();
-        // back to tool — should restore toolY instantly
+        // back — should restore toolY instantly
         await evalJs(
           page,
           "window.__sw=[];const t0=performance.now();(function tk(){window.__sw.push(Math.round(window.scrollY));if(performance.now()-t0<700)requestAnimationFrame(tk);})();",
@@ -363,7 +363,7 @@ const SCENARIOS = [
   },
   {
     n: 4,
-    name: "tool top → theory bottom → back to tool → bar stays stuck",
+    name: "tool top → theory bottom → back → bar stays stuck",
     async run(browser, base) {
       return withFreshPage(browser, async (page) => {
         const h = new Harness(page, base);
