@@ -6,7 +6,7 @@ import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 import { CLUSTERS, FE_UI } from "@/constants";
 import { CAREER_TRACK_PROFILES, FOUNDATIONAL_PHASE, JUNIOR_TO_SENIOR, SENIOR_FORK, sortKeyFocusPillars } from "@/constants/theory-data";
-import { CARD_SHADOW } from "@/styles/card";
+import { CARD_TINTED, clusterCardStyle } from "@/styles/card";
 import { DOC_SECTION, DOC_TEXT } from "@/styles/doc-typography";
 import { cn } from "@/utils";
 
@@ -37,8 +37,9 @@ const TRACK_CHART_EMOJI_QUERY = "(min-width: 640px) and (max-width: 819px)";
  */
 const FOUNDATION_GRID_QUERY = "(min-width: 640px)";
 
-// CARD_TINTED's edge treatment, but the bezel is per TRACK not per cluster, so these set it inline themselves.
-const cardClass = `rounded-xl border-y-0 border-r-0 border-l-[3px] ${CARD_SHADOW}`;
+// Same CARD_TINTED shape as every other cluster card; the bezel/border/shadow colour is per TRACK not per
+// cluster, so `clusterCardStyle(chipBg, accent)` is called at each site below instead of at import time.
+const cardClass = CARD_TINTED;
 const levelBadgeClass = cn(
   "inline-flex min-w-[1.5rem] shrink-0 items-center justify-center rounded-md px-1.5 py-0.5 text-white",
   DOC_TEXT.badgeMicro,
@@ -231,7 +232,7 @@ function FoundationalPhase({ isVisible, emojiSpokes, gridLayout }) {
       // monolithic in paged media and gets shunted whole to the next sheet (leaving a blank gap behind)
       // or allowed to overlap what follows. See the fuller note in CompetencyMatrix.
       className={cn(cardClass, "overflow-hidden p-3 print:overflow-visible")}
-      style={{ borderLeftColor: style.accent, backgroundColor: style.chipBg }}
+      style={clusterCardStyle(style.chipBg, style.accent)}
     >
       {/* `gap`, not `space-y`: gap only applies BETWEEN rendered flex items, and an ABSOLUTELY POSITIONED
           item is not one, so the out-of-flow grid below contributes no gap of its own. `space-y-*` sets
@@ -320,7 +321,7 @@ function CareerTrackCard({ track, number, emojiSpokes }) {
         cardClass,
         "flex flex-col gap-3 overflow-hidden p-3 sm:row-span-5 sm:grid sm:grid-rows-subgrid print:overflow-visible print:break-inside-avoid",
       )}
-      style={{ borderLeftColor: style.accent, backgroundColor: style.chipBg }}
+      style={clusterCardStyle(style.chipBg, style.accent)}
     >
       <h3 className={cn(DOC_TEXT.cardTitlePlain, "font-bold")} style={{ color: style.accent }}>
         Track {number}: {track.name}
