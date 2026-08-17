@@ -1,11 +1,33 @@
 export const FE_UI = {
   page: {
-    maxWidthPx: 550,
+    /**
+     * The tool tab's measure. INCLUDES THE CHART CARD'S PADDING: widened by 24 (2×12) when the chart moved
+     * inside a card, so it is sized backwards from the radar width rather than chosen. See `chartMaxWidthPx`
+     * for the subtraction and ChartSection's card for the `p-3` that must stay flat.
+     */
+    maxWidthPx: 574,
+    /**
+     * LAYOUT FLOOR ONLY — the narrowest the page (and the bottom nav, which must match or the two desync
+     * below it) will render. Deliberately NOT widened by the chart card's padding the way `maxWidthPx` was:
+     * the card redistributes space inside the page, it does not make the page need more. Raising this to 374
+     * only moved the horizontal-scroll threshold to ~389 and cost 360px phones a scrollbar for nothing.
+     *
+     * The chart's own narrow end is `chartMinWidthPx`, which is what the label-size ramp reads. These two
+     * were one number until the card made them differ; keep them apart.
+     */
     minWidthPx: 350,
+    /**
+     * The radar frame's width when the page is at `minWidthPx`: 350 − 2×12 (tab panel `px-3`) − 2×12 (chart
+     * card `p-3`) = 302. The low end of the axis-label size ramp (see chart/fonts.js and radar-center.js),
+     * mirroring `chartMaxWidthPx` at the other end.
+     */
+    chartMinWidthPx: 302,
     theoryMaxWidthPx: 900,
     /**
-     * Desktop width ceiling for the radar canvas. The tool chart reaches it implicitly (550 − 2×12 of `px-3`);
-     * the theory hero radar's tab is 900 wide, so it caps its wrapper here to land on the same size.
+     * Desktop width ceiling for the radar canvas. The tool chart reaches it implicitly:
+     * 574 − 2×12 (tab panel `px-3`) − 2×12 (chart card `p-3`) = 526. The theory hero radar's tab is 900 wide,
+     * so it caps its wrapper here to land on the same size — which is the reason this number must not drift:
+     * it is what keeps the two tabs' radars identical. The min end works out the same way (374 → 326).
      */
     chartMaxWidthPx: 526,
     /**
@@ -85,7 +107,16 @@ export const FE_UI = {
        made the same profile export at ~2800px from a phone and ~4200px from a desktop, with phone
        proportions baked into the former. Pinning the layout width is what makes an export reproducible.
        526px is `page.chartMaxWidthPx`, the width the canvas reaches on desktop, so the image carries the
-       proportions a desktop user actually sees rather than a composition no one is shown. */
+       proportions a desktop user actually sees rather than a composition no one is shown.
+
+       THAT LAST CLAUSE IS A STANDING INVARIANT, NOT A ONE-OFF OBSERVATION, and it is not enforced by anything:
+       this is a separate constant that merely happens to equal `chartMaxWidthPx`, so the two can drift apart
+       silently — no error, just an image composed at a width nobody is shown. It must keep agreeing with BOTH
+         - the tool tab's desktop frame: `page.maxWidthPx` − 2×12 (tab panel `px-3`) − 2×12 (chart card `p-3`)
+         - the theory hero radar, which caps its wrapper at `chartMaxWidthPx` directly
+       Change the card's padding, the tab panel's padding, or `maxWidthPx`, and re-derive this. The export
+       itself is insulated (the clone is `exportRef`, which sits INSIDE the card, so no padding reaches it) —
+       what breaks is only the reason 526 is the right number. */
     exportImageLayoutWidthPx: 526,
     /* Resolution multiplier on the pinned layout above — pixel dimensions only, no effect on proportion.
        2x is the retina target: one CSS px drawn with two physical ones, so the PNG is sharp displayed at its

@@ -22,7 +22,7 @@ export function TrackBadge({ variant, className, size = "sm", hidden = false, ch
   // md's font scales with the chart to stay in proportion to the title; sm keeps the 10px its class sets.
   const scaledBadgeStyle = {
     minWidth: `${FE_UI.chart.trackBadgeMdMinWidthEm}em`,
-    ...(isLarge ? { fontSize: getChartSecondaryLabelSizePx(chartWidth || FE_UI.page.minWidthPx) } : null),
+    ...(isLarge ? { fontSize: getChartSecondaryLabelSizePx(chartWidth || FE_UI.page.chartMinWidthPx) } : null),
   };
 
   return (

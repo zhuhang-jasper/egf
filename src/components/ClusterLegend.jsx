@@ -4,7 +4,7 @@ import { cn } from "@/utils";
 
 export function ClusterLegend({ className, hidden = false, chartWidth = 0 }) {
   const groups = getPillarGroupOrder();
-  const width = chartWidth || FE_UI.page.minWidthPx;
+  const width = chartWidth || FE_UI.page.chartMinWidthPx;
   const labelPx = getChartSecondaryLabelSizePx(width);
   const swatchPx = getClusterLegendSwatchPx(width);
 
@@ -12,7 +12,7 @@ export function ClusterLegend({ className, hidden = false, chartWidth = 0 }) {
     <ul
       data-chart-export="cluster-legend"
       className={cn(
-        "m-0 flex list-none flex-wrap items-center justify-center gap-x-5 gap-y-2 p-0",
+        "m-0 flex list-none flex-wrap items-center justify-center gap-x-4 gap-y-2 p-0",
         hidden && "invisible pointer-events-none",
         className,
       )}
@@ -25,7 +25,7 @@ export function ClusterLegend({ className, hidden = false, chartWidth = 0 }) {
           return null;
         }
         return (
-          <li key={id} data-chart-export="cluster-legend-item" className="inline-flex items-center gap-2.5">
+          <li key={id} data-chart-export="cluster-legend-item" className="inline-flex items-center gap-2">
             <span
               data-chart-export="cluster-legend-swatch"
               className="shrink-0 border border-black/20"

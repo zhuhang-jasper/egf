@@ -27,7 +27,7 @@ const VALID_TABS = IS_ADMIN ? ["tool", "theory", "admin"] : ["tool", "theory"];
  * conditionally rendered: chart sizing passes and scroll positions are expensive to rebuild, and `isVisible` is
  * what children use to skip work while off screen. Only the first render skips a panel (see `inactivePhase`).
  *
- * Each panel carries its OWN `widthStyle` measure (Theory 900, tool 550) rather than both taking the active
+ * Each panel carries its OWN `widthStyle` measure (Theory 900, tool 574) rather than both taking the active
  * tab's, so a hidden panel lays out at the width it will be shown at and its charts can be pre-fitted.
  *
  * `prefit` is the first-paint preload: a `display: none` panel has no width, so its charts cannot converge.

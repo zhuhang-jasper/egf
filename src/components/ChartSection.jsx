@@ -284,7 +284,7 @@ export function ChartSection({ isVisible }) {
   const showVisibleTitle = !chartTitleHidden;
   const showBadge = !chartBadgeHidden;
   const showTitleRow = showVisibleTitle || showBadge;
-  const layoutWidth = chartWidth || FE_UI.page.minWidthPx;
+  const layoutWidth = chartWidth || FE_UI.page.chartMinWidthPx;
   const titleSizePx = getChartTitleSizePx(layoutWidth);
   // MIDDLE-ELLIPSIS THE TITLE so a long profile name stays on one line with both ends readable, rather than
   // wrapping (which grew the row and pushed the chart down) or being end-truncated by `truncate` (which eats
@@ -397,8 +397,26 @@ export function ChartSection({ isVisible }) {
         <ChartDisplayMenu />
       </div>
 
-      <div ref={exportRef} className="relative flex w-full min-w-0 flex-col self-stretch">
-        {/* `fontSize` ON THE ROW IS WHAT THE `1.25em` FLOOR RESOLVES AGAINST — see `titleRowMinHeight`. The row
+      {/* THE CARD IS A WRAPPER AROUND `exportRef`, NEVER `exportRef` ITSELF. Everything inside that ref is
+          rasterised into the exported PNG, so a border, padding and shadow on the same element would bake a
+          cropped card frame into every copied image. The surface is this element's; the export root stays the
+          bare content column it was.
+
+          Same surface as the theory tab's plain cards (TheoryContent's `cardClass`): `rounded-xl`,
+          `border-slate-300`, white, `shadow-md shadow-slate-200/40`. No left bezel — the bezel means "member of
+          a colour-coded cluster" (see PillarGrid/CompetencyMatrix) and the chart belongs to no cluster.
+
+          `overflow-hidden` keeps the radar's corners inside the radius; `print:*` strips the card on paper,
+          where the chart is the document and a box around it is furniture.
+
+          `p-3` AT EVERY WIDTH, WITH NO `sm:p-4` STEP — this padding is load-bearing arithmetic, not taste. The
+          radar's width is `panel measure − 2×12 (the tab panel's px-3) − 2×this`, and `FE_UI.page.maxWidthPx`
+          (574) and `minWidthPx` (374) are both sized to land the frame on 526 and 326. A responsive step would
+          make that subtraction change at one breakpoint, so 526 — the number the theory hero radar matches
+          itself to — would only be true above `sm`. Change this and you must change both measures with it. */}
+      <div className="w-full min-w-0 self-stretch overflow-hidden rounded-xl border border-slate-300 bg-white p-3 shadow-md shadow-slate-200/40 print:overflow-visible print:rounded-none print:border-0 print:p-0 print:shadow-none">
+        <div ref={exportRef} className="relative flex w-full min-w-0 flex-col self-stretch">
+          {/* `fontSize` ON THE ROW IS WHAT THE `1.25em` FLOOR RESOLVES AGAINST — see `titleRowMinHeight`. The row
             carries the title's size so the browser can compute the same line box `leading-tight` will produce,
             without JS ever encoding the 1.25. The <h2> inside inherits it rather than setting its own, so there
             is exactly one place the size is applied.
@@ -407,20 +425,20 @@ export function ChartSection({ isVisible }) {
             while the height came from JS, and it would now fight the `em` floor by resolving against a
             different leading than the title's. Nothing else in the row renders bare text — the badge sets
             `leading-none` itself and the title carries `leading-tight`. */}
-        {showTitleRow ? (
-          <div
-            data-chart-title-row
-            className="relative z-[1] mb-3 flex w-full min-w-0 items-center gap-3"
-            style={{ fontSize: titleSizePx, minHeight: titleRowMinHeight }}
-          >
-            {/* No height passed — the pill sizes itself from `em` padding (see TrackBadge). `chartWidth` keeps it in
+          {showTitleRow ? (
+            <div
+              data-chart-title-row
+              className="relative z-[1] mb-3 flex w-full min-w-0 items-center gap-3"
+              style={{ fontSize: titleSizePx, minHeight: titleRowMinHeight }}
+            >
+              {/* No height passed — the pill sizes itself from `em` padding (see TrackBadge). `chartWidth` keeps it in
                 proportion to the title, and is unconditional: gating it on `showVisibleTitle` made one toggle
                 resize the pill as well. */}
-            {showBadge ? <TrackBadge variant={attachedBadge} size="md" className="shrink-0" chartWidth={chartWidth} /> : null}
-            {showVisibleTitle ? (
-              <h2
-                id="competency-chart-heading"
-                /* IDENTICAL TO THE THEORY TAB'S FRAMEWORK TITLE IN EVERY RESPECT BUT ALIGNMENT — same size
+              {showBadge ? <TrackBadge variant={attachedBadge} size="md" className="shrink-0" chartWidth={chartWidth} /> : null}
+              {showVisibleTitle ? (
+                <h2
+                  id="competency-chart-heading"
+                  /* IDENTICAL TO THE THEORY TAB'S FRAMEWORK TITLE IN EVERY RESPECT BUT ALIGNMENT — same size
                    (both call getChartTitleSizePx with the same chart width), same `leading-tight`, weight,
                    tracking and color. Only `text-left` differs, because this one shares a row with the track
                    badge while theory's is centred over its radar. Keep the two in step; they are meant to read
@@ -443,11 +461,11 @@ export function ChartSection({ isVisible }) {
 
                    `title` CARRIES THE FULL NAME so the untruncated string is still reachable: a native tooltip
                    on hover, and the accessible name via `aria-label`, since what is rendered may be elided. */
-                className={`relative m-0 min-w-0 flex-1 overflow-hidden text-left leading-tight tracking-tight whitespace-nowrap only:ml-2 ${titleIsBlank ? "text-slate-900/30 font-regular" : "text-slate-900 font-extrabold"}`}
-                title={titleIsBlank ? undefined : displayTitle}
-                aria-label={titleIsBlank ? undefined : displayTitle}
-              >
-                {/* THE MEASURING ELEMENT, and it is deliberately EMPTY as far as React is concerned. The fitting
+                  className={`relative m-0 min-w-0 flex-1 overflow-hidden text-left leading-tight tracking-tight whitespace-nowrap only:ml-2 ${titleIsBlank ? "text-slate-900/30 font-regular" : "text-slate-900 font-extrabold"}`}
+                  title={titleIsBlank ? undefined : displayTitle}
+                  aria-label={titleIsBlank ? undefined : displayTitle}
+                >
+                  {/* THE MEASURING ELEMENT, and it is deliberately EMPTY as far as React is concerned. The fitting
                     loop writes candidate strings into it and reads `scrollWidth` back; React renders nothing
                     into it, so the two never fight over its contents (see the hook's note on `ref`).
 
@@ -456,52 +474,53 @@ export function ChartSection({ isVisible }) {
                     against. It inherits font, weight and tracking from the heading, so what it measures is the
                     same type that will be painted. `invisible` rather than `hidden`: it must still be laid out
                     to have a `scrollWidth` at all. */}
-                <span ref={titleMeasureRef} aria-hidden className="pointer-events-none invisible absolute left-0 right-0 whitespace-nowrap" />
-                {fittedTitle}
-              </h2>
-            ) : (
-              <h2 id="competency-chart-heading" className="sr-only">
-                Chart
-              </h2>
-            )}
-          </div>
-        ) : (
-          <h2 id="competency-chart-heading" className="sr-only">
-            Chart
-          </h2>
-        )}
+                  <span ref={titleMeasureRef} aria-hidden className="pointer-events-none invisible absolute left-0 right-0 whitespace-nowrap" />
+                  {fittedTitle}
+                </h2>
+              ) : (
+                <h2 id="competency-chart-heading" className="sr-only">
+                  Chart
+                </h2>
+              )}
+            </div>
+          ) : (
+            <h2 id="competency-chart-heading" className="sr-only">
+              Chart
+            </h2>
+          )}
 
-        {/* `data-chart-frame` marks the box whose height the fit sets. The ref identifies it here, but refs do
+          {/* `data-chart-frame` marks the box whose height the fit sets. The ref identifies it here, but refs do
             not survive `cloneNode`, and the off-screen export clone has to find this same element to run the
             fit against — see utils/export-clone.js. */}
-        <div
-          ref={frameRef}
-          data-chart-frame
-          className="relative z-0 mx-auto w-full max-w-full box-border"
-          style={{ minHeight: FE_UI.chartFrame.minChartHeightPx }}
-        >
-          <div className="absolute inset-0 min-h-0 min-w-0">
-            {/* `key` IS THE RECOVERY, not a list key: bumping it discards a canvas whose 2D context the
+          <div
+            ref={frameRef}
+            data-chart-frame
+            className="relative z-0 mx-auto w-full max-w-full box-border"
+            style={{ minHeight: FE_UI.chartFrame.minChartHeightPx }}
+          >
+            <div className="absolute inset-0 min-h-0 min-w-0">
+              {/* `key` IS THE RECOVERY, not a list key: bumping it discards a canvas whose 2D context the
                 browser lost while the app was backgrounded and mounts a fresh one — see
                 hooks/useCanvasContextRecovery.js. */}
-            <canvas key={canvasEpoch} ref={canvasRef} id="competencyChart" data-radar-canvas aria-labelledby="competency-chart-heading" />
+              <canvas key={canvasEpoch} ref={canvasRef} id="competencyChart" data-radar-canvas aria-labelledby="competency-chart-heading" />
+            </div>
           </div>
+
+          {!chartLegendHidden ? (
+            <div
+              data-chart-export="chart-legend-card"
+              className="mx-auto mt-3 flex w-fit max-w-full items-center justify-center rounded-lg border border-border bg-muted px-4 py-2 leading-none"
+            >
+              <ClusterLegend chartWidth={chartWidth} />
+            </div>
+          ) : null}
+
+          {FEATURE_SCORES_SETTINGS && !footerScoresHidden ? (
+            <div data-chart-export="chart-scores" className="mt-3 flex flex-col gap-2 xs:gap-3" aria-label="Cluster averages and score summary">
+              <ChartScores />
+            </div>
+          ) : null}
         </div>
-
-        {!chartLegendHidden ? (
-          <div
-            data-chart-export="chart-legend-card"
-            className="mx-auto mt-3 flex w-fit max-w-full items-center justify-center rounded-lg border border-border bg-muted px-6 py-2.5 leading-none"
-          >
-            <ClusterLegend chartWidth={chartWidth} />
-          </div>
-        ) : null}
-
-        {FEATURE_SCORES_SETTINGS && !footerScoresHidden ? (
-          <div data-chart-export="chart-scores" className="mt-3 flex flex-col gap-2 xs:gap-3" aria-label="Cluster averages and score summary">
-            <ChartScores />
-          </div>
-        ) : null}
       </div>
     </div>
   );

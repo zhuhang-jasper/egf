@@ -585,7 +585,7 @@ function TheoryContent({
                uses, computed here rather than hardcoded in CSS so it cannot drift from `chartMaxWidthPx`.
                See docs/DECISIONS.md#print-chart-frame-height-is-stale. */
             style={{
-              "fontSize": getChartTitleSizePx(heroChartWidth || FE_UI.page.minWidthPx),
+              "fontSize": getChartTitleSizePx(heroChartWidth || FE_UI.page.chartMinWidthPx),
               "--print-title-size": `${getChartTitleSizePx(FE_UI.page.chartMaxWidthPx)}px`,
             }}
           >

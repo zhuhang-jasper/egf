@@ -3,7 +3,7 @@ import { FileText, Radar, Wrench } from "lucide-react";
 import { AdminLockBadge } from "@/components/AdminLockBadge";
 import { UnseenDot } from "@/components/UnseenDot";
 
-import { FRAMEWORK_VERSION, IS_ADMIN, LAYER } from "@/constants";
+import { FE_UI, FRAMEWORK_VERSION, IS_ADMIN, LAYER } from "@/constants";
 import { cn } from "@/utils";
 
 /** Gated in two places: here and HomePage's VALID_TABS. Keep them in step. */
@@ -40,8 +40,16 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
       )}
     >
       {/* No horizontal padding: it would inset every item, so the active indicator could not reach the row's
-          outer edge. Breathing room belongs inside each button. The width bound is per ITEM, not here. */}
-      <div className="mx-auto flex w-full items-stretch justify-center">
+          outer edge. Breathing room belongs inside each button. The MAX width bound is per ITEM, not here.
+
+          `minWidth` MATCHES `main`'S OWN FLOOR (HomePage) and must keep matching it. Below that width the page
+          stops shrinking and `body`'s `overflow-x: auto` starts scrolling it, but this bar is `fixed` to the
+          VIEWPORT — so without a floor of its own it kept shrinking while the content did not, and scrolling
+          right slid the bar out of alignment with the page it navigates.
+
+          On the ROW, not the <nav>: the bar's background and its top shadow must still paint to the viewport
+          edges at any width (see the gutter note above), so only the items get the floor. */}
+      <div className="mx-auto flex w-full items-stretch justify-center" style={{ minWidth: FE_UI.page.minWidthPx }}>
         {NAV_ITEMS.map(({ id, label, icon: Icon, version, adminOnly }) => {
           const selected = activeTab === id;
           // Opening the tab does not clear it: it stays lit until every changed section has been scrolled to.
