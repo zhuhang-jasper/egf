@@ -24,7 +24,7 @@
   /* Tinted page, white layers on top: cards, header and nav all take `page-surface`.
      Propagates to the canvas (docs/DECISIONS.md#body-background-propagates-to-the-canvas) — keep body/main/
      HomePage's wrapper on this exact value. */
-  --color-page-base: hsl(215 22% 95%);
+  --color-page-base: hsl(215 22% 97%);
   /* Pure white so it matches the exported PNG, which renders on white. */
   --color-page-surface: hsl(0 0% 100%);
   --color-ai: #4f46e5;
