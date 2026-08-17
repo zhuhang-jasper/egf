@@ -34,7 +34,7 @@ import { TOOLBAR_SURFACE } from "@/styles/toolbar";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
 import { shareTheoryLink } from "@/utils/copy-chart-image";
-import { scrollBelowStickyHeaderUntilSettled } from "@/utils/scroll";
+import { scrollBelowStickyHeaderUntilSettled, scrollWindowToTop } from "@/utils/scroll";
 import {
   buildTheoryShareUrl,
   getPersistedExpandedPillar,
@@ -304,6 +304,16 @@ function TheoryContent({
     setExpandedPillar(pillarId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matrixNavSeq]);
+
+  // Chromium positions the `position: fixed` running footer (see print-running-footer in DECISIONS.md)
+  // relative to the scroll offset at the moment print starts, not per-page from a clean slate — printing
+  // from partway down the document loses the footer on some sheets. `beforeprint` fires however print was
+  // triggered (in-app button, Cmd+P, browser menu), so this is the one place that catches all of them.
+  useEffect(() => {
+    const handleBeforePrint = () => scrollWindowToTop();
+    window.addEventListener("beforeprint", handleBeforePrint);
+    return () => window.removeEventListener("beforeprint", handleBeforePrint);
+  }, []);
 
   useEffect(() => {
     if (!deepLink || consumedRef.current) {
