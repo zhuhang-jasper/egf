@@ -161,6 +161,32 @@ const POSTER_FILENAME = "9-pillar-engineer-growth-framework-poster.png";
 const copyPosterToClipboard = (node, height) => copyShareToClipboard(node, CANVAS_W, height, "poster");
 const downloadPosterPng = (node, height) => downloadSharePng(node, CANVAS_W, height, POSTER_FILENAME, "poster");
 
+/**
+ * The credit line at the foot of the paper. Shares the chart export's ownership head but ends on the app URL
+ * rather than the framework name, which the masthead above already carries — see SITE_COPY.share.
+ *
+ * A plain DOM element, unlike the chart export's hand-painted canvas band: the poster is rasterized from the
+ * DOM by snapdom, so it needs no measuring, and it renders on screen exactly as it will in the PNG.
+ *
+ * ONE GAP FOR EVERY BAND — `mt-10`, the literal match for the paper's `pb-10`, so the credit sits in an even
+ * 40px band whichever band precedes it. Keep it flat: if a band reads loose against it, the fault is that
+ * band's own bottom margin, so fix it there (the ring's `mb-3` was the first such case) rather than tuning this
+ * number per band.
+ *
+ * `spaced` is false only when every band is off, leaving the credit alone on the paper with the top padding as
+ * its whole margin.
+ */
+function PosterCredit({ spaced }) {
+  return (
+    <p
+      className={`shrink-0 text-center text-[19px] font-medium ${spaced ? "mt-10" : ""}`}
+      style={{ color: FE_UI.chart.exportImageAttributionColor }}
+    >
+      {SITE_COPY.share.posterAttribution}
+    </p>
+  );
+}
+
 /** Big tracking-wide divider label used between the poster's content bands. */
 function SectionLabel({ children }) {
   return (
@@ -478,7 +504,7 @@ function PosterToggle({ label, checked, onChange }) {
  * Which bands the poster shows. State is owned by the PAGE, not the app store: view state for one admin
  * page, unlike the tool's toggles which are part of the persisted draft.
  */
-function PosterSettingsMenu({ showHeader, setShowHeader, showPillars, setShowPillars, showTracks, setShowTracks }) {
+function PosterSettingsMenu({ showHeader, setShowHeader, showPillars, setShowPillars, showTracks, setShowTracks, showCredit, setShowCredit }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
 
@@ -525,6 +551,7 @@ function PosterSettingsMenu({ showHeader, setShowHeader, showPillars, setShowPil
           <PosterToggle label="Masthead" checked={showHeader} onChange={setShowHeader} />
           <PosterToggle label="The 9 Pillars" checked={showPillars} onChange={setShowPillars} />
           <PosterToggle label="3 Career Tracks" checked={showTracks} onChange={setShowTracks} />
+          <PosterToggle label="Attribution" checked={showCredit} onChange={setShowCredit} />
         </div>
       ) : null}
     </div>
@@ -542,6 +569,7 @@ export default function PosterPage() {
   const [showHeader, setShowHeader] = useState(true);
   const [showPillars, setShowPillars] = useState(true);
   const [showTracks, setShowTracks] = useState(true);
+  const [showCredit, setShowCredit] = useState(true);
   const scale = useFitScale();
   // Null until the first measurement lands (one frame). Callers fall back to a width-based estimate
   // rather than 0, so the stage doesn't collapse and re-expand on mount.
@@ -558,7 +586,7 @@ export default function PosterPage() {
       await fn(posterRef.current, canvasH);
       // Height and bands ride along because the poster is no longer one fixed artifact: without them
       // an export event can't be told apart from any other shape the toggles produce.
-      const bands = [showHeader && "header", showPillars && "pillars", showTracks && "tracks"].filter(Boolean).join("+") || "none";
+      const bands = [showHeader && "header", showPillars && "pillars", showTracks && "tracks", showCredit && "credit"].filter(Boolean).join("+") || "none";
       track("poster_exported", { action, height: canvasH, bands });
       setState("done");
       setTimeout(() => setState("idle"), 2000);
@@ -602,6 +630,8 @@ export default function PosterPage() {
               setShowPillars={setShowPillars}
               showTracks={showTracks}
               setShowTracks={setShowTracks}
+              showCredit={showCredit}
+              setShowCredit={setShowCredit}
             />
           </div>
         </div>
@@ -686,9 +716,13 @@ export default function PosterPage() {
           ) : null}
 
           {/* The 9 pillars as a radial ring around the central radar. No negative top margin any more —
-              PillarRing trims its own top edge now, so the band sits on the ordinary gap. */}
+              PillarRing trims its own top edge now, so the band sits on the ordinary gap.
+              NO BOTTOM MARGIN, deliberately: it used to carry `mb-3`, which on top of the credit's flat
+              `mt-10` made this band sit ~12px looser than the tracks card's hard border. Dropping it (rather
+              than cancelling it with `-mb-3`, which overshoots by the same 12px) leaves the credit an even 40px
+              above and below. The ring's labels end on their own text, so no extra correction is wanted. */}
           {showPillars ? (
-            <div className={`flex flex-col gap-3 mb-3 ${showHeader ? "mt-6" : ""}`}>
+            <div className={`flex flex-col gap-3 ${showHeader ? "mt-6" : ""}`}>
               <SectionLabel>The 9 Pillars</SectionLabel>
               <PillarRing />
             </div>
@@ -725,6 +759,10 @@ export default function PosterPage() {
               </div>
             </div>
           ) : null}
+
+          {/* Credit line — always last on the paper, so it reads as the poster's footer whichever bands are on.
+              One gap for every band, balancing the paper's own bottom padding (see PosterCredit). */}
+          {showCredit ? <PosterCredit spaced={showHeader || showPillars || showTracks} /> : null}
         </article>
       </div>
     </div>

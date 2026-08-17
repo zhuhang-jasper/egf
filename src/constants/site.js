@@ -8,6 +8,23 @@
  *
  * No article and no possessive in the name itself. See docs/DECISIONS.md#the-name-has-no-article.
  */
+/**
+ * The OWNERSHIP HALF every credit line opens with, shared so the four surfaces cannot drift apart on the
+ * copyright year or the licence name. Each surface appends its own `·`-separated tail:
+ *
+ *   app footer (screen)   · Build-<appVersion>                    which build you are looking at
+ *   app footer (print)    · <title> · v<frameworkVersion> · <date> which document, and which revision
+ *   chart PNG             · 9-Pillar Engineer Growth Framework    names the work — the PNG travels alone
+ *   poster PNG            · zhuhang-jasper.github.io/egf          the way back, for print and projection
+ *
+ * ORDER IS OWNERSHIP FIRST, IDENTITY SECOND, and the licence sits beside the name it qualifies rather than
+ * after the work's title. The exception is the canonical attribution string reusers copy (the block in
+ * README.md, mirrored in index.html's <noscript>), which is work-first because that is the form CC prescribes.
+ * That one is prose and takes "licensed under"; these lockups take the bare identifier, since a `·` list
+ * next to a `©` does not need the verb.
+ */
+const CREDIT_OWNERSHIP = "© 2026 Jasper Loo Zhu Hang · CC BY-NC 4.0";
+
 export const SITE_COPY = {
   title: "9-Pillar Engineer Growth Framework",
   tagline: "A spider chart to measure software engineering mastery, identify core interests, and guide career paths.",
@@ -52,8 +69,9 @@ export const SITE_COPY = {
      *
      * NAMES THE WORK, unlike the app footer, and that difference is the point rather than an inconsistency.
      * The footer sits inside the app, where the header, the title and the tab all say what this is; an
-     * exported PNG lands in a chat or a slide deck with NOTHING around it, so it is the one place the credit
-     * has to identify the framework as well as the author and the terms.
+     * exported chart PNG lands in a chat or a slide deck with NOTHING around it, so it has to identify the
+     * framework as well as the author and the terms. The poster is the other way round (its masthead names the
+     * framework already), which is why `posterAttribution` below spends its tail on the URL instead.
      *
      * THE FULL TITLE, NOT `shortName`, and the type shrinks to pay for it. Naming the work in full does not
      * fit at the cluster legend's size over a ~320-530px chart, so renderAttribution steps the font down
@@ -61,7 +79,21 @@ export const SITE_COPY = {
      * 8x export scale. Identification wins over matching the legend exactly: an abbreviation nobody can
      * expand is a weaker credit on an image that travels with no context to expand it from.
      */
-    imageAttribution: "© 2026 Jasper Loo Zhu Hang · 9-Pillar Engineer Growth Framework · CC BY-NC 4.0",
+    // ORDER MATCHES THE APP FOOTER: ownership first (copyright, then licence), identity second. The licence
+    // belongs beside the name it qualifies, not after the work's title. See the footer in pages/HomePage.jsx,
+    // whose screen and print forms swap only their tail for the same reason.
+    imageAttribution: `${CREDIT_OWNERSHIP} · 9-Pillar Engineer Growth Framework`,
+    /**
+     * The poster's own credit line. Same ownership head as the chart export, DIFFERENT TAIL: the poster's
+     * masthead already names the framework in 52px type, so repeating it in the footer would be the only
+     * thing on the paper said twice. The tail is the app URL instead — the poster is the artifact most likely
+     * to be printed or projected, where a link is the only way back to the tool.
+     *
+     * A LITERAL, not `window.location.origin` like getToolShareLink: this one is rasterized into a PNG, so a
+     * dev-server origin would ship inside the image. Kept bare (no scheme, no `?tab=`) because it is being
+     * read off paper by a person, not clicked.
+     */
+    posterAttribution: `${CREDIT_OWNERSHIP} · zhuhang-jasper.github.io/egf`,
     // `{profileName}` and `{date}` are filled by buildChartFileName. Date last, so one profile's exports
     // sort chronologically in a file listing.
     fileName: "9-pillar-egf-{profileName}-{date}.png",
