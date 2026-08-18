@@ -209,6 +209,20 @@ const CHART_SIZE = 400; // box for the centred radar hub — larger so its grid 
 // Track-card radar. A constant, not a Tailwind arbitrary value, because PosterRadar renders at an
 // explicit px size (responsive off) and the two must not drift apart.
 const TRACK_CHART_SIZE = 170;
+// Poster-only grid tone. The shared FE_UI value (0.15 alpha) is tuned for a backlit screen and reads
+// washed out on the printed/exported poster, so the web spokes and rings get their own darker alpha here.
+const POSTER_GRID_COLOR = "rgba(0, 0, 0, 0.32)";
+// Tick text + backdrop, aligned with the theory HERO radar (THEORY_CHART_UI sets the same 0.4 text) rather
+// than reading its preset: the poster's grid above is deliberately darker, so the match is chosen, not
+// inherited — and the backdrop runs a touch more solid here for that reason. The tool chart keeps FE_UI's
+// softer 0.3/0.5, where the ticks are a background scale beside live inputs rather than a legend.
+const POSTER_TICK_BACKDROP_COLOR = "rgba(255, 255, 255, 0.65)";
+const POSTER_TICK_LABEL_COLOR = "rgba(0, 0, 0, 0.45)";
+// Backdrop padding, PRE-MULTIPLIED rather than derived: FE_UI's {1.5, 2} is absolute px tuned for the hero's
+// ~11px ticks, and spreading it under the poster's fixed 20px left the plate proportionally half as inset.
+// These are that padding x 1.8 (= 20/11, the font ratio), so the pill's optical inset matches the hero's.
+// Hardcoded because both inputs are constants — if FE_UI.tickBackdropPad changes, recompute these.
+const POSTER_TICK_BACKDROP_PAD = { top: 2.7, bottom: 2.7, left: 3.6, right: 3.6 };
 
 // Per-pillar manual nudges (px) after the ring math, to relieve specific crowding.
 const RING_NUDGE = {
@@ -322,17 +336,20 @@ function PosterRadar({ levels, size, showClusters = false, showPolygon = true, s
             ticks: {
               display: showTicks,
               stepSize: 1,
-              color: ch.tickLabelColor,
-              backdropColor: ch.tickBackdropColor,
-              backdropPadding: { ...ch.tickBackdropPad },
+              color: POSTER_TICK_LABEL_COLOR,
+              backdropColor: POSTER_TICK_BACKDROP_COLOR,
+              backdropPadding: POSTER_TICK_BACKDROP_PAD,
               showLabelBackdrop: (ctx) => ctx.tick?.value >= 1 && ctx.tick?.value <= 5,
-              font: { size: 20, weight: "bold", family: TICK_FONT_FAMILY },
+              // 500, a notch above the hero's default-normal ticks: the poster prints at a fixed canvas over a
+              // darker grid, where normal read thin. The size stays fixed at 20 (not the hero's round(width/48)
+              // ramp), which would give an unreadable 8px here.
+              font: { size: 20, weight: 500, family: TICK_FONT_FAMILY },
               callback: (v) => (v >= 1 && v <= 5 ? `L${v}` : ""),
               z: 1,
             },
             pointLabels: { display: false },
-            angleLines: { color: FE_UI.chart.gridColor },
-            grid: { circular: false, color: FE_UI.chart.gridColor },
+            angleLines: { color: POSTER_GRID_COLOR },
+            grid: { circular: false, color: POSTER_GRID_COLOR },
           },
         },
       },

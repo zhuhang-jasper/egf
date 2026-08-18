@@ -313,7 +313,7 @@ export function createCompetencyChart(canvas, { purpose = "tool" } = {}) {
               }
               return `L${value}`;
             },
-            font: { size: ch.tickInitialPx, family: TICK_FONT_FAMILY },
+            font: { size: ch.tickInitialPx, weight: ch.tickWeight, family: TICK_FONT_FAMILY },
             z: 0,
           },
           pointLabels: {

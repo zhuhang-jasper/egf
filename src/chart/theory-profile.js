@@ -20,6 +20,17 @@ export const THEORY_CHART_UI = {
      * Outside it the ramp clamps, keeping the full-width mobile charts at the flat 10px they already had.
      */
     pointLabelPxRange: { minPx: 8, maxPx: 10, minWidthPx: 172, maxWidthPx: 264 },
+    /**
+     * L1-L5 tick tone, matched to the POSTER rather than inherited from FE_UI: the hero radar is the
+     * framework's showpiece on both surfaces, so it reads with the poster's firmer ticks. The tool chart keeps
+     * FE_UI's softer 0.3/0.5, where the ticks are a background scale next to live inputs, not a legend.
+     * Only the hero opts its ticks in (the small career-track radars pass hidden), so this affects it alone.
+     */
+    tickLabelColor: "rgba(0, 0, 0, 0.45)",
+    tickBackdropColor: "rgba(255, 255, 255, 0.65)",
+    // 500, matching the poster's ticks. Safe because "Inter Tabular" is a variable face with a 100-900 range
+    // and FONT_SPECS preloads this exact weight before any canvas export.
+    tickWeight: 500,
   },
   chartFrame: {
     ...FE_UI.chartFrame,

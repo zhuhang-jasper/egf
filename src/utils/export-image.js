@@ -24,6 +24,10 @@ import interLatinNormalUrl from "@fontsource-variable/inter/files/inter-latin-op
 // render thin, it drops the family and lands on system-ui (see measureAttribution in copy-chart-image.js).
 const FONT_SPECS = [
   '500 20px "Inter Variable"',
+  // The POSTER's L1-L5 radar ticks: canvas-painted at 500 in the tabular face. Same failure mode as the
+  // credit line above — an unloaded weight drops the family, not just the weight, so the ticks would
+  // capture in system-ui with uneven digit advances, which is what "Inter Tabular" exists to prevent.
+  '500 20px "Inter Tabular"',
   '700 26px "Inter Variable"',
   '800 26px "Inter Variable"',
   'italic 700 20px "Inter Variable"',

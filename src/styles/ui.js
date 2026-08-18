@@ -79,13 +79,18 @@ export const FE_UI = {
     pointLabelColor: "#1e293b",
     pointLabelDimColor: "#1e293b60",
     gridColor: "rgba(0, 0, 0, 0.15)",
-    tickLabelColor: "rgba(0, 0, 0, 0.3)",
+    tickLabelColor: "rgba(0, 0, 0, 0.35)",
     centerPointLabels: false,
     tickInitialPx: 12,
+    /* 500, not Chart.js's default 400: the L1-L5 digits are small and low-contrast, and the extra weight is
+       what keeps them legible against the grid. Any value other than 400/700 must also be preloaded for
+       "Inter Tabular" in export-image's FONT_SPECS — canvas synthesises bold but not the interpolated weights,
+       and an unloaded weight drops the whole family to system-ui rather than merely rendering thin. */
+    tickWeight: 500,
     /* Vertical padding stays tight or the pills collide at the narrowest viewport, where the gap between rings
        has shrunk with the radius. Also feeds radarTickBackdropHalf() and so the scale's reserved layout space. */
     tickBackdropPad: { top: 1.5, bottom: 1.5, left: 2, right: 2 },
-    tickBackdropColor: "rgba(255, 255, 255, 0.5)",
+    tickBackdropColor: "rgba(255, 255, 255, 0.55)",
     /* THE EXPORT IS RENDERED AT A FIXED WIDTH, not at the viewport's.
        The chart is width-adaptive — label sizes, wrapping and the radar's radius are all derived from the
        width it fitted at and then baked into the bitmap — so capturing at whatever the window happened to be
