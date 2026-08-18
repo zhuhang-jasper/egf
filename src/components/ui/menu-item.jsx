@@ -1,3 +1,4 @@
+import { CONTROL_TEXT } from "@/styles/control-typography";
 import { cn } from "@/utils";
 
 /**
@@ -17,7 +18,8 @@ export function MenuItem({ icon: Icon, children, className, divided = false, des
       role="menuitem"
       // select-none: menu rows are click targets, so a double-click shouldn't select the label.
       className={cn(
-        "flex cursor-pointer select-none items-center gap-2 px-3 py-2 text-left text-xs text-foreground",
+        "flex cursor-pointer select-none items-center gap-2 px-3 py-2 text-left text-foreground",
+        CONTROL_TEXT,
         destructive ? "hover:bg-destructive/10" : "hover:bg-muted/60",
         divided && "border-t border-border",
         "disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent",

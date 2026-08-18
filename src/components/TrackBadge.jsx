@@ -31,7 +31,9 @@ export function TrackBadge({ variant, className, size = "sm", hidden = false, ch
       className={cn(
         "inline-flex shrink-0 items-center justify-center rounded-[0.42em] px-[0.85em] py-[2px]",
         // md carries the heavier weight to hold up beside the title; sm reads as chrome in a list.
-        isLarge ? "font-bold" : "text-[10px] font-semibold",
+        // sm scales on the same ramp as BadgePill's trigger (same chip, same size) and as the dropdown
+        // row it sits in. md is driven by `chartWidth` instead — breakpoints there would reach the export.
+        isLarge ? "font-bold" : "text-[10px] sm:text-[11px] md:text-[12px] font-semibold",
         ui.pillClass,
         hidden && "invisible pointer-events-none",
         className,

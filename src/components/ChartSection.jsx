@@ -28,6 +28,7 @@ import {
   SITE_COPY,
 } from "@/constants";
 import { CARD_PLAIN } from "@/styles/card";
+import { CONTROL_TEXT } from "@/styles/control-typography";
 import { TOOLBAR_ICON_SURFACE, TOOLBAR_SURFACE } from "@/styles/toolbar";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
@@ -38,7 +39,7 @@ import { copyChartAsImageToClipboard, shareChartAsImage } from "@/utils/copy-cha
 // with itself. `select-none` because these rows get clicked repeatedly to flip a setting.
 function DisplayCheckbox({ label, checked, onChange, adminOnly = false }) {
   return (
-    <label className="flex cursor-pointer select-none items-center gap-2.5 rounded-md px-3 py-1.5 text-xs hover:bg-muted/60">
+    <label className={cn("flex cursor-pointer select-none items-center gap-2.5 rounded-md px-3 py-1.5 hover:bg-muted/60", CONTROL_TEXT)}>
       <input
         type="checkbox"
         checked={checked}

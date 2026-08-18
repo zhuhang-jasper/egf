@@ -1,5 +1,6 @@
 import { forwardRef } from "react";
 
+import { CONTROL_TEXT } from "@/styles/control-typography";
 import { cn } from "@/utils";
 
 const Input = forwardRef(({ className, type, ...props }, ref) => (
@@ -7,7 +8,8 @@ const Input = forwardRef(({ className, type, ...props }, ref) => (
     type={type}
     className={cn(
       // `bg-page-surface`, not `bg-transparent`: it only looked white before because every ancestor was.
-      "flex h-9 w-full rounded-md border border-input bg-page-surface px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+      "flex h-9 w-full rounded-md border border-input bg-page-surface px-3 py-1 shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+      CONTROL_TEXT,
       className,
     )}
     ref={ref}

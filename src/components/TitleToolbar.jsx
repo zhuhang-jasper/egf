@@ -22,6 +22,7 @@ import {
 } from "@/store/useAppStore";
 
 import { LAYER } from "@/constants";
+import { CONTROL_TEXT } from "@/styles/control-typography";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
 import { getPopoverViewportBounds } from "@/utils/scroll";
@@ -471,7 +472,10 @@ export function TitleToolbar() {
             aria-checked={levelKeyboardInputEnabled}
             aria-label="Keypad — numeric keyboard for level inputs"
             onClick={handleToggleKeypad}
-            className="group relative inline-flex h-[26.5px] shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-slate-300 bg-white px-1.5 text-xs font-semibold tracking-wide text-slate-600 hover:bg-slate-50 hover:text-slate-800"
+            className={cn(
+              "group relative inline-flex h-[26.5px] shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-slate-300 bg-white px-1.5 font-semibold tracking-wide text-slate-600 hover:bg-slate-50 hover:text-slate-800",
+              CONTROL_TEXT,
+            )}
           >
             <Calculator className="size-3.5 shrink-0" aria-hidden />
             {/* Mini switch: black track when on, slate when off; knob slides right when on. */}

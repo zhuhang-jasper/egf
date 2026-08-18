@@ -11,6 +11,7 @@ import { useTouchPrimary } from "@/hooks/useTouchPrimary";
 import { useAppStore } from "@/store/useAppStore";
 
 import { LAYER, MAX_PROFILE_NAME_LENGTH, normalizeAttachedBadge, TRACK_BADGE_OPTIONS, TRACK_BADGE_UI } from "@/constants";
+import { CONTROL_TEXT, CONTROL_TEXT_SM } from "@/styles/control-typography";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
 import { getPopoverViewportBounds } from "@/utils/scroll";
@@ -354,7 +355,13 @@ export function ProfileCombobox({ titleError = false }) {
             setTitle(trimmed);
           }
         }}
-        className={cn("pl-18 pr-9 shadow-none", titleError && "border-red-500 focus-visible:ring-red-500/40")}
+        // `pl-*` CLEARS THE BADGE PICKER, which sits over this input's left edge as an absolute
+        // adornment. The trigger is fixed px (padding, gap, chevron, divider) apart from the pill,
+        // whose box is all `em` — so it widens on the same rungs the pill's font does, and the
+        // padding steps with it. THE FIRST RUNG IS UNPREFIXED, NOT `xs:`, because the pill's own ramp
+        // starts at `sm`: bare covers everything below 640 (the `xs` band included), and an `xs:`
+        // prefix here would leave phones under 470 with no clearance at all, name under the badge.
+        className={cn("pl-18 pr-9 shadow-none sm:pl-19 md:pl-20", titleError && "border-red-500 focus-visible:ring-red-500/40")}
       />
       {/* Right adornment: the browse caret — the only way to open the profile dropdown. */}
       <button
@@ -406,11 +413,14 @@ export function ProfileCombobox({ titleError = false }) {
                 setHighlight(-1);
               }}
               onKeyDown={handleSearchKeyDown}
-              className="w-full bg-transparent py-2 pl-8 pr-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none"
+              // A rung below the name field this dropdown hangs off: the search box is secondary to it.
+              className={cn("w-full bg-transparent py-2 pl-8 pr-3 placeholder:text-muted-foreground focus-visible:outline-none", CONTROL_TEXT_SM)}
             />
           </div>
           {rows.length === 0 ? (
-            <p className="px-3 py-2 text-xs text-muted-foreground">{profiles.length === 0 ? "No saved profiles yet." : "No matches."}</p>
+            <p className={cn("px-3 py-2 text-muted-foreground", CONTROL_TEXT_SM)}>
+              {profiles.length === 0 ? "No saved profiles yet." : "No matches."}
+            </p>
           ) : (
             <ul
               ref={listRef}
@@ -454,7 +464,8 @@ export function ProfileCombobox({ titleError = false }) {
                       // rather than a dead click.
                       disabled={isActive}
                       className={cn(
-                        "flex min-w-0 flex-1 select-none items-center py-2 pl-0 pr-3 text-left text-sm",
+                        "flex min-w-0 flex-1 select-none items-center py-2 pl-0 pr-3 text-left",
+                        CONTROL_TEXT,
                         isActive ? "cursor-default" : "cursor-pointer",
                       )}
                       onMouseEnter={() => setHighlight(i)}

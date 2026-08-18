@@ -5,6 +5,7 @@ import { ChevronDown } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 
 import { LAYER, normalizeAttachedBadge, TRACK_BADGE_OPTIONS, TRACK_BADGE_UI } from "@/constants";
+import { CONTROL_TEXT } from "@/styles/control-typography";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
 import { getPopoverViewportBounds } from "@/utils/scroll";
@@ -24,7 +25,9 @@ function BadgePill({ id, className }) {
   return (
     <span
       className={cn(
-        "inline-flex min-w-[2.75em] items-center justify-center rounded-[0.42em] px-[0.85em] py-[2px] text-[10px] font-semibold",
+        // Every dimension above is in `em`, so these sizes are the only lever — the shape scales with them.
+        "inline-flex min-w-[2.75em] items-center justify-center rounded-[0.42em] px-[0.85em] py-[2px] font-semibold",
+        "text-[10px] sm:text-[11px] md:text-[12px]",
         ui.pillClass,
         className,
       )}
@@ -125,6 +128,8 @@ export function BadgePicker({ onOpen }) {
           }
           setOpen((v) => !v);
         }}
+        // WIDTH IS LOAD-BEARING: the profile-name input's `pl-*` is sized to clear this trigger, and
+        // is ramped because the pill inside it scales. Change anything here and re-check that padding.
         className="my-1.5 flex h-[calc(100%-0.75rem)] cursor-pointer items-center gap-1 border-r border-border pl-2.5 pr-1.5 text-muted-foreground hover:text-foreground"
       >
         <BadgePill id={attachedBadge} />
@@ -151,15 +156,15 @@ export function BadgePicker({ onOpen }) {
                 aria-checked={attachedBadge === id}
                 onClick={() => select(id)}
                 className={cn(
-                  "flex cursor-pointer select-none items-center gap-3 px-3 py-1.5 text-left text-xs hover:bg-muted/60",
+                  "flex cursor-pointer select-none items-center gap-3 px-3 py-1.5 text-left hover:bg-muted/60",
+                  CONTROL_TEXT,
                   attachedBadge === id && "font-semibold",
                 )}
               >
-                {/* A notch smaller than the trigger's pill: the row's label is `text-xs`, and at the shared
-                    10px the pill's ~1.6em box stands taller than the 12px text it sits beside. Every dimension
-                    is in `em`, so the font size is the only lever needed — the shape scales with it. */}
+                {/* A notch smaller than the trigger's pill at every width: at the shared size the pill's
+                    ~1.6em box stands taller than the row label it sits beside. */}
                 <span className="inline-flex w-7 shrink-0 justify-center">
-                  <BadgePill id={id} className="text-[9px]" />
+                  <BadgePill id={id} className="text-[9px] sm:text-[10px] md:text-[11px]" />
                 </span>
                 <span className={cn(attachedBadge === id ? "text-foreground" : "text-muted-foreground")}>{ui.label}</span>
               </button>

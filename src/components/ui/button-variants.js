@@ -1,5 +1,7 @@
 import { cva } from "class-variance-authority";
 
+import { CONTROL_TEXT } from "@/styles/control-typography";
+
 export const buttonVariants = cva(
   // select-none: buttons get clicked (and double-clicked) as controls, never read as prose — without
   // it a double-click highlights the label text.
@@ -22,7 +24,9 @@ export const buttonVariants = cva(
       },
       size: {
         default: "h-9 px-3 py-2",
-        sm: "h-8 rounded-md px-2.5 text-xs",
+        // Label scales on the shared control ramp, so a button sitting beside a pillar row or the
+        // profile-name input reads at the same size at every width.
+        sm: `h-8 rounded-md px-2.5 ${CONTROL_TEXT}`,
         icon: "h-8 w-8",
       },
       // Design rule: action buttons are fully rounded (pill / circle), dropdown triggers stay
