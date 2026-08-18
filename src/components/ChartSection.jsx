@@ -150,6 +150,16 @@ const CAN_SHARE_FILES = (() => {
 // save sheet, which the user may dismiss, and the click() returns long before they decide. Any toast
 // there is a claim the app cannot check, and it fired on a cancel. The platform is already reporting
 // the outcome itself, correctly, so we say nothing and let it. See the branches in handleCopy/handleShare.
+/**
+ * The title row's leading, mirroring Tailwind's `leading-tight` on the <h2> inside it.
+ *
+ * Duplicated in JS rather than left to CSS because the row must reserve its height whether or not the title is
+ * rendered — with the title hidden there is no line box to derive it from. It was `minHeight: "1.25em"` for a
+ * while, which avoided the duplication but resolved against a fractional font size and so produced a fractional
+ * row; see `titleRowMinHeight`. If `leading-tight` on the <h2> changes, change this with it.
+ */
+const TITLE_ROW_LEADING = 1.25;
+
 const EXPORT_TOAST = {
   clipboard: "Copied to clipboard",
 };
@@ -244,9 +254,17 @@ export function ChartSection({ isVisible }) {
   // `display: none` when Theory is open and nothing can be measured there — see the hook.
   const fittedTitle = useMiddleEllipsis(titleMeasureRef, displayTitle, isVisible);
   // Chart width alone, never what is in the row: the title and badge toggle independently, so the row must be one
-  // height in all four combinations or toggling either moves the chart. Kept in `em` so it resolves `leading-tight`
-  // from the same font size in the same layout pass. See docs/DECISIONS.md#chart-type-scale.
-  const titleRowMinHeight = "1.25em";
+  // height in all four combinations or toggling either moves the chart. See docs/DECISIONS.md#chart-type-scale.
+  //
+  // IT MUST EQUAL THE <h2>'s LINE BOX, NOT A ROUNDED VERSION OF IT. The floor this briefly carried
+  // (`Math.floor(titleSizePx * 1.25)`) was smaller than the line box the rendered title actually produces —
+  // 22 against 22.5 at the cap — so the row grew by half a pixel the moment the title mounted, and hiding the
+  // profile name shifted everything below. `leading-tight` is the authority here; this only reserves the same
+  // height while the <h2> is unmounted.
+  //
+  // Whole-pixel-ness comes from `titleSizePx` being integral (see FE_UI.chart.titleRange), which makes both this
+  // and the line box land on x.0 or x.5 — enough that `items-center` has no sub-pixel to split.
+  const titleRowMinHeight = titleSizePx * TITLE_ROW_LEADING;
 
   useLayoutEffect(() => {
     if (isVisible) {
@@ -360,10 +378,9 @@ export function ChartSection({ isVisible }) {
         )}
       >
         <div ref={exportRef} className="relative flex w-full min-w-0 flex-col self-stretch">
-          {/* `fontSize` ON THE ROW IS WHAT THE `1.25em` FLOOR RESOLVES AGAINST — see `titleRowMinHeight`. The row
-            carries the title's size so the browser can compute the same line box `leading-tight` will produce,
-            without JS ever encoding the 1.25. The <h2> inside inherits it rather than setting its own, so there
-            is exactly one place the size is applied.
+          {/* THE ROW CARRIES THE TITLE'S SIZE and the <h2> inside inherits it, so there is exactly one place the
+            size is applied. The row's own `minHeight` is computed in JS (see `titleRowMinHeight`) rather than
+            left as `1.25em`, because an `em` of a fractional font size is a fractional height.
 
             The old `leading-none` is gone: it existed to stop the row's own line box padding the height out
             while the height came from JS, and it would now fight the `em` floor by resolving against a
@@ -391,12 +408,15 @@ export function ChartSection({ isVisible }) {
                    `leading-tight` RATHER THAN AN INLINE `lineHeight`, which is what this used to have (at a
                    slightly different 1.2). Two elements carrying the same utility class are the same by
                    construction; two elements computing a number in separate files are the same only until one
-                   is edited — and the row's own floor is now `1.25em`, so nothing in JS has to know what this
-                   class resolves to (see `titleRowMinHeight`).
+                   is edited.
 
-                   NO `fontSize` OF ITS OWN: it inherits the row's, which is set to exactly this value. That is
-                   what makes the row's `em` floor and this element's leading resolve against the same number
-                   by construction rather than by both being handed it.
+                   THE ROW'S FLOOR DOES DUPLICATE THE 1.25, as `TITLE_ROW_LEADING`. It was `1.25em`, which kept
+                   the number out of JS entirely, but an `em` of the fractional `titleSizePx` gave a fractional
+                   row height and so a sub-pixel for `items-center` to split — the badge's 1px shift. Keep the
+                   constant and this class in step (see `titleRowMinHeight`).
+
+                   NO `fontSize` OF ITS OWN: it inherits the row's, so this element's leading and the row's floor
+                   resolve against the same number rather than both being handed it separately.
 
                    `truncate` IS NOT USED HERE and would be wrong: it ellipsises the END, and a profile name's
                    end is the part most likely to distinguish it ("… Engineer L4" vs "… L5"). The middle is cut
@@ -453,14 +473,14 @@ export function ChartSection({ isVisible }) {
           {!chartLegendHidden ? (
             <div
               data-chart-export="chart-legend-card"
-              className="mx-auto mt-3 flex w-fit max-w-full items-center justify-center rounded-lg border border-border bg-muted px-4 py-2 leading-none"
+              className="mx-auto mt-4 flex w-fit max-w-full items-center justify-center rounded-lg border border-border bg-muted px-4 py-2 leading-none"
             >
               <ClusterLegend chartWidth={chartWidth} />
             </div>
           ) : null}
 
           {FEATURE_SCORES_SETTINGS && !footerScoresHidden ? (
-            <div data-chart-export="chart-scores" className="mt-3 flex flex-col gap-2 xs:gap-3" aria-label="Cluster averages and score summary">
+            <div data-chart-export="chart-scores" className="mt-4 flex flex-col gap-2 xs:gap-3" aria-label="Cluster averages and score summary">
               <ChartScores />
             </div>
           ) : null}

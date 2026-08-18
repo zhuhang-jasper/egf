@@ -23,7 +23,7 @@ function LevelPill({ code, term }) {
       {/* Off the grey ladder on purpose: this is a label inside a pill, not prose. The badge beside it is
           already slate-900 on white, so the term is the quiet half of a two-part chip and takes the
           lightest grey rather than a prose rung. */}
-      <span className="truncate text-[11px] font-semibold leading-snug text-slate-500 sm:text-[12px] md:text-[13px]">{term}</span>
+      <span className={cn("truncate font-semibold", DOC_TEXT.metaBody)}>{term}</span>
     </span>
   );
 }

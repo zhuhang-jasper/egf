@@ -54,10 +54,13 @@
    drawn at display size, which reads thicker and looser than the same string on screen. Pinning the axis in the
    FACE is what gets past that, since the descriptor applies without canvas having to ask for it.
 
-   21 IS NOT A TASTE VALUE: `font-optical-sizing: auto` maps font-size in px onto the axis, and the export renders
-   at a pinned width, so the title's size there is the constant getChartTitleSizePx(chart.exportImageLayoutWidthPx)
-   — 11 × 526/380 × 1.4 ≈ 21.3. Retune it if either of those two constants moves; nothing checks that for you,
-   which is the cost of the axis being unreachable from JS.
+   18 IS NOT A TASTE VALUE, AND IT IS NO LONGER A CALCULATION: `font-optical-sizing: auto` maps font-size in px
+   onto the axis, and the export renders at a pinned width, so the title's size there is
+   getChartTitleSizePx(chart.exportImageLayoutWidthPx). That width equals `page.chartMaxWidthPx`, which is the far
+   endpoint of `chart.titleRange` — so this is simply `chart.titleRange.maxPx`, read across verbatim.
+   KEEP THE TWO EQUAL whenever `titleRange.maxPx` moves; nothing checks that for you, which is the cost of the axis
+   being unreachable from JS. (It was a chain twice over before: 11 × 526/380 × 1.4 when the ramp was a slope, then
+   round(13 × 1.4) when the title was a ratio of a shared reference size. Authoring the title in px removed both.)
 
    No unicode-range: a profile name is arbitrary text, unlike the ticks above. The latin file is all this face
    carries, and a name needing more falls through to "Inter Variable" in the stack (see EXPORT_TITLE_FONT_FAMILY). */
@@ -67,7 +70,7 @@
   font-display: swap;
   font-weight: 100 900;
   src: url("@fontsource-variable/inter/files/inter-latin-opsz-normal.woff2") format("woff2-variations");
-  font-variation-settings: "opsz" 21;
+  font-variation-settings: "opsz" 18;
 }
 
 @layer base {

@@ -9,7 +9,7 @@ import { useMenuPosition } from "@/hooks/useMenuPosition";
 import { useAppStore } from "@/store/useAppStore";
 
 import { normalizeAttachedBadge, TRACK_BADGE_OPTIONS, TRACK_BADGE_UI } from "@/constants";
-import { CONTROL_TEXT } from "@/styles/control-typography";
+import { CONTROL_TEXT, TOOL_TEXT } from "@/styles/control-typography";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
 
@@ -28,9 +28,12 @@ function BadgePill({ id, className }) {
   return (
     <span
       className={cn(
-        // Every dimension above is in `em`, so these sizes are the only lever — the shape scales with them.
+        // Every dimension above is in `em`, so these sizes are the only lever — the shape scales with them, and
+        // both call sites (the trigger's selected value, the dropdown's rows) take them unchanged so the same
+        // badge is one width in both places. A rung under the app's 10px floor because the pill's ~1.6em box
+        // stands taller than the text it sits beside; at 10/12 it crowded the row label in the dropdown.
         "inline-flex min-w-[2.75em] items-center justify-center rounded-[0.42em] px-[0.85em] py-[2px] font-semibold",
-        "text-[10px] sm:text-[11px] md:text-[12px]",
+        TOOL_TEXT.annotation,
         ui.pillClass,
         className,
       )}
@@ -105,10 +108,12 @@ export function BadgePicker({ onOpen }) {
                   attachedBadge === id && "font-semibold",
                 )}
               >
-                {/* A notch smaller than the trigger's pill at every width: at the shared size the pill's
-                    ~1.6em box stands taller than the row label it sits beside. */}
+                {/* SAME SIZE AS THE TRIGGER'S PILL, so the selected badge and its row in this list are one
+                    object at one width — every BadgePill dimension is `em`, so the font size is what sets the
+                    box. It was a notch smaller (9/11) on the argument that the shared size stands taller than
+                    the row label beside it; matching the trigger reads as the more important consistency. */}
                 <span className="inline-flex w-7 shrink-0 justify-center">
-                  <BadgePill id={id} className="text-[9px] sm:text-[10px] md:text-[11px]" />
+                  <BadgePill id={id} />
                 </span>
                 <span className={cn(attachedBadge === id ? "text-foreground" : "text-muted-foreground")}>{ui.label}</span>
               </button>

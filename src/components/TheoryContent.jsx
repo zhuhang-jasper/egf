@@ -224,7 +224,7 @@ function SeniorityStepper() {
             <div className="flex min-w-0 flex-col gap-2">
               <SeniorityPhaseTitle
                 phase={phase}
-                className={cn("min-w-0", DOC_TEXT.bodySemibold, "font-bold text-[13px] sm:text-[14px] md:text-[15px]")}
+                className={cn("min-w-0", DOC_TEXT.cardTitle, "font-bold")}
               />
               <p className={DOC_TEXT.body}>{description}</p>
             </div>
@@ -248,7 +248,7 @@ function SeniorityStepper() {
               <SeniorityPhaseTitle
                 phase={phase}
                 breakAfterSlash
-                className={cn("min-w-0", DOC_TEXT.bodySemibold, "font-bold text-[13px] sm:text-[14px] md:text-[15px]")}
+                className={cn("min-w-0", DOC_TEXT.cardTitle, "font-bold")}
               />
               <p className={DOC_TEXT.body}>{description}</p>
             </div>

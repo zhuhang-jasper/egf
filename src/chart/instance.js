@@ -318,7 +318,9 @@ export function createCompetencyChart(canvas, { purpose = "tool" } = {}) {
           pointLabels: {
             centerPointLabels: ch.centerPointLabels,
             padding: ch.pointLabelPaddingRange.minPx,
-            font: { size: ch.pointLabelPx, weight: ch.pointLabelWeight },
+            // Seed only — syncFontsForChart overwrites this on the first fit. Prefers the range's narrow
+            // endpoint, falling back to a preset's flat `pointLabelPx` (the theory charts still carry one).
+            font: { size: ch.pointLabelPxRange?.minPx ?? ch.pointLabelPx, weight: ch.pointLabelWeight },
             color: ch.pointLabelColor,
           },
           angleLines: { color: ch.gridColor },

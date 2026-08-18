@@ -11,7 +11,7 @@ import { useTouchPrimary } from "@/hooks/useTouchPrimary";
 import { useAppStore } from "@/store/useAppStore";
 
 import { LAYER, MAX_PROFILE_NAME_LENGTH, normalizeAttachedBadge, TRACK_BADGE_OPTIONS, TRACK_BADGE_UI } from "@/constants";
-import { CONTROL_TEXT, CONTROL_TEXT_SM } from "@/styles/control-typography";
+import { CONTROL_TEXT } from "@/styles/control-typography";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
 import { getPopoverViewportBounds } from "@/utils/scroll";
@@ -366,10 +366,12 @@ export function ProfileCombobox({ titleError = false }) {
         // `pl-*` CLEARS THE BADGE PICKER, which sits over this input's left edge as an absolute
         // adornment. The trigger is fixed px (padding, gap, chevron, divider) apart from the pill,
         // whose box is all `em` — so it widens on the same rungs the pill's font does, and the
-        // padding steps with it. THE FIRST RUNG IS UNPREFIXED, NOT `xs:`, because the pill's own ramp
-        // starts at `sm`: bare covers everything below 640 (the `xs` band included), and an `xs:`
-        // prefix here would leave phones under 470 with no clearance at all, name under the badge.
-        className={cn("pl-18 pr-9 shadow-none sm:pl-19 md:pl-20", titleError && "border-red-500 focus-visible:ring-red-500/40")}
+        // padding must step with it. TWO RUNGS NOW, MATCHING THE PILL: its font moved from `sm`/`md`
+        // (640/768) to a single `xs` step, because the tool column caps at 470 and those rungs fired
+        // where nothing else changed — see styles/control-typography.js. The bare rung stays
+        // UNPREFIXED so phones under 470 keep their clearance; an `xs:`-only pair would leave them
+        // with none and put the name under the badge.
+        className={cn("pl-18 pr-9 shadow-none xs:pl-20", titleError && "border-red-500 focus-visible:ring-red-500/40")}
       />
       {/* Right adornment: the browse caret — the only way to open the profile dropdown. */}
       <button
@@ -421,12 +423,15 @@ export function ProfileCombobox({ titleError = false }) {
                 setHighlight(-1);
               }}
               onKeyDown={handleSearchKeyDown}
-              // A rung below the name field this dropdown hangs off: the search box is secondary to it.
-              className={cn("w-full bg-transparent py-2 pl-8 pr-3 placeholder:text-muted-foreground focus-visible:outline-none", CONTROL_TEXT_SM)}
+              // Same size as the option rows below it: you are typing to filter that list, so the query and the
+              // results it produces read at one size. It sat a rung under them for a while, on the argument that
+              // the search is secondary to the name field this dropdown hangs off — true of the field, but the
+              // rows are what it is actually paired with.
+              className={cn("w-full bg-transparent py-2 pl-8 pr-3 placeholder:text-muted-foreground focus-visible:outline-none", CONTROL_TEXT)}
             />
           </div>
           {rows.length === 0 ? (
-            <p className={cn("px-3 py-2 text-muted-foreground", CONTROL_TEXT_SM)}>
+            <p className={cn("px-3 py-2 text-muted-foreground", CONTROL_TEXT)}>
               {profiles.length === 0 ? "No saved profiles yet." : "No matches."}
             </p>
           ) : (

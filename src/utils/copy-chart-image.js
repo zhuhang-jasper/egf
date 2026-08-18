@@ -94,10 +94,17 @@ function getAttributionGapPx() {
  *
  * The fraction is what buys the full framework title one line. A constant rather than a measured fit, since
  * the string is constant too; reword the credit long enough to overrun and this ratio is the knob.
+ *
+ * FRACTIONAL, and there was a `Math.round` here that had to go. Rounding earns its keep when a value is
+ * sampled across many widths — it stops small text stepping unevenly as the chart resizes — but the export
+ * renders at ONE pinned width (`exportImageLayoutWidthPx`), so this is called with a single value and returns a
+ * single number. There was no sequence to stabilise. Worse, the result is multiplied by `scaleY` at the call
+ * site, so rounding in CSS px amplified its own error: 9.36 → 9 lost 0.7 physical px at 2x and 1.4 at 4x. If a
+ * whole number is ever wanted here, round the SCALED value, not this one.
  */
 function getAttributionFontPx(chartWidthPx) {
   const ratio = Number(FE_UI.chart.exportImageAttributionFontRatio) || 0.75;
-  return Math.round(getChartSecondaryLabelSizePx(chartWidthPx) * ratio);
+  return getChartSecondaryLabelSizePx(chartWidthPx) * ratio;
 }
 
 /** The credit's tracking, pinned so its measure and its paint cannot disagree. See the call sites for why. */

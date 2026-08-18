@@ -4,6 +4,7 @@ import { AdminLockBadge } from "@/components/AdminLockBadge";
 import { UnseenDot } from "@/components/UnseenDot";
 
 import { FE_UI, FRAMEWORK_VERSION, IS_ADMIN, LAYER } from "@/constants";
+import { TOOL_TEXT } from "@/styles/control-typography";
 import { cn } from "@/utils";
 
 /** Gated in two places: here and HomePage's VALID_TABS. Keep them in step. */
@@ -60,8 +61,8 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
               onClick={() => onTabChange(id)}
               aria-current={selected ? "page" : undefined}
               className={cn(
-                // Keep the `sm` rung, or the nav falls behind the page's captions between 640 and 768.
-                "group relative flex min-h-14 flex-1 xs:max-w-[150px] cursor-pointer select-none flex-col items-center justify-center gap-1 text-[11px] sm:text-[12px] md:text-[13px] font-semibold",
+                "group relative flex min-h-14 flex-1 xs:max-w-[150px] cursor-pointer select-none flex-col items-center justify-center gap-1 font-semibold",
+                TOOL_TEXT.label,
 
                 // On every item, coloured on only one, so the borders abut into one band. The transparent half
                 // is load-bearing: without it the active item is 3px taller and the row shifts on every switch.

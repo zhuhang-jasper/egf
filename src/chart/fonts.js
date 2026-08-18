@@ -9,36 +9,29 @@ export function getChartWidthUnit(chartWidthPx) {
   return Math.max(0, Math.min(1, (chartWidthPx - chartMinWidthPx) / (chartMaxWidthPx - chartMinWidthPx)));
 }
 
+/** Linear interpolation across chart width between a range's two authored endpoints, clamped outside them. */
+function interpolateRange(chartWidthPx, { minPx, maxPx, minWidthPx, maxWidthPx }) {
+  if (maxWidthPx <= minWidthPx) {
+    return maxPx;
+  }
+  const t = Math.max(0, Math.min(1, (chartWidthPx - minWidthPx) / (maxWidthPx - minWidthPx)));
+  return minPx + t * (maxPx - minPx);
+}
+
 /**
- * The chrome label size BEFORE rounding: the continuous curve getChartPointLabelSizePx samples.
- *
- * Split out because the consumers want different things from one ramp. The badge and legend want whole
- * pixels, being small text where a fractional size is just a blurrier glyph; the title wants the curve, so it
- * scales smoothly rather than stepping as the rounded label ticks over. The clamps stay here so both forms
- * share one floor and ceiling.
+ * Track badge + cluster legend — AUTHORED INTEGER RUNGS, not a curve. See {@link FE_UI.chart.secondaryLabelRungs}
+ * for why both properties matter: integers stop the badge's glyphs creeping, and authoring the boundaries stops
+ * `Math.round` placing them at whatever width the value happens to cross `.5`.
  */
-export function getChartPointLabelSizeExactPx(chartWidthPx) {
-  const cf = FE_UI.chartFonts;
-  const ch = FE_UI.chart;
-  if (!ch.pointLabelScaleWithChart) {
-    return ch.pointLabelPx;
-  }
-  const ref = cf.pointLabelRefWidthPx || 380;
-  let labelSize = Math.max(cf.pointLabelMinPx, (ch.pointLabelPx * chartWidthPx) / ref);
-  if (cf.pointLabelMaxPx != null) {
-    labelSize = Math.min(cf.pointLabelMaxPx, labelSize);
-  }
-  return labelSize;
-}
-
-export function getChartPointLabelSizePx(chartWidthPx) {
-  return Math.round(getChartPointLabelSizeExactPx(chartWidthPx));
-}
-
-/** Track badge + cluster legend — scales with chart width, slightly below axis labels. */
 export function getChartSecondaryLabelSizePx(chartWidthPx) {
-  const min = FE_UI.chart.secondaryLabelMinPx ?? 1;
-  return Math.max(min, Math.round(getChartPointLabelSizePx(chartWidthPx) * FE_UI.chart.secondaryLabelMultiplier));
+  const { secondaryLabelRungs: rungs, secondaryLabelMinPx } = FE_UI.chart;
+  for (const rung of rungs) {
+    // `fromChartWidthPx` absent = the top rung, which everything at or above the previous boundary falls into.
+    if (rung.fromChartWidthPx == null || chartWidthPx >= rung.fromChartWidthPx) {
+      return rung.px;
+    }
+  }
+  return secondaryLabelMinPx ?? rungs.at(-1).px;
 }
 
 /* No badge-height helper here on purpose: rounding a ratio of the fractional getChartTitleSizePx made the md
@@ -63,23 +56,39 @@ export function getRadarLabelReservedPx(chartWidthPx) {
   return Math.round(minPx + u * (maxPx - minPx));
 }
 
+/**
+ * Legend swatch edge — a ratio of the label rung it sits beside, rounded to whole px.
+ *
+ * Rounded because the label is: a fractional square next to integer text lands its edges off the device-pixel
+ * grid, and at this size (12-14px) that reads as a soft border on one side. Since the label now comes from a
+ * rung table there are only a few distinct values, so this rounds a handful of times rather than continuously —
+ * the ratio wobble that made an earlier rounded version drift (1.17-1.23 instead of 1.2) came from rounding an
+ * already-rounded CURVE at every width, which no longer happens.
+ */
 export function getClusterLegendSwatchPx(chartWidthPx) {
   return Math.round(getChartSecondaryLabelSizePx(chartWidthPx) * FE_UI.chart.legendSwatchLabelMultiplier);
 }
 
 /**
- * NOT ROUNDED, deliberately: this returns a fractional px size that both the tool's chart title and the
- * theory tab's framework title set straight onto `font-size`.
+ * Chart title — {@link FE_UI.chart.titleRange}'s two authored endpoints, interpolated, ROUNDED to whole px.
+ * Both the tool's chart title and the theory tab's framework title set the result straight onto `font-size`.
  *
- * It reads the EXACT label curve rather than the rounded label the badge and legend take. Going through the
- * rounded one made the title a step function of a step function, snapping by a full multiplier while the
- * chart beside it resized smoothly.
+ * ROUNDED, and it was fractional until the title row exposed why it cannot be. The row reserves
+ * `titleSizePx * 1.25` as its `minHeight` so the badge holds still when the profile name is toggled off, and
+ * `leading-tight` gives the rendered <h2> the same 1.25 — so the two must agree EXACTLY. A fractional size makes
+ * both fractional, and then `items-center` has a sub-pixel to split, which is the 1px badge shift
+ * (docs/DECISIONS.md#badge-ink-centring). Flooring the row instead was tried and was worse: it made the row
+ * SHORTER than the line box, so mounting the title grew the row and everything below it moved.
+ *
+ * An integer size makes `x * 1.25` land on x.0 or x.5 — close enough that no sub-pixel remains — while the row
+ * and the line box stay identical by construction. The title steps 1px at a time across the range, which at
+ * 14-18px is not perceptible; the badge and legend step too, by design (getChartSecondaryLabelSizePx).
+ *
+ * At `chartMaxWidthPx` this returns `titleRange.maxPx` exactly, which is the export's title size and so what
+ * `opsz` must match (index.css). Keep `titleRange`'s endpoints whole so that stays exact.
  */
 export function getChartTitleSizePx(chartWidthPx) {
-  // No clamps of its own, and none would do anything: both bounds are inherited from the label clamp and the
-  // canvas cap. See docs/DECISIONS.md#chart-type-scale.
-  const { labelMultiplier } = FE_UI.chart.title;
-  return getChartPointLabelSizeExactPx(chartWidthPx) * labelMultiplier;
+  return Math.round(interpolateRange(chartWidthPx, FE_UI.chart.titleRange));
 }
 
 /** Initial frame height before label bounds are measured from the live chart. */

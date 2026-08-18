@@ -7,17 +7,40 @@ import { useAppStore } from "@/store/useAppStore";
 
 import { CLUSTERS, splitPillarLabelParts } from "@/constants";
 import { CARD_TINTED, clusterCardStyle } from "@/styles/card";
+import { CONTROL_TEXT, TOOL_TEXT } from "@/styles/control-typography";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
 
-/** Emoji, pillar name in bold, then the "(Organ)" metaphor muted — each spaced on its own. */
+/**
+ * Emoji, pillar name in bold, then the "(Organ)" metaphor muted — each spaced on its own.
+ *
+ * ONE LINE, ALWAYS. `whitespace-nowrap` keeps the three parts together: the longest label
+ * ("🗣️ Communication (Voice)") measures ~177px against ~204px of label column at the narrowest chart, so it
+ * fits — but only just, and font metrics vary by platform. `truncate` is the safety valve rather than the
+ * intent: if a future pillar name or a wider system font overruns, it clips with an ellipsis instead of
+ * wrapping to a second line and making one row taller than its siblings. `min-w-0` is what lets the grid's
+ * `1fr` column shrink far enough for either to happen.
+ *
+ * `xs:pr-1` RATHER THAN A GRID GAP on the row, and NOTHING AT BASE. The row was `gap-1 xs:gap-3`, which
+ * reserved space beside the controls whether or not the label reached that far — width the longest label needed
+ * to stay on one line. As padding inside the label's own column it separates the two only where the text
+ * actually arrives, and it travels with the truncation: an ellipsis lands before the pad, not against the help
+ * icon.
+ *
+ * The narrow end gets none of it: that is where the longest label is closest to overrunning, and the controls
+ * beside it already carry their own left-hand whitespace (the help icon's box, then the stepper's border). 4px
+ * at `xs` is enough once there is room to spare.
+ */
 function PillarLabel({ pillarId }) {
   const { emoji, name, organ } = splitPillarLabelParts(pillarId);
   return (
-    <span className="min-w-0">
-      {emoji ? <span className="">{emoji}</span> : null}
-      <span className="font-semibold mx-1">{name}</span>
-      {organ ? <span className="font-normal text-slate-500">{organ}</span> : null}
+    <span className="min-w-0 flex items-baseline whitespace-nowrap xs:pr-1">
+      {emoji ? <span className="shrink-0">{emoji}</span> : null}
+      <span className="font-semibold mx-1 truncate">{name}</span>
+      {/* A RUNG UNDER THE NAME (12/13 against the row's inherited 13/14). The organ is a gloss on the pillar,
+          not part of its label — it already reads muted and unbolded, and holding it one size down keeps the
+          name the thing the eye lands on when the row got larger to match its LevelInput. */}
+      {organ ? <span className={cn("shrink-0 font-normal text-slate-500", CONTROL_TEXT)}>{organ}</span> : null}
     </span>
   );
 }
@@ -37,7 +60,7 @@ export function PillarCluster({ group, onOpenPillarInMatrix }) {
       style={clusterCardStyle(cluster.surfaceBg, cluster.bezel)}
     >
       <div
-        className="mb-2 text-[10px] sm:text-[11px] md:text-[12px] font-bold uppercase leading-tight tracking-[0.06em]"
+        className={cn("mb-2 font-bold uppercase leading-tight tracking-[0.06em]", TOOL_TEXT.label)}
         style={{ color: cluster.midtone }}
       >
         {group.title}
@@ -45,10 +68,10 @@ export function PillarCluster({ group, onOpenPillarInMatrix }) {
       {group.pillars.map((pillar) => (
         <div
           key={pillar.id}
-          className="grid grid-cols-[1fr_auto] items-center w-full gap-1 sm:gap-3 leading-[1.35] text-slate-800 text-[12px] sm:text-[13px] md:text-[14px]"
+          className={cn("grid grid-cols-[1fr_auto] items-center w-full gap-0 leading-[1.35] text-slate-800", TOOL_TEXT.field)}
         >
           <PillarLabel pillarId={pillar.id} />
-          <span className="flex flex-row items-center justify-end shrink-0 gap-3 xs:gap-4 sm:gap-5 md:gap-6">
+          <span className="flex flex-row items-center justify-end shrink-0 gap-3 xs:gap-6">
             {onOpenPillarInMatrix ? (
               <button
                 type="button"

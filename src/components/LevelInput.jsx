@@ -6,6 +6,8 @@ import { useAppStore } from "@/store/useAppStore";
 
 import { LEVEL_STEP } from "@/constants";
 import { clampLevel, formatLevelForInput } from "@/constants/levels";
+import { TOOL_TEXT } from "@/styles/control-typography";
+import { cn } from "@/utils";
 
 function normalizeTypingValue(raw) {
   let s = String(raw).replace(",", ".").trim();
@@ -104,7 +106,7 @@ export function LevelInput({ value, onChange, ariaLabel, ariaLabelUp, ariaLabelD
             e.currentTarget.blur();
           }
         }}
-        className="w-12 text-center bg-transparent border-x border-x-[#e0e0e0] px-1 py-[7px] md:py-2 text-[13px] md:text-[14px]"
+        className={cn("w-12 text-center bg-transparent border-x border-x-[#e0e0e0] px-1 py-[7px] xs:py-2", TOOL_TEXT.field)}
       />
       <button
         type="button"

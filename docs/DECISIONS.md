@@ -541,34 +541,76 @@ there is nothing to read Tailwind's scale from at runtime:
 
 ### chart-type-scale
 
-The chart title, the track badge and the cluster legend are three fixed ratios of one number — the radar's
-axis-label size — rather than independent values. Anything that should move with the chart belongs on
-`getChartPointLabelSizePx`, not on a private ramp.
+**Every chart type size is an AUTHORED ENDPOINT, not a ratio of anything.** Three separate knobs, all in
+`FE_UI`:
 
-Expressed as ratios on purpose: the title sits directly above the canvas and beside the badge, both of which
-scale with chart width, so a fixed px size or a Tailwind `text-*` step would drift out of proportion at every
-width but the one it was picked at. The theory tab's framework title runs off the same number, so the two are
-equal at every width by construction rather than by agreement. Theory previously carried its own Tailwind
-ladder, which stepped for reasons unrelated to the chart it sat above: the tool panel caps at 550, so the
-chart reaches full size around a 550px viewport while `sm:` does not fire until 640.
+| what | knob | shape |
+| --- | --- | --- |
+| chart title (tool + theory hero) | `chart.titleRange` | two px endpoints, interpolated, rounded |
+| track badge (md) + cluster legend | `chart.secondaryLabelRungs` | rung table, integer px |
+| canvas axis labels | `chart.pointLabelPxRange` | two px endpoints, interpolated, fractional |
 
-**There is no `minPx` and no `maxPx`, and adding either back does nothing.**
+All three span `page.chartMinWidthPx` → `page.chartMaxWidthPx`, so they reach their maxima together, at the
+width the tool column caps at.
 
-- The floor is structural: the label is already clamped to `chartFonts.pointLabelMinPx` (10) before the
-  multiplier, so the title cannot go below `10 × 1.4 = 14`. An explicit `minPx: 14` sat here once and was
-  dead code under the product.
-- The ceiling is the canvas width: `page.chartMaxWidthPx` holds the canvas at 526, so the title tops out at
-  ~21.3. A `maxPx: 22` was kept for a while on the argument that it guarded the shared theory title; raising
-  it to 30 produced identical output at every width.
+**This replaced a ratio design, and the reasons it was replaced are the reasons not to reintroduce it.** The
+title, badge and legend used to be fixed multiples (×1.4, ×0.9, and ×1.2 for the swatch) of one shared
+reference size, itself `(11 × chartWidth) / 380`. The argument was that one number keeps them in proportion by
+construction. Three problems killed it:
 
-To change the largest the titles get, move `page.chartMaxWidthPx` or the multiplier. A font clamp cannot.
+1. **The reference size was arbitrary.** `380` was not a base or a cap — it was merely the width at which that
+   division happened to yield `11`. So the sizes at the widths that actually mattered (the narrowest chart, the
+   cap) were consequences of a slope's geometry rather than decisions anyone made.
+2. **The badge and legend need INTEGER sizes**, and a ratio of a smooth curve cannot give that without
+   rounding — which puts the size boundaries wherever the value crosses `.5`. Those landed at chart widths 361
+   and 400: 59px apart then 39px apart, uneven and chosen by nobody. See `badge-ink-centring` for why integers
+   are non-negotiable there.
+3. **It made the title unsettable.** Asking for an 18px title meant solving `18 / 1.4` and authoring
+   `12.857` as the reference — a fractional constant standing in for a round intention.
 
-Leading is not configured in JS at all. A `lineHeightMultiplier: 1.25` used to mirror Tailwind's
-`leading-tight` so the title row could reserve the right height, and a ratio duplicated in two languages is a
-ratio that eventually disagrees. The row now floors itself at `1.25em` against its own font size, which is the
-same computation the class does, done once, by the browser. That `em` floor is also what holds the row's
-height when the title is hidden and only the badge is left, since the font size sits on the **row**, not the
-`<h2>`.
+Rounding also used to compound: the swatch was `round(round(round(curve) × 0.9) × 1.2)`, which drifted its
+ratio to the label between 1.17 and 1.23 instead of holding at 1.2.
+
+**What the ratios did buy, and how it is held now.** Proportion between the title and the badge was automatic
+under one reference; it is not now. Two independent decisions can drift, so retuning either at the cap means
+eyeballing the other beside it. Accepted in exchange for both being directly settable. The theory hero title is
+still equal to the tool title by construction, because both call `getChartTitleSizePx` — that part never
+depended on the ratio.
+
+**The title is rounded to whole px; the axis labels are not.** Both are deliberate and for opposite reasons:
+
+- The title's row reserves `titleSizePx × TITLE_ROW_LEADING` as its `minHeight` so the badge holds still when
+  the profile name is toggled off, and `leading-tight` gives the rendered `<h2>` the same 1.25. The two must
+  agree exactly, and an integer size makes `x × 1.25` land on `.0` or `.5` — leaving no sub-pixel for
+  `align-items: center` to split. See `badge-ink-centring`.
+- The canvas labels feed a measurement chain (label size → label span → frame height → radar radius), so a 1px
+  step there is amplified by the fit into a visible pop. `getPointLabelSizePxFromRange` says so at its
+  definition, and three sibling values (`radarLabelReserved`, `pointLabelPaddingRange`,
+  `layoutPaddingHorizontal`) each carry the same note. Fractional is load-bearing.
+
+**No `minPx`/`maxPx` clamps on the title, and adding them does nothing.** Both bounds ARE `titleRange`'s
+endpoints, which the interpolation already clamps to. To change the largest the titles get, move
+`titleRange.maxPx`.
+
+**`titleRange.maxPx` is also the export's title size**, because `chart.exportImageLayoutWidthPx` equals
+`page.chartMaxWidthPx`. That is what lets `opsz` in `index.css` read the endpoint verbatim instead of
+reproducing a multiplication chain — it was `11 × 526/380 × 1.4` under the slope, then `round(13 × 1.4)` under
+the ratio, and is now just the number.
+
+**Viewport breakpoints cannot size chart chrome.** The badge and legend are sized in JS, not by `sm:`/`md:`
+classes, because the PNG export renders from an off-screen clone pinned to a fixed width (see
+`export-renders-from-an-off-screen-clone`). Media queries resolve against the viewport, which the clone cannot
+change, so a phone would export phone-sized type around a full-width radar. Worse, `export-clone.js` uses the
+presence of an inline `fontSize` as its md/sm discriminator, and the canvas redraw reads `getComputedStyle` —
+which resolves classes fine, so the wrong size would bake into the PNG silently rather than erroring. Theory
+previously carried its own Tailwind ladder here and it was deleted for the same class of reason.
+
+**Leading is duplicated between JS and CSS, deliberately.** `TITLE_ROW_LEADING` (1.25) in `ChartSection.jsx`
+mirrors `leading-tight` on the `<h2>`, and a ratio in two languages is one that eventually disagrees — so this
+is a real cost, accepted. It was `minHeight: "1.25em"`, which kept the number out of JS entirely, but an `em`
+of the then-fractional title size produced a fractional row height and so the sub-pixel that shifted the badge.
+Flooring the row instead was tried and was worse: it made the row SHORTER than the `<h2>`'s line box, so
+mounting the title grew the row and everything below it moved. Keep the constant and the class in step.
 
 The row is sized by the title and the badge follows it. The dependency used to run the other way, which meant
 a wrapped title took its leading from a pill's padding — at narrow widths, exactly `leading-none`. Wrapping is
@@ -603,7 +645,26 @@ the text inside it?_ If only the text, the fraction is in the line box or the ce
 
 `sm` never showed the line-box symptom because `10 * 1.4` is exactly 14. `md`'s font comes from
 `getChartSecondaryLabelSizePx`, which is integral but lands on 11/12/13/14 — every one of which gives a
-fractional `1.4em`. An integer font size does **not** imply an integer line box. 2. **On the chart title it clipped the descenders.** The same rule was applied to `#competency-chart-heading`,
+fractional `1.4em`. An integer font size does **not** imply an integer line box.
+
+**THERE IS A FOURTH TERM, AND IT IS NOT IN THE PILL AT ALL: the row's `minHeight`.** `align-items: center` on the
+title row splits `(rowHeight − pillHeight)`, so a fractional ROW leaves the same half-pixel a fractional pill
+would. It was `minHeight: "1.25em"`, resolved against the then-fractional `getChartTitleSizePx` — so the badge
+crept continuously as the chart resized even with all three pill terms whole. Two attempts and what they taught:
+
+- **Flooring the row** (`Math.floor(titleSizePx * 1.25)`) made it SHORTER than the `<h2>`'s own line box — 22
+  against 22.5 — so mounting the title grew the row and everything below it moved. Hiding the profile name
+  became a visible shift. The row's floor must EQUAL the line box, never approximate it.
+- **Rounding the title's font size** is what actually worked (`getChartTitleSizePx` now does). An integer size
+  makes `x × 1.25` land on `.0` or `.5` for both the row and the `<h2>`, so they agree exactly and the remainder
+  is never arbitrary. See `chart-type-scale`.
+
+**A fractional badge font was also tried, and the failure is instructive.** The reasoning was that
+`line-height: round(1.4em, 1px)` holds the line box whole from ANY font size, so the pill's height stays
+integral — which is true, and the pill did hold still. But `align-items: center` then splits
+`(lineBox − fontSize)`, and that half-leading drifts continuously with a fractional font: measured 2.319 → 2.113
+across chart widths 355-371 while the pill sat at 19px throughout. Exactly the symptom this section opens with.
+The badge's size is now an integer rung table (`chart.secondaryLabelRungs`) for this reason. 2. **On the chart title it clipped the descenders.** The same rule was applied to `#competency-chart-heading`,
 where `trim-both cap alphabetic` puts the block's bottom edge on the alphabetic baseline. The `<h2>` also
 carries `overflow-hidden` for `useMiddleEllipsis`, so the tails of p/g/y/J were cut off. The comment on that
 rule asserted "height is unaffected", which was precisely the error: the trim resizes the block's own box, and
@@ -714,6 +775,25 @@ split the number in two: `minWidthPx` stayed the layout floor, and `chartMinWidt
 floor) is what the label-size ramp reads. If a future padding change appears to require widening the layout
 floor, check whether it is actually a chart-ramp problem wearing the wrong name.
 
+**THE CHROME BETWEEN THEM IS 50px, NOT 48, AND THE MISSING 2px COST AN AFTERNOON.** Both `chartMinWidthPx` and
+`chartMaxWidthPx` are their page counterpart minus the tab panel's `px-3` (24), the chart card's `p-3` (24), AND
+the card's 1px border on each side — `CARD_PLAIN` carries `border border-slate-200`, and everything is
+`box-sizing: border-box`. The border was left out of the sum for a while, which put both constants 2px above what
+the frame ever measures. It went unnoticed at the min end because the ramps clamp below their floor, but the max
+end showed it the moment the title was authored in px: `titleRange` interpolates to `maxPx` AT `maxWidthPx`, so a
+cap the chart cannot reach means the title stalls just short of its authored value (17.92 against 18).
+
+**Measure, do not derive.** `document.querySelector('[data-chart-frame]').getBoundingClientRect().width` settles
+it in one read, and reading it is how the 2px was finally found — after two wrong derivations from the class
+lists.
+
+**`maxWidthPx` also subtracts the desktop scrollbar (15px) and `minWidthPx` does not.** Not an inconsistency:
+both are content-box widths and content box = viewport − scrollbar, but they solve that equation for different
+unknowns. `maxWidthPx` targets a chosen VIEWPORT (the `xs` breakpoint, so the chart's cap and the type rungs fire
+together), so the bar comes off it. `minWidthPx` is a floor whose viewport is merely an outcome, and a 350px
+layout is only ever reached on a phone, where the bar is an overlay taking no width. Each end is compensated for
+the platform that actually reaches it.
+
 ### cluster-nudge-ramp-is-two-endpoints-not-a-ratio
 
 The chart's per-pillar label nudges (`radar-center.js`) were fixed pixel offsets, tuned only against the
@@ -786,9 +866,9 @@ derived from its **screen** width, and neither hook fires in time to correct it:
 print layout exists, so measuring there still reads the screen, and the ResizeObserver's rAF does not get a
 turn before rasterisation.
 
-From a desktop window this never shows, because the frame is already at its 526px cap, which is also its
-printed width. From a phone it does. A ~350px frame pins a ~330px height; on paper the frame widens to 526px
-but keeps that height, so the canvas asks for `height: auto` (~496px), `max-height: 100%` clamps it back to
+From a desktop window this never shows, because the frame is already at its `page.chartMaxWidthPx` cap, which
+is also its printed width. From a phone it does. A ~350px frame pins a ~330px height; on paper the frame widens
+to the cap but keeps that height, so the canvas asks for `height: auto` (~496px), `max-height: 100%` clamps it back to
 330px, and clamping a **replaced** element's height recomputes its width to preserve the aspect ratio. The
 radar redraws at its mobile size, centred in a frame nearly twice as wide: the "shrunken cover chart".
 
@@ -879,6 +959,60 @@ to clear, so the reasoning inverts and the margin should be as small as paper al
 
 ---
 
+### two-type-ramps-one-per-column
+
+**The app has two size ramps, and which one a piece of text takes is decided by the COLUMN it lives in, not by
+how big it should look.** Both are size-only; weight, colour and tracking stay with the component.
+
+| ramp | file | steps at | because its column caps at |
+| --- | --- | --- | --- |
+| `TOOL_TEXT` + `CONTROL_TEXT` | [control-typography.js](../src/styles/control-typography.js) | `xs` (470) once | `page.maxWidthPx` — viewport 470 |
+| `DOC_TEXT` / `DOC_SECTION` | [doc-typography.js](../src/styles/doc-typography.js) | `sm` (640), `md` (768) | `page.theoryMaxWidthPx` — 900 |
+
+**A breakpoint outside its column's growth range does nothing but harm.** The tool tab's chrome was on the same
+three-tier `sm`/`md` ramp as the docs tab, so a control grew at 640 and again at 768 — 170px and 300px after the
+column, the chart and the chart's own type had all stopped moving. The rung fired where nothing beside it
+changed, which reads as a glitch rather than a scale. Moving it to `xs` puts every step on the tool tab at one
+width: the column's cap, the chart's cap, and the chart chrome's top rung all land there together.
+
+**The docs tab keeps three tiers for the same reason, inverted.** Its column runs 350 → 900, so both `sm` and
+`md` fall inside the range and track real growth. Putting it on `xs` would freeze six tiers — including 16→18
+section titles — across 445px of further widening.
+
+**The two ramps agree at base and diverge at the top, which is correct.** Four of five rungs share a base value
+(14, 13, 12, 10), so a control and the prose beside it start level; they part company only where one column
+keeps growing and the other has stopped.
+
+**A control's size is a property of the control, not of the page it sits on.** This is what settles the shared
+primitives. `Button`, `Input` and the menu rows take `CONTROL_TEXT` on both tabs, so on the docs tab a control
+caps at 13 while the prose around it reaches 14 — within 1px, and exactly level at 640. A per-tab override was
+built for this (a `DOC_TEXT_SIZE` passed at Theory's call sites) and removed: it made a shared primitive's size
+depend on its container, which is the thing this rule exists to prevent.
+
+**Rungs are named for the JOB, not the size**, so choosing one is a question about the text rather than a guess
+at a number — `display` / `field` / `label` / `annotation` on the tool side, `body` / `cardTitle` /
+`badgeMicro` and so on for the docs. **No new rungs on either.** Five already puts two tool rungs 2px apart at
+base; a sixth would put two of them 1px apart, which reads as a mistake rather than a hierarchy.
+
+**Never inline a RAMP at a call site, even next to the token it duplicates.** Five docs-tab sites had done
+exactly that — two took `DOC_TEXT.bodySemibold` and then wrote out `cardTitle`'s ramp beside it, one wrote out
+`metaBody`'s, and two shared a 9/10/11 tier `DOC_TEXT` did not name. The last of those was the instructive one:
+the tier existed whether or not it had a name, so it got one (`badgeNano`). A tier with no name is a tier that
+drifts a pixel at the next call site.
+
+A FLAT `text-[Npx]` with no `sm:`/`xs:` sibling is a different thing and is fine where the element belongs to
+neither column: the app header's wordmark and numeral, `Tooltip`, `InstallPrompt`, `ChangelogModal`. These are
+fixed-size chrome — they do not track a measure, so there is no ramp for them to drift from. If one of them ever
+gains a breakpoint, it wants a token instead.
+
+**One name per size.** `TOOL_TEXT.control` was briefly an alias of `CONTROL_TEXT`; two names for one string is
+the same drift risk as two strings, so the alias is gone and the eight `ui/` consumers keep the name they had.
+When redirecting call sites leaves a token unused, delete it — `DOC_TEXT.meta` and `.chip` went that way.
+
+**The chart's own chrome is on neither ramp, and cannot be.** Title, badge and legend size themselves in JS
+from the measured chart width, because the PNG export renders from an off-screen clone at a pinned width where
+media queries do not resolve. See [chart-type-scale](#chart-type-scale).
+
 ## Copy
 
 ### changelog-rank-sentinels
@@ -914,6 +1048,11 @@ if anything ever read the rank as a count of versions behind.
 The Theory tab's text colours are five rungs, one stop apart, and every piece of text on the page takes its
 colour from `DOC_TEXT` / `DOC_SECTION` and nothing else. The table lives in
 [doc-typography.js](../src/styles/doc-typography.js).
+
+The same tokens carry SIZE, on a separate ladder with its own rules — see
+[two-type-ramps-one-per-column](#two-type-ramps-one-per-column). The two are independent: a rung of colour and a
+rung of size are picked by different questions, which is why a token can be `metaBody`'s size with a different
+weight, or `cardTitle`'s size in bold.
 
 **Two things decide a rung:** whether the text is on the page or inside a card, then what job it does there.
 The page's own voice is darker; a card is a quieter object sitting on it, so its contents step back. Both are
@@ -1128,8 +1267,11 @@ the same machine. The alternative considered was dropping `antialiased` from `<b
 agree on every platform by construction — rejected only because it changes the app's own text everywhere.
 
 Inter is variable across 100–900, so the delta is not restricted to multiples of 100; 750 and 780 are real
-instances. Retune by eye against the app at a chart width of 526px or more, since below that the app's title is
-genuinely smaller than the export's pinned one and the comparison is not like-for-like.
+instances. Retune by eye against the app AT THE CHART'S FULL WIDTH (`page.chartMaxWidthPx`), since below that
+the app's title is genuinely smaller than the export's pinned one and the comparison is not like-for-like. Do
+not read a px number into this: the instruction used to say "526px or more", which stopped being reachable when
+the cap moved. Widen the window until the tool column stops growing, which is the same thing by construction —
+`exportImageLayoutWidthPx` equals that cap.
 
 ### export-margins-crop-the-rows-not-the-columns
 
@@ -1156,8 +1298,10 @@ pixel:
 - **right** — whatever the radar reserved for axis labels and did not use. `applyRadarCenterFit` centres the
   radar on the chart area and holds back **one** `radarLabelReserved` width for both sides, but the two extreme
   labels are nothing like the same length (`uiUx` at 280° is "UI/UX 👀"; `ai` at 80° is "🤖 AI Leverage"), so the
-  shorter side keeps the difference as white **inside** the canvas — around 30px on a 526px box, on top of the
-  ~25px by which the same mismatch pushes the radar's whole label span right of centre.
+  shorter side keeps the difference as white **inside** the canvas — order of 30px on a ~500px box, on top of
+  the ~25px by which the same mismatch pushes the radar's whole label span right of centre. Both figures are
+  OBSERVATIONS at the layout width of the day, not constants: they scale with the box, so re-measure rather than
+  recompute after the cap moves.
 - **bottom** — the credit's unused descender space, `textBaseline: "bottom"` aligning on the em box.
 
 Top and bottom are **pure leading**, so cropping them to ink is safe and exact: the export is a top-to-bottom
@@ -1214,9 +1358,10 @@ superseded by the dpr resize, so there are two settles and only the second one i
 The copied/shared PNG is rasterised from a **clone** of the chart export DOM, mounted in a host parked at
 `left: -10000px` with its own Chart.js instance, not from the element on screen.
 
-It used to pin the live element: set `width: 526px` on the real `exportRoot`, let the chart re-fit, capture,
+It used to pin the live element: set the export width (526px at the time) on the real `exportRoot`, let the
+chart re-fit, capture,
 then restore. That reused the fit already running and needed no second chart, but the user saw it — on a narrow
-viewport the chart visibly jumped to 526px and back for the few frames the pin was held. `overflow: hidden` on
+viewport the chart visibly jumped to that width and back for the few frames the pin was held. `overflow: hidden` on
 the wrapper stopped it forcing a page scrollbar; it could not stop the reflow being visible.
 
 A clone costs a second chart lifecycle, which is the thing to be careful about: **a cloned `<canvas>` is
@@ -1231,7 +1376,7 @@ walk would silently fit the wrong element the first time that markup gains a wra
 **The chrome has to be rescaled by hand.** The title, track badge and cluster legend size themselves in JS
 from the frame width React last measured, and write the result as inline styles. `cloneNode` copies those
 literally and nothing re-renders a detached clone, so an export taken on a phone came out with phone-sized
-type ringing a 526px radar — the radar scaled, the words around it did not. `rescaleChromeForWidth` recomputes
+type ringing a full-width radar — the radar scaled, the words around it did not. `rescaleChromeForWidth` recomputes
 them through the same `fonts.js` helpers the components call, which is why those helpers are the shared
 source of truth rather than each site inlining the arithmetic.
 
@@ -1242,7 +1387,7 @@ would fit the radar to a box it is not in.
 **The inherited frame HEIGHT has to be cleared too**, and this is the subtler half. `applyChartFrameLayout`
 writes the frame's height as an inline px value, so the clone is born carrying the viewport's height. The
 converge loop measures label extents _inside the box it is given_ and settles near whatever it starts from, so
-a phone's ~330px came out ~330px even at a 526px width. The radar is height-limited, not width-limited, so the
+a phone's ~330px came out ~330px even at the pinned export width. The radar is height-limited, not width-limited, so the
 visible result was a small radar with its label ring pulled in, floating in white at the correct overall
 width — width and chrome right, radar wrong. Calling `applyChartFrameLayout(frame, width, null)` before the
 fit resets it to the width-derived estimate, which is what a fresh mount starts from.

@@ -40,9 +40,12 @@ function rescaleChromeForWidth(root, widthPx) {
 
   const titleRow = root.querySelector("[data-chart-title-row]");
   if (titleRow instanceof HTMLElement) {
-    // The row carries the size; the <h2> inherits it, and `1.25em` resolves the row's min-height against it.
-    titleRow.style.fontSize = `${getChartTitleSizePx(widthPx)}px`;
-    titleRow.style.minHeight = "1.25em";
+    // The row carries the size and the <h2> inherits it. `minHeight` is floored to a whole pixel for the same
+    // reason ChartSection does it — an `em` of a fractional font size is a fractional height, which leaves
+    // `items-center` a sub-pixel to split. Must stay in step with TITLE_ROW_LEADING there.
+    const titleSizePx = getChartTitleSizePx(widthPx);
+    titleRow.style.fontSize = `${titleSizePx}px`;
+    titleRow.style.minHeight = `${Math.floor(titleSizePx * 1.25)}px`;
   }
 
   const badge = root.querySelector("[data-chart-export='track-badge']");

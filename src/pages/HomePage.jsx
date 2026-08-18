@@ -67,7 +67,9 @@ function TabPanel({ label, active, prefit = false, leaving = false, animating = 
         active && !prefit && animating && "overflow-x-clip",
       )}
       /* `min(measure, 100%)` so the panel's border-box can never be what overflows the document. Inline rather
-         than a `max-w-full` class because inline styles beat utilities, so a Tailwind cap would be overridden. */
+         than a `max-w-full` class because inline styles beat utilities, so a Tailwind cap would be overridden.
+         `100%` is the CONTENT box, which excludes a desktop scrollbar — the tool measure already accounts for
+         that, see `FE_UI.page.maxWidthPx`. */
       style={{
         maxWidth: `min(${widthStyle.maxWidth}px, 100%)`,
         // Feeds the `.tab-enter-*` / `.tab-leave-*` rules in index.css. Lives in JS because the same number

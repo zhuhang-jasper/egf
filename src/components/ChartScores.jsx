@@ -4,6 +4,7 @@ import { useAppStore } from "@/store/useAppStore";
 
 import { BREADTH_TOP_RATIO, CAREER_BREADTH_WEIGHT, CAREER_PEAK_WEIGHT, CLUSTERS, getPillarGroupOrder } from "@/constants";
 import { computeAverages, formatAvgScore } from "@/constants/scores";
+import { TOOL_TEXT } from "@/styles/control-typography";
 import { cn } from "@/utils";
 
 /** Cluster score cards — surface tint from cluster color; border from the brightened bezel; text from the midtone (same tokens the career-track cards use). */
@@ -32,11 +33,11 @@ function ScoreCard({ label, value, sub, className, title, cardStyle, valueColor 
         className,
       )}
     >
-      <span className="max-w-[11rem] text-[10px] font-semibold tracking-wide sm:text-[11px] md:text-[12px]">{label}</span>
-      <span className="text-[16px] font-extrabold tabular-nums sm:text-[18px] md:text-[20px]" style={{ color: valueColor }}>
+      <span className={cn("max-w-[11rem] font-semibold tracking-wide", TOOL_TEXT.label)}>{label}</span>
+      <span className={cn("font-extrabold tabular-nums", TOOL_TEXT.display)} style={{ color: valueColor }}>
         {value}
       </span>
-      {sub ? <span className="max-w-[12rem] text-[9px] font-bold opacity-95 sm:text-[10px] md:text-[12px]">{sub}</span> : null}
+      {sub ? <span className={cn("max-w-[12rem] font-bold opacity-95", TOOL_TEXT.annotation)}>{sub}</span> : null}
       <Tooltip text={title} className="w-[12rem] max-w-[80vw] whitespace-normal text-center font-normal leading-snug" />
     </div>
   );

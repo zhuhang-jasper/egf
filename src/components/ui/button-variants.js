@@ -24,8 +24,11 @@ export const buttonVariants = cva(
       },
       size: {
         default: "h-9 px-3 py-2",
-        // Label scales on the shared control ramp, so a button sitting beside a pillar row or the
-        // profile-name input reads at the same size at every width.
+        // Label scales on the shared control ramp (`CONTROL_TEXT`), stepping once at `xs` (470) — the width the
+        // tool column caps at. One ramp on both tabs, so no call site overrides the size.
+        // A rung under the form rows, deliberately: a pillar label and its LevelInput are one unit and match each
+        // other at 13/14, while this ramp covers toolbar chrome that is not in that row. The two were briefly
+        // levelled at 13 before the form moved up to match its input instead.
         sm: `h-8 rounded-md px-2.5 ${CONTROL_TEXT}`,
         icon: "h-8 w-8",
       },

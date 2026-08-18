@@ -42,8 +42,8 @@ const FOUNDATION_GRID_QUERY = "(min-width: 640px)";
 const cardClass = CARD_TINTED;
 const levelBadgeClass = cn(
   "inline-flex min-w-[1.5rem] shrink-0 items-center justify-center rounded-md px-1.5 py-0.5 text-white",
-  DOC_TEXT.badgeMicro,
-  "text-[9px] font-extrabold sm:text-[10px] md:text-[11px]",
+  DOC_TEXT.badgeNano,
+  "font-extrabold",
 );
 
 function LevelBadge({ level, backgroundColor, color }) {
@@ -120,7 +120,7 @@ function KeyPillarChips({ pillars, ringColor, textColor, flexRowMd = false }) {
       {pillars.map((pillar) => (
         <span
           key={pillar}
-          className={cn("rounded-full bg-white px-2.5 py-1 text-[9px] sm:text-[10px] md:text-[11px]", DOC_TEXT.chip, "font-bold")}
+          className={cn("rounded-full bg-white px-2.5 py-1", DOC_TEXT.badgeNano, "font-bold")}
           style={{ color: textColor, boxShadow: `inset 0 0 0 1.5px ${ringColor}` }}
         >
           {pillar}

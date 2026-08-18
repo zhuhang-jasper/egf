@@ -1,5 +1,6 @@
 import { getChartSecondaryLabelSizePx } from "@/chart/fonts";
 import { FE_UI, normalizeAttachedBadge, TRACK_BADGE_UI } from "@/constants";
+import { TOOL_TEXT } from "@/styles/control-typography";
 import { cn } from "@/utils";
 
 /**
@@ -31,9 +32,11 @@ export function TrackBadge({ variant, className, size = "sm", hidden = false, ch
       className={cn(
         "inline-flex shrink-0 items-center justify-center rounded-[0.42em] px-[0.85em] py-[2px]",
         // md carries the heavier weight to hold up beside the title; sm reads as chrome in a list.
-        // sm scales on the same ramp as BadgePill's trigger (same chip, same size) and as the dropdown
-        // row it sits in. md is driven by `chartWidth` instead — breakpoints there would reach the export.
-        isLarge ? "font-bold" : "text-[10px] sm:text-[11px] md:text-[12px] font-semibold",
+        // sm steps at `xs` (470), the width the tool column caps at, on the same ramp as CONTROL_TEXT and the
+        // dropdown rows it sits in — it was sm/md (640/768), which fired long after the column stopped growing.
+        // md is driven by `chartWidth` instead, via secondaryLabelRungs: a viewport breakpoint there would reach
+        // the export, which renders off-screen at a pinned width where media queries cannot follow.
+        isLarge ? "font-bold" : cn(TOOL_TEXT.label, "font-semibold"),
         ui.pillClass,
         hidden && "invisible pointer-events-none",
         className,

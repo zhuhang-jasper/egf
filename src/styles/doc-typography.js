@@ -34,16 +34,20 @@ export const DOC_TEXT = {
    */
   subsectionTitle: "text-[14px] sm:text-[15px] md:text-[16px] font-semibold leading-snug tracking-tight text-slate-900",
 
-  meta: "text-[11px] sm:text-[12px] md:text-[13px] font-medium uppercase tracking-wide text-slate-700 text-right",
   // The bottom rung: a caption or annotation attached to a figure, one size AND one shade below in-card
   // body. Both steps are doing work — 11px alone reads as small print, 500 alone as faint body.
   metaBody: "text-[11px] sm:text-[12px] md:text-[13px] leading-snug text-slate-500",
 
   clusterLabel: "text-[11px] sm:text-[12px] md:text-[13px] font-semibold uppercase leading-snug tracking-wider",
 
-  chip: "text-[11px] sm:text-[12px] md:text-[13px] font-medium leading-none",
-
   badgeMicro: "text-[10px] sm:text-[11px] md:text-[12px] font-bold leading-none",
+  /**
+   * A rung BELOW `badgeMicro`, and the smallest type on the docs tab: the career-track charts' spoke labels and
+   * the tier chips beside them, both of which sit inside a ~180px chart card rather than in the page column.
+   * Added because two call sites had inlined this exact ramp — the tier exists whether or not it is named, and
+   * naming it is what stops the third one drifting a pixel.
+   */
+  badgeNano: "text-[9px] sm:text-[10px] md:text-[11px] font-bold leading-none",
   badgeSm: "text-[11px] sm:text-[12px] md:text-[13px] font-bold leading-none tabular-nums",
   badgeMd: "text-[12px] sm:text-[13px] md:text-[14px] font-bold",
 };

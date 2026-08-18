@@ -4,8 +4,14 @@ import { FE_UI, PILLAR_ORDER } from "@/constants";
 
 /**
  * Per-pillar pixel nudges for the chart axis labels, applied after the radar's automatic placement.
- * Keyed by pillar id: `{ x, y }` shifts the label right/down. Values at the FULL-SIZE chart (526px) — the
- * far endpoint of a ramp whose near end is {@link PILLAR_LABEL_NUDGE_MIN}; tune against the desktop chart.
+ * Keyed by pillar id: `{ x, y }` shifts the label right/down. The FAR ENDPOINT of a ramp whose near end is
+ * {@link PILLAR_LABEL_NUDGE_MIN}; tune against the full-size chart.
+ *
+ * "Full size" is `page.chartMaxWidthPx`, read through `getChartWidthUnit` — not a width baked in here. These
+ * were tuned when that was 526 and now land at 405, which does NOT invalidate them: the ramp reaches the same
+ * far value, just sooner (at 405 the old ramp was only 46% of the way to it). Re-checked by eye at 405 and they
+ * still sit right. If the cap moves again, re-check rather than rescale — see
+ * docs/DECISIONS.md#cluster-nudge-ramp-is-two-endpoints-not-a-ratio.
  */
 const PILLAR_LABEL_NUDGE = {
   // coding: { x: -5, y: 0 },
