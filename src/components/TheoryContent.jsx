@@ -577,7 +577,7 @@ function TheoryContent({
         <div
           className={cn(
             CARD_PLAIN,
-            "flex flex-col gap-3 p-4 print:mt-[18vh] print:rounded-none print:border-0 print:bg-transparent print:p-0 print:shadow-none",
+            "flex flex-col gap-3 p-3 print:mt-[18vh] print:rounded-none print:border-0 print:bg-transparent print:p-0 print:shadow-none",
           )}
         >
           {/* NOT A HEADING ELEMENT, and `aria-hidden`: the page's <h1> is the lockup in the sticky header
