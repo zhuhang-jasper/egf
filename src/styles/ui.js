@@ -50,7 +50,9 @@ export const FE_UI = {
     radarLabelReserved: { minPx: 10, maxPx: 18 },
     /** Track badge + cluster legend — slightly below axis pillar labels, same width scaling. */
     secondaryLabelMultiplier: 0.9,
-    /** Floor for track + cluster legend labels (mobile). */
+    /** Floor for track + cluster legend labels (mobile). 10 is the app-wide smallest text rung
+        (TrackBadge sm, CONTROL_TEXT_SM at base), so the chart's key reads level with the chrome around it
+        rather than a size the rest of the UI never uses. */
     secondaryLabelMinPx: 10,
     /** md badge min width (em) — sized for the short "FE"/"BE" label. */
     trackBadgeMdMinWidthEm: 2.75,
@@ -67,8 +69,12 @@ export const FE_UI = {
      * Axis-label size ramp, linearly interpolated by getPointLabelSizePxFromRange. Shared by the tool chart and
      * the theory hero radar (which passes it explicitly to override THEORY_CHART_UI's smaller ramp) so the two
      * cannot drift apart. The small career-track charts use the theory preset's own ramp.
+     *
+     * The low end is 11 rather than 12: these are BOLD labels ringing the radar, and at phone width 12 crowded
+     * the canvas. It stops a rung above the DOM chrome's 10px floor because 10 read thin under `bold` on the
+     * canvas, which does not get the DOM's font smoothing. The top is untouched, so only narrow screens move.
      */
-    pointLabelPxRange: { minPx: 12, maxPx: 15, minWidthPx: 300, maxWidthPx: 526 },
+    pointLabelPxRange: { minPx: 11, maxPx: 15, minWidthPx: 300, maxWidthPx: 526 },
     pointLabelWeight: "bold",
     pointLabelColor: "#1e293b",
     pointLabelDimColor: "#1e293b60",
@@ -166,7 +172,11 @@ export const FE_UI = {
   chartFonts: {
     tickMinPx: 8,
     tickWidthDivisor: 48,
-    pointLabelMinPx: 12,
+    /** Floor for the DOM chrome ramp, and so for the chart title (x1.4 = 14) and the badge/legend
+        (x0.9). Was 12, which floored the title at 16.8 — a heading two rungs above the 14px top of
+        CONTROL_TEXT while sitting directly above a 12px form. Only the narrow end moves: past ~420px the
+        curve has already left this clamp, so desktop and the pinned-width export are unchanged. */
+    pointLabelMinPx: 10,
     pointLabelMaxPx: 18,
     pointLabelRefWidthPx: 380,
   },

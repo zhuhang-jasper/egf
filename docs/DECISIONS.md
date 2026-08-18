@@ -554,8 +554,8 @@ chart reaches full size around a 550px viewport while `sm:` does not fire until 
 
 **There is no `minPx` and no `maxPx`, and adding either back does nothing.**
 
-- The floor is structural: the label is already clamped to `chartFonts.pointLabelMinPx` (12) before the
-  multiplier, so the title cannot go below `12 × 1.4 = 16.8`. An explicit `minPx: 14` sat here once and was
+- The floor is structural: the label is already clamped to `chartFonts.pointLabelMinPx` (10) before the
+  multiplier, so the title cannot go below `10 × 1.4 = 14`. An explicit `minPx: 14` sat here once and was
   dead code under the product.
 - The ceiling is the canvas width: `page.chartMaxWidthPx` holds the canvas at 526, so the title tops out at
   ~21.3. A `maxPx: 22` was kept for a while on the argument that it guarded the shared theory title; raising
@@ -801,8 +801,8 @@ Scoped to the hero deliberately. The career-track radars pass a hard `maxHeightP
 would let six charts grow past the size their grid is built around.
 
 The cover **title** has the same staleness for the same reason: its `font-size` is an inline style sized from
-the hero frame's live width, so a phone print put it on the 16.8px floor and printed a cover heading at
-body-copy size. `--print-title-size` carries `getChartTitleSizePx(chartMaxWidthPx)` instead, set in
+the hero frame's live width, so a phone print put it on the narrow-width floor (16.8px then, 14px now) and
+printed a cover heading at body-copy size. `--print-title-size` carries `getChartTitleSizePx(chartMaxWidthPx)` instead, set in
 TheoryContent so the number stays with the function that owns it.
 
 ### print-pillar-grid-breakpoint

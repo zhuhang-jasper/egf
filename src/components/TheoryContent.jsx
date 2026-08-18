@@ -618,7 +618,7 @@ function TheoryContent({
                 under the title rather than inheriting it — the title prints at ~21.3px, the size the print
                 rule pins it to from the printed frame width (see `--print-title-size` on this element). It
                 used to inherit whatever the last SCREEN measurement gave, which is what made this pair
-                invert on a phone: a 16.8px title over a 20px version line.
+                invert on a phone: a floored title (16.8px then, 14px now) over a 20px version line.
 
                 NO DATE HERE. The version dates itself in the running footer instead, which repeats on every
                 sheet rather than only the one that happens to carry the cover. */}
