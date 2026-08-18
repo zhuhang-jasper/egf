@@ -1,3 +1,5 @@
+import { Info } from "lucide-react";
+
 import { FullModal } from "@/components/ui/Modal";
 
 import { CHANGELOG } from "@/constants";
@@ -13,6 +15,12 @@ import { cn } from "@/utils";
 export function ChangelogModal({ open, onClose }) {
   return (
     <FullModal open={open} onClose={onClose} title="Changelog" titleId="changelog-modal-title" closeLabel="Close changelog">
+      {/* Reads the version numbers below for you, so it sits at the top of the scroll port rather than in the
+          pinned header: the header is a title-plus-✕ strip, and a note there would never scroll away. */}
+      <div className="mb-5 flex gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-[13px] leading-snug text-slate-600">
+        <Info className="mt-px size-4 shrink-0 text-slate-400" aria-hidden />
+        <p>Major versions change the framework's structure. Minor versions refine the content, so how you use the framework stays the same.</p>
+      </div>
       <ol className="flex flex-col gap-5">
         {CHANGELOG.map((entry) => (
           <li key={entry.version} className="flex flex-col gap-2">
