@@ -83,7 +83,9 @@ function ChartDisplayMenu() {
       </Button>
       {open ? (
         <MenuPanel ref={menuRef} openUp={openUp} align="right" padded role="menu" aria-label="Chart display settings">
-          <MenuCheckboxItem label="Title" checked={!chartTitleHidden} onChange={(v) => setChartTitleHidden(!v)} />
+          {/* "Profile name", not "Title": this hides the profile's name, which is what the user typed and what
+              the app calls it everywhere else. The store key stays `chartTitleHidden` — it is persisted. */}
+          <MenuCheckboxItem label="Profile name" checked={!chartTitleHidden} onChange={(v) => setChartTitleHidden(!v)} />
           <MenuCheckboxItem label="Badge" checked={!chartBadgeHidden} onChange={(v) => setChartBadgeHidden(!v)} />
           {/* `adminOnly` ON EVERY ROW INSIDE A FEATURE_* TEST, and only on those — the flag and the gate are the
               same decision written twice, once to decide whether the row exists and once to mark it. Adding a
