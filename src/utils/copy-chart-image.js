@@ -1,4 +1,3 @@
-import { getChartSecondaryLabelSizePx } from "@/chart/fonts";
 import { FE_UI, SITE_COPY } from "@/constants";
 import { createExportClone } from "@/utils/export-clone";
 import { ensureInterFontsLoaded } from "@/utils/export-image";
@@ -88,23 +87,12 @@ function getAttributionGapPx() {
 }
 
 /**
- * The credit line's type size in CSS px — A FRACTION OF THE CLUSTER LEGEND'S, via the function the legend
- * itself calls, so the credit tracks the chart's type scale. Shared by the band's height and the line that
- * fills it so the two cannot disagree.
- *
- * The fraction is what buys the full framework title one line. A constant rather than a measured fit, since
- * the string is constant too; reword the credit long enough to overrun and this ratio is the knob.
- *
- * FRACTIONAL, and there was a `Math.round` here that had to go. Rounding earns its keep when a value is
- * sampled across many widths — it stops small text stepping unevenly as the chart resizes — but the export
- * renders at ONE pinned width (`exportImageLayoutWidthPx`), so this is called with a single value and returns a
- * single number. There was no sequence to stabilise. Worse, the result is multiplied by `scaleY` at the call
- * site, so rounding in CSS px amplified its own error: 9.36 → 9 lost 0.7 physical px at 2x and 1.4 at 4x. If a
- * whole number is ever wanted here, round the SCALED value, not this one.
+ * The credit line's type size in CSS px. Read straight from the constant, taking no chart width: the export
+ * renders at one pinned width, so there is nothing for this to scale with. Shared by the band's height and the
+ * line that fills it so the two cannot disagree. See exportImageAttributionFontPx for why it is authored.
  */
-function getAttributionFontPx(chartWidthPx) {
-  const ratio = Number(FE_UI.chart.exportImageAttributionFontRatio) || 0.75;
-  return getChartSecondaryLabelSizePx(chartWidthPx) * ratio;
+function getAttributionFontPx() {
+  return Math.max(1, Number(FE_UI.chart.exportImageAttributionFontPx) || 9);
 }
 
 /** The credit's tracking, pinned so its measure and its paint cannot disagree. See the call sites for why. */
@@ -121,7 +109,7 @@ function setCreditLetterSpacing(ctx) {
  * `actualBoundingBox*` rather than the em box, so the credit is bounded by its glyphs like the top of the export
  * is — the em box carries leading the string does not use.
  */
-function measureAttribution(ctx, { hidden, chartWidthPx, scaleY }) {
+function measureAttribution(ctx, { hidden, scaleY }) {
   const text = SITE_COPY.share.imageAttribution;
   if (hidden || !text) {
     return null;
@@ -135,7 +123,7 @@ function measureAttribution(ctx, { hidden, chartWidthPx, scaleY }) {
   // credit line reads at one weight and one grey (see exportImageAttributionColor in styles/ui.js). Canvas text
   // rasterizes thinner than the DOM's (the reason the TITLE carries a weight delta), so this is the number to
   // retune if the credit reads faint in the PNG; the on-screen footers should not follow it.
-  const font = `500 ${getAttributionFontPx(chartWidthPx) * scaleY}px "Inter Variable", system-ui, sans-serif`;
+  const font = `500 ${getAttributionFontPx() * scaleY}px "Inter Variable", system-ui, sans-serif`;
   ctx.save();
   ctx.font = font;
   // Both matter to the measure: `actualBoundingBox*` is relative to textBaseline, and renderExportDom leaves the
@@ -539,9 +527,6 @@ async function rasterizeChart({ exportRoot, canvas, chart, attributionHidden, uh
       return null;
     }
 
-    // The RADAR's width, which is what the legend's own type size is derived from — not the export root's,
-    // which includes the padding and any wider chrome around the chart.
-    const chartWidthPx = Math.max(1, Math.round(canvas.getBoundingClientRect().width));
     const contentW = Math.max(1, Math.round(exportRoot.offsetWidth));
     const contentH = Math.max(1, Math.round(exportRoot.offsetHeight));
 
@@ -586,7 +571,7 @@ async function rasterizeChart({ exportRoot, canvas, chart, attributionHidden, uh
       return null;
     }
 
-    const credit = measureAttribution(sctx, { hidden: attributionHidden, chartWidthPx, scaleY: pxPerCssY });
+    const credit = measureAttribution(sctx, { hidden: attributionHidden, scaleY: pxPerCssY });
     const padX = Math.round(padPx * pxPerCssX);
     const padY = Math.round(padPx * pxPerCssY);
     // THE BLOCK, IN ORDER: the content's ink, the gap, the credit's ink — and only then `padY`/`padX` around the

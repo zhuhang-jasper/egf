@@ -191,7 +191,7 @@ export const FE_UI = {
 
        KEEP THESE INTEGERS. 2.5/5 was tried when the layout width dropped to 405, to bring the output back near
        the ~1030px it used to be. It costs pixel-grid alignment — 431 × 2.5 = 1077.5, which rasterizeChart rounds
-       to 1078, making the effective scale 2.5012 — and the smallest text (the credit line, now 10px) is what
+       to 1078, making the effective scale 2.5012 — and the smallest text (the credit line) is what
        shows it first. The image being physically smaller is the honest consequence of a narrower chart; scale it
        at the point of use instead.
        Was 8x, which produced 3-4k-wide files whose extra pixels only paid off under heavy zoom. */
@@ -211,14 +211,10 @@ export const FE_UI = {
        There is deliberately no per-side variant of this number: a side reading tight is a fault in the block that
        does not reach the box, not something to offset here. */
     exportImagePaddingPx: 12,
-    /* ATTRIBUTION BAND on the copied image only — the credit strip below the chart.
-       Both numbers are fractions of getChartSecondaryLabelSizePx(), the size the cluster legend renders at, so
-       the credit tracks the chart's type scale instead of being a fixed px value against a scaled one.
-       Below 1 because the credit names the framework in FULL, which does not fit on one line at the legend's own
-       size across the pinned export width. It is a constant rather than a measured fit: the string is a constant
-       too. Reword the credit long enough to overrun and this is the knob.
+    /* Credit line size on the copied image only, in CSS px at `exportImageLayoutWidthPx`. Authored, not derived:
+       the export renders at one pinned width, so there is no scale to track. Free to move on taste.
        No band-height constant: the strip is `exportImageAttributionGapPx + this line's measured ink`. */
-    exportImageAttributionFontRatio: 0.8,
+    exportImageAttributionFontPx: 9,
     /* Space between the content's lowest ink and the credit line's highest — whatever that content is, so the
        gap holds whether the block ends at the cluster legend's border, at a score card, or at a bare axis label
        when both are switched off.
@@ -232,9 +228,9 @@ export const FE_UI = {
        line box, so matching `mt-4` optically means ~18-19 here, not 16.
        WAS 26, tuned when the legend ran 14px on a 526px layout. 20 now: the legend is 12px on 405 and the gap
        above it went 12 → 16, so 26 read detached against the tighter type. 18 was tried once, long ago, and the
-       credit read as a second legend row — it is only 0.8x the legend's size (the ratio above), so proximity
-       does more grouping than the type scale can undo. 20 clears that by a hair while tracking `mt-4`; if it
-       regroups with the legend, go up, not down. This is the knob for it, not the credit's colour or weight,
+       credit read as a second legend row — the credit and the legend are close enough in size that proximity does
+       more grouping than the type scale can undo. 20 clears that by a hair while tracking `mt-4`;
+       if it regroups with the legend, go up, not down. This is the knob for it, not the credit's colour or weight,
        which are shared with every other footer in the app and stay put. */
     exportImageAttributionGapPx: 20,
     /* slate-500, THE ONE CREDIT GREY, shared with the app footer (screen and print, pages/HomePage.jsx) and the
