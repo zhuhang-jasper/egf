@@ -49,8 +49,9 @@ export const SITE_COPY = {
     numeral: "9",
     lines: ["Pillar Engineer", "Growth Framework"],
   },
-  // Shown muted as the chart title when the title field is blank but the title is enabled.
-  chartTitlePlaceholder: "<profile_name_here>",
+  // Shown muted as the chart title when the name field is blank but the name is enabled. Bracketed on purpose:
+  // this can land in an exported PNG, and brackets read as an unfilled slot rather than as a real title.
+  chartTitlePlaceholder: "[Untitled profile name]",
   share: {
     // Subject line for email share targets, so it takes the canonical form rather than the long one.
     title: "9-Pillar Engineer Growth Framework",
