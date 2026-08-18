@@ -15,15 +15,19 @@ export const FRAMEWORK_VERSION_FALLBACK = "0.0";
  * importing it into a build-time plugin would pull the alias resolver into the Vite config. A single string
  * extraction does not justify that.
  *
- * Takes the FIRST `version:` in the file, which is the newest CHANGELOG entry and therefore the same value
- * `FRAMEWORK_VERSION` derives from at runtime. That relies on the array's newest-entry-first ordering, which
- * the file's authoring rules already require and the runtime ranking depends on just as much. Commented-out
- * future entries sit BELOW the live ones, so they cannot win the match.
+ * Takes the first `version:` AFTER the `export const CHANGELOG = [` line, which is the newest CHANGELOG entry
+ * and therefore the same value `FRAMEWORK_VERSION` derives from at runtime. That relies on the array's
+ * newest-entry-first ordering, which the file's authoring rules already require and the runtime ranking
+ * depends on just as much. Commented-out future entries sit BELOW the live ones, so they cannot win the match.
+ *
+ * ANCHORED ON THE ARRAY, not simply the file's first `version:`, because CHANGELOG_DRAFT is declared ABOVE
+ * CHANGELOG and carries a version of its own. An unanchored match would publish the unreleased number.
  */
 export const resolveFrameworkVersion = () => {
   try {
     const source = readFileSync(path.join(repoRoot, "src/constants/changelog.js"), "utf8");
-    const match = source.match(/^\s*version:\s*"(?<version>[^"]+)"/m);
+    const published = source.slice(source.indexOf("export const CHANGELOG = ["));
+    const match = published.match(/^\s*version:\s*"(?<version>[^"]+)"/m);
     return match?.groups?.version?.trim() || FRAMEWORK_VERSION_FALLBACK;
   } catch {
     return FRAMEWORK_VERSION_FALLBACK;

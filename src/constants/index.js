@@ -35,7 +35,7 @@ export {
   SENIORITY_LEVEL_COUNT,
   TECHNICAL_FLOOR_PILLARS,
 } from "@/constants/scoring";
-export { CHANGELOG, changelogRank, FRAMEWORK_UPDATED, FRAMEWORK_VERSION, isNewerVersion, SECTION_LATEST_VERSION } from "@/constants/changelog";
+export { CHANGELOG, CHANGELOG_DRAFT, changelogRank, FRAMEWORK_UPDATED, FRAMEWORK_VERSION, isNewerVersion, SECTION_LATEST_VERSION } from "@/constants/changelog";
 export {
   ADMIN_PASSWORD_REQUESTED,
   FEATURE_CHART_ATTRIBUTION_SETTING,

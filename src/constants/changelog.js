@@ -23,6 +23,34 @@ import { THEORY_SECTIONS } from "@/utils/theory-url";
 //     section explicitly even for a bullet covering all of them.
 //   - Style: section name, colon, plain sentences. No em dashes and no semicolons; split into two
 //     sentences instead.
+//   - Work in progress goes in CHANGELOG_DRAFT below, not in this array. Same bullet style, no `date` and
+//     no `sections` until it ships.
+/**
+ * THE UNPUBLISHED ENTRY: work in progress, shown at the top of ChangelogModal behind a Draft badge and
+ * deliberately NOT part of {@link CHANGELOG}.
+ *
+ * Kept as its own export rather than a `draft: true` flag on CHANGELOG[0] because four separate things read
+ * "the newest entry" and every one of them must ignore a draft: {@link FRAMEWORK_VERSION} (the version
+ * printed on the tab), {@link SECTION_LATEST_VERSION} (which raises the per-section unseen dots),
+ * {@link changelogRank}'s ordering, and the build-time regex in vite-plugins/resolve-framework-version.js
+ * that publishes `frameworkVersion` to dist/meta.json. A flag means remembering to filter in all four; a
+ * separate binding means none of them can see it in the first place.
+ *
+ * `sections` is intentionally absent — the field only feeds the dots, and a draft must not raise any.
+ *
+ * TO PUBLISH: add `date`, add `sections`, move the object into CHANGELOG's first slot, and set this to null.
+ * That one move is what bumps the framework version.
+ */
+export const CHANGELOG_DRAFT = {
+  version: "4.3",
+  changes: [
+    "Pillars: added Delivery Sequencing (Process), Delegation (Ownership), and Auditability (Architecture).",
+    "Pillars: Communication Clarity is now Proactive Updates (Communication), Technical Documentation is now Documentation (Communication), Build Tooling is now Toolchain Design (Architecture).",
+    "Pillars: Presentation & Speaking Up (Communication) split into two focus areas. Framework Proficiency moved from Architecture to Coding.",
+    "Competency Matrix: cells reworked across five pillars.",
+  ],
+};
+
 export const CHANGELOG = [
   {
     version: "4.2",
@@ -195,5 +223,10 @@ if (import.meta.env.DEV) {
   const unknown = Object.keys(SECTION_LATEST_VERSION).filter((section) => !valid.has(section));
   if (unknown.length > 0) {
     console.error(`CHANGELOG: unknown section id(s) ${unknown.join(", ")}. Valid ids: ${[...valid].join(", ")}.`);
+  }
+  // A draft at or below the published version means it was published without clearing CHANGELOG_DRAFT, so
+  // the modal is showing a shipped version as unreleased.
+  if (CHANGELOG_DRAFT && !isAheadOfNewest(CHANGELOG_DRAFT.version)) {
+    console.error(`CHANGELOG_DRAFT: v${CHANGELOG_DRAFT.version} is not ahead of the published v${FRAMEWORK_VERSION}. Set it to null once published.`);
   }
 }
