@@ -371,7 +371,12 @@ export function ProfileCombobox({ titleError = false }) {
         // where nothing else changed — see styles/control-typography.js. The bare rung stays
         // UNPREFIXED so phones under 470 keep their clearance; an `xs:`-only pair would leave them
         // with none and put the name under the badge.
-        className={cn("pl-18 pr-9 shadow-none xs:pl-20", titleError && "border-red-500 focus-visible:ring-red-500/40")}
+        className={cn(
+          // 600 on the NAME, 500 on the placeholder: a typed name is the profile's identity (the chart title
+          // renders it at 800), while the placeholder is instruction text and stays at body weight.
+          "pl-18 pr-9 font-semibold shadow-none placeholder:font-medium xs:pl-20",
+          titleError && "border-red-500 focus-visible:ring-red-500/40",
+        )}
       />
       {/* Right adornment: the browse caret — the only way to open the profile dropdown. */}
       <button
