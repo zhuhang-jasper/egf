@@ -117,16 +117,17 @@ export const FEATURE_CHART_STRUCTURE_SETTINGS = IS_ADMIN;
 export const FEATURE_CHART_ATTRIBUTION_SETTING = IS_ADMIN;
 
 /**
- * When false, hides the "UHD export" toggle so every exported chart PNG uses the default 2x scale.
+ * When false, hides the high-res export toggle so every exported chart PNG uses the default scale
+ * (exportImageCssScale, tuned for social feeds — see the note there).
  *
- * 2x is the right default: it is the retina target for an image shown at its natural size, and it keeps the
- * file small. 4x only pays off when the still is blown up well past that — stretched across a slide, say —
- * which is an authoring need rather than a sharing one, so it is admin-gated instead of a public choice
- * nobody has the context to make.
+ * The default is the right one for sharing: it lands just above the width the feeds render at, and it keeps the
+ * file small. The higher scale only pays off when the still is blown up well past that — print, or stretched
+ * across a slide — which is an authoring need rather than a sharing one, so it is admin-gated instead of a
+ * public choice nobody has the context to make.
  *
  * Gating the toggle is not enough on its own: parseChartDisplay() in utils/storage.js also forces the flag
  * off whenever this is false, or a draft persisted while the toggle was reachable would leave a public user
- * exporting 4x files they never asked for and have no control to switch off.
+ * exporting oversized files they never asked for and have no control to switch off.
  */
 export const FEATURE_CHART_UHD_EXPORT_SETTING = IS_ADMIN;
 

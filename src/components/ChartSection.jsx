@@ -109,7 +109,7 @@ function ChartDisplayMenu() {
             />
           ) : null}
           {FEATURE_CHART_UHD_EXPORT_SETTING ? (
-            <MenuCheckboxItem adminOnly label="UHD export (4x)" checked={chartUhdExport} onChange={setChartUhdExport} />
+            <MenuCheckboxItem adminOnly label="Hires export (5x)" checked={chartUhdExport} onChange={setChartUhdExport} />
           ) : null}
           {/* Appearance of the pillar labels themselves, as opposed to the show/hide toggles above. */}
           <hr className="my-1 border-t border-border" />

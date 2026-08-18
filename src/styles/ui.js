@@ -183,23 +183,26 @@ export const FE_UI = {
        rescaling. Not enforced: if `chartMaxWidthPx` moves, move this with it (and `opsz` in index.css). */
     exportImageLayoutWidthPx: 405,
     /* Resolution multiplier on the pinned layout above — pixel dimensions only, no effect on proportion.
-       2x is the retina target: one CSS px drawn with two physical ones, so the PNG is sharp displayed at its
-       natural size.
        WIDTH IS EXACTLY `(exportImageLayoutWidthPx + exportImagePaddingPx * 2) * scale` — the columns are never
-       cropped (see rasterizeChart), so at layout 405 that is 858px at 2x and 1716px at 4x (UHD). HEIGHT is not
-       predictable: it is content-driven and then ink-cropped top and bottom, so do not spec one.
+       cropped (see rasterizeChart). HEIGHT is not predictable: it is content-driven and then ink-cropped top and
+       bottom, so do not spec one.
 
-       KEEP THESE INTEGERS. 2.5/5 was tried when the layout width dropped to 405, to bring the output back near
-       the ~1030px it used to be. It costs pixel-grid alignment — 431 × 2.5 = 1077.5, which rasterizeChart rounds
-       to 1078, making the effective scale 2.5012 — and the smallest text (the credit line) is what
-       shows it first. The image being physically smaller is the honest consequence of a narrower chart; scale it
-       at the point of use instead.
-       Was 8x, which produced 3-4k-wide files whose extra pixels only paid off under heavy zoom. */
-    exportImageCssScale: 2,
+       3x TARGETS THE FEED. LinkedIn and X render in-feed images at ~1200px and Instagram at 1080, so the default
+       lands just above the widest of them: the platform downscales once, by a little, instead of upscaling a
+       smaller image. 2x was the old default and sat under all of them.
+
+       KEEP THESE INTEGERS — the objection is to FRACTIONAL scales, not to odd ones. 2.5 was tried and costs
+       pixel-grid alignment: 429 × 2.5 = 1072.5, which rasterizeChart rounds, making the effective scale 2.5012.
+       Every glyph then lands a fraction off the device grid and the smallest text (the credit line) shows it
+       first. Whole numbers are exact, 5 included.
+       8x was also tried, and produced 3-4k-wide files whose extra pixels only paid off under heavy zoom. */
+    exportImageCssScale: 3,
     exportImageCssScaleMax: 12,
-    /** UHD export multiplier, admin-gated (FEATURE_CHART_UHD_EXPORT_SETTING) — for stills that get displayed
-        far larger than natural size, e.g. stretched across a slide. */
-    exportImageCssScaleUhd: 4,
+    /** Admin-gated high-res multiplier (FEATURE_CHART_UHD_EXPORT_SETTING) — for print and for stills displayed far
+        larger than natural size. Not literally UHD: true 4K would need 9x at this layout width, and the content is
+        flat fills and text, so past this the extra pixels only add edge precision. Keep the ChartSection toggle's
+        label in step with this number. */
+    exportImageCssScaleUhd: 5,
     /* White margin on the copied image only — all four edges take this one number, but they measure it from
        different things, and that is on purpose.
        TOP AND BOTTOM are measured to the nearest PAINTED PIXEL: the only thing between the ink and the layout box

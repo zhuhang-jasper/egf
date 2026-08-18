@@ -50,9 +50,9 @@ export function parseChartDisplay(parsed) {
     // control that set it is gone. Reading them off here is what heals those older drafts, and the healed value
     // is written back on the next persistDraft().
     // The first four each REMOVE something — the polygon, the level ticks, the legend, the credit line — so a
-    // stale `true` means a degraded chart or an uncredited export. The fifth is the reverse: UHD adds
-    // resolution, and a stale `true` would have a public user silently exporting 4x files they never asked for
-    // and cannot switch off.
+    // stale `true` means a degraded chart or an uncredited export. The fifth is the reverse: the hi-res flag adds
+    // resolution, and a stale `true` would have a public user silently exporting oversized files they never asked
+    // for and cannot switch off.
     levelsPolygonHidden: FEATURE_CHART_STRUCTURE_SETTINGS && parsed.levelsPolygonHidden === true,
     chartLevelTicksHidden: FEATURE_CHART_STRUCTURE_SETTINGS && parsed.chartLevelTicksHidden === true,
     chartLegendHidden: FEATURE_CHART_LEGEND_SETTING && parsed.chartLegendHidden === true,

@@ -508,7 +508,7 @@ function getInkRowBounds(ctx, width, height) {
  */
 async function rasterizeChart({ exportRoot, canvas, chart, attributionHidden, uhd, padPx }) {
   const scaleMax = Math.max(1, Number(FE_UI.chart.exportImageCssScaleMax) || 12);
-  const requestedScale = uhd ? Number(FE_UI.chart.exportImageCssScaleUhd) || 4 : Number(FE_UI.chart.exportImageCssScale) || 2;
+  const requestedScale = uhd ? Number(FE_UI.chart.exportImageCssScaleUhd) || 5 : Number(FE_UI.chart.exportImageCssScale) || 3;
   const cssScale = Math.max(0.25, Math.min(scaleMax, requestedScale));
 
   const hadDpr = Object.hasOwn(chart.options, "devicePixelRatio");
