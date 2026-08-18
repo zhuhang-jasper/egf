@@ -35,6 +35,11 @@ const VISIBLE_ROWS = 6.5;
 // list is too short to browse, so the extra room above wins. Keeps the ".5" peek for the same reason.
 const MIN_COMFORTABLE_ROWS = 4.5;
 
+// The list never shrinks below this, even when the band between the header and nav can't hold it — the panel
+// overlaps the chrome instead. A search box over an empty list is useless, and that is what bounding to the band
+// alone produced on a short viewport. 2.5 keeps the peek, so the floor still reads as "more below".
+const MIN_ROWS = 2.5;
+
 // Marquee scroll speed (px/sec) for names too long to fit — lower is slower/calmer.
 const MARQUEE_SPEED_PX_PER_SEC = 45;
 // Gap between the two looping copies of a scrolling name, so it doesn't read as one run-on word.
@@ -239,10 +244,10 @@ export function ProfileCombobox({ titleError = false }) {
       const gap = 4;
       const margin = 8; // keep the menu clear of the viewport edge
       const rootRect = root.getBoundingClientRect();
-      // The menu must clear the pinned chrome at BOTH ends — the sticky header above, the fixed bottom nav
-      // below. Not a stacking issue (the menu is at LAYER.dropdown, above chrome, so it paints over them) but covering
-      // the title, or disappearing behind the navigation, reads as broken either way. The header boundary also
-      // tracks the intro's expand/collapse animation for free, since it is measured live.
+      // The menu clears the pinned chrome at BOTH ends — the sticky header above, the fixed bottom nav below —
+      // down to the MIN_ROWS floor, past which it overlaps instead. Not a stacking issue (the menu is at
+      // LAYER.dropdown, above chrome) but covering the title, or disappearing behind the navigation, reads as
+      // broken either way. The header boundary tracks the intro's expand/collapse for free, being measured live.
       const { top: topBoundary, bottom: bottomBoundary } = getPopoverViewportBounds();
       const spaceBelow = bottomBoundary - rootRect.bottom - gap - margin;
       const spaceAbove = rootRect.top - topBoundary - gap - margin;
@@ -270,8 +275,11 @@ export function ProfileCombobox({ titleError = false }) {
       const available = Math.floor(up ? spaceAbove : spaceBelow);
       setOpenUp(up);
 
-      const listCap = Math.min(peekRows, Math.max(0, available - searchH));
-      setListMaxHeight(naturalListH <= listCap ? null : Math.max(0, listCap));
+      // MIN_ROWS is the floor, so this cap may EXCEED the band — that is the point: past it the panel overlaps
+      // the chrome rather than collapsing to a search box with nothing under it.
+      const minListH = rowH > 0 ? Math.round(MIN_ROWS * rowH + listChrome) : 0;
+      const listCap = Math.min(peekRows, Math.max(minListH, available - searchH));
+      setListMaxHeight(naturalListH <= listCap ? null : listCap);
     };
     decide();
     window.addEventListener("resize", decide);
