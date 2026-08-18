@@ -89,26 +89,17 @@ const TRACK_TONE = {
 // Career tracks rebuilt from the canonical profiles: the characteristic chart shape,
 // the key pillars (as chips), and the S-level → role ladder. No prose. People & Delivery has a
 // 5th rung (S7 CTO); the first four (S3–S6) still align row-for-row with the other two tracks.
-const TRACKS = CAREER_TRACK_PROFILES.map((t) => ({
+const TRACKS = CAREER_TRACK_PROFILES.map((t, i) => ({
   id: t.id,
   name: t.name,
+  // 1-2-3 in card order, which is also what the "Track 1/2" S3 rung refers to.
+  number: i + 1,
   ...TRACK_TONE[t.id],
   levels: t.levels,
   keyPillars: (t.id === "product-focused" ? ["Domain Logic", "Product Sense", "UI/UX", "Communication"] : t.keyFocusPillars)
     .map((nm) => PILLAR_BY_NAME[nm])
     .filter(Boolean),
-  // Poster-only guard on the People & Delivery S3 rung, which must stay ONE line on the poster.
-  // Theory currently supplies this exact string, so the map is a no-op today; it stays as a pin so a
-  // longer theory title (e.g. "Senior Engineer (via Track 1/2)") can't silently wrap the rung here.
-  roleLevels: t.roleLevels.map((r) => {
-    if (t.id !== "people-delivery") {
-      return r;
-    }
-    if (r.level === "S3") {
-      return { ...r, title: "Senior Engineer (Track 1/2)" };
-    }
-    return r;
-  }),
+  roleLevels: t.roleLevels,
 }));
 
 /**
@@ -430,7 +421,7 @@ function TrackCard({ careerTrack }) {
       style={{ backgroundColor: careerTrack.surfaceBg, border: `3px solid ${careerTrack.bezel}` }}
     >
       <h4 className="text-center text-[25px] font-bold leading-tight tracking-tight" style={{ color: careerTrack.title }}>
-        {careerTrack.name}
+        {careerTrack.number}. {careerTrack.name}
       </h4>
 
       {/* Characteristic chart shape — with cluster background colour */}
