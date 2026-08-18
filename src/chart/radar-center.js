@@ -26,8 +26,8 @@ const CAREER_TRACK_PILLAR_LABEL_NUDGE = {
   architecture: { x: 7, y: 10 },
   uiUx: { x: -2, y: 10 },
   ai: { x: 2, y: 10 },
-  productSense: { x: -2, y: -7 },
-  process: { x: 2, y: -7 },
+  productSense: { x: -4, y: -7 },
+  process: { x: 4, y: -7 },
 };
 
 /**
