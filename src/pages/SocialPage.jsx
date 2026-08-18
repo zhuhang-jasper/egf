@@ -9,7 +9,7 @@ import { Toaster } from "@/components/ui/Toaster";
 import { SHARE_EXPORT_TOAST_KEY, useAppStore } from "@/store/useAppStore";
 
 import { createClusterBackgroundPlugin } from "@/chart/plugins";
-import { FE_UI, getEmojiChartLabels, getPillarOrder, SITE_COPY } from "@/constants";
+import { FE_UI, getEmojiChartLabels, PILLAR_ORDER, SITE_COPY } from "@/constants";
 import { pillarLevelsToArray } from "@/constants/levels";
 import { track } from "@/utils/analytics";
 import { copyShareToClipboard, downloadSharePng } from "@/utils/export-image";
@@ -47,7 +47,6 @@ const FE_PILLAR_LABEL_NUDGE = {
   communication: { x: 5, y: 0 },
   ownership: { x: -5, y: 0 },
 };
-const FE_PILLAR_ORDER = getPillarOrder();
 
 // Shift each radar point label by its FE nudge. Stock Chart.js lays the labels out in
 // scale._pointLabelItems during fit; we offset them after, by pillar id, in fe-axis order.
@@ -60,7 +59,7 @@ const pillarLabelNudgePlugin = {
       return;
     }
     items.forEach((item, i) => {
-      const nudge = FE_PILLAR_LABEL_NUDGE[FE_PILLAR_ORDER[i]];
+      const nudge = FE_PILLAR_LABEL_NUDGE[PILLAR_ORDER[i]];
       if (!nudge) {
         return;
       }

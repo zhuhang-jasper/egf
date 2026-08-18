@@ -5,18 +5,34 @@ import {
   CAREER_LEVEL_REQUIREMENTS,
   CAREER_PEAK_WEIGHT,
   getPillarGroupOrder,
-  getPillarOrder,
   HUMAN_STRENGTH_TOP_K,
+  PILLAR_ORDER,
   TECHNICAL_FLOOR_PILLARS,
 } from "@/constants";
 
-function computePillarSubsetAvg(levels, order, pillarIds) {
+/**
+ * Every score below reads a `{ pillarId: level }` map, not a positional array — pillar order is a
+ * chart-axis concern and scores do not depend on it. `pillarValues` is the one place that flattens the
+ * map, so the aggregate helpers stay plain number-list maths.
+ */
+function pillarValues(pillarLevels) {
+  const values = [];
+  for (const id of PILLAR_ORDER) {
+    const level = pillarLevels?.[id];
+    if (level !== undefined) {
+      values.push(level);
+    }
+  }
+  return values;
+}
+
+function computePillarSubsetAvg(pillarLevels, pillarIds) {
   let sum = 0;
   let count = 0;
   for (const pillarId of pillarIds) {
-    const index = order.indexOf(pillarId);
-    if (index >= 0 && levels[index] !== undefined) {
-      sum += levels[index];
+    const level = pillarLevels?.[pillarId];
+    if (level !== undefined) {
+      sum += level;
       count++;
     }
   }
@@ -80,22 +96,20 @@ export function computeBreadthScore(levels) {
 }
 
 /** Mean pillar score per cluster (for display). */
-export function computeClusterAvgs(levels) {
-  const order = getPillarOrder();
+export function computeClusterAvgs(pillarLevels) {
   const avgs = {};
 
   for (const { id, pillars } of getPillarGroupOrder()) {
-    avgs[id] = computePillarSubsetAvg(levels, order, pillars);
+    avgs[id] = computePillarSubsetAvg(pillarLevels, pillars);
   }
 
   return avgs;
 }
 
 /** Cluster avgs used for career floors (technical excludes AI). */
-export function computeCareerFloorClusterAvgs(levels) {
-  const order = getPillarOrder();
-  const avgs = computeClusterAvgs(levels);
-  avgs.technical = computePillarSubsetAvg(levels, order, TECHNICAL_FLOOR_PILLARS);
+export function computeCareerFloorClusterAvgs(pillarLevels) {
+  const avgs = computeClusterAvgs(pillarLevels);
+  avgs.technical = computePillarSubsetAvg(pillarLevels, TECHNICAL_FLOOR_PILLARS);
   return avgs;
 }
 
@@ -148,15 +162,17 @@ export const careerLevelFromAvg = (avg) => careerLevelFromScores(avg, avg);
 /** @deprecated Use {@link careerLevelFromScores}. */
 export const careerLevelFromStrengthIndex = careerLevelFromAvg;
 
-export function computeAverages(levels) {
-  const peak = computeHumanStrengthIndex(levels);
-  const breadth = computeBreadthScore(levels);
+export function computeAverages(pillarLevels) {
+  const values = pillarValues(pillarLevels);
+  const peak = computeHumanStrengthIndex(values);
+  const breadth = computeBreadthScore(values);
   const effective = computeCareerScore(peak, breadth);
-  const clusters = computeClusterAvgs(levels);
-  const floorClusters = computeCareerFloorClusterAvgs(levels);
+  const clusters = computeClusterAvgs(pillarLevels);
+  const floorClusters = computeCareerFloorClusterAvgs(pillarLevels);
 
   return {
-    overall: computeOverallPillarAvg(levels),
+    pillarCount: values.length,
+    overall: computeOverallPillarAvg(values),
     human: peak,
     breadth,
     effective,

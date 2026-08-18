@@ -10,6 +10,7 @@ import { applyChartState, createCompetencyChart, refreshChart } from "@/chart/in
 import { getRadarContentHeightPx } from "@/chart/radar-center";
 import { getChartLayoutLabelsForChart, getDisplayLabelsForChart } from "@/chart/theory-profile";
 import { FE_UI } from "@/constants";
+import { pillarLevelsToArray } from "@/constants/levels";
 
 function convergeContentHeight(frame, chart, w) {
   let prev = null;
@@ -87,7 +88,14 @@ export function fitFrameToChart(frame, chart, w) {
  */
 export function chartState() {
   const state = useAppStore.getState();
-  return { ...state, plainLabels: state.pillarEmojiHidden === true, pointLabelPxRange: FE_UI.chart.pointLabelPxRange };
+  return {
+    ...state,
+    // Chart.js datasets are positional; the store holds only the canonical id-keyed map, so flatten
+    // here. Every consumer of chartState() feeds applyChartState, which reads `levels`.
+    levels: pillarLevelsToArray(state.pillarLevels),
+    plainLabels: state.pillarEmojiHidden === true,
+    pointLabelPxRange: FE_UI.chart.pointLabelPxRange,
+  };
 }
 
 /**
@@ -100,7 +108,7 @@ export function chartState() {
 export function useCompetencyChart(canvasRef, frameRef) {
   const chartRef = useRef(null);
 
-  const levels = useAppStore((s) => s.levels);
+  const pillarLevels = useAppStore((s) => s.pillarLevels);
   const title = useAppStore((s) => s.title);
   const levelsPolygonHidden = useAppStore((s) => s.levelsPolygonHidden);
   const chartLevelTicksHidden = useAppStore((s) => s.chartLevelTicksHidden);
@@ -176,7 +184,7 @@ export function useCompetencyChart(canvasRef, frameRef) {
     // No refit here — the frame height is locked to the taller track on init/resize,
     // so switching tracks (or toggling data/ticks/label colors) never shifts UI below the chart.
     applyChartState(chart, chartState());
-  }, [levels, title, levelsPolygonHidden, chartLevelTicksHidden, clusterLabelColors]);
+  }, [pillarLevels, title, levelsPolygonHidden, chartLevelTicksHidden, clusterLabelColors]);
 
   // Dropping the emoji changes the spoke metrics (label widths, and thus wrapping), so the radar has
   // to be re-fitted to the frame — unlike the other display toggles, which leave the layout alone.

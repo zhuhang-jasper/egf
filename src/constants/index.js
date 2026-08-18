@@ -1,5 +1,4 @@
 export {
-  CANONICAL_PILLAR_IDS,
   CLUSTERS,
   getChartLabels,
   getChartLayoutLabels,
@@ -14,7 +13,6 @@ export {
   getPillarIdByIndex,
   getPillarLabel,
   getPillarLabelWithoutOrgan,
-  getPillarOrder,
   MAX_PROFILE_NAME_LENGTH,
   normalizeAttachedBadge,
   PILLAR_COUNT,

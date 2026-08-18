@@ -31,29 +31,26 @@ A single-page React 19 app (Vite 8, Tailwind v4, Zustand) that renders an intera
 - **Tool** (`ToolContent` → `ChartSection` + `FormPanel`) — the radar chart and the level-input form.
 - **Theory** (`TheoryContent`) — the competency matrix and framework documentation, deep-linkable via URL params (see `src/utils/theory-url.js`). A pillar's help icon in the tool form jumps cross-tab into the matrix (`onOpenPillarInMatrix` / `matrixNav`).
 
-### The pillar / track model — start here
+### The pillar model — start here
 
 [src/constants/framework.js](src/constants/framework.js) is the source of truth for the domain model:
 
 - `PILLARS` — the master catalog of the 9 pillars (id → label).
-- `TRACK_VARIANTS` = `["fe", "be"]` (Frontend / Backend). Each track in `TRACKS` defines its own `pillarOrder` (chart axis order) and `pillarGroups` (cluster membership). Tracks can include a different subset of pillars (e.g. BE omits `uiUx`).
-- `CLUSTERS` — Technical / Product / Operational, with colors used across chart, form, and badges.
-- `CANONICAL_PILLAR_IDS` — the deduped union of all tracks' pillars; the canonical storage shape.
+- `PILLAR_ORDER` — the single chart-axis order. **There is exactly one order for the whole app** and `PILLAR_COUNT` is 9. Reordering is safe (everything keys off pillar id, not position), but check the cluster wedges after: a cluster's pillars need not be contiguous (`technical` already wraps), and `sortClusterArc` in `chart/plugins.js` resolves that into one arc.
+- `PILLAR_GROUPS` / `CLUSTERS` — Technical / Product / Operational cluster membership and colors, used across chart, form, and badges.
+- `TRACK_BADGE_OPTIONS` — FE/BE/FS is a **purely cosmetic badge** on a profile (`attachedBadge`), not a different pillar set. There are no per-track pillar orders or subsets.
 
-Two representations of a profile coexist and must be kept in sync:
+**`pillarLevels`** — a `{ pillarId: number }` map — is the only representation of a profile's scores. It is what gets persisted and what the form and scoring read directly. [src/constants/levels.js](src/constants/levels.js) holds `fillPillarLevels` (defaults missing keys, so adding a pillar is forward-compatible), `clampLevel`/`formatLevelForInput` (values are 0–5 in `LEVEL_STEP` = 0.5 increments), and `pillarLevelsToArray`.
 
-- **`pillarLevels`** — a `{ pillarId: number }` map. This is **canonical** (track-independent) and is what gets persisted.
-- **`levels`** — a positional array ordered to match the _current track's_ `pillarOrder`. This is the **view** the chart and form consume.
-
-[src/constants/levels.js](src/constants/levels.js) does the conversions: `syncLevelsArrayFromMap` (canonical → view), `mergeViewIntoCanonical` (view → canonical), `clampLevel`/`formatLevelForInput` (values are 0–5 in `LEVEL_STEP` = 0.5 increments). When changing track or applying a profile, always round-trip through these so the array and map don't drift.
+`pillarLevelsToArray` exists only for the **Chart.js boundary**, whose datasets are positional: `useCompetencyChart` memoizes one call to flatten the map into `PILLAR_ORDER` sequence. Do not reintroduce a positional array into store state or storage payloads — an earlier dual-representation (`levels` alongside `pillarLevels`, kept in sync both ways) existed only because tracks once had different pillar sets, and it is gone.
 
 ### State (Zustand)
 
-[src/store/useAppStore.js](src/store/useAppStore.js) holds everything: profile data (`title`, `pillarLevels`, `levels`, `trackVariant`), chart display toggles, and saved profiles. Every mutating action ends by calling `persistDraft()`, which writes the working draft to `localStorage` (keys in `src/constants/storage.js`). Saved profiles are a separate list. The `withSyncedLevels` helper re-derives `levels` from `pillarLevels` after any change. Persistence helpers live in `src/utils/storage.js`; storage payloads are normalized via the `levels.js` functions so old/malformed data is tolerated.
+[src/store/useAppStore.js](src/store/useAppStore.js) holds everything: profile data (`title`, `pillarLevels`, `attachedBadge`), chart display toggles, and saved profiles. `setLevel(pillarId, value)` is keyed by pillar id. Every mutating action ends by calling `persistDraft()`, which writes the working draft to `localStorage` (keys in `src/constants/storage.js`). Saved profiles are a separate list. Persistence helpers live in `src/utils/storage.js`; storage payloads are normalized via the `levels.js` functions so old/malformed data is tolerated. A v1→v2 migration maps the legacy `trackVariant` key to `attachedBadge` (see `migrateBadgeKey`) — that is the only place the old key is still read.
 
 ### Scoring
 
-[src/constants/scores.js](src/constants/scores.js) computes derived metrics from `levels`; the tunable parameters (weights, thresholds, `CAREER_LEVEL_REQUIREMENTS` for L1–L5) live in [src/constants/scoring.js](src/constants/scoring.js). Career level is the highest band where peak, breadth, and cluster-average floors are all met.
+[src/constants/scores.js](src/constants/scores.js) computes derived metrics from a `pillarLevels` map; the tunable parameters (weights, thresholds, `CAREER_LEVEL_REQUIREMENTS` for L1–L5) live in [src/constants/scoring.js](src/constants/scoring.js). Career level is the highest band where peak, breadth, and cluster-average floors are all met. `computeAverages` returns `pillarCount` alongside the scores, so callers don't need the array's length.
 
 ### Chart
 

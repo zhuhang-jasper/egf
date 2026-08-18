@@ -8,7 +8,6 @@ import {
   getChartLabels,
   getEmojiChartLabels,
   getPillarClusterLabelColors,
-  getPillarOrder,
   getPlainChartLabels,
   PILLAR_COUNT,
 } from "@/constants";
@@ -226,7 +225,7 @@ export function applyChartState(chart, state) {
   if (!chart) {
     return;
   }
-  const orderLen = getPillarOrder().length;
+  const orderLen = PILLAR_COUNT;
   syncPlainLabelsOption(chart, state.plainLabels);
   syncEmojiOnlyLabelsOption(chart, state.emojiOnlyLabels);
   syncHeroLabelNudgeOption(chart, state.heroLabelNudge);

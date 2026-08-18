@@ -23,7 +23,7 @@ function PillarLabel({ pillarId }) {
 }
 
 export function PillarCluster({ group, onOpenPillarInMatrix }) {
-  const levels = useAppStore((s) => s.levels);
+  const pillarLevels = useAppStore((s) => s.pillarLevels);
   const setLevel = useAppStore((s) => s.setLevel);
   const cluster = CLUSTERS[group.id];
 
@@ -44,7 +44,7 @@ export function PillarCluster({ group, onOpenPillarInMatrix }) {
       </div>
       {group.pillars.map((pillar) => (
         <div
-          key={pillar.index}
+          key={pillar.id}
           className="grid grid-cols-[1fr_auto] items-center w-full gap-1 sm:gap-3 leading-[1.35] text-slate-800 text-[12px] sm:text-[13px] md:text-[14px]"
         >
           <PillarLabel pillarId={pillar.id} />
@@ -66,8 +66,8 @@ export function PillarCluster({ group, onOpenPillarInMatrix }) {
               </button>
             ) : null}
             <LevelInput
-              value={levels[pillar.index]}
-              onChange={(v) => setLevel(pillar.index, v)}
+              value={pillarLevels[pillar.id]}
+              onChange={(v) => setLevel(pillar.id, v)}
               ariaLabel={`${pillar.label} level`}
               ariaLabelUp="Increase level"
               ariaLabelDown="Decrease level"

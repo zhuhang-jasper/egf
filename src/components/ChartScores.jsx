@@ -99,10 +99,9 @@ function buildSummaryCards({ breadth, human, effective, career, breadthK, pillar
 }
 
 export function ChartScores() {
-  const levels = useAppStore((s) => s.levels);
+  const pillarLevels = useAppStore((s) => s.pillarLevels);
 
-  const { breadth, human, effective, career, clusters } = computeAverages(levels);
-  const pillarCount = levels.length;
+  const { breadth, human, effective, career, clusters, pillarCount } = computeAverages(pillarLevels);
   const breadthK = Math.ceil(pillarCount * BREADTH_TOP_RATIO);
   const effectiveTitle = `${Math.round(CAREER_PEAK_WEIGHT * 100)}% peak + ${Math.round(CAREER_BREADTH_WEIGHT * 100)}% breadth — composite for seniority bands.`;
 

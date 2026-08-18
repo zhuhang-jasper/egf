@@ -1,6 +1,6 @@
 import { getChartWidthUnit } from "@/chart/fonts";
 import { getChartLayoutLabelsForChart, isHeroChart, isTheoryChart, resolveChartUi } from "@/chart/theory-profile";
-import { FE_UI, getPillarOrder } from "@/constants";
+import { FE_UI, PILLAR_ORDER } from "@/constants";
 
 /**
  * Per-pillar pixel nudges for the chart axis labels, applied after the radar's automatic placement.
@@ -138,7 +138,6 @@ function rebuildRadarPointLabelItems(scale) {
   }
 
   const layoutLabels = getChartLayoutLabelsForChart(scale.chart);
-  const pillarOrder = getPillarOrder();
   // Each chart renders at a different size, so each has its own hand-tuned nudge map: the tool
   // chart, the theory hero radar (both interpolated by width), and the pre-scaled career-track profiles.
   let nudgeMap = PILLAR_LABEL_NUDGE;
@@ -171,7 +170,7 @@ function rebuildRadarPointLabelItems(scale) {
       angleDeg += 360;
     }
     const align = radarTextAlignForDeg(angleDeg);
-    const nudge = getPillarLabelNudge(nudgeMap, pillarOrder[i], nudgeWidthUnit, nudgePreScaled);
+    const nudge = getPillarLabelNudge(nudgeMap, PILLAR_ORDER[i], nudgeWidthUnit, nudgePreScaled);
     const x = pos.x + nudge.x;
     const y = radarYForDeg(pos.y, size.h, angleDeg) + nudge.y;
     const left = radarLeftForAlign(x, size.w, align);

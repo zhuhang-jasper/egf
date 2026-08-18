@@ -48,6 +48,10 @@ export const CLUSTERS = {
  * There is one pillar layout for the whole app; the FE/BE distinction is now a purely cosmetic
  * badge (see {@link TRACK_BADGE_OPTIONS}), not a different pillar set.
  * To drop a pillar: remove its id from `PILLAR_ORDER` and the cluster lists.
+ *
+ * REORDERING IS SAFE — everything keys off pillar id, not position — but check the cluster wedges
+ * after. A cluster's pillars need not be contiguous here (`technical` already wraps: indices 0-2 plus
+ * 8), and `sortClusterArc` in chart/plugins.js is what resolves that into one arc.
  */
 export const PILLAR_ORDER = ["coding", "architecture", "ai", "process", "ownership", "communication", "productSense", "uiUx", "domainLogic"];
 
@@ -98,16 +102,9 @@ export const TRACK_BADGE_UI = {
  */
 export const MAX_PROFILE_NAME_LENGTH = 50;
 
-/** Pillar ids persisted in profiles (missing keys default on load). */
-export const CANONICAL_PILLAR_IDS = [...new Set(PILLAR_ORDER)];
-
 /** A profile's attached badge. Any listed option is kept; everything else (incl. legacy/absent) is `none`. */
 export function normalizeAttachedBadge(value) {
   return TRACK_BADGE_OPTIONS.includes(value) ? value : "none";
-}
-
-export function getPillarOrder() {
-  return PILLAR_ORDER;
 }
 
 export const PILLAR_COUNT = 9;
@@ -183,23 +180,21 @@ function orientChartPillarLabel(label, index, count) {
 }
 
 export function getChartLabels() {
-  const order = getPillarOrder();
-  return order.map((id, i) => orientChartPillarLabel(getChartPillarLabel(id), i, order.length));
+  return PILLAR_ORDER.map((id, i) => orientChartPillarLabel(getChartPillarLabel(id), i, PILLAR_ORDER.length));
 }
 
 /** Longest label — reserved on the last axis so radar padding stays stable. */
 function getChartLayoutReservedLabel() {
-  return getPillarOrder().reduce((longest, id) => {
+  return PILLAR_ORDER.reduce((longest, id) => {
     const label = getChartPillarLabel(id);
     return label.length > longest.length ? label : longest;
   }, "");
 }
 
 export function getChartLayoutLabels() {
-  const order = getPillarOrder();
   const reserved = getChartLayoutReservedLabel();
-  const lastId = order.at(-1);
-  return order.map((id, i) => (id === lastId ? reserved : orientChartPillarLabel(getChartPillarLabel(id), i, order.length)));
+  const lastId = PILLAR_ORDER.at(-1);
+  return PILLAR_ORDER.map((id, i) => (id === lastId ? reserved : orientChartPillarLabel(getChartPillarLabel(id), i, PILLAR_ORDER.length)));
 }
 
 /** About/export charts — text-only pillar names (no emoji). */
@@ -208,21 +203,20 @@ export function getPlainChartPillarLabel(pillarId) {
 }
 
 export function getPlainChartLabels() {
-  return getPillarOrder().map((id) => getPlainChartPillarLabel(id));
+  return PILLAR_ORDER.map((id) => getPlainChartPillarLabel(id));
 }
 
 function getPlainChartLayoutReservedLabel() {
-  return getPillarOrder().reduce((longest, id) => {
+  return PILLAR_ORDER.reduce((longest, id) => {
     const label = getPlainChartPillarLabel(id);
     return label.length > longest.length ? label : longest;
   }, "");
 }
 
 export function getPlainChartLayoutLabels() {
-  const order = getPillarOrder();
   const reserved = getPlainChartLayoutReservedLabel();
-  const lastId = order.at(-1);
-  return order.map((id) => (id === lastId ? reserved : getPlainChartPillarLabel(id)));
+  const lastId = PILLAR_ORDER.at(-1);
+  return PILLAR_ORDER.map((id) => (id === lastId ? reserved : getPlainChartPillarLabel(id)));
 }
 
 /** Emoji-only pillar label — the leading emoji, text dropped (variation selectors stripped). */
@@ -232,14 +226,13 @@ export function getEmojiChartPillarLabel(pillarId) {
 }
 
 export function getEmojiChartLabels() {
-  return getPillarOrder().map((id) => getEmojiChartPillarLabel(id));
+  return PILLAR_ORDER.map((id) => getEmojiChartPillarLabel(id));
 }
 
 function buildPillarRef(pillarId) {
-  const order = getPillarOrder();
   return {
     id: pillarId,
-    index: order.indexOf(pillarId),
+    index: PILLAR_ORDER.indexOf(pillarId),
     label: getPillarLabel(pillarId),
   };
 }
@@ -253,7 +246,7 @@ export function getPillarGroups() {
 }
 
 export function getPillarIdByIndex(index) {
-  return getPillarOrder()[index] ?? null;
+  return PILLAR_ORDER[index] ?? null;
 }
 
 /** Cluster id a pillar belongs to (null if none). */
@@ -263,11 +256,11 @@ export function getClusterIdForPillar(pillarId) {
 
 /**
  * Per-axis cluster text colors, positionally aligned with the chart's label array (index i →
- * pillar `getPillarOrder()[i]`). Same palette the poster uses for pillar names
+ * pillar `PILLAR_ORDER[i]`). Same palette the poster uses for pillar names
  * (`CLUSTERS[cluster].midtone`). Axes with no cluster fall back to `null`.
  */
 export function getPillarClusterLabelColors() {
-  return getPillarOrder().map((id) => {
+  return PILLAR_ORDER.map((id) => {
     const clusterId = getClusterIdForPillar(id);
     return clusterId ? CLUSTERS[clusterId].midtone : null;
   });

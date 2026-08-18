@@ -12,7 +12,7 @@ import { SHARE_EXPORT_TOAST_KEY, useAppStore } from "@/store/useAppStore";
 
 import { TICK_FONT_FAMILY } from "@/chart/instance";
 import { createClusterBackgroundPlugin } from "@/chart/plugins";
-import { CLUSTERS, FE_UI, getPillarLabel, getPillarOrder, LAYER, SITE_COPY } from "@/constants";
+import { CLUSTERS, FE_UI, getPillarLabel, LAYER, PILLAR_ORDER, SITE_COPY } from "@/constants";
 import { CAREER_TRACK_PROFILES, PILLAR_CLUSTER_GROUPS } from "@/constants/theory-data";
 import { track } from "@/utils/analytics";
 import { copyShareToClipboard, downloadSharePng } from "@/utils/export-image";
@@ -35,7 +35,7 @@ const POSTER_PROFILE = {
   ownership: 5,
 };
 
-const POSTER_LEVELS = getPillarOrder().map((id) => POSTER_PROFILE[id] ?? 3);
+const POSTER_LEVELS = PILLAR_ORDER.map((id) => POSTER_PROFILE[id] ?? 3);
 
 // Lookups keyed by pillar id, derived from the theory data, so the ring cards reuse the canonical
 // signature questions and cluster colours straight from CLUSTERS (constants/framework.js) — `midtone` is
@@ -63,7 +63,7 @@ function splitPillarLabel(label) {
 
 // The 9 pillars in radar-axis order, each tagged with the angle of its axis so the ring
 // card and the chart spoke line up. Axis 0 is at the top (12 o'clock); axes step clockwise.
-const RING_PILLARS = getPillarOrder().map((id, i, arr) => {
+const RING_PILLARS = PILLAR_ORDER.map((id, i, arr) => {
   const { emoji, name } = splitPillarLabel(getPillarLabel(id));
   const angleDeg = (360 / arr.length) * i - 90;
   return { id, emoji, name, angleDeg, ...PILLAR_INFO[id] };

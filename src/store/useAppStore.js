@@ -1,14 +1,12 @@
 import { create } from "zustand";
 
-import { getPillarIdByIndex, MAX_PROFILE_NAME_LENGTH, normalizeAttachedBadge } from "@/constants";
+import { MAX_PROFILE_NAME_LENGTH, normalizeAttachedBadge } from "@/constants";
 import {
   fillPillarLevels,
   getDefaultChartState,
-  mergeViewIntoCanonical,
   newSavedProfileId,
   normalizeSavedState,
   parseToCanonicalState,
-  syncLevelsArrayFromMap,
 } from "@/constants/levels";
 import { track } from "@/utils/analytics";
 import { exportProfilesToFile, parseImportedProfiles } from "@/utils/profile-transfer";
@@ -105,17 +103,9 @@ function validateActiveId(activeSavedProfileId, profiles) {
   return activeSavedProfileId != null && profiles.some((p) => p.id === activeSavedProfileId) ? activeSavedProfileId : null;
 }
 
-function withSyncedLevels(state) {
-  const { levels } = syncLevelsArrayFromMap({
-    pillarLevels: state.pillarLevels,
-  });
-  return { ...state, levels };
-}
-
 export const useAppStore = create((set, get) => ({
   title: initialDraft.title,
   pillarLevels: { ...initialDraft.pillarLevels },
-  levels: [...initialDraft.levels],
   attachedBadge: normalizeAttachedBadge(initialDraft.attachedBadge),
   levelsPolygonHidden: initialDraft.levelsPolygonHidden,
   chartLevelTicksHidden: initialDraft.chartLevelTicksHidden,
@@ -232,25 +222,23 @@ export const useAppStore = create((set, get) => ({
   hydrate: () => {
     const draft = loadDraftFromStorage() ?? { ...getDefaultChartState(), ...getDefaultChartDisplay() };
     const profiles = loadProfilesFromStorage();
-    set(
-      withSyncedLevels({
-        title: draft.title,
-        pillarLevels: { ...draft.pillarLevels },
-        attachedBadge: normalizeAttachedBadge(draft.attachedBadge),
-        levelsPolygonHidden: draft.levelsPolygonHidden,
-        chartLevelTicksHidden: draft.chartLevelTicksHidden,
-        chartLegendHidden: draft.chartLegendHidden,
-        chartAttributionHidden: draft.chartAttributionHidden,
-        chartUhdExport: draft.chartUhdExport === true,
-        chartBadgeHidden: draft.chartBadgeHidden,
-        chartTitleHidden: draft.chartTitleHidden,
-        footerScoresHidden: draft.footerScoresHidden,
-        footerScoresHiddenUserSet: draft.footerScoresHiddenUserSet === true,
-        levelKeyboardInputEnabled: draft.levelKeyboardInputEnabled === true,
-        clusterLabelColors: draft.clusterLabelColors === true,
-        pillarEmojiHidden: draft.pillarEmojiHidden === true,
-      }),
-    );
+    set({
+      title: draft.title,
+      pillarLevels: { ...draft.pillarLevels },
+      attachedBadge: normalizeAttachedBadge(draft.attachedBadge),
+      levelsPolygonHidden: draft.levelsPolygonHidden,
+      chartLevelTicksHidden: draft.chartLevelTicksHidden,
+      chartLegendHidden: draft.chartLegendHidden,
+      chartAttributionHidden: draft.chartAttributionHidden,
+      chartUhdExport: draft.chartUhdExport === true,
+      chartBadgeHidden: draft.chartBadgeHidden,
+      chartTitleHidden: draft.chartTitleHidden,
+      footerScoresHidden: draft.footerScoresHidden,
+      footerScoresHiddenUserSet: draft.footerScoresHiddenUserSet === true,
+      levelKeyboardInputEnabled: draft.levelKeyboardInputEnabled === true,
+      clusterLabelColors: draft.clusterLabelColors === true,
+      pillarEmojiHidden: draft.pillarEmojiHidden === true,
+    });
     set({ profiles, activeSavedProfileId: validateActiveId(draft.activeSavedProfileId, profiles) });
   },
 
@@ -270,36 +258,30 @@ export const useAppStore = create((set, get) => ({
     get().persistDraft();
   },
 
-  setLevel: (index, value) => {
-    const pillarId = getPillarIdByIndex(index);
+  setLevel: (pillarId, value) => {
     if (!pillarId) {
       return;
     }
-    const pillarLevels = fillPillarLevels({ ...get().pillarLevels, [pillarId]: value });
-    const levels = [...get().levels];
-    levels[index] = value;
-    set({ pillarLevels, levels });
+    set({ pillarLevels: fillPillarLevels({ ...get().pillarLevels, [pillarId]: value }) });
     get().persistDraft();
   },
 
   applyState: (state, { profileId = null } = {}) => {
-    set(
-      withSyncedLevels({
-        title: state.title,
-        pillarLevels: { ...state.pillarLevels },
-        attachedBadge: normalizeAttachedBadge(state.attachedBadge),
-        levelsPolygonHidden: get().levelsPolygonHidden,
-        chartLevelTicksHidden: get().chartLevelTicksHidden,
-        chartLegendHidden: get().chartLegendHidden,
-        chartAttributionHidden: get().chartAttributionHidden,
-        chartUhdExport: get().chartUhdExport,
-        chartBadgeHidden: get().chartBadgeHidden,
-        chartTitleHidden: get().chartTitleHidden,
-        footerScoresHidden: get().footerScoresHidden,
-        clusterLabelColors: get().clusterLabelColors,
-        pillarEmojiHidden: get().pillarEmojiHidden,
-      }),
-    );
+    set({
+      title: state.title,
+      pillarLevels: { ...state.pillarLevels },
+      attachedBadge: normalizeAttachedBadge(state.attachedBadge),
+      levelsPolygonHidden: get().levelsPolygonHidden,
+      chartLevelTicksHidden: get().chartLevelTicksHidden,
+      chartLegendHidden: get().chartLegendHidden,
+      chartAttributionHidden: get().chartAttributionHidden,
+      chartUhdExport: get().chartUhdExport,
+      chartBadgeHidden: get().chartBadgeHidden,
+      chartTitleHidden: get().chartTitleHidden,
+      footerScoresHidden: get().footerScoresHidden,
+      clusterLabelColors: get().clusterLabelColors,
+      pillarEmojiHidden: get().pillarEmojiHidden,
+    });
     set({ activeSavedProfileId: profileId });
     get().persistDraft();
   },
@@ -570,14 +552,9 @@ export const useAppStore = create((set, get) => ({
       return { status: "add-title" };
     }
 
-    const merged = mergeViewIntoCanonical({
-      levels: get().levels,
-      pillarLevels: get().pillarLevels,
-    });
-
     const state = parseToCanonicalState({
       title: trimmed,
-      pillarLevels: merged.pillarLevels,
+      pillarLevels: fillPillarLevels(get().pillarLevels),
       attachedBadge: get().attachedBadge,
     });
     if (!state) {
@@ -713,16 +690,13 @@ export const useAppStore = create((set, get) => ({
   // callers layer those on. Used by "New profile" and by deleting the currently-loaded profile.
   resetDraftToBlank: () => {
     const defaults = getDefaultChartState();
-    set(
-      withSyncedLevels({
-        ...get(),
-        title: "",
-        pillarLevels: { ...defaults.pillarLevels },
-        levels: [...defaults.levels],
-        attachedBadge: normalizeAttachedBadge(defaults.attachedBadge),
-        activeSavedProfileId: null,
-      }),
-    );
+    set({
+      ...get(),
+      title: "",
+      pillarLevels: { ...defaults.pillarLevels },
+      attachedBadge: normalizeAttachedBadge(defaults.attachedBadge),
+      activeSavedProfileId: null,
+    });
     get().persistDraft();
   },
 
@@ -745,15 +719,13 @@ export const useAppStore = create((set, get) => ({
   // Restore a draft snapshot captured by createNew — undo of "New profile". Re-links to the saved
   // profile only if it still exists (it may have been deleted meanwhile); otherwise stays unlinked.
   restoreDraft: ({ title, pillarLevels, attachedBadge, activeSavedProfileId }) => {
-    set(
-      withSyncedLevels({
-        ...get(),
-        title,
-        pillarLevels: { ...pillarLevels },
-        attachedBadge: normalizeAttachedBadge(attachedBadge),
-        activeSavedProfileId: validateActiveId(activeSavedProfileId, get().profiles),
-      }),
-    );
+    set({
+      ...get(),
+      title,
+      pillarLevels: { ...pillarLevels },
+      attachedBadge: normalizeAttachedBadge(attachedBadge),
+      activeSavedProfileId: validateActiveId(activeSavedProfileId, get().profiles),
+    });
     get().persistDraft();
   },
 
@@ -795,10 +767,7 @@ function profileLevelsMatch(saved, s) {
   if (normalizeAttachedBadge(saved.attachedBadge) !== normalizeAttachedBadge(s.attachedBadge)) {
     return false;
   }
-  const current = mergeViewIntoCanonical({
-    levels: s.levels,
-    pillarLevels: s.pillarLevels,
-  }).pillarLevels;
+  const current = fillPillarLevels(s.pillarLevels);
   const savedLevels = saved.pillarLevels ?? {};
   const keys = new Set([...Object.keys(current), ...Object.keys(savedLevels)]);
   for (const k of keys) {

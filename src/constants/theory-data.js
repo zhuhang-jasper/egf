@@ -1,4 +1,4 @@
-import { CLUSTERS, getPillarGroups, getPillarLabel, getPillarLabelWithoutOrgan, getPillarOrder, getPlainChartPillarLabel } from "@/constants";
+import { CLUSTERS, getPillarGroups, getPillarLabel, getPillarLabelWithoutOrgan, getPlainChartPillarLabel, PILLAR_ORDER } from "@/constants";
 import { COMPETENCY_LEVEL_COPY } from "@/constants/competency-matrix-data";
 import { THEORY_SECTIONS } from "@/utils/theory-url";
 
@@ -36,7 +36,7 @@ export const THEORY_SECTION_COPY = {
 };
 
 function buildLevels(scores) {
-  return getPillarOrder().map((id) => scores[id] ?? 2.5);
+  return PILLAR_ORDER.map((id) => scores[id] ?? 2.5);
 }
 
 /**

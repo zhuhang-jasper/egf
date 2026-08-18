@@ -1,4 +1,4 @@
-import { CLUSTERS, FE_UI, getPillarGroupOrder, getPillarOrder } from "@/constants";
+import { CLUSTERS, FE_UI, getPillarGroupOrder, PILLAR_ORDER } from "@/constants";
 
 /** Clockwise arc order for a cluster's pillar indices on the radar (handles wrap-around). */
 function sortClusterArc(indices, total) {
@@ -93,7 +93,6 @@ export function createClusterBackgroundPlugin() {
 
       const { ctx } = chart;
       ctx.save();
-      const pillarOrder = getPillarOrder();
       for (const group of getPillarGroupOrder()) {
         const cluster = CLUSTERS[group.id];
         // `chartBg`, the same value ClusterLegend's swatch uses. Filled at full opacity (no alpha in this
@@ -102,7 +101,7 @@ export function createClusterBackgroundPlugin() {
           continue;
         }
         const indices = sortClusterArc(
-          group.pillars.map((pillarId) => pillarOrder.indexOf(pillarId)),
+          group.pillars.map((pillarId) => PILLAR_ORDER.indexOf(pillarId)),
           count,
         );
         drawClusterWedge(ctx, scale, indices, cluster.chartBg, count);

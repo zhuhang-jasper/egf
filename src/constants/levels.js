@@ -1,4 +1,4 @@
-import { CANONICAL_PILLAR_IDS, DEFAULT_PILLAR_LEVEL, getPillarOrder, LEVEL_STEP, MAX_PROFILE_NAME_LENGTH, normalizeAttachedBadge } from "@/constants";
+import { DEFAULT_PILLAR_LEVEL, LEVEL_STEP, MAX_PROFILE_NAME_LENGTH, normalizeAttachedBadge, PILLAR_ORDER } from "@/constants";
 import { SCHEMA_VERSION } from "@/constants/storage";
 
 export function clampLevel(v) {
@@ -37,7 +37,7 @@ export function formatLevelForInput(v) {
 
 export function createDefaultPillarLevels() {
   const levels = {};
-  for (const id of CANONICAL_PILLAR_IDS) {
+  for (const id of PILLAR_ORDER) {
     levels[id] = DEFAULT_PILLAR_LEVEL;
   }
   return levels;
@@ -46,21 +46,15 @@ export function createDefaultPillarLevels() {
 /** Fill missing pillar keys with defaults (forward-compatible when new pillars are added). */
 export function fillPillarLevels(map) {
   const next = {};
-  for (const id of CANONICAL_PILLAR_IDS) {
+  for (const id of PILLAR_ORDER) {
     next[id] = clampLevel(map?.[id] ?? DEFAULT_PILLAR_LEVEL);
   }
   return next;
 }
 
 export function pillarLevelsToArray(pillarLevels) {
-  const order = getPillarOrder();
+  const order = PILLAR_ORDER;
   return order.map((id) => clampLevel(pillarLevels[id] ?? DEFAULT_PILLAR_LEVEL));
-}
-
-export function syncLevelsArrayFromMap({ pillarLevels }) {
-  return {
-    levels: pillarLevelsToArray(pillarLevels),
-  };
 }
 
 function isPillarLevelsMap(value) {
@@ -109,17 +103,7 @@ export function parseToCanonicalState(parsed) {
 }
 
 export function normalizeSavedState(parsed) {
-  const canonical = parseToCanonicalState(parsed);
-  if (!canonical) {
-    return null;
-  }
-  const view = syncLevelsArrayFromMap(canonical);
-  return {
-    title: canonical.title,
-    pillarLevels: canonical.pillarLevels,
-    levels: view.levels,
-    attachedBadge: canonical.attachedBadge,
-  };
+  return parseToCanonicalState(parsed);
 }
 
 export function newSavedProfileId() {
@@ -147,27 +131,9 @@ export function normalizeStoredProfile(p) {
 }
 
 export function getDefaultChartState() {
-  const pillarLevels = createDefaultPillarLevels();
-  const attachedBadge = "none";
-  const view = syncLevelsArrayFromMap({ pillarLevels });
   return {
     title: "",
-    pillarLevels,
-    levels: view.levels,
-    attachedBadge,
+    pillarLevels: createDefaultPillarLevels(),
+    attachedBadge: "none",
   };
-}
-
-export function mergeViewIntoCanonical({ levels, pillarLevels }) {
-  const order = getPillarOrder();
-  const nextLevels = { ...pillarLevels };
-
-  for (let i = 0; i < order.length; i++) {
-    const id = order[i];
-    if (levels[i] !== undefined) {
-      nextLevels[id] = clampLevel(levels[i]);
-    }
-  }
-
-  return { pillarLevels: fillPillarLevels(nextLevels) };
 }
