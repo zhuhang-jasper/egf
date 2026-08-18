@@ -48,6 +48,7 @@ export function getStickyScrollOffsetPx() {
   return Number.parseFloat(offsetValue) || 0;
 }
 
+/** `heightPx` is 0 when the header isn't pinned; the gap still applies, since a flush target reads as clipped. */
 export function setStickyScrollOffset(heightPx) {
   const offset = Math.ceil(heightPx) + STICKY_SCROLL_GAP_PX;
   document.documentElement.style.setProperty(STICKY_OFFSET_CSS_VAR, `${offset}px`);
@@ -60,8 +61,11 @@ export function clearStickyScrollOffset() {
 /**
  * The vertical band a popover may occupy, in viewport coordinates: `{ top, bottom }`.
  *
- * Both edges are pinned chrome, so a popover must be bounded geometrically (stacking already favours it).
+ * Both edges are usually pinned chrome, so a popover must be bounded geometrically (stacking already favours it).
  * Missing elements fall back to the full viewport, keeping this correct on Poster/Social, which render neither bar.
+ *
+ * The rects must stay LIVE. On short viewports both bars go `static` (see index.css) and scroll away, and the two
+ * clamps below then widen this to the full viewport on their own — so don't swap them for the constant heights.
  */
 export function getPopoverViewportBounds() {
   const header = document.getElementById("app-shell-header-stack");

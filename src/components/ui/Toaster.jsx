@@ -167,6 +167,9 @@ export function Toaster({ bareBottom = false }) {
     <div
       aria-live="polite"
       aria-atomic="false"
+      // `data-toast-viewport` is the hook the short-viewport query in index.css uses to drop this back to the
+      // plain 1rem gap, since the bar it clears below is unpinned there.
+      data-toast-viewport
       // Sits ABOVE the bottom nav. `4.5rem` is the bar's `3.5rem` row plus a 1rem gap, summed because
       // `bottom` takes one length, so this moves by the bar's DELTA rather than to its new height. See
       // docs/DECISIONS.md#fixed-element-offsets-agree-by-construction.

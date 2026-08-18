@@ -32,6 +32,9 @@ function AppShellHeaderStack() {
   // Publish how much pinned chrome a scroll target has to clear, so deep links and pillar jumps land below the
   // header rather than underneath it. Measured on the sticky element itself, and still observed even though the
   // height is constant: that keeps it a fact about the rendered box rather than an assumption.
+  //
+  // Zero when static (short viewports — see index.css): a header that scrolls away covers nothing. The height is
+  // 56px either way, so the POSITION is what is read. `resize` too, since ResizeObserver ignores position changes.
   useLayoutEffect(() => {
     const stack = stackRef.current;
     if (!stack) {
@@ -39,15 +42,18 @@ function AppShellHeaderStack() {
     }
 
     const syncStickyOffset = () => {
-      setStickyScrollOffset(stack.getBoundingClientRect().height);
+      const pinned = getComputedStyle(stack).position === "sticky";
+      setStickyScrollOffset(pinned ? stack.getBoundingClientRect().height : 0);
     };
 
     syncStickyOffset();
     const observer = new ResizeObserver(syncStickyOffset);
     observer.observe(stack);
+    window.addEventListener("resize", syncStickyOffset);
 
     return () => {
       observer.disconnect();
+      window.removeEventListener("resize", syncStickyOffset);
       clearStickyScrollOffset();
     };
   }, []);

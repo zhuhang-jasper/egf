@@ -64,6 +64,49 @@ Bare `min-h-dvh` is safe and is what `html`/`body`/`#root` already use. The haza
 The cost of padding alone is that the shortest possible page is the bar's height taller than the viewport, so
 a very short tab can scroll by ~56px. That is far cheaper than a visible jump on every switch.
 
+See [short-viewports-unpin-both-bars](#short-viewports-unpin-both-bars), which drops this reservation in the one
+case where the bar is not pinned.
+
+### short-viewports-unpin-both-bars
+
+Under `@media (max-height: 300px)` the header goes `sticky → static`, the bottom nav `fixed → static`, `main`
+drops its 56px bottom reserve, and the toast viewport drops to a plain 1rem gap. All four are in the same query
+in `index.css` and must stay together: unpinning the bar without dropping the reserve leaves 56px of dead space
+under real content, and dropping the reserve without unpinning puts the bar over the page's last rows.
+
+The problem was popover clipping, not the chrome. Popovers are bounded _between_ the bars
+(`getPopoverViewportBounds`), which hold 112px of every screenful, and no fixed-row menu caps its own height —
+only `ProfileCombobox` does, via its row-peek maths. So the tallest of them overflowed the band and its lower
+rows landed under the nav. The band then widens for free, by construction: the bounds helper clamps with
+`max(0, …)` / `min(innerHeight, …)`, so a static header above the fold and a static nav below it both resolve to
+the viewport edge. Don't swap those live rects for the constant 56px heights.
+
+A media query, not a measurement. Reading a height and setting state is the shape of the bug in
+[bottom-nav-height-reservation](#bottom-nav-height-reservation); a query resolves during layout with no state and
+no observer. It also sidesteps [bottom-nav-visual-viewport-jump](#bottom-nav-visual-viewport-jump), since a
+`static` bar has no `bottom: 0` to resolve against a shrinking visual viewport. The one thing it can't express is
+the sticky offset, so `AppShellHeaderStack` reads `getComputedStyle().position` and publishes 0 when static —
+otherwise every deep-link jump lands 64px low under a header covering nothing.
+
+**300px is sized for the menu real users see**: chart display settings is four rows plus a separator (~130px),
+and its ~320px ten-row form is entirely behind `IS_ADMIN`. 130 + 112 + margins needs ~266px. Sizing for the admin
+menu gives ~456px and for a comfortable fit ~600px, both of which unpin the bars on perfectly usable windows.
+
+**Known gap, accepted:** an admin between ~300 and ~456px tall gets a menu whose lower rows fall under the nav.
+The fix is a `max-height` clamp on the panel (`ProfileCombobox`'s pattern), not taken because it is dormant code
+for every non-admin. If those flags ship to everyone, clamp the panel rather than raising this threshold —
+otherwise the whole app's chrome behaviour becomes a function of one dropdown's row count.
+
+The three options are not interchangeable: the threshold removes the bars below a height, a clamp bounds a panel
+at every height, and a z-index change (popover _behind_ the chrome) does not work at all — the panel is
+`absolute`, so scrolling moves it with its trigger and the hidden rows stay hidden.
+
+The one thing the query cannot express is the sticky offset. `AppShellHeaderStack` publishes
+`--app-sticky-offset` for deep-link and pillar jumps, and the height is 56px whether pinned or not, so the
+component reads `getComputedStyle().position` and publishes 0 when static — otherwise every jump lands 64px low
+under a header that covers nothing. It listens on `resize` as well as its `ResizeObserver`, because an observer
+does not fire when only the position changes.
+
 ### scroll-anchoring
 
 Scroll anchoring is Chrome/Firefox keeping visible content still when the document changes height **above**

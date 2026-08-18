@@ -292,6 +292,34 @@
    block's bottom edge on the baseline, and the <h2> is `overflow-hidden` for useMiddleEllipsis. If the pill/title
    centring needs correcting again, move the pill — do not resize a box something else clips or measures. */
 
+/* SHORT VIEWPORTS UNPIN BOTH BARS, so the 112px of permanent chrome stops eating a page that has no room for it
+   and popovers get the whole viewport instead of the band between the bars. A media query rather than a measured
+   toggle, and 300px is sized for the 4-row menu non-admins see. All four rules move together: unpinning without
+   dropping main's reserve leaves dead space, dropping it without unpinning puts the bar over the last rows.
+   `!important` because `main` is an element selector, and Tailwind's source order is not ours to rely on.
+   See docs/DECISIONS.md#short-viewports-unpin-both-bars. */
+@media (max-height: 300px) {
+  #app-shell-header-stack {
+    position: static !important;
+  }
+
+  /* Already the last flow sibling after `main`; the `right` inset went with `fixed`. */
+  #app-bottom-nav {
+    position: static !important;
+    right: auto !important;
+  }
+
+  /* The reserve only existed to keep the fixed bar off the last rows. */
+  main {
+    padding-bottom: 0 !important;
+  }
+
+  /* Stays fixed, but no longer has a pinned bar to clear. */
+  [data-toast-viewport] {
+    bottom: calc(1rem + env(safe-area-inset-bottom)) !important;
+  }
+}
+
 /* PRINT: rescale each radar's bitmap to its frame, since print rasterizes before the fit rAF runs. Scoped so
    the poster/social export canvases are untouched. See docs/DECISIONS.md#print-chart-frame-height-is-stale. */
 @media print {
