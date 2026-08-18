@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Calculator, CircleCheck, Copy, FilePlus, MoreVertical, Pencil, Save, Undo2 } from "lucide-react";
 
@@ -8,8 +8,10 @@ import { ProfileCombobox } from "@/components/ProfileCombobox";
 import { SaveCollisionDialog } from "@/components/SaveCollisionDialog";
 import { Button } from "@/components/ui/button";
 import { MenuItem } from "@/components/ui/menu-item";
+import { MenuPanel } from "@/components/ui/menu-panel";
 import { Tooltip } from "@/components/ui/Tooltip";
 
+import { useMenuPosition } from "@/hooks/useMenuPosition";
 import { useTouchPrimary } from "@/hooks/useTouchPrimary";
 
 import {
@@ -21,11 +23,9 @@ import {
   useAppStore,
 } from "@/store/useAppStore";
 
-import { LAYER } from "@/constants";
 import { CONTROL_TEXT } from "@/styles/control-typography";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
-import { getPopoverViewportBounds } from "@/utils/scroll";
 import { readProfileCreateCount } from "@/utils/storage";
 
 // The Save button doubles as the save-status indicator. Each status sets the button's icon, label,
@@ -88,57 +88,15 @@ function SaveButton({ statusMeta, showMenu, onSave, copyAction, undoAction }) {
   const rootRef = useRef(null);
   const menuRef = useRef(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [openUp, setOpenUp] = useState(false);
 
-  useEffect(() => {
-    if (!menuOpen) {
-      return undefined;
-    }
-    const onKey = (e) => {
-      if (e.key === "Escape") {
-        setMenuOpen(false);
-      }
-    };
-    const onMouse = (e) => {
-      if (rootRef.current && !rootRef.current.contains(e.target)) {
-        setMenuOpen(false);
-      }
-    };
-    document.addEventListener("keydown", onKey);
-    document.addEventListener("mousedown", onMouse);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.removeEventListener("mousedown", onMouse);
-    };
-  }, [menuOpen]);
-
-  // Flip above the button when the menu doesn't fit below and there's more room above — the same
-  // bounded band the profile dropdown uses (sticky header above, fixed bottom nav below). Re-measured
-  // when the undo item appears/disappears, since that changes the menu's height.
-  useLayoutEffect(() => {
-    if (!menuOpen) {
-      setOpenUp(false);
-      return undefined;
-    }
-    const decide = () => {
-      const root = rootRef.current;
-      const menu = menuRef.current;
-      if (!root || !menu) {
-        return;
-      }
-      const gap = 4;
-      const margin = 8; // keep the menu clear of the viewport edge
-      const rootRect = root.getBoundingClientRect();
-      const { top: topBoundary, bottom: bottomBoundary } = getPopoverViewportBounds();
-      const spaceBelow = bottomBoundary - rootRect.bottom - gap - margin;
-      const spaceAbove = rootRect.top - topBoundary - gap - margin;
-      const needed = menu.offsetHeight;
-      setOpenUp(needed > spaceBelow && spaceAbove > spaceBelow);
-    };
-    decide();
-    window.addEventListener("resize", decide);
-    return () => window.removeEventListener("resize", decide);
-  }, [menuOpen, Boolean(undoAction)]);
+  // The undo item appearing/disappearing changes the panel's height, so it drives a re-measure.
+  const { openUp } = useMenuPosition({
+    open: menuOpen,
+    onClose: () => setMenuOpen(false),
+    rootRef,
+    menuRef,
+    remeasureKey: Boolean(undoAction),
+  });
 
   // The label sizes to its own text — the row is allowed to shift as the status changes so the
   // control stays as narrow as possible, leaving more room for the title input.
@@ -200,16 +158,7 @@ function SaveButton({ statusMeta, showMenu, onSave, copyAction, undoAction }) {
         <MoreVertical className="h-4 w-4 shrink-0" aria-hidden />
       </Button>
       {menuOpen && (
-        <div
-          ref={menuRef}
-          role="menu"
-          aria-label="Save options"
-          className={cn(
-            "absolute right-0 flex w-max min-w-[100px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border border-border bg-card shadow-md",
-            LAYER.dropdown,
-            openUp ? "bottom-[calc(100%+4px)]" : "top-[calc(100%+4px)]",
-          )}
-        >
+        <MenuPanel ref={menuRef} openUp={openUp} align="right" role="menu" aria-label="Save options" className="min-w-[100px]">
           <MenuItem
             icon={Copy}
             onClick={() => {
@@ -233,7 +182,7 @@ function SaveButton({ statusMeta, showMenu, onSave, copyAction, undoAction }) {
               {undoAction.label}
             </MenuItem>
           ) : null}
-        </div>
+        </MenuPanel>
       )}
     </div>
   );

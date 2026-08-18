@@ -483,8 +483,8 @@ function TrackCard({ careerTrack }) {
 }
 
 /**
- * One toggle row, a copy of ChartSection's `DisplayCheckbox` rather than an import since this menu needs its
- * own colours for the poster's BLACK chrome. `select-none` so repeated clicks do not select the label.
+ * One toggle row, a copy of {@link MenuCheckboxItem} rather than an import since this menu needs its own colours
+ * for the poster's BLACK chrome. `select-none` so repeated clicks do not select the label.
  */
 function PosterToggle({ label, checked, onChange }) {
   return (

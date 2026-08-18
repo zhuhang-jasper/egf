@@ -1,19 +1,19 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 import { Download, Trash2, Upload, Wrench } from "lucide-react";
 
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { MenuItem } from "@/components/ui/menu-item";
+import { MenuPanel } from "@/components/ui/menu-panel";
 import { Tooltip } from "@/components/ui/Tooltip";
+
+import { useMenuPosition } from "@/hooks/useMenuPosition";
 
 import { PROFILE_IO_TOAST_KEY, UNDO_TOAST_KEY, useAppStore } from "@/store/useAppStore";
 
-import { LAYER } from "@/constants";
-import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
 import { readFileAsText } from "@/utils/profile-transfer";
-import { getPopoverViewportBounds } from "@/utils/scroll";
 
 /**
  * Overflow menu (kebab) sitting next to the Profiles picker. Holds list-level actions —
@@ -30,11 +30,12 @@ export function ProfileActionsMenu() {
   const menuRef = useRef(null);
   const fileInputRef = useRef(null);
   const [open, setOpen] = useState(false);
-  const [openUp, setOpenUp] = useState(false);
   // "Delete all" opens a confirm dialog (see ConfirmDialog) rather than an inline two-step.
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
 
   const hasProfiles = profiles.length > 0;
+  // `hasProfiles` gates the Delete-all row, so it changes the panel's height and must re-measure.
+  const { openUp } = useMenuPosition({ open, onClose: () => setOpen(false), rootRef, menuRef, remeasureKey: hasProfiles });
 
   const handleExport = async () => {
     const { count, outcome } = await exportProfiles();
@@ -103,48 +104,6 @@ export function ProfileActionsMenu() {
     track("profiles_cleared", { count: removed });
   };
 
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === "Escape" && open) {
-        setOpen(false);
-      }
-    };
-    const onMouse = (e) => {
-      if (open && rootRef.current && !rootRef.current.contains(e.target)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("keydown", onKey);
-    document.addEventListener("mousedown", onMouse);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.removeEventListener("mousedown", onMouse);
-    };
-  }, [open]);
-
-  // Flip the menu upward only when there isn't room below but there is above (mirrors ProfilePicker).
-  useLayoutEffect(() => {
-    if (!open) {
-      setOpenUp(false);
-      return;
-    }
-    const button = rootRef.current;
-    const menu = menuRef.current;
-    if (!button || !menu) {
-      return;
-    }
-    const buttonRect = button.getBoundingClientRect();
-    const naturalHeight = menu.scrollHeight;
-    const gap = 4;
-    const margin = 8;
-    // Clear the pinned chrome at both ends — sticky header above, fixed bottom nav below. See
-    // getPopoverViewportBounds for why this is shared rather than measured here.
-    const { top: topBoundary, bottom: bottomBoundary } = getPopoverViewportBounds();
-    const spaceBelow = bottomBoundary - buttonRect.bottom - gap - margin;
-    const spaceAbove = buttonRect.top - topBoundary - gap - margin;
-    setOpenUp(naturalHeight > spaceBelow && spaceAbove > spaceBelow);
-  }, [open]);
-
   return (
     <div ref={rootRef} className="relative shrink-0">
       <Button
@@ -161,16 +120,7 @@ export function ProfileActionsMenu() {
         {open ? null : <Tooltip text="Manage profiles" placement="bottom" />}
       </Button>
       {open && (
-        <div
-          ref={menuRef}
-          role="menu"
-          aria-label="Profile actions"
-          className={cn(
-            "absolute right-0 flex w-max min-w-[100px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border border-border bg-card shadow-md",
-            LAYER.dropdown,
-            openUp ? "bottom-[calc(100%+4px)]" : "top-[calc(100%+4px)]",
-          )}
-        >
+        <MenuPanel ref={menuRef} openUp={openUp} align="right" role="menu" aria-label="Profile actions" className="min-w-[100px]">
           <MenuItem icon={Upload} disabled={!hasProfiles} onClick={handleExport}>
             Export profiles
           </MenuItem>
@@ -183,7 +133,7 @@ export function ProfileActionsMenu() {
             </MenuItem>
           )}
           <input ref={fileInputRef} type="file" accept="application/json,.json" className="hidden" onChange={handleImportFile} />
-        </div>
+        </MenuPanel>
       )}
       <ConfirmDialog
         open={confirmDeleteAll}

@@ -4,14 +4,16 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 // shadowing it at module scope is a trap for anything later in this file that wants the real one.
 import { Image as ImageIcon, Settings, Share2 } from "lucide-react";
 
-import { AdminLockBadge } from "@/components/AdminLockBadge";
 import { ChartScores } from "@/components/ChartScores";
 import { ClusterLegend } from "@/components/ClusterLegend";
 import { TrackBadge } from "@/components/TrackBadge";
 import { Button } from "@/components/ui/button";
+import { MenuCheckboxItem } from "@/components/ui/menu-checkbox-item";
+import { MenuPanel } from "@/components/ui/menu-panel";
 import { Tooltip } from "@/components/ui/Tooltip";
 
 import { useCompetencyChart } from "@/hooks/useCompetencyChart";
+import { useMenuPosition } from "@/hooks/useMenuPosition";
 import { useMiddleEllipsis } from "@/hooks/useMiddleEllipsis";
 
 import { CHART_EXPORT_TOAST_KEY, useAppStore } from "@/store/useAppStore";
@@ -24,48 +26,18 @@ import {
   FEATURE_CHART_STRUCTURE_SETTINGS,
   FEATURE_CHART_UHD_EXPORT_SETTING,
   FEATURE_SCORES_SETTINGS,
-  LAYER,
   SITE_COPY,
 } from "@/constants";
 import { CARD_PLAIN } from "@/styles/card";
-import { CONTROL_TEXT } from "@/styles/control-typography";
 import { TOOLBAR_ICON_SURFACE, TOOLBAR_SURFACE } from "@/styles/toolbar";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
 import { copyChartAsImageToClipboard, shareChartAsImage } from "@/utils/copy-chart-image";
 
-// `adminOnly` is passed by the caller rather than read from the FEATURE_* constants here: those decide
-// whether the row renders at all, and a row rendered under one flag but badged from another could disagree
-// with itself. `select-none` because these rows get clicked repeatedly to flip a setting.
-function DisplayCheckbox({ label, checked, onChange, adminOnly = false }) {
-  return (
-    <label className={cn("flex cursor-pointer select-none items-center gap-2.5 rounded-md px-3 py-1.5 hover:bg-muted/60", CONTROL_TEXT)}>
-      <input
-        type="checkbox"
-        checked={checked}
-        aria-label={label}
-        onChange={(e) => onChange(e.target.checked)}
-        className="size-3.5 shrink-0 rounded border border-input accent-foreground"
-      />
-      {/* The one site that badges inline rather than at a corner, because a column of padlocks down a list of
-          near-identical rows cannot be attributed to any of them. `static` switches AdminLockBadge out of its
-          absolute default; `-translate-y-1` is a fixed nudge tied to its disc size, so re-judge it if that
-          changes. `label=""` because the row's own `aria-label` is already the checkbox's accessible name.
-
-          Do NOT add a `display` class here. The badge centres itself with grid, and tailwind-merge treats any
-          display utility as the same group, so an `inline-flex` here silently replaces `inline-grid` and the
-          lock falls out of centre. `inline` vs block is the badge's own job via its `static` branch. */}
-      <span>
-        {label}
-        {adminOnly ? <AdminLockBadge label="" className="static ml-0.5 -translate-y-1 align-middle" /> : null}
-      </span>
-    </label>
-  );
-}
-
 function ChartDisplayMenu() {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
+  const menuRef = useRef(null);
 
   const chartLegendHidden = useAppStore((s) => s.chartLegendHidden);
   const setChartLegendHidden = useAppStore((s) => s.setChartLegendHidden);
@@ -88,27 +60,9 @@ function ChartDisplayMenu() {
   const footerScoresHidden = useAppStore((s) => s.footerScoresHidden);
   const setFooterScoresHidden = useAppStore((s) => s.setFooterScoresHidden);
 
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === "Escape") {
-        setOpen(false);
-      }
-    };
-    const onMouse = (e) => {
-      if (rootRef.current && !rootRef.current.contains(e.target)) {
-        setOpen(false);
-      }
-    };
-    if (!open) {
-      return undefined;
-    }
-    document.addEventListener("keydown", onKey);
-    document.addEventListener("mousedown", onMouse);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.removeEventListener("mousedown", onMouse);
-    };
-  }, [open]);
+  // This menu had no flip at all — it was hardcoded to open downward, so near the viewport foot its lower rows
+  // went under the bottom nav. It is the longest menu in the app, so it is the one that needed it most.
+  const { openUp } = useMenuPosition({ open, onClose: () => setOpen(false), rootRef, menuRef });
 
   return (
     <div ref={rootRef} className="relative shrink-0">
@@ -128,30 +82,26 @@ function ChartDisplayMenu() {
         {open ? null : <Tooltip text="Chart display settings" placement="bottom" />}
       </Button>
       {open ? (
-        <div
-          role="menu"
-          aria-label="Chart display settings"
-          className={cn("absolute right-0 top-[calc(100%+4px)] w-max rounded-lg border border-border bg-card py-1 shadow-md", LAYER.dropdown)}
-        >
-          <DisplayCheckbox label="Title" checked={!chartTitleHidden} onChange={(v) => setChartTitleHidden(!v)} />
-          <DisplayCheckbox label="Badge" checked={!chartBadgeHidden} onChange={(v) => setChartBadgeHidden(!v)} />
+        <MenuPanel ref={menuRef} openUp={openUp} align="right" padded role="menu" aria-label="Chart display settings">
+          <MenuCheckboxItem label="Title" checked={!chartTitleHidden} onChange={(v) => setChartTitleHidden(!v)} />
+          <MenuCheckboxItem label="Badge" checked={!chartBadgeHidden} onChange={(v) => setChartBadgeHidden(!v)} />
           {/* `adminOnly` ON EVERY ROW INSIDE A FEATURE_* TEST, and only on those — the flag and the gate are the
               same decision written twice, once to decide whether the row exists and once to mark it. Adding a
               row here means setting both. */}
           {FEATURE_CHART_STRUCTURE_SETTINGS ? (
             <>
-              <DisplayCheckbox adminOnly label="Chart" checked={!levelsPolygonHidden} onChange={(v) => setLevelsPolygonHidden(!v)} />
-              <DisplayCheckbox adminOnly label="Level labels" checked={!chartLevelTicksHidden} onChange={(v) => setChartLevelTicksHidden(!v)} />
+              <MenuCheckboxItem adminOnly label="Chart" checked={!levelsPolygonHidden} onChange={(v) => setLevelsPolygonHidden(!v)} />
+              <MenuCheckboxItem adminOnly label="Level labels" checked={!chartLevelTicksHidden} onChange={(v) => setChartLevelTicksHidden(!v)} />
             </>
           ) : null}
           {FEATURE_CHART_LEGEND_SETTING ? (
-            <DisplayCheckbox adminOnly label="Legend" checked={!chartLegendHidden} onChange={(v) => setChartLegendHidden(!v)} />
+            <MenuCheckboxItem adminOnly label="Legend" checked={!chartLegendHidden} onChange={(v) => setChartLegendHidden(!v)} />
           ) : null}
           {/* EXPORT-ONLY ROWS, unlike every other toggle in this menu: neither the credit line nor the export
               resolution is anything on screen, so these change the copied/shared PNG and nothing the user is
               looking at. Both are labelled for the image rather than the chart for that reason. */}
           {FEATURE_CHART_ATTRIBUTION_SETTING ? (
-            <DisplayCheckbox
+            <MenuCheckboxItem
               adminOnly
               label="Attribution on export"
               checked={!chartAttributionHidden}
@@ -159,16 +109,16 @@ function ChartDisplayMenu() {
             />
           ) : null}
           {FEATURE_CHART_UHD_EXPORT_SETTING ? (
-            <DisplayCheckbox adminOnly label="UHD export (4x)" checked={chartUhdExport} onChange={setChartUhdExport} />
+            <MenuCheckboxItem adminOnly label="UHD export (4x)" checked={chartUhdExport} onChange={setChartUhdExport} />
           ) : null}
           {/* Appearance of the pillar labels themselves, as opposed to the show/hide toggles above. */}
           <hr className="my-1 border-t border-border" />
-          <DisplayCheckbox label="Colored pillar labels" checked={clusterLabelColors} onChange={setClusterLabelColors} />
-          <DisplayCheckbox label="Pillar emoji" checked={!pillarEmojiHidden} onChange={(v) => setPillarEmojiHidden(!v)} />
+          <MenuCheckboxItem label="Colored pillar labels" checked={clusterLabelColors} onChange={setClusterLabelColors} />
+          <MenuCheckboxItem label="Pillar emoji" checked={!pillarEmojiHidden} onChange={(v) => setPillarEmojiHidden(!v)} />
           {FEATURE_SCORES_SETTINGS ? (
-            <DisplayCheckbox adminOnly label="Scores" checked={!footerScoresHidden} onChange={(v) => setFooterScoresHidden(!v)} />
+            <MenuCheckboxItem adminOnly label="Scores" checked={!footerScoresHidden} onChange={(v) => setFooterScoresHidden(!v)} />
           ) : null}
-        </div>
+        </MenuPanel>
       ) : null}
     </div>
   );

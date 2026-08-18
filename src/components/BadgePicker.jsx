@@ -1,14 +1,17 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 import { ChevronDown } from "lucide-react";
 
+import { MenuPanel } from "@/components/ui/menu-panel";
+
+import { useMenuPosition } from "@/hooks/useMenuPosition";
+
 import { useAppStore } from "@/store/useAppStore";
 
-import { LAYER, normalizeAttachedBadge, TRACK_BADGE_OPTIONS, TRACK_BADGE_UI } from "@/constants";
+import { normalizeAttachedBadge, TRACK_BADGE_OPTIONS, TRACK_BADGE_UI } from "@/constants";
 import { CONTROL_TEXT } from "@/styles/control-typography";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
-import { getPopoverViewportBounds } from "@/utils/scroll";
 
 /**
  * The colored pill for a badge id — the same rounded FE/BE chip shown on the chart, in miniature.
@@ -51,61 +54,11 @@ export function BadgePicker({ onOpen }) {
   const attachedBadge = useAppStore((s) => normalizeAttachedBadge(s.attachedBadge));
   const setAttachedBadge = useAppStore((s) => s.setAttachedBadge);
   const [open, setOpen] = useState(false);
-  const [openUp, setOpenUp] = useState(false);
   const rootRef = useRef(null);
   const menuRef = useRef(null);
 
   const current = TRACK_BADGE_UI[attachedBadge];
-
-  useEffect(() => {
-    if (!open) {
-      return undefined;
-    }
-    const onKey = (e) => {
-      if (e.key === "Escape") {
-        setOpen(false);
-      }
-    };
-    const onMouse = (e) => {
-      if (rootRef.current && !rootRef.current.contains(e.target)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("keydown", onKey);
-    document.addEventListener("mousedown", onMouse);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.removeEventListener("mousedown", onMouse);
-    };
-  }, [open]);
-
-  // Flip above the trigger when the menu doesn't fit below and there's more room above — the same
-  // bounded band the profile dropdown uses (sticky header above, fixed bottom nav below). The menu is
-  // three fixed rows, so there's nothing to cap: it either fits on a side or it doesn't.
-  useLayoutEffect(() => {
-    if (!open) {
-      setOpenUp(false);
-      return undefined;
-    }
-    const decide = () => {
-      const root = rootRef.current;
-      const menu = menuRef.current;
-      if (!root || !menu) {
-        return;
-      }
-      const gap = 4;
-      const margin = 8; // keep the menu clear of the viewport edge
-      const rootRect = root.getBoundingClientRect();
-      const { top: topBoundary, bottom: bottomBoundary } = getPopoverViewportBounds();
-      const spaceBelow = bottomBoundary - rootRect.bottom - gap - margin;
-      const spaceAbove = rootRect.top - topBoundary - gap - margin;
-      const needed = menu.offsetHeight;
-      setOpenUp(needed > spaceBelow && spaceAbove > spaceBelow);
-    };
-    decide();
-    window.addEventListener("resize", decide);
-    return () => window.removeEventListener("resize", decide);
-  }, [open]);
+  const { openUp } = useMenuPosition({ open, onClose: () => setOpen(false), rootRef, menuRef });
 
   const select = (next) => {
     setOpen(false);
@@ -136,16 +89,7 @@ export function BadgePicker({ onOpen }) {
         <ChevronDown className="h-4 w-4 opacity-60" />
       </button>
       {open ? (
-        <div
-          ref={menuRef}
-          role="menu"
-          aria-label="Attached badge"
-          className={cn(
-            "absolute left-0 flex min-w-[9rem] flex-col overflow-hidden rounded-lg border border-border bg-card py-1 shadow-md",
-            LAYER.dropdown,
-            openUp ? "bottom-[calc(100%+4px)]" : "top-[calc(100%+4px)]",
-          )}
-        >
+        <MenuPanel ref={menuRef} openUp={openUp} padded role="menu" aria-label="Attached badge" className="min-w-[9rem]">
           {TRACK_BADGE_OPTIONS.map((id) => {
             const ui = TRACK_BADGE_UI[id];
             return (
@@ -170,7 +114,7 @@ export function BadgePicker({ onOpen }) {
               </button>
             );
           })}
-        </div>
+        </MenuPanel>
       ) : null}
     </div>
   );
