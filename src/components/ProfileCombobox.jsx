@@ -344,7 +344,7 @@ export function ProfileCombobox({ titleError = false }) {
         ref={inputRef}
         id="chart-title-input"
         value={title}
-        placeholder="Enter a name"
+        placeholder="Enter profile name"
         maxLength={MAX_PROFILE_NAME_LENGTH}
         aria-invalid={titleError}
         onChange={(e) => setTitle(e.target.value)}

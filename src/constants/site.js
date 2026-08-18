@@ -50,7 +50,7 @@ export const SITE_COPY = {
     lines: ["Pillar Engineer", "Growth Framework"],
   },
   // Shown muted as the chart title when the title field is blank but the title is enabled.
-  chartTitlePlaceholder: "<chart_title_here>",
+  chartTitlePlaceholder: "<profile_name_here>",
   share: {
     // Subject line for email share targets, so it takes the canonical form rather than the long one.
     title: "9-Pillar Engineer Growth Framework",
