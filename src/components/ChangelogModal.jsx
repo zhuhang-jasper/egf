@@ -1,6 +1,6 @@
 import { useId, useState } from "react";
 
-import { ChevronDown, Info } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 
 import { FullModal } from "@/components/ui/Modal";
 
@@ -85,21 +85,28 @@ function DraftEntry({ draft }) {
  */
 export function ChangelogModal({ open, onClose }) {
   return (
-    <FullModal open={open} onClose={onClose} title="Changelog" titleId="changelog-modal-title" closeLabel="Close changelog">
-      {/* Reads the version numbers below for you, so it sits at the top of the scroll port rather than in the
-          pinned header: the header is a title-plus-✕ strip, and a note there would never scroll away.
-
-          KEPT TO ONE LINE ON PURPOSE. It teaches a thing a reader needs once, ever, then pays rent at the top
-          of every visit — as a four-line block it outweighed the entries it exists to explain and pushed the
-          newest released version off the fold. The entries below demonstrate the distinction anyway; this only
-          has to name it. `text-xs` is the size the entry dates use, so the note reads as an aside. */}
-      <div className="mb-4 flex items-center gap-2 text-xs leading-snug text-slate-500">
-        <Info className="size-3.5 shrink-0 text-slate-400" aria-hidden />
+    <FullModal
+      open={open}
+      onClose={onClose}
+      title="Changelog"
+      titleId="changelog-modal-title"
+      closeLabel="Close changelog"
+      // Reads the version numbers below for you, so it belongs with the title rather than in the scroll
+      // port. It was the port's first child, where it blended into v4.3's bullets (same size, same weight,
+      // same alignment) and pushed the newest entry toward the fold.
+      //
+      // KEPT TO ONE LINE ON PURPOSE, and it does now pin. The earlier objection to the header was that a
+      // note there "would never scroll away" — that reasoning assumes a reader who opens this often enough
+      // to be taxed by it, and nobody re-reads a changelog. For the rare visitor it is new information
+      // every time, so it earns a fixed spot where it will actually be read. The entries below demonstrate
+      // the distinction anyway; this only has to name it.
+      subtitle={
         <p>
           <span className="font-semibold text-slate-600">Major</span> versions change the structure.{" "}
           <span className="font-semibold text-slate-600">Minor</span> versions refine the content.
         </p>
-      </div>
+      }
+    >
       {CHANGELOG_DRAFT ? <DraftEntry draft={CHANGELOG_DRAFT} /> : null}
 
       <ol className="flex flex-col gap-5">

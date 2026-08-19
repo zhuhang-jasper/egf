@@ -217,12 +217,16 @@ function SimpleModal({ title, icon: Icon = null, compactIcon = false, titleId, a
  *
  * Props: everything {@link Modal} takes, plus
  *   - title       — heading text, rendered in the header row and labelling the dialog.
+ *   - subtitle    — optional one-line aside under the title, inside the pinned header, spanning the full
+ *                   panel width (the ✕ shares the title's row, not the stack's). For framing the body
+ *                   needs ONCE ("how to read this list"), not for content: it never scrolls away, and it
+ *                   costs the fold nothing. Omitted entirely when absent.
  *   - closeLabel  — accessible name for BOTH the ✕ and the backdrop (default "Close").
  *   - footer      — optional content below the scroll port, pinned. Omitted entirely when absent, so
  *                   there is no empty bordered strip on a dialog that does not need one.
  *   - children    — the scrolling body.
  */
-function FullModal({ title, titleId, closeLabel = "Close", footer = null, initialFocusRef = null, children, ...modalProps }) {
+function FullModal({ title, subtitle = null, titleId, closeLabel = "Close", footer = null, initialFocusRef = null, children, ...modalProps }) {
   const closeButtonRef = useRef(null);
   return (
     <Modal
@@ -236,19 +240,38 @@ function FullModal({ title, titleId, closeLabel = "Close", footer = null, initia
       panelClassName="max-w-lg max-h-[85vh] overflow-hidden"
       {...modalProps}
     >
-      <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 px-5 py-3.5">
-        <h2 id={titleId} className="text-base font-bold text-slate-900">
-          {title}
-        </h2>
-        <button
-          ref={closeButtonRef}
-          type="button"
-          onClick={modalProps.onClose}
-          aria-label={closeLabel}
-          className="inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
-        >
-          <X className="size-4.5" aria-hidden />
-        </button>
+      {/* The ✕ sits in the TITLE ROW, not beside the whole stack, so the subtitle runs the full panel
+          width beneath both and only wraps when it truly needs to. Aligning the button against a
+          two-line block instead would float it to the middle and cost the subtitle the ✕'s width. */}
+      <header className="flex shrink-0 flex-col border-b border-slate-200 px-5 py-3.5">
+        <div className="flex items-start justify-between gap-3">
+          <h2 id={titleId} className="min-w-0 text-base font-bold text-slate-900">
+            {title}
+          </h2>
+          <button
+            ref={closeButtonRef}
+            type="button"
+            onClick={modalProps.onClose}
+            aria-label={closeLabel}
+            // Negative margins pull the button's 32px hit area back past the header padding on both
+            // axes, so the GLYPH — not the target box around it — sits at the header's top-right
+            // corner with the same visual inset as the title has on the left. `items-start` on the row
+            // is what makes the top pull possible: centring would re-split the leftover space.
+            //
+            // Both cancel the button's ~7px glyph inset so the GLYPH, not its 32px hit area, is what
+            // aligns. The values DIFFER because the header's padding is not square (`px-5 py-3.5`,
+            // 20px beside 14px) and is shared with the footer strip — the asymmetry is absorbed here
+            // rather than by squaring the header, which would change both strips' height.
+            // Right pulls 10px, landing the glyph ~17px in; top pulls 7px for the same ~17px once the
+            // h2's leading counts (`items-start` aligns to a 24px line box, not to cap height).
+            className="-mr-2.5 -mt-[7px] inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+          >
+            <X className="size-4.5" aria-hidden />
+          </button>
+        </div>
+        {/* `mt-2`, not a `gap` on the header: the gap would also push the FOOTERLESS one-line case,
+            where there is nothing below the title to separate from. */}
+        {subtitle ? <div className="mt-2 text-xs leading-snug text-slate-500">{subtitle}</div> : null}
       </header>
 
       {/* `min-h-0` is load-bearing — see the note above. */}
