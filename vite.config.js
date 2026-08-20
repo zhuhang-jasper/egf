@@ -5,10 +5,10 @@ import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import { fileURLToPath } from "url";
 
-import { generateMetaPlugin } from "./vite-plugins/generate-meta.plugin";
-import { ADMIN_PBKDF2, resolveAdminPasswordHash } from "./vite-plugins/resolve-admin-hash";
-import { resolveAppVersion } from "./vite-plugins/resolve-app-version";
-import { manualChunks } from "./vite.chunksplit";
+import { generateMetaPlugin } from "./vite-plugins/generate-meta.plugin.js";
+import { ADMIN_PBKDF2, resolveAdminPasswordHash } from "./vite-plugins/resolve-admin-hash.js";
+import { resolveAppVersion } from "./vite-plugins/resolve-app-version.js";
+import { manualChunks } from "./vite.chunksplit.js";
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 

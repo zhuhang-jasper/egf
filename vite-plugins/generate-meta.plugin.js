@@ -3,8 +3,8 @@ import path from "node:path";
 import { tz } from "@date-fns/tz";
 import { formatISO } from "date-fns";
 
-import { resolveAppVersion } from "./resolve-app-version";
-import { resolveFrameworkVersion } from "./resolve-framework-version";
+import { resolveAppVersion } from "./resolve-app-version.js";
+import { resolveFrameworkVersion } from "./resolve-framework-version.js";
 
 /**
  * Writes build metadata next to the bundle for deployment dashboards and support.
