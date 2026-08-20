@@ -1,13 +1,7 @@
 import { create } from "zustand";
 
 import { MAX_PROFILE_NAME_LENGTH, normalizeAttachedBadge } from "@/constants";
-import {
-  fillPillarLevels,
-  getDefaultChartState,
-  newSavedProfileId,
-  normalizeSavedState,
-  parseToCanonicalState,
-} from "@/constants/levels";
+import { fillPillarLevels, getDefaultChartState, newSavedProfileId, normalizeSavedState, parseToCanonicalState } from "@/constants/levels";
 import { track } from "@/utils/analytics";
 import { exportProfilesToFile, parseImportedProfiles } from "@/utils/profile-transfer";
 import {

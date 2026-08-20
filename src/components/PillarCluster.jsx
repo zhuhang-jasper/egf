@@ -59,17 +59,11 @@ export function PillarCluster({ group, onOpenPillarInMatrix }) {
       data-cluster={group.id}
       style={clusterCardStyle(cluster.surfaceBg, cluster.bezel)}
     >
-      <div
-        className={cn("mb-2 font-bold uppercase leading-tight tracking-[0.06em]", TOOL_TEXT.label)}
-        style={{ color: cluster.midtone }}
-      >
+      <div className={cn("mb-2 font-bold uppercase leading-tight tracking-[0.06em]", TOOL_TEXT.label)} style={{ color: cluster.midtone }}>
         {group.title}
       </div>
       {group.pillars.map((pillar) => (
-        <div
-          key={pillar.id}
-          className={cn("grid grid-cols-[1fr_auto] items-center w-full gap-0 leading-[1.35] text-slate-800", TOOL_TEXT.field)}
-        >
+        <div key={pillar.id} className={cn("grid grid-cols-[1fr_auto] items-center w-full gap-0 leading-[1.35] text-slate-800", TOOL_TEXT.field)}>
           <PillarLabel pillarId={pillar.id} />
           <span className="flex flex-row items-center justify-end shrink-0 gap-3 xs:gap-6">
             {onOpenPillarInMatrix ? (

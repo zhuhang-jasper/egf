@@ -222,10 +222,7 @@ function SeniorityStepper() {
           <div key={code} className={cn(cardClass, "flex items-center gap-2 p-3")}>
             <span className={cn(levelBadgeClass, "size-7", DOC_TEXT.badgeMd)}>{code}</span>
             <div className="flex min-w-0 flex-col gap-2">
-              <SeniorityPhaseTitle
-                phase={phase}
-                className={cn("min-w-0", DOC_TEXT.cardTitle, "font-bold")}
-              />
+              <SeniorityPhaseTitle phase={phase} className={cn("min-w-0", DOC_TEXT.cardTitle, "font-bold")} />
               <p className={DOC_TEXT.body}>{description}</p>
             </div>
           </div>
@@ -245,11 +242,7 @@ function SeniorityStepper() {
               <div className="flex justify-start">
                 <span className={cn(levelBadgeClass, "size-7 shrink-0", DOC_TEXT.badgeMd)}>{code}</span>
               </div>
-              <SeniorityPhaseTitle
-                phase={phase}
-                breakAfterSlash
-                className={cn("min-w-0", DOC_TEXT.cardTitle, "font-bold")}
-              />
+              <SeniorityPhaseTitle phase={phase} breakAfterSlash className={cn("min-w-0", DOC_TEXT.cardTitle, "font-bold")} />
               <p className={DOC_TEXT.body}>{description}</p>
             </div>
           ))}

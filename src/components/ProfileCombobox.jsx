@@ -436,9 +436,7 @@ export function ProfileCombobox({ titleError = false }) {
             />
           </div>
           {rows.length === 0 ? (
-            <p className={cn("px-3 py-2 text-muted-foreground", CONTROL_TEXT)}>
-              {profiles.length === 0 ? "No saved profiles yet." : "No matches."}
-            </p>
+            <p className={cn("px-3 py-2 text-muted-foreground", CONTROL_TEXT)}>{profiles.length === 0 ? "No saved profiles yet." : "No matches."}</p>
           ) : (
             <ul
               ref={listRef}

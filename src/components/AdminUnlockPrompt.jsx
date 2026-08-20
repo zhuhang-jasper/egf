@@ -90,13 +90,7 @@ export function AdminUnlockPrompt() {
               inline `onClose`); with that fixed, nothing re-focuses mid-type and the flip is inert.
               Keep `type="submit"` — Enter still submits from the field, so the disabled button never
               becomes the only way forward. */}
-          <Button
-            type="submit"
-            variant="default"
-            shape="pill"
-            className="justify-center"
-            disabled={password.trim() === "" || checking}
-          >
+          <Button type="submit" variant="default" shape="pill" className="justify-center" disabled={password.trim() === "" || checking}>
             {checking ? "Checking…" : "Unlock"}
           </Button>
           {/* Cancel leaves the app running underneath — see the docblock. */}

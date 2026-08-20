@@ -127,11 +127,7 @@ export const FE_UI = {
      * score cards' sub-label (an annotation on the value above it, not a label in its own right) and BadgePicker's
      * pill (an `em` box that stands taller than the text beside it, so it needs the smaller font to fit the row).
      */
-    secondaryLabelRungs: [
-      { fromChartWidthPx: 405, px: 12 },
-      { fromChartWidthPx: 355, px: 11 },
-      { px: 10 },
-    ],
+    secondaryLabelRungs: [{ fromChartWidthPx: 405, px: 12 }, { fromChartWidthPx: 355, px: 11 }, { px: 10 }],
     /** Floor for the rung table above — also the value a malformed table falls back to. */
     secondaryLabelMinPx: 10,
     /** md badge min width (em) — sized for the short "FE"/"BE" label. */

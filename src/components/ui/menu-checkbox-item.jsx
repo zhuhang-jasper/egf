@@ -14,9 +14,7 @@ import { cn } from "@/utils";
 export function MenuCheckboxItem({ label, checked, onChange, adminOnly = false, className }) {
   return (
     // select-none: these rows get clicked repeatedly to flip a setting.
-    <label
-      className={cn("flex cursor-pointer select-none items-center gap-2.5 rounded-md px-3 py-1.5 hover:bg-muted/60", CONTROL_TEXT, className)}
-    >
+    <label className={cn("flex cursor-pointer select-none items-center gap-2.5 rounded-md px-3 py-1.5 hover:bg-muted/60", CONTROL_TEXT, className)}>
       <input
         type="checkbox"
         checked={checked}

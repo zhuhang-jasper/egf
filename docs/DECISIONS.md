@@ -251,7 +251,7 @@ The app has one off-white token, `--color-page-base`, and the question of who pa
 landing. Cards are the light thing (`page-surface`, white); the page underneath them carries the tint. The
 header and bottom nav went through both roles: first they carried the tint while `main` was lighter than them,
 which made the chrome read as the darkest thing on screen — a dark frame around a pale middle, backwards from
-chrome that recedes. They now take `page-surface`, the same white the cards use, and sit as a layer *above*
+chrome that recedes. They now take `page-surface`, the same white the cards use, and sit as a layer _above_
 the tinted page rather than framing it.
 
 ### bottom-nav-colour-system
@@ -544,11 +544,11 @@ there is nothing to read Tailwind's scale from at runtime:
 **Every chart type size is an AUTHORED ENDPOINT, not a ratio of anything.** Three separate knobs, all in
 `FE_UI`:
 
-| what | knob | shape |
-| --- | --- | --- |
-| chart title (tool + theory hero) | `chart.titleRange` | two px endpoints, interpolated, rounded |
-| track badge (md) + cluster legend | `chart.secondaryLabelRungs` | rung table, integer px |
-| canvas axis labels | `chart.pointLabelPxRange` | two px endpoints, interpolated, fractional |
+| what                              | knob                        | shape                                      |
+| --------------------------------- | --------------------------- | ------------------------------------------ |
+| chart title (tool + theory hero)  | `chart.titleRange`          | two px endpoints, interpolated, rounded    |
+| track badge (md) + cluster legend | `chart.secondaryLabelRungs` | rung table, integer px                     |
+| canvas axis labels                | `chart.pointLabelPxRange`   | two px endpoints, interpolated, fractional |
 
 All three span `page.chartMinWidthPx` → `page.chartMaxWidthPx`, so they reach their maxima together, at the
 width the tool column caps at.
@@ -769,7 +769,7 @@ panel's own 900px cap never binds, since paper is narrower than that.
 `FE_UI.page.minWidthPx` used to be one number doing two jobs: the layout floor on `main`, and the narrow end
 of the chart's label-size ramp. When the chart moved inside a card, the ramp's floor genuinely needed to widen
 by the card's padding (the frame really did get narrower) — but raising `minWidthPx` to match also raised the
-*layout* floor, which had no reason to move, since the card only redistributes space the page already had. The
+_layout_ floor, which had no reason to move, since the card only redistributes space the page already had. The
 practical effect was the horizontal-scroll threshold moving from ~365px to ~389px for no benefit. The fix
 split the number in two: `minWidthPx` stayed the layout floor, and `chartMinWidthPx` (the frame width at that
 floor) is what the label-size ramp reads. If a future padding change appears to require widening the layout
@@ -814,12 +814,12 @@ A cluster's colour is not one hex reused at different opacities — it is up to 
 with exactly one consumer, because two failure modes showed up when they were collapsed:
 
 - **`chartBg`** fills the radar's cluster wedges and the legend swatch naming them (kept equal on purpose — a
-  legend explaining a colour not on the chart is worse than no legend). Filled at *full opacity* with no alpha
+  legend explaining a colour not on the chart is worse than no legend). Filled at _full opacity_ with no alpha
   in that drawing code, so it has to sit well below the accent's saturation: too vivid and the wedge competes
   with the data polygon drawn on top of it; too close to white and it disappears under the polygon entirely.
   Both were shipped and reverted before landing here.
 - **`color`** is the accent — bezels, titles, chip rings — and is deliberately more saturated than `chartBg`.
-- **`surfaceBg`** is the opaque card background. It used to be *derived* from `chartBg` via a fixed alpha
+- **`surfaceBg`** is the opaque card background. It used to be _derived_ from `chartBg` via a fixed alpha
   suffix, which meant retuning the card tint moved the chart's wedge colour too, and — being translucent — the
   card tint also drifted whenever the page background changed underneath it. Making it its own opaque value
   fixed both at once.
@@ -964,10 +964,10 @@ to clear, so the reasoning inverts and the margin should be as small as paper al
 **The app has two size ramps, and which one a piece of text takes is decided by the COLUMN it lives in, not by
 how big it should look.** Both are size-only; weight, colour and tracking stay with the component.
 
-| ramp | file | steps at | because its column caps at |
-| --- | --- | --- | --- |
-| `TOOL_TEXT` + `CONTROL_TEXT` | [control-typography.js](../src/styles/control-typography.js) | `xs` (470) once | `page.maxWidthPx` — viewport 470 |
-| `DOC_TEXT` / `DOC_SECTION` | [doc-typography.js](../src/styles/doc-typography.js) | `sm` (640), `md` (768) | `page.theoryMaxWidthPx` — 900 |
+| ramp                         | file                                                         | steps at               | because its column caps at       |
+| ---------------------------- | ------------------------------------------------------------ | ---------------------- | -------------------------------- |
+| `TOOL_TEXT` + `CONTROL_TEXT` | [control-typography.js](../src/styles/control-typography.js) | `xs` (470) once        | `page.maxWidthPx` — viewport 470 |
+| `DOC_TEXT` / `DOC_SECTION`   | [doc-typography.js](../src/styles/doc-typography.js)         | `sm` (640), `md` (768) | `page.theoryMaxWidthPx` — 900    |
 
 **A breakpoint outside its column's growth range does nothing but harm.** The tool tab's chrome was on the same
 three-tier `sm`/`md` ramp as the docs tab, so a control grew at 640 and again at 768 — 170px and 300px after the

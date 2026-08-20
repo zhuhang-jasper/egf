@@ -11,7 +11,7 @@ import { cn } from "@/utils";
  * `align` is which edge the panel hangs from. `padded` adds the `py-1` that row-based menus want and a menu with
  * its own header (the profile combobox's search box) does not.
  */
-export const MenuPanel = forwardRef(function MenuPanel({ openUp, align = "left", padded = false, className, children, ...props }, ref) {
+export const MenuPanel = forwardRef(({ openUp, align = "left", padded = false, className, children, ...props }, ref) => {
   return (
     <div
       ref={ref}
