@@ -229,9 +229,9 @@ export function ProfileCombobox({ titleError = false }) {
   // Then cap the scrollable list to ~6.5 rows or the space on the chosen side, so a row peeks and
   // the menu never spills off-screen. Mirrors ProfilePicker's old logic.
   useLayoutEffect(() => {
+    // No reset on close: both values are read only inside the `open` branch of the render, and
+    // `decide()` overwrites them before the menu is shown again.
     if (!open) {
-      setOpenUp(false);
-      setListMaxHeight(null);
       return;
     }
     const decide = () => {

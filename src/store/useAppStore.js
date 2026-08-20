@@ -97,6 +97,16 @@ function validateActiveId(activeSavedProfileId, profiles) {
   return activeSavedProfileId != null && profiles.some((p) => p.id === activeSavedProfileId) ? activeSavedProfileId : null;
 }
 
+// Which KIND of save this was, for analytics only: the single `profile_saved` event cannot otherwise
+// tell a first save from an in-place edit. The caller's `overwrite`/`copy` flags stay separate, since
+// they describe how the save was REACHED, not what it did.
+function saveMode(replaceIdx, overwrote, title) {
+  if (replaceIdx < 0) {
+    return "created";
+  }
+  return overwrote.title !== title ? "renamed" : "updated";
+}
+
 export const useAppStore = create((set, get) => ({
   title: initialDraft.title,
   pillarLevels: { ...initialDraft.pillarLevels },
@@ -146,7 +156,7 @@ export const useAppStore = create((set, get) => ({
   showToast: (message, { variant = "default", duration, action = null, key = null, keepDeleteBatch = false } = {}) => {
     // A toast with an action defaults to the longer undo window: acting on it is a decision, so it
     // outlives one that only reports. Call sites pass `duration` only to override that.
-    duration = duration ?? (action ? UNDO_TOAST_DURATION : DEFAULT_TOAST_DURATION);
+    duration ??= action ? UNDO_TOAST_DURATION : DEFAULT_TOAST_DURATION;
     const text = String(message ?? "").trim();
     if (!text) {
       return null;
@@ -601,10 +611,7 @@ export const useAppStore = create((set, get) => ({
     const overwrote = replaceIdx >= 0 ? existing[replaceIdx] : null;
     const undo = overwrote || removedSource ? { profiles: existing, activeSavedProfileId: get().activeSavedProfileId } : null;
 
-    // Which KIND of save this was, for analytics only — the single `profile_saved` event cannot otherwise
-    // tell a first save from an in-place edit. The caller's `overwrite`/`copy` flags stay separate: they
-    // describe how the save was REACHED, not what it did.
-    const mode = replaceIdx < 0 ? "created" : overwrote.title !== state.title ? "renamed" : "updated";
+    const mode = saveMode(replaceIdx, overwrote, state.title);
 
     // Count only writes that ADD a row, so the reminder tracks profiles accumulated rather than saves made.
     // Deliberately NOT undone by restoreProfiles: an undo cannot un-show a modal the user has read, and

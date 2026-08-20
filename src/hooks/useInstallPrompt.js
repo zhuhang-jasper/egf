@@ -100,7 +100,9 @@ function isIosSafari() {
  */
 export function useInstallPrompt(source) {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [iosHint, setIosHint] = useState(false);
+  // A pure UA read that cannot change over the hook's life, so a plain const rather than state:
+  // there is nothing to store or set.
+  const iosHint = isIosSafari();
   const [installed, setInstalled] = useState(() => isStandalone());
 
   useEffect(() => {
@@ -129,10 +131,6 @@ export function useInstallPrompt(source) {
       track("install_completed", { method: "appinstalled_event", source });
     };
     window.addEventListener("appinstalled", onInstalled);
-
-    if (isIosSafari()) {
-      setIosHint(true);
-    }
 
     return () => {
       window.removeEventListener("beforeinstallprompt", onBeforeInstall);

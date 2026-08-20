@@ -300,7 +300,6 @@ function PosterRadar({ levels, size, showClusters = false, showPolygon = true, s
   const canvasRef = useRef(null);
   useLayoutEffect(() => {
     const d = FE_UI.dataset;
-    const ch = FE_UI.chart;
     const chart = new Chart(canvasRef.current, {
       type: "radar",
       data: {

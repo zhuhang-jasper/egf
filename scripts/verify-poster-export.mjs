@@ -32,29 +32,27 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const CHROME = process.env.CHROME_PATH || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
-const BASE_URL = process.argv[2] || "http://localhost:5174";
-const POSTER_URL = `${BASE_URL}/poster`;
-const DEBUG_PORT = 9339;
-const EXPECT_W = 2160; // CANVAS_W (1080) × export scale (2)
-// Height is content-driven: PosterPage measures the article and only falls back to CANVAS_W * 1.5
-// (1620 → 3240). So assert the width exactly and the height as a sane 2×-of-tall-poster range,
-// or every copy edit that reflows the poster fails this check for no reason.
-const MIN_H = 2400;
-const MAX_H = 4200;
-
-// `/poster` IS ADMIN-GATED (see src/App.jsx): a visitor without the unlock flag is sent to the tool
-// instead. This run always starts from a fresh `--user-data-dir`, so localStorage is empty and the gate
-// would fire on every navigation — hence seeding the flag below, before the page's own scripts run.
-//
-// MUST MATCH ADMIN_UNLOCK_KEY in src/constants/storage.js. Duplicated because this script talks to a
-// built/served app over CDP and cannot import from the bundle; if that key is ever bumped again, the
-// "did not land on /poster" check below is what tells you, rather than seven inscrutable failures.
-// Seeding the flag rather than visiting `?admin=1` deliberately skips the password prompt: a
-// `window.prompt` in headless Chrome is a CDP dialog to intercept, which is a race this does not need.
-const ADMIN_UNLOCK_KEY = "fe-growth-framework:admin:v3";
-
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const CHROME = process.env.CHROME_PATH || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+  BASE_URL = process.argv[2] || "http://localhost:5174",
+  POSTER_URL = `${BASE_URL}/poster`,
+  DEBUG_PORT = 9339,
+  EXPECT_W = 2160, // CANVAS_W (1080) × export scale (2)
+  // Height is content-driven: PosterPage measures the article and only falls back to CANVAS_W * 1.5
+  // (1620 → 3240). So assert the width exactly and the height as a sane 2×-of-tall-poster range,
+  // or every copy edit that reflows the poster fails this check for no reason.
+  MIN_H = 2400,
+  MAX_H = 4200,
+  // `/poster` IS ADMIN-GATED (see src/App.jsx): a visitor without the unlock flag is sent to the tool
+  // instead. This run always starts from a fresh `--user-data-dir`, so localStorage is empty and the gate
+  // would fire on every navigation — hence seeding the flag below, before the page's own scripts run.
+  //
+  // MUST MATCH ADMIN_UNLOCK_KEY in src/constants/storage.js. Duplicated because this script talks to a
+  // built/served app over CDP and cannot import from the bundle; if that key is ever bumped again, the
+  // "did not land on /poster" check below is what tells you, rather than seven inscrutable failures.
+  // Seeding the flag rather than visiting `?admin=1` deliberately skips the password prompt: a
+  // `window.prompt` in headless Chrome is a CDP dialog to intercept, which is a race this does not need.
+  ADMIN_UNLOCK_KEY = "fe-growth-framework:admin:v3",
+  sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function cdpHttp(path) {
   const res = await fetch(`http://127.0.0.1:${DEBUG_PORT}${path}`);
@@ -169,8 +167,8 @@ const RENDER_AND_ASSERT = `(async () => {
   }
 })()`;
 
-let chrome;
-let pass = false;
+let chrome,
+  pass = false;
 const userDataDir = mkdtempSync(join(tmpdir(), "egf-poster-verify-"));
 try {
   chrome = spawn(CHROME, [
@@ -202,11 +200,10 @@ try {
 
   const browserWs = new WebSocket(version.webSocketDebuggerUrl);
   await new Promise((r) => browserWs.addEventListener("open", r));
-  const browser = new CDP(browserWs);
-
-  const { targetId } = await browser.send("Target.createTarget", { url: "about:blank" });
-  const pageTarget = (await cdpHttp("/json")).find((t) => t.id === targetId);
-  const pageWs = new WebSocket(pageTarget.webSocketDebuggerUrl);
+  const browser = new CDP(browserWs),
+    { targetId } = await browser.send("Target.createTarget", { url: "about:blank" }),
+    pageTarget = (await cdpHttp("/json")).find((t) => t.id === targetId),
+    pageWs = new WebSocket(pageTarget.webSocketDebuggerUrl);
   await new Promise((r) => pageWs.addEventListener("open", r));
   const page = new CDP(pageWs);
 
@@ -231,8 +228,8 @@ try {
     throw new Error(`Admin gate redirected to ${onPoster.result.value} — ADMIN_UNLOCK_KEY in this script no longer matches src/constants/storage.js`);
   }
 
-  const res = await page.send("Runtime.evaluate", { expression: RENDER_AND_ASSERT, awaitPromise: true, returnByValue: true });
-  const out = JSON.parse(res.result.value);
+  const res = await page.send("Runtime.evaluate", { expression: RENDER_AND_ASSERT, awaitPromise: true, returnByValue: true }),
+    out = JSON.parse(res.result.value);
   console.log("RESULT:", JSON.stringify(out, null, 2));
 
   const checks = [

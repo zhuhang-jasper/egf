@@ -92,7 +92,7 @@ function TrackRoleSequence({ roleLevels, badgeBg, badgeColor }) {
   );
 }
 
-function ChartPanel({ levels, title, focusedPillars, className, animateDataChanges = false, emojiSpokes = false }) {
+function ChartPanel({ levels, title, focusedPillars: _focusedPillars, className, animateDataChanges = false, emojiSpokes = false }) {
   return (
     <div className={className}>
       <StaticCompetencyChart
