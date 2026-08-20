@@ -44,10 +44,13 @@ import { THEORY_SECTIONS } from "@/utils/theory-url";
 export const CHANGELOG_DRAFT = {
   version: "4.3",
   changes: [
-    "Pillars: added Delivery Sequencing (Process), Delegation (Ownership), and Auditability (Architecture).",
-    "Pillars: Communication Clarity is now Proactive Updates (Communication), Technical Documentation is now Documentation (Communication), Build Tooling is now Toolchain Design (Architecture).",
-    "Pillars: Presentation & Speaking Up (Communication) split into two focus areas. Framework Proficiency moved from Architecture to Coding.",
-    "Competency Matrix: cells reworked across five pillars.",
+    "Pillars: added Delivery Sequencing (Process) and Delegation (Ownership).",
+    "Pillars: Communication Clarity is now Proactive Updates, Technical Documentation is now Documentation, Build Tooling is now Toolchain Design, Component Reuse is now Component Design, BAU Domain Fluency is now BAU Knowledge.",
+    "Pillars: Commitment Accountability and Presentation & Speaking Up each split into two focus areas. Framework Proficiency moved from Architecture to Coding.",
+    "Competency Matrix: Stakeholder Reporting, Data Modeling, Component Design, Perceived Performance, User Empathy, Design System Alignment, and Accessibility moved to a different skill tier.",
+    "Competency Matrix: 40 of the 45 cells reworked, across all nine pillars. Cells now describe the outcome rather than the method, so a named tactic is no longer the passing answer. UI/UX is the heaviest rewrite, pulling L4 and L5 back to what a frontend engineer owns.",
+    "Competency Matrix: UI/UX L5 persona renamed to The Experience Architect.",
+    "Competency Matrix: L1 cells rewritten so each opens with what the person can already do, then what still needs support. Instead of a list of failures.",
   ],
 };
 
