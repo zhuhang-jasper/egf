@@ -6,7 +6,7 @@
  * navigates to the running dev server's /poster route, reproduces the export's off-screen-clone
  * render path, and asserts:
  *
- *   1. The PNG is the expected 2× resolution (2160 × 3240).
+ *   1. The PNG is the expected 2× width (2160) and a plausible content-driven height.
  *   2. It is not blank — a row 72% down the image (inside the career-tracks band) has coloured
  *      pixels, proving the *entire* poster was captured, not just the top header band.
  *   3. The on-screen <article> rect is unchanged before vs. after the render, proving the export
@@ -37,7 +37,11 @@ const BASE_URL = process.argv[2] || "http://localhost:5174";
 const POSTER_URL = `${BASE_URL}/poster`;
 const DEBUG_PORT = 9339;
 const EXPECT_W = 2160; // CANVAS_W (1080) × export scale (2)
-const EXPECT_H = 3240; // CANVAS_H (1620) × export scale (2)
+// Height is content-driven: PosterPage measures the article and only falls back to CANVAS_W * 1.5
+// (1620 → 3240). So assert the width exactly and the height as a sane 2×-of-tall-poster range,
+// or every copy edit that reflows the poster fails this check for no reason.
+const MIN_H = 2400;
+const MAX_H = 4200;
 
 // `/poster` IS ADMIN-GATED (see src/App.jsx): a visitor without the unlock flag is sent to the tool
 // instead. This run always starts from a fresh `--user-data-dir`, so localStorage is empty and the gate
@@ -48,7 +52,7 @@ const EXPECT_H = 3240; // CANVAS_H (1620) × export scale (2)
 // "did not land on /poster" check below is what tells you, rather than seven inscrutable failures.
 // Seeding the flag rather than visiting `?admin=1` deliberately skips the password prompt: a
 // `window.prompt` in headless Chrome is a CDP dialog to intercept, which is a race this does not need.
-const ADMIN_UNLOCK_KEY = "fe-growth-framework:admin:v2";
+const ADMIN_UNLOCK_KEY = "fe-growth-framework:admin:v3";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -233,7 +237,8 @@ try {
 
   const checks = [
     [out.ok, "render succeeded"],
-    [out.width === EXPECT_W && out.height === EXPECT_H, `dimensions are ${EXPECT_W}×${EXPECT_H}`],
+    [out.width === EXPECT_W, `width is ${EXPECT_W}`],
+    [out.height >= MIN_H && out.height <= MAX_H, `height ${out.height} is within ${MIN_H}-${MAX_H} (content-driven)`],
     [out.bytes > 50_000, "PNG is non-trivial (>50KB)"],
     [out.nonWhiteTracksRow > 100, "tracks band has content (not a clipped header)"],
     [out.liveRectUnchanged, "live preview did not re-scale (no flicker)"],
