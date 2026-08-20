@@ -41,20 +41,43 @@ import { THEORY_SECTIONS } from "@/utils/theory-url";
  * TO PUBLISH: add `date`, add `sections`, move the object into CHANGELOG's first slot, and set this to null.
  * That one move is what bumps the framework version.
  */
-export const CHANGELOG_DRAFT = {
-  version: "4.3",
-  changes: [
-    "Pillars: added Delivery Sequencing (Process) and Delegation (Ownership).",
-    "Pillars: Communication Clarity is now Proactive Updates, Technical Documentation is now Documentation, Build Tooling is now Toolchain Design, Component Reuse is now Component Design, BAU Domain Fluency is now BAU Knowledge.",
-    "Pillars: Commitment Accountability and Presentation & Speaking Up each split into two focus areas. Framework Proficiency moved from Architecture to Coding.",
-    "Competency Matrix: Stakeholder Reporting, Data Modeling, Component Design, Perceived Performance, User Empathy, Design System Alignment, and Accessibility moved to a different skill tier.",
-    "Competency Matrix: 40 of the 45 cells reworked, across all nine pillars. Cells now describe the outcome rather than the method, so a named tactic is no longer the passing answer. UI/UX is the heaviest rewrite, pulling L4 and L5 back to what a frontend engineer owns.",
-    "Competency Matrix: UI/UX L5 persona renamed to The Experience Architect.",
-    "Competency Matrix: L1 cells rewritten so each opens with what the person can already do, then what still needs support. Instead of a list of failures.",
-  ],
-};
+export const CHANGELOG_DRAFT = null;
 
 export const CHANGELOG = [
+  {
+    version: "4.3",
+    date: "Aug 20, 2026",
+    sections: ["pillars", "matrix"],
+    // Levels whose bar actually MOVED, judged per cell. Not "was this rewritten" — 40 of the 45
+    // cells were reworked, and most kept the same bar (the L1 reframing pass is the clearest case:
+    // same expectations, opened with what the person can already do instead of a list of failures).
+    // `barRaised` = someone rated there may no longer clear it. `barEased` = they may now clear more.
+    // Omit a pillar when nothing in it moved; omit the field when no pillar did.
+    barRaised: {
+      coding: [2, 3],
+      domainLogic: [1, 5],
+      architecture: [1, 2, 3, 5],
+      ai: [3],
+      uiUx: [1, 3, 4, 5],
+      productSense: [1, 3, 4],
+      process: [2, 3, 4],
+      communication: [1, 2, 3, 4],
+      ownership: [1, 4, 5],
+    },
+    barEased: {
+      domainLogic: [2],
+      uiUx: [2],
+    },
+    changes: [
+      "Pillars: added Delivery Sequencing (Process) and Delegation (Ownership).",
+      "Pillars: Communication Clarity is now Proactive Updates, Technical Documentation is now Documentation, Build Tooling is now Toolchain Design, Component Reuse is now Component Design, BAU Domain Fluency is now BAU Knowledge.",
+      "Pillars: Commitment Accountability and Presentation & Speaking Up each split into two focus areas. Framework Proficiency moved from Architecture to Coding.",
+      "Competency Matrix: Stakeholder Reporting, Data Modeling, Component Design, Perceived Performance, User Empathy, Design System Alignment, and Accessibility moved to a different skill tier.",
+      "Competency Matrix: 40 of the 45 cells reworked, across all nine pillars. Cells now describe the outcome rather than the method, so a named tactic is no longer the passing answer. UI/UX is the heaviest rewrite, pulling L4 and L5 back to what a frontend engineer owns.",
+      "Competency Matrix: UI/UX L5 persona renamed to The Experience Architect.",
+      "Competency Matrix: L1 cells rewritten so each opens with what the person can already do, then what still needs support. Instead of a list of failures.",
+    ],
+  },
   {
     version: "4.2",
     date: "Aug 7, 2026",

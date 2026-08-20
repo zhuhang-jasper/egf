@@ -118,7 +118,7 @@ const PILLAR_ABOUT_COPY = {
   coding: {
     focusTiers: {
       foundational: "Language Proficiency, Naming Convention, Code Navigation, Data Structures",
-      core: "Debugging, Error Handling, Design Patterns, Refactoring, Coupling & Cohesion, Testing Discipline",
+      core: "Debugging, Error Handling, Framework Proficiency, Design Patterns, Refactoring, Coupling & Cohesion, Testing Discipline",
       advanced: "Concurrency, Algorithms & Problem-Solving",
     },
     signatureQuestion: "Am I writing code that others can easily read and modify?",
@@ -133,9 +133,9 @@ const PILLAR_ABOUT_COPY = {
   },
   architecture: {
     focusTiers: {
-      foundational: "Framework Proficiency",
-      core: "Data Modeling, State & Storage, API Design, Integration & Research, Performance",
-      advanced: "Build Tooling, System Boundaries, Architectural Patterns, Secure Design, Resilience Design, Scalability, Observability",
+      foundational: "Data Modeling",
+      core: "State & Storage, API Design, Integration & Research, Performance",
+      advanced: "Toolchain Design, System Boundaries, Architectural Patterns, Secure Design, Resilience Design, Scalability, Observability",
     },
     signatureQuestion: "Am I designing systems that perform, scale, and survive?",
   },
@@ -149,9 +149,9 @@ const PILLAR_ABOUT_COPY = {
   },
   uiUx: {
     focusTiers: {
-      foundational: "Visual Fidelity, Detail Accuracy, Component Reuse",
-      core: "Responsive Layout, Design System Alignment, Accessibility, UI Improvisation, User Empathy, UX Writing",
-      advanced: "Perceived Performance, Interaction Design",
+      foundational: "Visual Fidelity, Detail Accuracy",
+      core: "Responsive Layout, Component Design, UI Improvisation, Perceived Performance, UX Writing, Accessibility",
+      advanced: "Design System Alignment, User Empathy, Interaction Design",
     },
     signatureQuestion: "Am I creating an intuitive and frictionless interface?",
     note: "Backend engineers touch this pillar less often, mainly through internal tools they build and by sensing how their work affects the end user's experience. A flatter UI/UX corner is a normal backend shape, not a gap to fix.",
@@ -168,23 +168,23 @@ const PILLAR_ABOUT_COPY = {
     focusTiers: {
       foundational: "SOP Compliance, Git Workflow",
       core: "Codebase Traffic, Code Review Practice, Dependencies & Blockers, Release Management",
-      advanced: "Process Automation, Team Efficiency",
+      advanced: "Delivery Sequencing, Process Automation, Team Efficiency",
     },
     signatureQuestion: "Am I making it faster and easier for the team to ship?",
   },
   communication: {
     focusTiers: {
-      foundational: "Communication Clarity, Active Listening, Stakeholder Reporting",
-      core: "Technical Translation, Presentation & Speaking Up, Technical Documentation, Feedback Exchange",
+      foundational: "Proactive Updates, Active Listening, Presentation",
+      core: "Technical Translation, Stakeholder Reporting, Documentation, Feedback Exchange, Speaking Up",
       advanced: "Cross-Team Alignment, Conflict Mediation",
     },
     signatureQuestion: "Am I sharing the right context with the right people?",
   },
   ownership: {
     focusTiers: {
-      foundational: "Reliability, Drive & Follow-Through, Commitment Accountability",
-      core: "Effort Estimation, BAU Domain Fluency, Incident Resolution",
-      advanced: "Initiative & De-risking, Codebase Health, Knowledge Resilience",
+      foundational: "Reliability, Drive & Follow-Through, Commitment, Accountability",
+      core: "Effort Estimation, BAU Knowledge, Incident Resolution",
+      advanced: "Initiative & De-risking, Codebase Health, Delegation, Knowledge Resilience",
     },
     signatureQuestion: "Am I ensuring this crosses the finish line?",
   },
