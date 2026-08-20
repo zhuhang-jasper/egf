@@ -1101,14 +1101,32 @@ that the paths do not work for someone who merely knows or guesses them, which i
 Making these pages truly unavailable means **not shipping them**: a build-time flag plus dynamic imports so
 Rollup drops the chunks, not a stricter runtime test.
 
-The same reasoning caps the password in `constants/features.js`. It is injected from the
-`VITE_ADMIN_PASSWORD` Actions secret at build time rather than hardcoded, which keeps it out of the public
-repo and its history, but the value still ships inside the bundle where anyone can read it. That is a
-tidiness win, not a security one: it stops a colleague handed the URL and nobody determined. Anything that
-genuinely needs protecting needs a server, not a hidden string.
+The same reasoning caps the password in `constants/features.js`. It comes from the `VITE_ADMIN_PASSWORD`
+Actions secret and is **hashed at build time** (PBKDF2-SHA256, 600k iterations, `vite-plugins/resolve-admin-hash.js`)
+so only the digest reaches the bundle. Two distinct things follow, and conflating them is the trap:
 
-When the var is unset (local dev, preview, forks) admin stays locked instead of falling back to a literal,
-mirroring how `VITE_GA_ID` degrades GA to a no-op. Use a local `.env.local` to work on the gated routes.
+- **The current password is protected.** It is not in the repo and not greppable in the shipped JS.
+  Recovering it means cracking the digest, which the iteration count makes expensive. Note this covers the
+  CURRENT password only: the pre-hash one was a literal in a public repo and is still in git history, which
+  is why retiring it meant both rotating the value and bumping `ADMIN_UNLOCK_KEY` (a rotation alone would
+  have left every already-unlocked device unlocked).
+- **The gate is not.** The comparison still runs in the browser, so nobody needs the password: the unlock
+  flag is writable by hand in devtools. Hashing raises the cost of stealing a reusable credential; it adds
+  nothing against someone who just wants past the gate.
+
+So the honest summary is unchanged: this stops a colleague handed the URL and nobody determined. Making these
+pages truly unavailable still means not shipping them (the build-flag + dynamic-import route above), and
+anything that genuinely needs protecting still needs a server.
+
+Both sides of the derivation must stay in lockstep — the parameters live in one exported `ADMIN_PBKDF2`
+object that the plugin and `features.js` both read, because changing either alone silently invalidates every
+password. The salt is in that object as a constant, not a secret: it ships in the bundle and exists to defeat
+precomputed tables. `unlockAdmin` is therefore `async` (WebCrypto's `deriveBits` has no sync form), which is
+safe only because it is called from a submit handler and never from the module-eval path `IS_ADMIN` depends
+on — see the ordering constraints below.
+
+When the hash is absent (local dev, preview, fork PRs) admin stays locked instead of falling back, mirroring
+how `VITE_GA_ID` degrades GA to a no-op. Set `VITE_ADMIN_PASSWORD` in `.env.local` to work on gated routes.
 
 **Two ordering constraints follow, and both are easy to break:**
 

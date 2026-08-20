@@ -24,10 +24,20 @@ export const THEORY_SEEN_SECTIONS_KEY = "fe-growth-framework:theory-seen-section
 export const THEORY_SECTION_PROGRESS_KEY = "fe-growth-framework:theory-section-progress:v1";
 
 /**
- * Admin unlock (see features.js). `:v2` invalidates every pre-password unlock, which is why it was bumped:
- * the prompt is skipped for an already-unlocked device, so keeping `:v1` would have gated new devices only.
+ * Admin unlock (see features.js). The suffix is bumped whenever the password itself is retired, because the
+ * prompt is skipped for an already-unlocked device: without a bump, a new password would gate new devices
+ * only and every device unlocked under the old one would stay in.
+ *
+ * `:v2` invalidated every pre-password unlock. `:v3` invalidates every unlock made with the pre-hash
+ * password, which was a plain literal in a public repo and is therefore permanently compromised.
+ *
+ * A bump costs nothing but a re-entry for the DATA that matters: profiles, pillar levels and titles live in
+ * their own keys and are never touched. The five admin-gated chart toggles are the exception — a locked load
+ * reads them as their defaults and the next persistDraft writes that back (see parseChartDisplay), so they
+ * are reset rather than preserved. Accepted deliberately: there is one admin, and re-setting a few display
+ * toggles is cheaper than keeping dormant state alive for every public user.
  */
-export const ADMIN_UNLOCK_KEY = "fe-growth-framework:admin:v2";
+export const ADMIN_UNLOCK_KEY = "fe-growth-framework:admin:v3";
 
 /**
  * Epoch ms of the last install-banner dismissal, read back as a cooldown. The header pill ignores it
@@ -62,10 +72,17 @@ export const BACKUP_REMINDER_EVERY = 10;
  *
  * An explicit list, NEVER a `:v1` pattern sweep: STORAGE_KEY and PROFILES_STORAGE_KEY are still `:v1` and
  * live, so a version-suffix sweep would delete every saved profile. A key belongs here only if nothing reads
- * it and nothing can delete it at a better moment. On a future `:v3`, replace the entry rather than
- * appending: this holds at most one retired name per key.
+ * it and nothing can delete it at a better moment.
+ *
+ * EVERY superseded generation stays listed, not just the most recent one. A device that has not loaded the
+ * app since before a bump still holds that generation's key, and dropping the name is what would strand it
+ * permanently — nothing else ever deletes it. Listing them all is free: the sweep names exact keys (so it
+ * carries none of the pattern risk above) and `removeItem` on an absent key is a no-op.
  */
 export const RETIRED_STORAGE_KEYS = [
-  // Pre-password admin unlock, superseded by `:v2` above. Nothing reads it; the bump was the lockout.
+  // Pre-password admin unlock, superseded by `:v2`. Nothing reads it; the bump was the lockout.
   "fe-growth-framework:admin:v1",
+  // Unlocks made with the pre-hash password, superseded by `:v3` above. That password shipped as a literal
+  // in a public repo, so every unlock it granted is void — see the ADMIN_UNLOCK_KEY note.
+  "fe-growth-framework:admin:v2",
 ];

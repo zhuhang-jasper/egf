@@ -6,6 +6,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 import { generateMetaPlugin } from "./vite-plugins/generate-meta.plugin";
+import { ADMIN_PBKDF2, resolveAdminPasswordHash } from "./vite-plugins/resolve-admin-hash";
 import { resolveAppVersion } from "./vite-plugins/resolve-app-version";
 import { manualChunks } from "./vite.chunksplit";
 
@@ -29,6 +30,9 @@ export default defineConfig({
   define: {
     "__APP_BUILD_TIME__": JSON.stringify(new Date().toISOString()),
     "import.meta.env.VITE_APP_VERSION": JSON.stringify(resolveAppVersion()),
+    // Hashed at build time so the plaintext password never reaches the bundle.
+    "import.meta.env.VITE_ADMIN_PASSWORD_HASH": JSON.stringify(resolveAdminPasswordHash()),
+    "import.meta.env.VITE_ADMIN_PBKDF2": JSON.stringify(ADMIN_PBKDF2),
   },
   build: {
     rollupOptions: {

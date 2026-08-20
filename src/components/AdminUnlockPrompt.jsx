@@ -26,24 +26,33 @@ export function AdminUnlockPrompt() {
   const [dismissed, setDismissed] = useState(false);
   const [password, setPassword] = useState("");
   const [wrong, setWrong] = useState(false);
+  // True while PBKDF2 runs. Only gates the submit; the field stays editable so a typo can be fixed.
+  const [checking, setChecking] = useState(false);
   // Handed to SimpleModal as `initialFocusRef` rather than left to the field's own `autoFocus`: the
   // dialog focuses something on open regardless, and its fallback is the panel — which would take focus
   // straight back off the input. Naming the field makes the dialog's choice and ours the same one.
   const passwordRef = useRef(null);
 
-  const submit = (event) => {
+  const submit = async (event) => {
     event.preventDefault();
+    // Hashing is deliberately slow (PBKDF2, 600k iterations), so on a phone this is a visible pause.
+    // Guard against a second submit landing mid-derivation and disable the button while it runs.
+    if (checking) {
+      return;
+    }
+    setChecking(true);
     // Two events rather than one with an `outcome` param, because a SUCCESS never gets to report itself:
     // `unlockAdmin` reloads the page, and an event queued on the way out is unlikely to leave the tab.
     // So the attempt is recorded up front (always sends) and only the failure is recorded after — the
     // success count is attempts minus failures. The password is never sent as a param.
     track("admin_unlock_attempt");
-    // `unlockAdmin` returning at all means the password was wrong — on success the page reloads.
-    const failed = !unlockAdmin(password);
+    // `unlockAdmin` resolving at all means the password was wrong — on success the page reloads.
+    const failed = !(await unlockAdmin(password));
     if (failed) {
       track("admin_unlock_failed");
     }
     setWrong(failed);
+    setChecking(false);
   };
 
   return (
@@ -81,8 +90,14 @@ export function AdminUnlockPrompt() {
               inline `onClose`); with that fixed, nothing re-focuses mid-type and the flip is inert.
               Keep `type="submit"` — Enter still submits from the field, so the disabled button never
               becomes the only way forward. */}
-          <Button type="submit" variant="default" shape="pill" className="justify-center" disabled={password.trim() === ""}>
-            Unlock
+          <Button
+            type="submit"
+            variant="default"
+            shape="pill"
+            className="justify-center"
+            disabled={password.trim() === "" || checking}
+          >
+            {checking ? "Checking…" : "Unlock"}
           </Button>
           {/* Cancel leaves the app running underneath — see the docblock. */}
           <Button type="button" variant="outline" shape="pill" className="justify-center" onClick={() => setDismissed(true)}>

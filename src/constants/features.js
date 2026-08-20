@@ -6,11 +6,15 @@ import { ADMIN_UNLOCK_KEY } from "@/constants/storage";
  * URL is already correct before React mounts and this need not react mid-session. localStorage access is
  * guarded, so a disabled store simply stays locked.
  *
- * The password is injected from the VITE_ADMIN_PASSWORD GitHub Actions secret at build time. It still lands
- * in the bundle and stops nobody determined. See docs/DECISIONS.md#admin-gating-is-not-a-security-boundary.
- * When the var is unset (local dev, preview, forks) admin stays locked rather than falling back to a literal.
+ * The password is hashed at build time (PBKDF2, see vite-plugins/resolve-admin-hash.js) from the
+ * VITE_ADMIN_PASSWORD Actions secret, so only the digest ships. That keeps the plaintext out of the bundle;
+ * it does NOT protect the gate, which is still a client-side check anyone can bypass in devtools.
+ * See docs/DECISIONS.md#admin-gating-is-not-a-security-boundary.
+ *
+ * When the hash is absent (local dev, preview, forks) admin stays locked rather than falling back.
  */
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
+const ADMIN_PASSWORD_HASH = import.meta.env.VITE_ADMIN_PASSWORD_HASH;
+const PBKDF2 = import.meta.env.VITE_ADMIN_PBKDF2;
 
 function stripAdminParam() {
   try {
@@ -36,7 +40,7 @@ function resolveAdminState() {
     return { isAdmin: false, passwordRequested: false };
   }
   // No password configured (local dev, preview, forks): stay locked. Asking would be unanswerable.
-  if (!ADMIN_PASSWORD) {
+  if (!ADMIN_PASSWORD_HASH) {
     stripAdminParam();
     return { isAdmin: false, passwordRequested: false };
   }
@@ -69,6 +73,48 @@ export const IS_ADMIN = ADMIN_STATE.isAdmin;
 export const ADMIN_PASSWORD_REQUESTED = ADMIN_STATE.passwordRequested;
 
 /**
+ * PBKDF2 over WebCrypto, matching the build-time parameters exactly. Async by nature — `deriveBits` has no
+ * sync form — which is why `unlockAdmin` is async and only ever called from an event handler, never on the
+ * module-eval path that `IS_ADMIN` depends on.
+ *
+ * Returns "" when crypto.subtle is unavailable (non-secure context), which reads as a failed unlock.
+ */
+async function derivePasswordHash(password) {
+  if (!password || !globalThis.crypto?.subtle) {
+    return "";
+  }
+  const encoder = new TextEncoder();
+  try {
+    const key = await crypto.subtle.importKey("raw", encoder.encode(password), "PBKDF2", false, ["deriveBits"]);
+    const bits = await crypto.subtle.deriveBits(
+      {
+        name: "PBKDF2",
+        salt: encoder.encode(PBKDF2.salt),
+        iterations: PBKDF2.iterations,
+        hash: PBKDF2.hash,
+      },
+      key,
+      PBKDF2.keyLengthBytes * 8,
+    );
+    return Array.from(new Uint8Array(bits), (byte) => byte.toString(16).padStart(2, "0")).join("");
+  } catch {
+    return "";
+  }
+}
+
+/** Constant-time string compare, so a wrong answer's failure point is not observable in the timing. */
+function timingSafeEqual(a, b) {
+  if (a.length !== b.length) {
+    return false;
+  }
+  let diff = 0;
+  for (let i = 0; i < a.length; i += 1) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
+/**
  * Check `password` and, if it is right, unlock and RELOAD.
  *
  * The reload is what keeps `IS_ADMIN` a plain module constant: everything derived from it is computed at
@@ -79,11 +125,15 @@ export const ADMIN_PASSWORD_REQUESTED = ADMIN_STATE.passwordRequested;
  * `.trim()` because a soft keyboard will happily append a space, and a trailing space is an invisible
  * wrong password.
  *
- * @returns false when the password is wrong. On success it does not return — the page reloads.
+ * @returns a promise resolving false when the password is wrong. On success the page reloads instead.
  */
-export function unlockAdmin(password) {
-  // Guard the unset case explicitly: an empty answer must not match an absent ADMIN_PASSWORD.
-  if (!ADMIN_PASSWORD || password.trim() !== ADMIN_PASSWORD) {
+export async function unlockAdmin(password) {
+  // Guard the unset case explicitly: an empty answer must not match an absent hash.
+  if (!ADMIN_PASSWORD_HASH) {
+    return false;
+  }
+  const digest = await derivePasswordHash(password.trim());
+  if (!digest || !timingSafeEqual(digest, ADMIN_PASSWORD_HASH)) {
     return false;
   }
   try {
