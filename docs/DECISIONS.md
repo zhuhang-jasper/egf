@@ -1101,9 +1101,14 @@ that the paths do not work for someone who merely knows or guesses them, which i
 Making these pages truly unavailable means **not shipping them**: a build-time flag plus dynamic imports so
 Rollup drops the chunks, not a stricter runtime test.
 
-The same reasoning caps the password in `constants/features.js`. It is a plain literal in the bundle, so it
-stops a colleague handed the URL and nobody determined. Anything that genuinely needs protecting needs a
-server, not a longer string.
+The same reasoning caps the password in `constants/features.js`. It is injected from the
+`VITE_ADMIN_PASSWORD` Actions secret at build time rather than hardcoded, which keeps it out of the public
+repo and its history, but the value still ships inside the bundle where anyone can read it. That is a
+tidiness win, not a security one: it stops a colleague handed the URL and nobody determined. Anything that
+genuinely needs protecting needs a server, not a hidden string.
+
+When the var is unset (local dev, preview, forks) admin stays locked instead of falling back to a literal,
+mirroring how `VITE_GA_ID` degrades GA to a no-op. Use a local `.env.local` to work on the gated routes.
 
 **Two ordering constraints follow, and both are easy to break:**
 

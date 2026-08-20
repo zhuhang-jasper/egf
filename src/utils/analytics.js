@@ -3,7 +3,9 @@
 // GA only runs when VITE_GA_ID is set at build time. In local dev and preview
 // (where the var is absent) every function here is an inert no-op, so we never
 // pollute production stats with our own testing. The Measurement ID is injected
-// from the VITE_GA_ID GitHub Actions variable during the Pages build.
+// from the VITE_GA_ID GitHub Actions secret during the Pages build. It is kept
+// out of the repo, but note it still ships in the bundle and is visible to any
+// visitor — gtag.js sends it to Google on every page load.
 
 const GA_ID = import.meta.env.VITE_GA_ID;
 const APP_VERSION = import.meta.env.VITE_APP_VERSION;

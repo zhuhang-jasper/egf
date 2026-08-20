@@ -6,10 +6,11 @@ import { ADMIN_UNLOCK_KEY } from "@/constants/storage";
  * URL is already correct before React mounts and this need not react mid-session. localStorage access is
  * guarded, so a disabled store simply stays locked.
  *
- * The password is a plain literal in the bundle and stops nobody determined. See
- * docs/DECISIONS.md#admin-gating-is-not-a-security-boundary.
+ * The password is injected from the VITE_ADMIN_PASSWORD GitHub Actions secret at build time. It still lands
+ * in the bundle and stops nobody determined. See docs/DECISIONS.md#admin-gating-is-not-a-security-boundary.
+ * When the var is unset (local dev, preview, forks) admin stays locked rather than falling back to a literal.
  */
-const ADMIN_PASSWORD = "zhuhang-jasper-egf";
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
 
 function stripAdminParam() {
   try {
@@ -32,6 +33,11 @@ function stripAdminParam() {
  */
 function resolveAdminState() {
   if (typeof window === "undefined") {
+    return { isAdmin: false, passwordRequested: false };
+  }
+  // No password configured (local dev, preview, forks): stay locked. Asking would be unanswerable.
+  if (!ADMIN_PASSWORD) {
+    stripAdminParam();
     return { isAdmin: false, passwordRequested: false };
   }
   const param = new URLSearchParams(window.location.search).get("admin");
@@ -76,7 +82,8 @@ export const ADMIN_PASSWORD_REQUESTED = ADMIN_STATE.passwordRequested;
  * @returns false when the password is wrong. On success it does not return — the page reloads.
  */
 export function unlockAdmin(password) {
-  if (password.trim() !== ADMIN_PASSWORD) {
+  // Guard the unset case explicitly: an empty answer must not match an absent ADMIN_PASSWORD.
+  if (!ADMIN_PASSWORD || password.trim() !== ADMIN_PASSWORD) {
     return false;
   }
   try {
