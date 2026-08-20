@@ -2,7 +2,7 @@
 
 > A spider chart to measure software engineering mastery, identify core interests, and guide career paths.
 
-By **Jasper Loo Zhu Hang**
+By **[Jasper Loo Zhu Hang](https://www.linkedin.com/in/zhuhangloo/)**
 
 [![Release](https://img.shields.io/github/v/release/zhuhang-jasper/egf?sort=semver&color=blue)](https://github.com/zhuhang-jasper/egf/releases/latest)
 [![Framework](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fzhuhang-jasper.github.io%2Fegf%2Fmeta.json&query=%24.frameworkVersion&prefix=v&label=framework&color=8b5cf6)](https://zhuhang-jasper.github.io/egf/?tab=theory)

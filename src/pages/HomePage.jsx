@@ -381,7 +381,19 @@ export default function HomePage() {
             (copyright, licence) and identity second, so only the tail of the line swaps.
             See docs/DECISIONS.md#print-running-footer and the `@page` rules in index.css. */}
         <footer data-print-running className="mt-auto px-3 pb-2 pt-4 text-center text-[11px] text-slate-500 print:pt-2">
-          © 2026 Jasper Loo Zhu Hang ·{" "}
+          {/* Both halves of the ownership head link out, each to the thing that authenticates it: the name to
+              its author, the licence to its terms. On paper the URLs are lost and only the underlines print,
+              which is fine — CC attribution needs the name, not a profile link. */}
+          © 2026{" "}
+          <a
+            href="https://www.linkedin.com/in/zhuhangloo/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-2 hover:text-slate-700"
+          >
+            Jasper Loo Zhu Hang
+          </a>{" "}
+          ·{" "}
           <a
             href="https://creativecommons.org/licenses/by-nc/4.0/"
             target="_blank"
