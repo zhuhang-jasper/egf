@@ -28,8 +28,13 @@
  * the field above it, the empty state because it stands exactly where those rows would be. That left the token
  * with no consumers, so it is gone. If a genuinely secondary control label turns up, reintroduce it at 11/12;
  * do not add a third rung, which would put two adjacent controls a single px apart.
+ *
+ * `leading-4` is load-bearing, and must stay a FIXED px: twMerge drops the base `text-sm`'s line-height, and any
+ * em-based box (`normal`, `leading-none`) goes odd at font 13 — 32-13 leaves `items-center` a half-pixel, so the
+ * label rode 0.5px high above 470px while the h-4 icon beside it held still. 16px matches that icon exactly.
+ * See docs/DECISIONS.md#badge-ink-centring.
  */
-export const CONTROL_TEXT = "text-[12px] xs:text-[13px]";
+export const CONTROL_TEXT = "text-[12px] leading-4 xs:text-[13px]";
 
 /**
  * THE TOOL TAB'S TYPE RUNGS, one entry per job. Size only — weight, colour and tracking stay with the
