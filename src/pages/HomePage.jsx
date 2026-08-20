@@ -389,6 +389,9 @@ export default function HomePage() {
             href="https://www.linkedin.com/in/zhuhangloo/"
             target="_blank"
             rel="noopener noreferrer"
+            // `target="_blank"` means the click never unloads this page, so the event has time to send without
+            // needing `transport_type: beacon`. Same for the licence link below.
+            onClick={() => track("author_profile_clicked")}
             className="underline underline-offset-2 hover:text-slate-700"
           >
             Jasper Loo Zhu Hang
@@ -398,6 +401,7 @@ export default function HomePage() {
             href="https://creativecommons.org/licenses/by-nc/4.0/"
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => track("license_clicked")}
             className="underline underline-offset-2 hover:text-slate-700"
           >
             CC BY-NC 4.0

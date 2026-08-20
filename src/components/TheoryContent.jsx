@@ -517,7 +517,13 @@ function TheoryContent({
           variant="outline"
           size="sm"
           shape="pill"
-          onClick={() => setChangelogOpen(true)}
+          onClick={() => {
+            // Stamped with the version the reader was ON when they opened it, the same param
+            // `theory_section_seen` carries: it says whether a release is what drives people to read
+            // what changed.
+            track("changelog_opened", { framework_version: FRAMEWORK_VERSION });
+            setChangelogOpen(true);
+          }}
           aria-label={`Changelog, currently on version ${FRAMEWORK_VERSION}`}
           className="gap-1"
         >
