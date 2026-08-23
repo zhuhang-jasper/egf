@@ -4,7 +4,7 @@
 profile and survive import unchanged, so a JSON file reaches every state — including grey.
 
 Manage → Import → `test-profiles-stamp.json`. It appends rather than replacing, and the toast has an Undo.
-26 rows, in five groups.
+32 rows, in five groups.
 
 Release windows, from the real bump commits:
 
@@ -17,6 +17,10 @@ Release windows, from the real bump commits:
 | Jul 9, 2026       | 3.1         |
 | Jun 21, 2026      | 2.9         |
 | Jun 15, 2026      | 2.8         |
+| Jun 11, 2026      | 2.7         |
+| Jun 10, 2026      | 2.6         |
+| Jun 10, 2026      | 2.5         |
+| Jun 9, 2026       | 2.4         |
 | earlier           | none — `v?` |
 
 2.8 is where a version first appeared on the Theory tab; nothing was shown before it. 4.0 and 3.0 never
@@ -26,14 +30,14 @@ shipped (the bump went 3.2 → 4.1), so no profile can date to them.
 
 ## A — unstamped, dated
 
-Seven rows, identical mid-level scores (all 2.0), differing only in `savedAt`.
+Eleven rows, identical mid-level scores (all 2.0), differing only in `savedAt`.
 
 | Row           | Chip              | Colour                    |
 | ------------- | ----------------- | ------------------------- |
 | A 4.3         | `v4.3 ✓`          | green                     |
-| A 4.2 … A 2.8 | own version + `!` | **amber**, 8 pillars each |
+| A 4.2 … A 2.4 | own version + `!` | **amber**, 8 pillars each |
 
-Six amber rows spanning 4.2 down to 2.8, each naming its own era.
+Ten amber rows spanning 4.2 down to 2.4, each naming its own era.
 
 ## B — when green is actually earned
 
@@ -55,7 +59,7 @@ the score has to land in a band that actually moved.
 
 | Row                   | Chip        |
 | --------------------- | ----------- |
-| C1 · date before v2.8 | `v???` grey |
+| C1 · date before v2.4 | `v???` grey |
 | C2 · no date at all   | `v???` grey |
 
 No tick or exclamation: the label is already all question marks.

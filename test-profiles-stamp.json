@@ -130,6 +130,74 @@
       "savedAt": 1781755200000
     },
     {
+      "id": "t-07a",
+      "title": "A 2.7 · dated",
+      "pillarLevels": {
+        "coding": 2,
+        "domainLogic": 2,
+        "architecture": 2,
+        "ai": 2,
+        "uiUx": 2,
+        "productSense": 2,
+        "process": 2,
+        "communication": 2,
+        "ownership": 2
+      },
+      "attachedBadge": "none",
+      "savedAt": 1781178180000
+    },
+    {
+      "id": "t-07b",
+      "title": "A 2.6 · dated",
+      "pillarLevels": {
+        "coding": 2,
+        "domainLogic": 2,
+        "architecture": 2,
+        "ai": 2,
+        "uiUx": 2,
+        "productSense": 2,
+        "process": 2,
+        "communication": 2,
+        "ownership": 2
+      },
+      "attachedBadge": "none",
+      "savedAt": 1781064660000
+    },
+    {
+      "id": "t-07c",
+      "title": "A 2.5 · dated",
+      "pillarLevels": {
+        "coding": 2,
+        "domainLogic": 2,
+        "architecture": 2,
+        "ai": 2,
+        "uiUx": 2,
+        "productSense": 2,
+        "process": 2,
+        "communication": 2,
+        "ownership": 2
+      },
+      "attachedBadge": "none",
+      "savedAt": 1781058600000
+    },
+    {
+      "id": "t-07d",
+      "title": "A 2.4 · dated",
+      "pillarLevels": {
+        "coding": 2,
+        "domainLogic": 2,
+        "architecture": 2,
+        "ai": 2,
+        "uiUx": 2,
+        "productSense": 2,
+        "process": 2,
+        "communication": 2,
+        "ownership": 2
+      },
+      "attachedBadge": "none",
+      "savedAt": 1780977660000
+    },
+    {
       "id": "t-08",
       "title": "B1 · senior, stamped 4.3",
       "pillarLevels": {
@@ -234,7 +302,7 @@
     },
     {
       "id": "t-13",
-      "title": "C1 · date before v2.8",
+      "title": "C1 · date before v2.4",
       "pillarLevels": {
         "coding": 2,
         "domainLogic": 2,
