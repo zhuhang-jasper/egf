@@ -48,7 +48,8 @@ function stub(moves) {
 
 // ── Stamp resolution: recorded stamp, else inferred from savedAt ──────────────────────────────────
 // The rows that carry this table: a recorded stamp always wins, an unstamped profile is dated from its OWN
-// savedAt, and a profile older than any shipped release is `unknown` — never the current version.
+// savedAt, and a profile older than any shipped release is `unknown` — never the current version. Because
+// stamping began in 4.3, an unstamped profile after the 4.2 boundary still resolves to 4.2.
 {
   const g = "stamp";
   // Real bump timestamps, mirroring LEGACY_RELEASES in profile-stamp.js.
@@ -68,7 +69,7 @@ function stub(moves) {
   const resolve = (profile) => resolveProfileStamp({ profile });
 
   // Unstamped: the version that was LIVE when the profile was saved.
-  check(g, "saved after 4.3 shipped", resolve(row(undefined, AT.v43)), { version: "4.3", source: STAMP_SOURCE.derived });
+  check(g, "saved after stamping began", resolve(row(undefined, AT.v43)), { version: "4.2", source: STAMP_SOURCE.derived });
   check(g, "saved during 4.2", resolve(row(undefined, AT.v42)), { version: "4.2", source: STAMP_SOURCE.derived });
   check(g, "saved during 4.1", resolve(row(undefined, AT.v41)), { version: "4.1", source: STAMP_SOURCE.derived });
   check(g, "saved during 3.2", resolve(row(undefined, AT.v32)), { version: "3.2", source: STAMP_SOURCE.derived });

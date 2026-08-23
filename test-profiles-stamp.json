@@ -12,7 +12,7 @@
   "profiles": [
     {
       "id": "t-01",
-      "title": "A 4.3 · dated",
+      "title": "A post-4.2 · dated",
       "pillarLevels": {
         "coding": 2,
         "domainLogic": 2,

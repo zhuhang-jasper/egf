@@ -10,7 +10,6 @@ Release windows, from the real bump commits:
 
 | Saved on or after | Version     |
 | ----------------- | ----------- |
-| Aug 18, 2026      | 4.3         |
 | Aug 7, 2026       | 4.2         |
 | Jul 27, 2026      | 4.1         |
 | Jul 16, 2026      | 3.2         |
@@ -23,6 +22,7 @@ Release windows, from the real bump commits:
 | Jun 9, 2026       | 2.4         |
 | earlier           | none — `v?` |
 
+4.3 is excluded from date inference because stamping began with 4.3; only an explicit stamp can identify it.
 2.8 is where a version first appeared on the Theory tab; nothing was shown before it. 4.0 and 3.0 never
 shipped (the bump went 3.2 → 4.1), so no profile can date to them.
 
@@ -34,10 +34,11 @@ Eleven rows, identical mid-level scores (all 2.0), differing only in `savedAt`.
 
 | Row           | Chip              | Colour                    |
 | ------------- | ----------------- | ------------------------- |
-| A 4.3         | `v4.3 ✓`          | green                     |
+| A post-4.2    | `v4.2 !`          | **amber**, 8 pillars      |
 | A 4.2 … A 2.4 | own version + `!` | **amber**, 8 pillars each |
 
-Ten amber rows spanning 4.2 down to 2.4, each naming its own era.
+Eleven dated rows now prove the fallback: a post-4.2 unstamped save resolves to 4.2, followed by dated
+rows spanning 4.2 down to 2.4.
 
 ## B — when green is actually earned
 

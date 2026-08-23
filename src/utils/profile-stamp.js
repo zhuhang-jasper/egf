@@ -16,9 +16,10 @@ export const STAMP_SOURCE = {
 /**
  * Bump commit timestamps, newest first — used to date an UNSTAMPED profile from its own `savedAt`.
  *
- * CLOSED: stamping shipped in 4.3, so only pre-4.3 saves reach here and no more will be created. Commit
- * times rather than changelog `date` strings, which are hand-typed and drift a day or two — enough to infer
- * a newer version than the user had. 4.0 and 3.0 are absent because they never shipped (3.2 → 4.1 direct).
+ * CLOSED: stamping shipped in 4.3, so an unstamped profile cannot reliably be identified as 4.3. The newest
+ * version this fallback may infer is therefore 4.2; explicit 4.3 stamps are handled separately. Commit times
+ * rather than changelog `date` strings, which are hand-typed and drift a day or two. 4.0 and 3.0 are absent
+ * because they never shipped (3.2 → 4.1 direct).
  *
  * 2.9 and 2.8 predate both the changelog and FRAMEWORK_VERSION — 2.8's timestamp is the app commit that
  * first showed it on the Theory tab's nav label. 2.4-2.7 predate the app showing any version at all; those
@@ -27,7 +28,6 @@ export const STAMP_SOURCE = {
  * no version to name.
  */
 const LEGACY_RELEASES = [
-  ["4.3", "2026-08-18T22:34:12+08:00"],
   ["4.2", "2026-08-07T16:06:57+08:00"],
   ["4.1", "2026-07-27T16:04:18+08:00"],
   ["3.2", "2026-07-16T02:36:36+08:00"],
