@@ -1,6 +1,7 @@
+import { useProfileStampState } from "@/hooks/useProfileStamp";
+
 import { useAppStore } from "@/store/useAppStore";
 
-import { useProfileStampState } from "@/hooks/useProfileStamp";
 import { TOOL_TEXT } from "@/styles/control-typography";
 import { cn } from "@/utils";
 import { PILLAR_STATE } from "@/utils/profile-stamp";

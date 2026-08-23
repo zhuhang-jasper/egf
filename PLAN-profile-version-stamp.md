@@ -16,7 +16,7 @@ Two earlier designs were considered and rejected:
   every prior revision in the bundle, and a mechanical diff cannot tell a raised bar from
   a copy-edit.
 - **Inline `**bold**` change markers + highlighter toggle.** Editorial marking beats a
-  computed diff, but it shows *evidence* of change rather than answering the user's
+  computed diff, but it shows _evidence_ of change rather than answering the user's
   question. Superseded by this feature.
 
 **Outcome:** a profile carries the framework version it was rated under. Pillars whose
@@ -26,7 +26,7 @@ altered automatically.
 ## Model
 
 1. **Stamp** — each saved profile records the framework version it was rated against.
-2. **Watermark** — per pillar, the newest version where that pillar's *expectations*
+2. **Watermark** — per pillar, the newest version where that pillar's _expectations_
    changed (not merely its wording).
 
 Pillar P is stale for a profile when `BAR_MOVED[P]` is newer than the profile's stamp.
@@ -47,7 +47,7 @@ would clear a higher one.**
 
 Two consequences:
 
-- **Direction matters.** A level that got *easier* or merely *clearer* invalidates no
+- **Direction matters.** A level that got _easier_ or merely _clearer_ invalidates no
   rating — someone rated there still clears it. Only hardening produces a false rating.
   Flagging on any change would fire constantly (40 of 45 cells moved in 4.3) and be
   ignored within one release.
@@ -60,12 +60,12 @@ A profile flags pillar P when P's raise record is newer than the profile's stamp
 its score for P falls in the affected band of any hardened level.
 
 **Affected band: a hardened level `n` covers scores `n` through `n + 1` inclusive.**
-Levels are cumulative — a 2.0 asserts L1 *and* L2 — so hardening L1 puts a 2.0 rating
+Levels are cumulative — a 2.0 asserts L1 _and_ L2 — so hardening L1 puts a 2.0 rating
 directly in question, not just a 1.5. The band stops one level up because the intervening
 levels absorb the change: someone at L4 plainly clears a slightly-harder L1.
 
 That inclusive upper edge is a judgement, not a derivation. It double-covers every whole
-number (a 2.0 is caught by a hardened L1 *and* a hardened L2), which is harmless — the
+number (a 2.0 is caught by a hardened L1 _and_ a hardened L2), which is harmless — the
 verdict is boolean per pillar.
 
 ## Data: watermark on CHANGELOG entries
@@ -98,12 +98,12 @@ Add an optional `barRaised: { pillarId: [levels] }` field to CHANGELOG entries �
 - **Sparse by omission.** No key = nothing hardened. "Nothing got harder" is the default
   and the zero-noise case, which matters because clarification-only releases will be the
   common kind.
-- **Levels are ints 1–5** on the L-scale — the *level* that hardened, not a score. Scores
+- **Levels are ints 1–5** on the L-scale — the _level_ that hardened, not a score. Scores
   (0–5 in 0.5 steps) are what get compared against the derived band.
 
 ### `barEased` — the mirror field
 
-A release may also make a level *easier*, which invalidates a rating in the opposite
+A release may also make a level _easier_, which invalidates a rating in the opposite
 direction: someone who couldn't quite reach L4 might now clear it. Authored the same way,
 consumed with the **opposite band**:
 
@@ -111,28 +111,28 @@ consumed with the **opposite band**:
 barEased: { uiUx: [3] },   // eased level n affects scores [n-1, n]
 ```
 
-| | hardened `n` | eased `n` |
-|---|---|---|
-| Band | `[n, n+1]` | `[n-1, n]` |
+|         | hardened `n`               | eased `n`                    |
+| ------- | -------------------------- | ---------------------------- |
+| Band    | `[n, n+1]`                 | `[n-1, n]`                   |
 | Meaning | may be rating **too high** | may now qualify for **more** |
-| Tone | amber, a warning | positive, **not** amber |
+| Tone    | amber, a warning           | positive, **not** amber      |
 
 Three states per pillar: hardened-only, eased-only, or both.
 
-**The mixed case is a squeeze, not a contradiction.** It means the level *below* the score
-got harder and the level *above* got easier — both bars moved toward the rating from
+**The mixed case is a squeeze, not a contradiction.** It means the level _below_ the score
+got harder and the level _above_ got easier — both bars moved toward the rating from
 opposite sides, so the gap it sits in narrowed and either direction is now plausible.
-Rare: it needs one release to move different levels of the *same* pillar in both
+Rare: it needs one release to move different levels of the _same_ pillar in both
 directions.
 
 **Copy — exact wording still to be decided at render time; colour is DECIDED (see below).** The
 shape:
 
-| State | Meaning | Draft copy |
-|---|---|---|
-| raised only | may be rating too high | "The bar rose here. You may be rating high." |
-| eased only | may qualify for more | "The bar moved. You may now qualify for more." |
-| both | position less certain | "Levels either side of your rating changed. Worth a re-read." |
+| State       | Meaning                | Draft copy                                                    |
+| ----------- | ---------------------- | ------------------------------------------------------------- |
+| raised only | may be rating too high | "The bar rose here. You may be rating high."                  |
+| eased only  | may qualify for more   | "The bar moved. You may now qualify for more."                |
+| both        | position less certain  | "Levels either side of your rating changed. Worth a re-read." |
 
 Rejected: naming the specific levels ("L2 got harder, L4 got easier"). The data supports
 it, but it makes the reader map level numbers onto their own score — the decoding this
@@ -143,11 +143,11 @@ feature exists to spare them.
 No new palette. Take the two triples straight from `SAVE_STATUS_META`
 (`TitleToolbar.jsx:37`), which is already the app's settled-vs-needs-action pair:
 
-| Role | Classes |
-|---|---|
-| settled (green) | `border-green-600/40 bg-green-50 text-green-700` |
+| Role                 | Classes                                          |
+| -------------------- | ------------------------------------------------ |
+| settled (green)      | `border-green-600/40 bg-green-50 text-green-700` |
 | needs action (amber) | `border-amber-500/50 bg-amber-50 text-amber-700` |
-| unverified (grey) | `border-slate-300 bg-slate-100 text-slate-600` |
+| unverified (grey)    | `border-slate-300 bg-slate-100 text-slate-600`   |
 
 The grey is a **filled pill, not an outline** — same three-part shape as the other two, so
 all three read as one family of chips rather than two chips and an absence. `ChartScores.jsx:75`
@@ -157,13 +157,13 @@ the white row background the combobox renders on.
 
 Mapped onto the three per-pillar states, plus the two stamp-resolution states:
 
-| State | Colour | Icon |
-|---|---|---|
-| nothing moved | green | tick |
-| raised only | amber | `!` |
-| eased only | **green** | tick |
-| both (mixed) | **amber** | `!` |
-| unverified / unknown (legacy, no stamp) | grey, filled | `?` |
+| State                                   | Colour       | Icon |
+| --------------------------------------- | ------------ | ---- |
+| nothing moved                           | green        | tick |
+| raised only                             | amber        | `!`  |
+| eased only                              | **green**    | tick |
+| both (mixed)                            | **amber**    | `!`  |
+| unverified / unknown (legacy, no stamp) | grey, filled | `?`  |
 
 **Only two colours plus grey.** That resolves both constraints the earlier draft left
 open, and it resolves them the same way:
@@ -173,7 +173,7 @@ open, and it resolves them the same way:
   the tooltip still carries "you may now qualify for more" for anyone who opens it. A third
   hue would buy a distinction nobody needs at chip altitude.
 - **Mixed leans amber.** "May be wrong in some direction" is closer to caution than to good
-  news, and it must not borrow the grey used for unverified — grey says *no information*,
+  news, and it must not borrow the grey used for unverified — grey says _no information_,
   which is the opposite of what mixed means.
 
 The rule collapses to: **amber iff anything is raised.** That is the same rule the chip
@@ -185,15 +185,15 @@ than two that can drift.
 The same state model renders in four places, and they do not all carry the same
 information. All four take their colours from the one table above:
 
-| Surface | Scope | Notes |
-|---|---|---|
-| Dropdown chip, every row | whole profile | Roll-up over 9 pillars. See the aggregation problem below. |
-| Active loaded profile | whole profile | Same state as its dropdown row; needs a home in the toolbar area. Must agree with the row it came from, or the two read as different facts. |
-| Per-pillar in-form mark | one pillar | Amber-tinted `LevelInput` pre-slider, warning icon beside the label post-slider. |
-| Tooltip copy | one pillar | The three strings above. |
+| Surface                  | Scope         | Notes                                                                                                                                       |
+| ------------------------ | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Dropdown chip, every row | whole profile | Roll-up over 9 pillars. See the aggregation problem below.                                                                                  |
+| Active loaded profile    | whole profile | Same state as its dropdown row; needs a home in the toolbar area. Must agree with the row it came from, or the two read as different facts. |
+| Per-pillar in-form mark  | one pillar    | Amber-tinted `LevelInput` pre-slider, warning icon beside the label post-slider.                                                            |
+| Tooltip copy             | one pillar    | The three strings above.                                                                                                                    |
 
 **The roll-up has a state the per-pillar model does not.** A profile can hold one pillar
-raised and another eased — pillar-level "mixed" (both directions on *one* pillar) is rare,
+raised and another eased — pillar-level "mixed" (both directions on _one_ pillar) is rare,
 but profile-level mixed is not, because it only needs two different pillars to move
 oppositely. So the chip needs an answer for:
 
@@ -207,11 +207,11 @@ oppositely. So the chip needs an answer for:
 over-rating is the more actionable fact, and the eased pillars are still discoverable
 in-form after loading. So the four cases collapse to two colours:
 
-| Roll-up case | Chip |
-|---|---|
-| all clear | green |
-| some raised, none eased | amber |
-| some eased, none raised | green |
+| Roll-up case                   | Chip  |
+| ------------------------------ | ----- |
+| all clear                      | green |
+| some raised, none eased        | amber |
+| some eased, none raised        | green |
 | both, across different pillars | amber |
 
 This is the same predicate as the per-pillar rule, which is why the two cannot disagree.
@@ -252,7 +252,7 @@ earlier release's levels would double-count nothing but would mislead the next a
 
 Do **not** pre-collapse into a `{pillar: {version, levels}}` map the way
 `SECTION_LATEST_VERSION` collapses `sections`. That pattern is only sound when the payload
-is a single value compared for recency; here it is a *set that differs per version*, so
+is a single value compared for recency; here it is a _set that differs per version_, so
 newest-wins silently discards older hardenings.
 
 Concretely, with 4.2 hardening `coding:[4]` and 4.3 hardening `coding:[1]`, a
@@ -267,7 +267,7 @@ export function movedLevelsSince(pillar, stamp) {
   const raised = new Set();
   const eased = new Set();
   for (const { version, barRaised, barEased } of CHANGELOG) {
-    if (!isNewerVersion(version, stamp)) break;   // newest-first: everything after is older
+    if (!isNewerVersion(version, stamp)) break; // newest-first: everything after is older
     for (const l of barRaised?.[pillar] ?? []) raised.add(l);
     for (const l of barEased?.[pillar] ?? []) eased.add(l);
   }
@@ -282,14 +282,14 @@ The verdict is then a band test over each union, with the two bands mirrored:
 
 ```js
 const { raised, eased } = movedLevelsSince(pillar, stamp);
-const mayBeHigh = [...raised].some((n) => score >= n && score <= n + 1);   // [n, n+1]
+const mayBeHigh = [...raised].some((n) => score >= n && score <= n + 1); // [n, n+1]
 // score > 0, not >= : a 0 is "I don't do this at all", not a graded rating. See below.
 const mayQualify = score > 0 && [...eased].some((n) => score >= n - 1 && score <= n);
 // both true -> neutral "review this pillar"
 ```
 
-The bands are **asymmetric by design**: hardening looks *up* from the level, easing looks
-*down*. So with L1 moved and a score of 0.5 — hardened L1 (band `[1,2]`) does not flag
+The bands are **asymmetric by design**: hardening looks _up_ from the level, easing looks
+_down_. So with L1 moved and a score of 0.5 — hardened L1 (band `[1,2]`) does not flag
 (they never claimed L1), while eased L1 (band `[0,1]`) does (they fell short, and the bar
 dropped).
 
@@ -301,9 +301,9 @@ the work, so a may-qualify nudge there is noise. The data cannot distinguish "de
 such guard — its bands never reach 0.
 
 **Not** "does the union contain `floor(score)` or `ceil(score)`". That shortcut agrees on
-whole numbers — a 4.0 is caught by hardened L3 *or* L4, since it sits where both bands
+whole numbers — a 4.0 is caught by hardened L3 _or_ L4, since it sits where both bands
 meet — but diverges on half-steps: a **4.5** is caught only by a hardened **L4** (band
-4.0–5.0), never by L5 (band 5.0–6.0). The band is anchored to the hardened *level*, not
+4.0–5.0), never by L5 (band 5.0–6.0). The band is anchored to the hardened _level_, not
 derived from the score.
 
 This is what makes a multi-version jump correct: a profile stamped 4.0 crossing 4.1, 4.2
@@ -316,7 +316,7 @@ the existing dev-only guard at the bottom of the file to reject unknown pillar i
 **This is an editorial call each release, and the feature's credibility rests on it.**
 Marking a level sends every user rated at or below it back to re-read: undermark and
 scores go stale, overmark and the signal gets ignored. Not derivable from the diff — the
-question is whether a cell got *harder*, which only the author can judge.
+question is whether a cell got _harder_, which only the author can judge.
 
 **"Neither" is the expected answer, not a fallthrough.** A cell can be rewritten from end
 to end and still move no bar. v4.3's L1 pass is the canonical case: seven L1 cells were
@@ -326,14 +326,14 @@ under 4.3, so there is nothing to re-rate and no entry belongs in either set.
 
 Ask **"would a person rated here still clear it, and would they clear nothing more?"** —
 not "did this change much". Rewriting is not evidence of either direction. When judging
-40 reworded cells there is real pressure to mark *something*; resist it, or the set
+40 reworded cells there is real pressure to mark _something_; resist it, or the set
 inflates until it means nothing.
 
 **The honest home for a heavy-but-neutral rewrite is the changelog**, which already
 carries it in prose. That does invite a re-read for anyone who wants one — the right
 altitude for "we rewrote this", since a reframing can change how a user reads themselves
 without changing the bar. That shift is real but unflaggable: it is unfalsifiable
-per-user, applies to nearly every reworded cell, and the existing rating was a *correct*
+per-user, applies to nearly every reworded cell, and the existing rating was a _correct_
 reading of an identical bar.
 
 **v4.3 values are DECIDED and already authored** into the v4.3 CHANGELOG entry
@@ -346,14 +346,14 @@ neutral rewrites.
 **Launch impact, computed from those values.** Per pillar, the share of the 11 possible
 scores (0–5 in 0.5 steps) that flag for a pre-4.3 profile:
 
-| Pillar | Flags | Pillar | Flags |
-|---|---|---|---|
-| AI Leverage | 3/11 | Ownership | 6/11 |
-| Domain Logic | 4/11 | Process | 7/11 |
-| Coding | 5/11 | Architecture · Product Sense · UI/UX | 8/11 |
-| | | Communication | 9/11 |
+| Pillar       | Flags | Pillar                               | Flags |
+| ------------ | ----- | ------------------------------------ | ----- |
+| AI Leverage  | 3/11  | Ownership                            | 6/11  |
+| Domain Logic | 4/11  | Process                              | 7/11  |
+| Coding       | 5/11  | Architecture · Product Sense · UI/UX | 8/11  |
+|              |       | Communication                        | 9/11  |
 
-Every pillar flags *some* scores, so **essentially every v4.2 profile will show attention
+Every pillar flags _some_ scores, so **essentially every v4.2 profile will show attention
 on load**. That is the honest reading of a release that raised 26 bars.
 
 **DECIDED: ship at 4.3 anyway.** The deferral option (hold the mechanism to 4.4 so it
@@ -371,7 +371,7 @@ flagged" from becoming "everyone flagged for everything". Nothing here softens t
 Superseded initial read (pillar-level, pre-dating the harder/easier trigger): UI/UX
 throughout, Communication around L2–L3, Architecture around L1–L2, with Coding because
 Framework Proficiency moved into it. Treat as a starting point for the pass, not an
-answer — in particular, a pillar whose cells were *clarified* rather than *hardened*
+answer — in particular, a pillar whose cells were _clarified_ rather than _hardened_
 should carry no entry at all.
 
 ## Storage: stamping the version onto each profile
@@ -380,7 +380,7 @@ should carry no entry at all.
 last-modified time and the original write time of existing profiles is already gone; the only available
 backfill (`createdAt = savedAt`) would assert a creation date that is really a modification date. Beyond
 the missing data, it answers neither question this byline exists for: a profile created under v4.1 and
-updated yesterday is a v4.3 rating, and it is the *update* that establishes that. The byline says
+updated yesterday is a v4.3 rating, and it is the _update_ that establishes that. The byline says
 "Updated", which is the only claim the data supports.
 
 Per-profile shape is an **allow-list rebuild** — `normalizeStoredProfile`
@@ -391,7 +391,7 @@ there or it vanishes on every load.
 Recommended (cheapest correct) variant — stamp is a saved-row field, backfilled lazily:
 
 1. `src/constants/levels.js` — `normalizeStoredProfile`: add `frameworkVersion`, with a
-   fallback for rows predating it (see *Legacy* below).
+   fallback for rows predating it (see _Legacy_ below).
 2. `src/store/useAppStore.js` — `writeProfile`'s `row` literal (~line 589): stamp
    `FRAMEWORK_VERSION` on save. This is the single choke point for all profile writes.
 3. `src/utils/profile-transfer.js` — add to `toExportPayload`'s row mapping, bump
@@ -423,9 +423,9 @@ and rejected rows are simply absent from `out`:
 const needsMigration = isPreV2(parsed);
 for (const row of arr) {
   const n = normalizeStoredProfile(needsMigration ? migrateBadgeKey(row) : row);
-  if (n) out.push(n);          // ← null rows dropped here
+  if (n) out.push(n); // ← null rows dropped here
 }
-if (needsMigration) writeProfilesToStorage(out);   // ← written away on load
+if (needsMigration) writeProfilesToStorage(out); // ← written away on load
 ```
 
 So the discard lands exactly at the migration moment. (On an already-current payload
@@ -435,7 +435,7 @@ either way.)
 
 The only addition worth making: a `console.warn` in `normalizeStoredProfile`'s reject path
 gated on `import.meta.env.DEV`, matching the dev-guard pattern at the bottom of
-`changelog.js`. One line, and it fires *before* the rewrite — so if these rows exist
+`changelog.js`. One line, and it fires _before_ the rewrite — so if these rows exist
 anywhere, the shape gets logged as it is discarded rather than vanishing unrecorded. The
 pre-v1 schema cannot be reconstructed from code (verified: no migration for it survives).
 
@@ -463,7 +463,7 @@ Accuracy: the hook's own comment notes the value means "last opened at", read as
 at". Someone who first loaded at 4.2 and saved at 4.3 without revisiting Theory reads as
 4.2 — biased **toward** flagging, the safe direction for a re-rating prompt.
 
-- **Derived** — grey/unverified, not green. Honest grounds: it is an *inferred* value,
+- **Derived** — grey/unverified, not green. Honest grounds: it is an _inferred_ value,
   not a recorded one. (Not because it is likely wrong — per the above it usually is not.)
 - **No map at all** — unknown, grey, question mark. Rare, but handle it rather than
   defaulting to current.
@@ -490,7 +490,7 @@ in that row's `w-14` slot, with `em`-based dimensions. Use `TOOL_TEXT.label` fro
 `src/styles/control-typography.js` ("text ABOUT something else: a badge"). **No new
 typography rungs** — the file forbids it.
 
-States and classes: see *Palette: DECIDED* above — green tick / amber `!` / filled-grey `?`,
+States and classes: see _Palette: DECIDED_ above — green tick / amber `!` / filled-grey `?`,
 all three the same filled-pill shape. Do not restate the class triples here; one table owns
 them.
 
@@ -506,7 +506,7 @@ one then reveals which pillars.
 The feature launches with 4.3's `barRaised` populated, so every v4.2 profile is evaluated
 on first load and flags on the pillars that hardened. This is intended, not a side effect,
 and it is why the harder/easier trigger and level scoping matter on day one rather than as
-later precision work. See *Launch impact* above for the accepted cost.
+later precision work. See _Launch impact_ above for the accepted cost.
 
 ### In-form flag — `src/components/PillarCluster.jsx`
 
@@ -523,7 +523,7 @@ a slider under the pillar label, making the row two-line and freeing horizontal 
   narrowest breakpoint and the doc comment at `PillarCluster.jsx:14` warns the longest
   label ("🗣️ Communication (Voice)") already "fits, but only just". Reuse the
   `amber-500/50` border + `amber-50` bg + `amber-700` text triple from `SAVE_STATUS_META`.
-  Tinting the control also puts the mark on *the number that may be wrong*, which reads
+  Tinting the control also puts the mark on _the number that may be wrong_, which reads
   more directly than a marker beside the name.
 - **After the slider lands:** warning icon inside `PillarLabel`, right after the name;
   the help icon ("view in matrix") moves to the row's far right.
@@ -583,18 +583,18 @@ its inputs, which is what makes the fixture table below expressible at all.
 
 Assert a fixture table covering the full legacy cross-product:
 
-| Stored profile | Seen map | Legacy key | Expect |
-|---|---|---|---|
-| v1 row (`trackVariant`, no stamp) | `matrix: "4.0"` | absent | derived **4.0**, unverified |
-| v1 row | `matrix: "4.1"` | absent | derived **4.1**, unverified |
-| v1 row | absent | `"4.1"` | derived **4.1** (migration seeds map from legacy) |
-| v2 row (`attachedBadge`, no stamp) | `matrix: "4.2"` | absent | derived **4.2**, unverified |
-| v2 row | absent | absent | **unknown** — never "current" |
-| v2 row | `matrix: "2.9"` | absent | **unknown** (below CHANGELOG floor; `changelogRank` → `Infinity`) |
-| v2 row | `matrix: "3.2"` | absent | derived **3.2**, unverified |
-| stamped row (`frameworkVersion: "4.3"`) | any | any | **4.3 recorded** — stamp always wins over any prior |
-| stamped row `"4.2"` | `matrix: "4.3"` | any | **4.2** — the map must NOT override a recorded stamp |
-| malformed (`frameworkVersion: 42` / `null` / `"x"`) | any | any | **unknown**, no throw |
+| Stored profile                                      | Seen map        | Legacy key | Expect                                                            |
+| --------------------------------------------------- | --------------- | ---------- | ----------------------------------------------------------------- |
+| v1 row (`trackVariant`, no stamp)                   | `matrix: "4.0"` | absent     | derived **4.0**, unverified                                       |
+| v1 row                                              | `matrix: "4.1"` | absent     | derived **4.1**, unverified                                       |
+| v1 row                                              | absent          | `"4.1"`    | derived **4.1** (migration seeds map from legacy)                 |
+| v2 row (`attachedBadge`, no stamp)                  | `matrix: "4.2"` | absent     | derived **4.2**, unverified                                       |
+| v2 row                                              | absent          | absent     | **unknown** — never "current"                                     |
+| v2 row                                              | `matrix: "2.9"` | absent     | **unknown** (below CHANGELOG floor; `changelogRank` → `Infinity`) |
+| v2 row                                              | `matrix: "3.2"` | absent     | derived **3.2**, unverified                                       |
+| stamped row (`frameworkVersion: "4.3"`)             | any             | any        | **4.3 recorded** — stamp always wins over any prior               |
+| stamped row `"4.2"`                                 | `matrix: "4.3"` | any        | **4.2** — the map must NOT override a recorded stamp              |
+| malformed (`frameworkVersion: 42` / `null` / `"x"`) | any             | any        | **unknown**, no throw                                             |
 
 Two assertions that are easy to get wrong and are the reason this test exists:
 
@@ -606,45 +606,45 @@ Two assertions that are easy to get wrong and are the reason this test exists:
 Assert the **staleness** verdict separately from stamp resolution, against a stubbed
 `PILLAR_BAR_RAISED`. This is where the level scoping and the direction rule get pinned:
 
-| Stamp | `barRaised` stub | Score | Expect |
-|---|---|---|---|
-| 4.2 | `architecture: {v:"4.3", levels:[1]}` | arch **1.0** | flag |
-| 4.2 | same | arch **1.5** | flag |
-| 4.2 | same | arch **2.0** | flag — band is `n`…`n+1` **inclusive** |
-| 4.2 | same | arch **2.5** | **no flag** — past the band |
-| 4.2 | same | arch **4.0** | no flag |
-| 4.2 | `coding: {v:"4.3", levels:[1,4]}` | coding **3.0** | **no flag** — the L2–L3 gap |
-| 4.2 | same | coding **4.5** | flag — upper island |
-| 4.2 | same | coding **5.0** | flag — `4`…`5` inclusive |
-| 4.2 | same | coding **1.5** | flag — lower island |
-| 4.3 | `architecture: {v:"4.3", levels:[1]}` | arch 1.0 | no flag — stamp not older than the raise |
-| 4.2 | `{}` (clarified only, nothing hardened) | any | **no flag anywhere** |
-| 4.1 | `uiUx: {v:"4.2", levels:[5]}` | uiUx 5.0 | flag — a raise from an *intermediate* version still counts |
-| unknown | any | any | unverified, not flagged as stale |
+| Stamp   | `barRaised` stub                        | Score          | Expect                                                     |
+| ------- | --------------------------------------- | -------------- | ---------------------------------------------------------- |
+| 4.2     | `architecture: {v:"4.3", levels:[1]}`   | arch **1.0**   | flag                                                       |
+| 4.2     | same                                    | arch **1.5**   | flag                                                       |
+| 4.2     | same                                    | arch **2.0**   | flag — band is `n`…`n+1` **inclusive**                     |
+| 4.2     | same                                    | arch **2.5**   | **no flag** — past the band                                |
+| 4.2     | same                                    | arch **4.0**   | no flag                                                    |
+| 4.2     | `coding: {v:"4.3", levels:[1,4]}`       | coding **3.0** | **no flag** — the L2–L3 gap                                |
+| 4.2     | same                                    | coding **4.5** | flag — upper island                                        |
+| 4.2     | same                                    | coding **5.0** | flag — `4`…`5` inclusive                                   |
+| 4.2     | same                                    | coding **1.5** | flag — lower island                                        |
+| 4.3     | `architecture: {v:"4.3", levels:[1]}`   | arch 1.0       | no flag — stamp not older than the raise                   |
+| 4.2     | `{}` (clarified only, nothing hardened) | any            | **no flag anywhere**                                       |
+| 4.1     | `uiUx: {v:"4.2", levels:[5]}`           | uiUx 5.0       | flag — a raise from an _intermediate_ version still counts |
+| unknown | any                                     | any            | unverified, not flagged as stale                           |
 
-**Multi-version jump** — stub two releases hardening *different* levels of one pillar:
+**Multi-version jump** — stub two releases hardening _different_ levels of one pillar:
 4.2 → `coding:[4]`, 4.3 → `coding:[1]`.
 
-| Stamp | Score | Expect |
-|---|---|---|
-| 4.1 | coding **4.5** | **flag** — 4.2 hardened L4; a newest-wins derivation misses this |
-| 4.1 | coding **1.5** | flag — 4.3 hardened L1 |
-| 4.1 | coding **3.0** | no flag — neither band covers it |
-| 4.2 | coding **4.5** | **no flag** — 4.2 is not newer than the stamp |
-| 4.2 | coding **1.5** | flag — only 4.3 counts from here |
+| Stamp | Score          | Expect                                                           |
+| ----- | -------------- | ---------------------------------------------------------------- |
+| 4.1   | coding **4.5** | **flag** — 4.2 hardened L4; a newest-wins derivation misses this |
+| 4.1   | coding **1.5** | flag — 4.3 hardened L1                                           |
+| 4.1   | coding **3.0** | no flag — neither band covers it                                 |
+| 4.2   | coding **4.5** | **no flag** — 4.2 is not newer than the stamp                    |
+| 4.2   | coding **1.5** | flag — only 4.3 counts from here                                 |
 
 The `4.1 / 4.5 → flag` row is the canary for the union derivation. It passes trivially
-under newest-wins if the two stubbed releases harden the *same* levels, so the stub must
+under newest-wins if the two stubbed releases harden the _same_ levels, so the stub must
 use different ones or the test proves nothing.
 
 **Half-step band anchoring** — the case where a `floor`/`ceil` shortcut silently
 over-flags. Stub `coding: {v:"4.3", levels:[5]}`, stamp 4.2:
 
-| Score | Expect | Why |
-|---|---|---|
+| Score   | Expect      | Why                                                       |
+| ------- | ----------- | --------------------------------------------------------- |
 | **4.5** | **no flag** | L5's band is 5.0–6.0. `ceil(4.5) = 5` would wrongly flag. |
-| 5.0 | flag | in L5's band |
-| 4.0 | no flag | |
+| 5.0     | flag        | in L5's band                                              |
+| 4.0     | no flag     |                                                           |
 
 Pair it with `levels:[4]`, stamp 4.2: **4.5 → flag** (band 4.0–5.0). The same score
 flagging under `[4]` but not under `[5]` is what proves the band is anchored to the
@@ -652,10 +652,10 @@ hardened level rather than computed from the score.
 
 **DEFERRED TO 4.4 — eased-only is unreachable in the app at 4.3.** Both eased levels v4.3 authored
 (domainLogic L2, uiUx L2) sit inside a raised band of the same pillar, so every real score there
-resolves to *mixed*, never *eased*. No fixture profile can exercise the green-eased chip or its byline
+resolves to _mixed_, never _eased_. No fixture profile can exercise the green-eased chip or its byline
 copy, and `test-profiles-stamp.json` therefore does not try.
 
-The logic is covered by stubs below (per-pillar and roll-up), so this is an untested *rendering*, not
+The logic is covered by stubs below (per-pillar and roll-up), so this is an untested _rendering_, not
 untested behaviour. To close it when a release eases a pillar it does not also harden: add that entry
 to `CHANGELOG` (the dev guard permits it — it only rejects a pillar+level in both sets), then add a
 fixture profile scoring inside the eased band. Until then the path ships unseen, which is acceptable
@@ -664,13 +664,13 @@ because nothing can reach it.
 **Eased band is the mirror, not a copy.** Stub `barEased: { coding: [4] }`, stamp 4.2 —
 band `[3, 4]`:
 
-| Score | Expect |
-|---|---|
-| 3.0 | may-qualify |
-| 3.5 | may-qualify |
-| 4.0 | may-qualify |
-| 4.5 | **no flag** — above the eased level; `barRaised:[4]` would flag this |
-| 2.5 | no flag |
+| Score | Expect                                                               |
+| ----- | -------------------------------------------------------------------- |
+| 3.0   | may-qualify                                                          |
+| 3.5   | may-qualify                                                          |
+| 4.0   | may-qualify                                                          |
+| 4.5   | **no flag** — above the eased level; `barRaised:[4]` would flag this |
+| 2.5   | no flag                                                              |
 
 The 4.5 row is the canary: the same `[4]` set flags a 4.5 under `barRaised` and not under
 `barEased`. If both bands are implemented identically, this is the row that catches it.
@@ -678,13 +678,13 @@ The 4.5 row is the canary: the same `[4]` set flags a 4.5 under `barRaised` and 
 **Bottom of scale** — stub level `[1]`, stamp 4.2, covering the asymmetry and the zero
 guard:
 
-| Score | `barRaised:[1]` | `barEased:[1]` |
-|---|---|---|
-| 0.0 | no flag | **no flag** — zero guard, not the band |
-| 0.5 | **no flag** — below `[1,2]` | **flag** — inside `[0,1]` |
-| 1.0 | flag | flag |
-| 2.0 | flag | no flag |
-| 2.5 | no flag | no flag |
+| Score | `barRaised:[1]`             | `barEased:[1]`                         |
+| ----- | --------------------------- | -------------------------------------- |
+| 0.0   | no flag                     | **no flag** — zero guard, not the band |
+| 0.5   | **no flag** — below `[1,2]` | **flag** — inside `[0,1]`              |
+| 1.0   | flag                        | flag                                   |
+| 2.0   | flag                        | no flag                                |
+| 2.5   | no flag                     | no flag                                |
 
 The `0.5` row proves the bands run in opposite directions; the `0.0` row proves the zero
 guard applies to eased only. Both fail if `mayQualify` is written as a mirror of
@@ -723,7 +723,7 @@ mode that makes the signal ignorable.
 - **Pre-v3 stamp** — set `"2.9"`; confirm it reads unknown rather than crashing
   (`changelogRank` → `Infinity`).
 - **Round-trip** — export profiles, re-import, confirm the stamp survives; also import an
-  *old* export file (v2, no stamp) and confirm `MIGRATIONS[2]` backfills it.
+  _old_ export file (v2, no stamp) and confirm `MIGRATIONS[2]` backfills it.
 - **Bump** — load a stale profile, save, confirm chip returns to green and the in-form
   icon clears.
 - Check the combobox at narrow width (chip must not crush the name) and with long

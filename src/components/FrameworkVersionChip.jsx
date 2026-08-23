@@ -1,6 +1,6 @@
-import { PILLAR_STATE } from "@/utils/profile-stamp";
 import { TOOL_TEXT } from "@/styles/control-typography";
 import { cn } from "@/utils";
+import { PILLAR_STATE } from "@/utils/profile-stamp";
 
 /** Screen-reader name for what the colour and icon carry visually. */
 const STATE_LABEL = {

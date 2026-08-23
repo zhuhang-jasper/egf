@@ -53,7 +53,14 @@ function stub(moves) {
   const g = "stamp";
   // Real bump timestamps, mirroring LEGACY_RELEASES in profile-stamp.js.
   const T = (iso) => Date.parse(iso);
-  const AT = { v43: T("2026-08-20T00:00+08:00"), v42: T("2026-08-10T00:00+08:00"), v41: T("2026-07-28T00:00+08:00"), v32: T("2026-07-20T00:00+08:00"), v31: T("2026-07-10T00:00+08:00"), ancient: T("2026-01-01T00:00+08:00") /* before the first commit */ };
+  const AT = {
+    v43: T("2026-08-20T00:00+08:00"),
+    v42: T("2026-08-10T00:00+08:00"),
+    v41: T("2026-07-28T00:00+08:00"),
+    v32: T("2026-07-20T00:00+08:00"),
+    v31: T("2026-07-10T00:00+08:00"),
+    ancient: T("2026-01-01T00:00+08:00") /* before the first commit */,
+  };
   const row = (frameworkVersion, savedAt) => {
     const p = { id: "p1", savedAt: savedAt ?? 0 };
     return frameworkVersion === undefined ? p : { ...p, frameworkVersion };
@@ -81,7 +88,10 @@ function stub(moves) {
 
   // 4.0 AND 3.0 NEVER SHIPPED: the live bump went 3.2 -> 4.1 in one commit, so no profile can date to
   // either. A save in the window the changelog labels "4.0" must infer 3.2, the version actually running.
-  check(g, "never-shipped 4.0 window infers 3.2", resolve(row(undefined, T("2026-07-25T00:00+08:00"))), { version: "3.2", source: STAMP_SOURCE.derived });
+  check(g, "never-shipped 4.0 window infers 3.2", resolve(row(undefined, T("2026-07-25T00:00+08:00"))), {
+    version: "3.2",
+    source: STAMP_SOURCE.derived,
+  });
 
   // A RECORDED STAMP ALWAYS WINS, including one older than the date would suggest. This is the precedence
   // canary: inverting it would re-date a correctly-stamped profile from when it happened to be re-saved.

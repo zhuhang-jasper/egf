@@ -304,7 +304,10 @@ if (import.meta.env.DEV) {
   // pillar", and a level outside 1-5 has no band, so both fail silently and permanently.
   const pillarIds = new Set(Object.keys(PILLARS));
   for (const { version, barRaised, barEased } of CHANGELOG) {
-    for (const [field, moved] of [["barRaised", barRaised], ["barEased", barEased]]) {
+    for (const [field, moved] of [
+      ["barRaised", barRaised],
+      ["barEased", barEased],
+    ]) {
       for (const [pillar, levels] of Object.entries(moved ?? {})) {
         if (!pillarIds.has(pillar)) {
           console.error(`CHANGELOG v${version} ${field}: unknown pillar id "${pillar}". Valid ids: ${[...pillarIds].join(", ")}.`);
