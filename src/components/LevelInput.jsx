@@ -25,7 +25,7 @@ function shouldCommitWhileTyping(s) {
   return s !== "" && !s.endsWith(".");
 }
 
-export function LevelInput({ value, onChange, ariaLabel, ariaLabelUp, ariaLabelDown, className }) {
+export function LevelInput({ value, onChange, ariaLabel, ariaLabelUp, ariaLabelDown, inputClassName }) {
   const touchPrimary = useTouchPrimary();
   const keyboardInputEnabled = useAppStore((s) => s.levelKeyboardInputEnabled);
   const keyboardLocked = touchPrimary && !keyboardInputEnabled;
@@ -46,7 +46,6 @@ export function LevelInput({ value, onChange, ariaLabel, ariaLabelUp, ariaLabelD
     <span
       className={cn(
         "group/level inline-flex items-stretch shrink-0 w-fit max-w-full overflow-hidden rounded-lg border border-[#ccc] bg-white focus-within:border-[#888]",
-        className,
       )}
     >
       {/* `print:hidden` on both steppers, not on the whole control: on paper the level is a VALUE to
@@ -111,7 +110,7 @@ export function LevelInput({ value, onChange, ariaLabel, ariaLabelUp, ariaLabelD
             e.currentTarget.blur();
           }
         }}
-        className={cn("w-12 text-center bg-transparent border-x border-x-[#e0e0e0] px-1 py-[7px] xs:py-2", TOOL_TEXT.field)}
+        className={cn("w-12 text-center bg-transparent border-x border-x-[#e0e0e0] px-1 py-[7px] xs:py-2", TOOL_TEXT.field, inputClassName)}
       />
       <button
         type="button"

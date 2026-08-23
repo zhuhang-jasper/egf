@@ -59,7 +59,7 @@ function PillarLabel({ pillarId }) {
  */
 const PILLAR_MARK = {
   [PILLAR_STATE.raised]: {
-    className: "border-amber-500/50 bg-amber-50 text-amber-700",
+    className: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-500/50",
     aria: "this level now expects more than when you rated it",
     tooltip: "This level now expects more than it did. You may be rating high.",
   },
@@ -69,7 +69,7 @@ const PILLAR_MARK = {
     tooltip: "This level now expects less than it did. You may qualify for more.",
   },
   [PILLAR_STATE.mixed]: {
-    className: "border-amber-500/50 bg-amber-50 text-amber-700",
+    className: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-500/50",
     aria: "levels either side of your rating changed",
     tooltip: "Levels either side of your rating changed. Worth a re-read.",
   },
@@ -85,7 +85,7 @@ function PillarLevelInput({ pillar, value, state, onChange }) {
         ariaLabel={mark ? `${pillar.label} level, ${mark.aria}` : `${pillar.label} level`}
         ariaLabelUp="Increase level"
         ariaLabelDown="Decrease level"
-        className={mark?.className}
+        inputClassName={mark?.className}
       />
       {mark?.tooltip ? <Tooltip text={mark.tooltip} className="w-[12rem] whitespace-normal" /> : null}
     </span>
