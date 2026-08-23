@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import { HelpCircle } from "lucide-react";
 
@@ -6,6 +6,7 @@ import { LevelInput } from "@/components/LevelInput";
 import { Tooltip } from "@/components/ui/Tooltip";
 
 import { usePillarStampStates } from "@/hooks/useProfileStamp";
+import { useTouchPrimary } from "@/hooks/useTouchPrimary";
 
 import { useAppStore } from "@/store/useAppStore";
 
@@ -91,6 +92,36 @@ function PillarLevelInput({ pillar, value, state, onChange }) {
   );
 }
 
+function PillarMatrixButton({ pillar, onOpenPillarInMatrix }) {
+  const touchPrimary = useTouchPrimary();
+  const [touchTooltipVisible, setTouchTooltipVisible] = useState(false);
+
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        if (touchPrimary && !touchTooltipVisible) {
+          setTouchTooltipVisible(true);
+          return;
+        }
+        track("pillar_help_opened", { pillar: pillar.id });
+        onOpenPillarInMatrix(pillar.id);
+      }}
+      aria-label={`View ${pillar.label} in the competency matrix`}
+      // `print:hidden` — a cross-tab jump into the matrix is an action, and the matrix it
+      // jumps to isn't on this printed page anyway.
+      className="group relative inline-flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full text-slate-700 transition-colors hover:text-slate-900 active:text-slate-900 print:hidden"
+    >
+      <HelpCircle className="size-3.5" aria-hidden />
+      <Tooltip
+        text={`${touchPrimary ? "Tap again" : "Click"} to view matrix in Theory tab`}
+        visible={touchPrimary && touchTooltipVisible}
+        onDismiss={() => setTouchTooltipVisible(false)}
+      />
+    </button>
+  );
+}
+
 export function PillarCluster({ group, onOpenPillarInMatrix }) {
   const pillarLevels = useAppStore((s) => s.pillarLevels);
   const setLevel = useAppStore((s) => s.setLevel);
@@ -118,22 +149,7 @@ export function PillarCluster({ group, onOpenPillarInMatrix }) {
         <div key={pillar.id} className={cn("grid grid-cols-[1fr_auto] items-center w-full gap-0 leading-[1.35] text-slate-800", TOOL_TEXT.field)}>
           <PillarLabel pillarId={pillar.id} />
           <span className="flex flex-row items-center justify-end shrink-0 gap-3 xs:gap-6">
-            {onOpenPillarInMatrix ? (
-              <button
-                type="button"
-                onClick={() => {
-                  track("pillar_help_opened", { pillar: pillar.id });
-                  onOpenPillarInMatrix(pillar.id);
-                }}
-                aria-label={`View ${pillar.label} in the competency matrix`}
-                // `print:hidden` — a cross-tab jump into the matrix is an action, and the matrix it
-                // jumps to isn't on this printed page anyway.
-                className="group relative inline-flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full text-slate-700 transition-colors hover:text-slate-900 active:text-slate-900 print:hidden"
-              >
-                <HelpCircle className="size-3.5" aria-hidden />
-                <Tooltip text="View in matrix" />
-              </button>
-            ) : null}
+            {onOpenPillarInMatrix ? <PillarMatrixButton pillar={pillar} onOpenPillarInMatrix={onOpenPillarInMatrix} /> : null}
             <PillarLevelInput pillar={pillar} value={pillarLevels[pillar.id]} state={stampStates[pillar.id]} onChange={setLevel} />
           </span>
         </div>

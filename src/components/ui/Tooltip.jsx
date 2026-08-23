@@ -43,7 +43,7 @@ function headerAwarePadding() {
  *
  * Defaults to a single short line; pass `className` (e.g. `whitespace-normal w-[...]`) for longer wrapping text.
  */
-export function Tooltip({ text, className, visible = false, placement = "top" }) {
+export function Tooltip({ text, className, visible = false, placement = "top", onDismiss }) {
   const anchorRef = useRef(null);
   const [touchVisible, setTouchVisible] = useState(false);
 
@@ -96,6 +96,7 @@ export function Tooltip({ text, className, visible = false, placement = "top" })
     const onPointerDown = (event) => {
       if (!anchor.contains(event.target)) {
         setTouchVisible(false);
+        onDismiss?.();
       }
     };
     anchor.addEventListener("click", onClick);
@@ -108,7 +109,7 @@ export function Tooltip({ text, className, visible = false, placement = "top" })
       anchor.removeEventListener("pointerenter", update);
       anchor.removeEventListener("focusin", update);
     };
-  }, [anchor, update]);
+  }, [anchor, onDismiss, update]);
 
   if (!text) {
     return null;
