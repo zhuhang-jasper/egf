@@ -57,9 +57,12 @@ The same profile at different versions, and the scores that stay clear.
 one flags none, because a 0.5 in Communication still clears a hardened L1. Age alone does not flag —
 the score has to land in a band that actually moved.
 
-**B6** proves a 4.2 profile can avoid all flags at the highest safe score for each pillar. The safe maximums
+**B6** proves a 4.2 profile can avoid raised flags at the highest safe score for each pillar. The safe maximums
 are Coding 4.5, Domain Logic 4.5, Architecture 4.5, AI 5.0, UI/UX 2.5, Product Sense 2.5, Process 1.5,
 Communication 0.5, and Ownership 3.5.
+
+**B8** is the eased-only case. It should show an amber `v3.2 !` chip and an amber Product Sense input, with
+the tooltip explaining that the profile may now qualify for more.
 
 ## C — grey `v???`
 

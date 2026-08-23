@@ -6,15 +6,16 @@ import { PILLAR_STATE } from "@/utils/profile-stamp";
 const STATE_LABEL = {
   [PILLAR_STATE.clear]: "up to date",
   [PILLAR_STATE.raised]: "needs review",
-  [PILLAR_STATE.eased]: "up to date",
+  [PILLAR_STATE.eased]: "needs review",
   [PILLAR_STATE.mixed]: "needs review",
-  [PILLAR_STATE.unverified]: "version unverified",
+  [PILLAR_STATE.unverified]: "version unknown",
 };
 
 /**
  * Green and amber lifted from `SAVE_STATUS_META` (TitleToolbar) so settled/needs-action match app-wide.
- * `eased` is green on purpose — good news should not pull like a warning; `mixed` leans amber because "may
- * be wrong in some direction" is caution, and must not borrow the grey that means "no information".
+ * `eased` is amber too: a changed level needs review even when the change may qualify the user for more.
+ * `mixed` is amber because "may be wrong in some direction" is caution, and must not borrow the grey that
+ * means "no information".
  *
  * Bare glyphs, not lucide icons: at this rung a circled mark spends most of its box on the ring. Text also
  * inherits the font and sits on the version's baseline, which an SVG has to be nudged onto.
@@ -29,8 +30,8 @@ const STATE_META = {
     className: "border-amber-500/50 bg-amber-50 text-amber-700",
   },
   [PILLAR_STATE.eased]: {
-    mark: "✓",
-    className: "border-green-600/40 bg-green-50 text-green-700",
+    mark: "!",
+    className: "border-amber-500/50 bg-amber-50 text-amber-700",
   },
   [PILLAR_STATE.mixed]: {
     mark: "!",

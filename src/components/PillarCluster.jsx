@@ -64,7 +64,7 @@ const PILLAR_MARK = {
     tooltip: "This level now expects more than it did. You may be rating high.",
   },
   [PILLAR_STATE.eased]: {
-    className: null, // Good news: no tint. The tooltip still carries it for anyone who looks.
+    className: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-500/50",
     aria: "this level now expects less than when you rated it",
     tooltip: "This level now expects less than it did. You may qualify for more.",
   },

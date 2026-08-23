@@ -7,7 +7,7 @@
     "how": "A = unstamped, dated across every shipped version. B = the same scores at different versions, showing when green is earned. C = grey. D = recorded stamps, which beat the date. E = per-pillar states.",
     "note": "Every state is reachable by import: frameworkVersion and savedAt both live on the profile and survive import unchanged.",
     "note_B7": "Scored to sit in every pillar gap after the 4.0/3.0 backfill. Green despite a v2.8 stamp. Recompute if any barRaised changes.",
-    "note_B8": "The eased-only case: Product Sense 0.5 against a 3.2-era date. 4.0 eased Product Sense L1 without raising it, so this resolves to eased (green, not amber) rather than mixed. Unreachable before the backfill."
+    "note_B8": "The eased-only case: Product Sense 0.5 against a 3.2-era date. 4.0 eased Product Sense L1 without raising it, so this resolves to eased and is now flagged amber for review. Unreachable before the backfill."
   },
   "profiles": [
     {

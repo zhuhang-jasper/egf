@@ -33,7 +33,7 @@ export function ProfileByline({ className }) {
   }
 
   const savedAt = formatSavedAt(active.savedAt);
-  const isStale = state === PILLAR_STATE.raised || state === PILLAR_STATE.mixed;
+  const isStale = state === PILLAR_STATE.raised || state === PILLAR_STATE.eased || state === PILLAR_STATE.mixed;
   // Capital F: a short form of "9-Pillar Engineer Growth Framework", not the generic noun. Not "EGF" —
   // site.js already rejected a bare acronym nothing on the page spells out. "v?" keeps the same shape as the
   // stamped line; no bound like "< v3.1", which the data cannot support.

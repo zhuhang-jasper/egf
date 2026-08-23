@@ -229,16 +229,16 @@ function stub(moves) {
     resolvePillarState({ pillar: "coding", score: 3.0, stamp: "4.2", changelog: squeeze }),
     PILLAR_STATE.mixed,
   );
-  // An eased-only pillar must NOT produce the warning state.
+  // An eased-only pillar remains distinct for its positive tooltip, but is still flagged.
   check(
     g,
-    "eased-only is not raised",
+    "eased-only remains distinct at pillar level",
     resolvePillarState({ pillar: "coding", score: 4.0, stamp: "4.2", changelog: stub({ "4.3": { barEased: { coding: [4] } } }) }),
     PILLAR_STATE.eased,
   );
 }
 
-// ── Roll-up: amber iff anything is raised ──────────────────────────────────────────────────────────
+// ── Roll-up: preserve the aggregate changed direction ─────────────────────────────────────────────
 {
   const g = "rollup";
   const changelog = stub({ "4.3": { barRaised: { architecture: [1] }, barEased: { coding: [4] } } });
@@ -251,18 +251,18 @@ function stub(moves) {
   // L1/L3-L5), so no real score reaches eased-only. A later release that eases a pillar it does not also
   // harden will light this path up in the app for the first time — it is tested here so that day is boring.
   check(g, "some eased, none raised", roll({ architecture: 4.0, coding: 3.5 }), PILLAR_STATE.eased);
-  // The common profile-level mixed case: two DIFFERENT pillars moving oppositely resolves to raised.
-  check(g, "raised + eased across pillars is raised", roll({ architecture: 1.0, coding: 3.5 }), PILLAR_STATE.raised);
-  // A per-pillar mixed also rolls up as raised.
+  // The profile-level mixed case: two DIFFERENT pillars moving oppositely preserves both directions.
+  check(g, "raised + eased across pillars is mixed", roll({ architecture: 1.0, coding: 3.5 }), PILLAR_STATE.mixed);
+  // A per-pillar mixed also rolls up as mixed.
   check(
     g,
-    "per-pillar mixed rolls up as raised",
+    "per-pillar mixed rolls up as mixed",
     resolveProfileState({
       pillarLevels: { coding: 3.0 },
       stamp: "4.2",
       changelog: stub({ "4.3": { barRaised: { coding: [2] }, barEased: { coding: [4] } } }),
     }),
-    PILLAR_STATE.raised,
+    PILLAR_STATE.mixed,
   );
   check(g, "unknown stamp is unverified", roll({ architecture: 1.0 }, null), PILLAR_STATE.unverified);
   check(g, "current stamp is clear", roll({ architecture: 1.0 }, "4.3"), PILLAR_STATE.clear);

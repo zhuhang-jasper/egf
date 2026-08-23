@@ -194,23 +194,32 @@ export function resolvePillarState({ pillar, score, stamp, changelog }) {
 }
 
 /**
- * Whole-profile roll-up for the chip: raised iff ANY pillar is raised. An over-rating is the actionable
- * fact, and eased pillars stay discoverable in-form. Same vocabulary as resolvePillarState, so the chip and
- * the in-form mark share one predicate.
+ * Whole-profile roll-up for the chip: preserve whether changed pillars are raised, eased, or both. The chip
+ * can style all three as amber while the state still tells callers what kind of change occurred.
  */
 export function resolveProfileState({ pillarLevels, stamp, changelog }) {
   if (!isVersionShaped(stamp)) {
     return PILLAR_STATE.unverified;
   }
-  let anyEased = false;
+  let hasRaised = false;
+  let hasEased = false;
   for (const [pillar, score] of Object.entries(pillarLevels ?? {})) {
     const state = resolvePillarState({ pillar, score, stamp, changelog });
     if (state === PILLAR_STATE.raised || state === PILLAR_STATE.mixed) {
-      return PILLAR_STATE.raised;
+      hasRaised = true;
     }
-    if (state === PILLAR_STATE.eased) {
-      anyEased = true;
+    if (state === PILLAR_STATE.eased || state === PILLAR_STATE.mixed) {
+      hasEased = true;
     }
   }
-  return anyEased ? PILLAR_STATE.eased : PILLAR_STATE.clear;
+  if (hasRaised && hasEased) {
+    return PILLAR_STATE.mixed;
+  }
+  if (hasRaised) {
+    return PILLAR_STATE.raised;
+  }
+  if (hasEased) {
+    return PILLAR_STATE.eased;
+  }
+  return PILLAR_STATE.clear;
 }
