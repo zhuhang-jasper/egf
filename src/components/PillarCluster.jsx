@@ -1,7 +1,11 @@
+import { useMemo } from "react";
+
 import { HelpCircle } from "lucide-react";
 
 import { LevelInput } from "@/components/LevelInput";
 import { Tooltip } from "@/components/ui/Tooltip";
+
+import { usePillarStampStates } from "@/hooks/useProfileStamp";
 
 import { useAppStore } from "@/store/useAppStore";
 
@@ -10,6 +14,7 @@ import { CARD_TINTED, clusterCardStyle } from "@/styles/card";
 import { CONTROL_TEXT, TOOL_TEXT } from "@/styles/control-typography";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
+import { PILLAR_STATE } from "@/utils/profile-stamp";
 
 /**
  * Emoji, pillar name in bold, then the "(Organ)" metaphor muted — each spaced on its own.
@@ -45,9 +50,56 @@ function PillarLabel({ pillarId }) {
   );
 }
 
+/**
+ * INTERIM: tints the LevelInput rather than adding an icon by the name — no width cost (PillarLabel has
+ * ~27px of slack), and it marks the number that may be wrong. Moves into PillarLabel once the slider lands.
+ * No `unverified` entry: without a version we cannot say any level moved, and nine tints would look like
+ * nine genuine raises. Colour is not accessible alone, hence the aria text.
+ */
+const PILLAR_MARK = {
+  [PILLAR_STATE.raised]: {
+    className: "border-amber-500/50 bg-amber-50 text-amber-700",
+    aria: "this level now expects more than when you rated it",
+    tooltip: "This level now expects more than it did. You may be rating high.",
+  },
+  [PILLAR_STATE.eased]: {
+    className: null, // Good news: no tint. The tooltip still carries it for anyone who looks.
+    aria: "this level now expects less than when you rated it",
+    tooltip: "This level now expects less than it did. You may qualify for more.",
+  },
+  [PILLAR_STATE.mixed]: {
+    className: "border-amber-500/50 bg-amber-50 text-amber-700",
+    aria: "levels either side of your rating changed",
+    tooltip: "Levels either side of your rating changed. Worth a re-read.",
+  },
+};
+
+function PillarLevelInput({ pillar, value, state, onChange }) {
+  const mark = PILLAR_MARK[state] ?? null;
+  return (
+    <span className={cn("group relative inline-flex", mark?.tooltip && "cursor-help")}>
+      <LevelInput
+        value={value}
+        onChange={(v) => onChange(pillar.id, v)}
+        ariaLabel={mark ? `${pillar.label} level, ${mark.aria}` : `${pillar.label} level`}
+        ariaLabelUp="Increase level"
+        ariaLabelDown="Decrease level"
+        className={mark?.className}
+      />
+      {mark?.tooltip ? <Tooltip text={mark.tooltip} className="w-[12rem] whitespace-normal" /> : null}
+    </span>
+  );
+}
+
 export function PillarCluster({ group, onOpenPillarInMatrix }) {
   const pillarLevels = useAppStore((s) => s.pillarLevels);
   const setLevel = useAppStore((s) => s.setLevel);
+  // Two selections, not one `.find()` selector: that builds its result during render, so Zustand's
+  // reference check would never settle.
+  const profiles = useAppStore((s) => s.profiles);
+  const activeSavedProfileId = useAppStore((s) => s.activeSavedProfileId);
+  const activeProfile = useMemo(() => profiles.find((p) => p.id === activeSavedProfileId) ?? null, [profiles, activeSavedProfileId]);
+  const stampStates = usePillarStampStates(activeProfile, pillarLevels);
   const cluster = CLUSTERS[group.id];
 
   return (
@@ -82,13 +134,7 @@ export function PillarCluster({ group, onOpenPillarInMatrix }) {
                 <Tooltip text="View in matrix" />
               </button>
             ) : null}
-            <LevelInput
-              value={pillarLevels[pillar.id]}
-              onChange={(v) => setLevel(pillar.id, v)}
-              ariaLabel={`${pillar.label} level`}
-              ariaLabelUp="Increase level"
-              ariaLabelDown="Decrease level"
-            />
+            <PillarLevelInput pillar={pillar} value={pillarLevels[pillar.id]} state={stampStates[pillar.id]} onChange={setLevel} />
           </span>
         </div>
       ))}

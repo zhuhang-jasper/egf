@@ -3,15 +3,17 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, Search, Trash2 } from "lucide-react";
 
 import { BadgePicker } from "@/components/BadgePicker";
+import { FrameworkVersionChip } from "@/components/FrameworkVersionChip";
 import { TrackBadge } from "@/components/TrackBadge";
 import { Input } from "@/components/ui/input";
 
+import { useProfileStampState } from "@/hooks/useProfileStamp";
 import { useTouchPrimary } from "@/hooks/useTouchPrimary";
 
 import { useAppStore } from "@/store/useAppStore";
 
 import { LAYER, MAX_PROFILE_NAME_LENGTH, normalizeAttachedBadge, TRACK_BADGE_OPTIONS, TRACK_BADGE_UI } from "@/constants";
-import { CONTROL_TEXT } from "@/styles/control-typography";
+import { CONTROL_TEXT, TOOL_TEXT } from "@/styles/control-typography";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
 import { getPopoverViewportBounds } from "@/utils/scroll";
@@ -54,6 +56,12 @@ const MARQUEE_GAP_PX = 40;
  * `deps` lets the caller force a re-measure when layout that affects width changes (e.g. the list
  * opening, or the row count changing the scrollbar).
  */
+/** One row's version chip. Its own component because the resolver is a hook and rows are mapped. */
+function ProfileVersionChip({ profile }) {
+  const { state, version } = useProfileStampState(profile);
+  return <FrameworkVersionChip state={state} version={version} className="ml-2" />;
+}
+
 function ScrollingLabel({ label, className, deps }) {
   const boxRef = useRef(null);
   const textRef = useRef(null);
@@ -468,7 +476,7 @@ export function ProfileCombobox({ titleError = false }) {
                     //    outline (not a background), so it layers cleanly on top of the active row
                     //    rather than competing with its tint.
                     className={cn(
-                      "relative flex items-stretch pr-2 hover:bg-muted/60",
+                      "relative flex items-stretch pr-0.5 hover:bg-muted/60",
                       isActive && "bg-muted before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:bg-primary hover:bg-muted",
                       isHighlighted && "z-10 bg-accent ring-2 ring-inset ring-primary/40 hover:bg-accent",
                     )}
@@ -480,26 +488,38 @@ export function ProfileCombobox({ titleError = false }) {
                       // rather than a dead click.
                       disabled={isActive}
                       className={cn(
-                        "flex min-w-0 flex-1 select-none items-center py-2 pl-0 pr-3 text-left",
+                        // `pr-1`, not `pr-3`: the trailing pad used to sit between the chip and the trash
+                        // button, spending width the profile name needs. The chip carries its own `ml-2`,
+                        // so it stays clear of the name while sitting close to the trash.
+                        "flex min-w-0 flex-1 select-none items-center py-2 pl-0 pr-1 text-left",
                         CONTROL_TEXT,
                         isActive ? "cursor-default" : "cursor-pointer",
                       )}
                       onMouseEnter={() => setHighlight(i)}
                       onClick={() => handleLoad(pr)}
                     >
-                      {/* Badge slot spans from the row's left edge to where the input text starts. No-badge rows show an em-dash. */}
-                      <span className="flex w-14 shrink-0 items-center justify-center">
+                      {/* Badge slot spans from the row's left edge to where the input text starts. No-badge rows show an em-dash.
+                          `annotation` (9/11) rather than TrackBadge's own `label` (10/12), matching BadgePicker's
+                          pill: these rows sit directly under that control, and the two reading a rung apart looked
+                          like a bug. The narrower slot it allows goes to the profile name. */}
+                      <span className="flex w-12 shrink-0 items-center justify-center">
                         {normalizeAttachedBadge(pr.attachedBadge) === "none" ? (
                           <span className="text-muted-foreground">{TRACK_BADGE_UI.none.shortLabel}</span>
                         ) : (
-                          <TrackBadge variant={pr.attachedBadge} />
+                          <TrackBadge variant={pr.attachedBadge} className={TOOL_TEXT.annotation} />
                         )}
                       </span>
                       <ScrollingLabel label={label} deps={open} className={cn(isActive && "font-semibold text-foreground")} />
+                      {/* Every row, not just the loaded one: the chip answers "which of my profiles need
+                          attention" before one is opened. The popover is w-max, so it widens to fit rather
+                          than crushing the name, and ScrollingLabel marquees if it is squeezed anyway. */}
+                      <ProfileVersionChip profile={pr} />
                     </button>
                     <button
                       type="button"
-                      className="flex w-9 shrink-0 cursor-pointer items-center justify-center rounded-md text-destructive hover:bg-destructive/10"
+                      // `w-8`, down from w-9: still a 32px tap target (the accessible floor) with the row's
+                      // trailing pad trimmed to match, so the width goes to the name instead of to margin.
+                      className="flex w-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-destructive hover:bg-destructive/10"
                       aria-label={`Remove profile ${label}`}
                       onClick={(e) => {
                         e.stopPropagation();

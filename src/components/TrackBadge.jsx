@@ -20,7 +20,9 @@ export function TrackBadge({ variant, className, size = "sm", hidden = false, ch
   const isLarge = size === "md";
 
   // `minWidth` inline, not `min-w-[...]`: Tailwind scans source text, so an interpolated class name emits no rule.
-  // md's font scales with the chart to stay in proportion to the title; sm keeps the 10px its class sets.
+  // md's font scales with the chart to stay in proportion to the title; sm takes whatever rung is in force —
+  // its own `label` by default, or a smaller one passed via `className` (the profile dropdown drops it to
+  // `annotation` to sit level with BadgePicker). `minWidth` being `em` means the box follows either way.
   const scaledBadgeStyle = {
     minWidth: `${FE_UI.chart.trackBadgeMdMinWidthEm}em`,
     ...(isLarge ? { fontSize: getChartSecondaryLabelSizePx(chartWidth || FE_UI.page.chartMinWidthPx) } : null),

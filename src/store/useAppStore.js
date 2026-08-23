@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
 import { MAX_PROFILE_NAME_LENGTH, normalizeAttachedBadge } from "@/constants";
+import { FRAMEWORK_VERSION } from "@/constants/changelog";
 import { fillPillarLevels, getDefaultChartState, newSavedProfileId, normalizeSavedState, parseToCanonicalState } from "@/constants/levels";
 import { track } from "@/utils/analytics";
 import { exportProfilesToFile, parseImportedProfiles } from "@/utils/profile-transfer";
@@ -598,6 +599,10 @@ export const useAppStore = create((set, get) => ({
       pillarLevels: state.pillarLevels,
       attachedBadge: state.attachedBadge,
       savedAt: Date.now(),
+      // Every save stamps the current framework version, whether or not the levels changed: saving is the
+      // user asserting these scores are right under the matrix they can see now. This is the only place a
+      // stamp is recorded, so a stale profile heals by being saved and by nothing else.
+      frameworkVersion: FRAMEWORK_VERSION,
     };
     let next = replaceIdx >= 0 ? existing.map((p, i) => (i === replaceIdx ? row : p)) : [...existing, row];
     const removedSource = removeId != null && removeId !== id;

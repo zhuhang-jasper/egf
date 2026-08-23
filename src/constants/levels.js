@@ -127,6 +127,9 @@ export function normalizeStoredProfile(p) {
     pillarLevels: canonical.pillarLevels,
     attachedBadge: canonical.attachedBadge,
     savedAt: Number.isFinite(p.savedAt) ? p.savedAt : 0,
+    // Absent on pre-4.3 rows. Null, never defaulted to current: those are dated from `savedAt` instead
+    // (see utils/profile-stamp.js), and the next save records a real one.
+    frameworkVersion: typeof p.frameworkVersion === "string" && p.frameworkVersion ? p.frameworkVersion : null,
   };
 }
 

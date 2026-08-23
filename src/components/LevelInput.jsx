@@ -25,7 +25,7 @@ function shouldCommitWhileTyping(s) {
   return s !== "" && !s.endsWith(".");
 }
 
-export function LevelInput({ value, onChange, ariaLabel, ariaLabelUp, ariaLabelDown }) {
+export function LevelInput({ value, onChange, ariaLabel, ariaLabelUp, ariaLabelDown, className }) {
   const touchPrimary = useTouchPrimary();
   const keyboardInputEnabled = useAppStore((s) => s.levelKeyboardInputEnabled);
   const keyboardLocked = touchPrimary && !keyboardInputEnabled;
@@ -43,7 +43,12 @@ export function LevelInput({ value, onChange, ariaLabel, ariaLabelUp, ariaLabelD
   };
 
   return (
-    <span className="group/level inline-flex items-stretch shrink-0 w-fit max-w-full overflow-hidden rounded-lg border border-[#ccc] bg-white focus-within:border-[#888]">
+    <span
+      className={cn(
+        "group/level inline-flex items-stretch shrink-0 w-fit max-w-full overflow-hidden rounded-lg border border-[#ccc] bg-white focus-within:border-[#888]",
+        className,
+      )}
+    >
       {/* `print:hidden` on both steppers, not on the whole control: on paper the level is a VALUE to
           read, so the number stays and only the two things you would have clicked go. The input keeps
           its `border-x`, which reads as the cell edge once the buttons either side are gone. */}

@@ -4,6 +4,7 @@ import { Calculator, CircleCheck, Copy, FilePlus, MoreVertical, Pencil, Save, Un
 
 import { BackupReminderDialog } from "@/components/BackupReminderDialog";
 import { ProfileActionsMenu } from "@/components/ProfileActionsMenu";
+import { ProfileByline } from "@/components/ProfileByline";
 import { ProfileCombobox } from "@/components/ProfileCombobox";
 import { SaveCollisionDialog } from "@/components/SaveCollisionDialog";
 import { Button } from "@/components/ui/button";
@@ -449,6 +450,10 @@ export function TitleToolbar() {
           <ProfileActionsMenu />
         </div>
       </div>
+      {/* Row 3 — provenance for the loaded profile. Content, not chrome, so it is NOT `print:hidden`:
+          a printed chart should carry which framework revision it was rated against. Renders nothing
+          when no profile is loaded, so it costs no vertical space on a fresh draft. */}
+      <ProfileByline />
       <SaveCollisionDialog collision={pendingCollision} onOverwrite={handleOverwrite} onCancel={() => setPendingCollision(null)} />
       <BackupReminderDialog open={backupReminderOpen} onClose={() => setBackupReminderOpen(false)} />
     </div>

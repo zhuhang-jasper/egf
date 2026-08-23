@@ -1,3 +1,4 @@
+import { PILLARS } from "@/constants/framework";
 import { THEORY_SECTIONS } from "@/utils/theory-url";
 
 // Theory-tab changelog, surfaced by ChangelogModal, which renders the array top to bottom.
@@ -84,6 +85,7 @@ export const CHANGELOG = [
     // No `pillars` tag. The rename swept the whole app, but Section I never printed an L1-L5 anywhere,
     // so a Pillars dot would send a reader looking for a change they cannot find.
     sections: ["seniority", "matrix", "tracks"],
+    // No bars moved: an intro rewrite and a caption, no cell text touched.
     changes: [
       "Career Growth Paths: career ladder renamed from L1-L5 to S1-S5 (career stages), so it no longer collides with the pillar proficiency scale. A bare L now always means a pillar level. Added a notation line under the section heading spelling out the difference.",
       "Proficiency Levels: intro rewritten to bridge pillar levels to career stages. Seniority reads from the whole chart shape, not from one axis.",
@@ -94,6 +96,7 @@ export const CHANGELOG = [
     version: "4.1",
     date: "Jul 25, 2026",
     sections: ["seniority", "matrix"],
+    // No bars moved: tier labels renamed on the pillar cards, no cell text touched.
     changes: [
       "Proficiency Levels: renamed competency bands to skill tiers, which wrongly implied a band-to-level mapping of focus areas.",
       "Competency Matrix: skill tier labels on each pillar card updated to match the rename.",
@@ -103,6 +106,30 @@ export const CHANGELOG = [
     version: "4.0",
     date: "Jul 24, 2026",
     sections: ["seniority", "pillars", "matrix"],
+    // Backfilled from the cell diff. 4.0 never shipped as a live version (the bump went 3.2 to 4.1), but the
+    // marks still count: its content reached users inside 4.1, and movedLevelsSince unions every entry newer
+    // than the stamp, so a 3.2-stamped profile picks these up.
+    //
+    // Most of the easing is a focus area moving OUT of a cell to its proper band rather than the level
+    // genuinely softening: Secure Design and Observability left Architecture L2, Technical Shortcuts left
+    // Product Sense L1, Initiative & De-risking left Ownership L2.
+    barRaised: {
+      coding: [1, 2, 3, 5],
+      domainLogic: [1, 2, 3],
+      architecture: [1, 4],
+      ai: [1, 2, 3, 4],
+      uiUx: [1, 2, 3, 4, 5],
+      productSense: [2],
+      process: [1, 2, 3, 4, 5],
+      communication: [1, 2, 3, 4],
+      ownership: [1, 3, 4],
+    },
+    barEased: {
+      domainLogic: [4],
+      architecture: [2, 3],
+      productSense: [1, 4],
+      ownership: [2],
+    },
     changes: [
       "Seniority Levels: renamed to Proficiency Levels. Clarified they rate one pillar at a time, not overall seniority. Senior levels reframed around setting direction and lifting the team.",
       "Pillars: every pillar's focus summary rewritten to describe precise, tool-agnostic outcomes.",
@@ -116,6 +143,7 @@ export const CHANGELOG = [
     // All four: the em-dash sweep in the last bullet touched every section's copy, so every section
     // is tagged. A bullet that says "all sections" has to list them, or it raises no dot at all.
     sections: ["pillars", "seniority", "matrix", "tracks"],
+    // No bars moved: one L5 description condensed, no cell text touched.
     changes: [
       "Seniority Levels: condensed L5 description.",
       "Career Track: renamed to Career Growth Paths. Full rewrite, added junior to senior charts, updated senior fork charts, updated L6 role mapping.",
@@ -126,6 +154,7 @@ export const CHANGELOG = [
     version: "3.1",
     date: "Jul 8, 2026",
     sections: ["seniority", "matrix"],
+    // No bars moved: the L5 persona names and column headers changed, the cell text did not.
     changes: [
       "Seniority Levels: level titles unified into quality/identity pairs.",
       "Competency Matrix: L5 persona rewrite and matrix column headers updated.",
@@ -135,6 +164,22 @@ export const CHANGELOG = [
     version: "3.0",
     date: "Jul 7, 2026",
     sections: ["pillars", "matrix"],
+    // Backfilled from the cell diff. Like 4.0 this never shipped as a live version, but its marks still
+    // count for any older stamp — see the note on 4.0.
+    //
+    // Nothing eased. UI/UX and Process are absent because both were reword-only (Process renamed personas,
+    // e.g. The Shield to The Process Shield). Ownership L4 is also absent and is the one close call:
+    // Mentorship left the cell, but the de-risking content that replaced it is comparably demanding, so the
+    // two wash out rather than the bar dropping.
+    barRaised: {
+      coding: [2, 3],
+      domainLogic: [1, 2, 3, 4],
+      architecture: [1, 2, 3, 4],
+      ai: [1, 5],
+      productSense: [3, 4],
+      communication: [1, 2, 3, 4],
+      ownership: [2, 3],
+    },
     changes: [
       "Pillars: focus summary rewrite.",
       "Competency Matrix: added missing competencies and fixed mentorship double counting.",
@@ -254,5 +299,28 @@ if (import.meta.env.DEV) {
   // the modal is showing a shipped version as unreleased.
   if (CHANGELOG_DRAFT && !isAheadOfNewest(CHANGELOG_DRAFT.version)) {
     console.error(`CHANGELOG_DRAFT: v${CHANGELOG_DRAFT.version} is not ahead of the published v${FRAMEWORK_VERSION}. Set it to null once published.`);
+  }
+  // Same reasoning for barRaised/barEased: a typo'd pillar id means "nobody is ever flagged for this
+  // pillar", and a level outside 1-5 has no band, so both fail silently and permanently.
+  const pillarIds = new Set(Object.keys(PILLARS));
+  for (const { version, barRaised, barEased } of CHANGELOG) {
+    for (const [field, moved] of [["barRaised", barRaised], ["barEased", barEased]]) {
+      for (const [pillar, levels] of Object.entries(moved ?? {})) {
+        if (!pillarIds.has(pillar)) {
+          console.error(`CHANGELOG v${version} ${field}: unknown pillar id "${pillar}". Valid ids: ${[...pillarIds].join(", ")}.`);
+          continue;
+        }
+        if (!Array.isArray(levels) || levels.some((l) => !Number.isInteger(l) || l < 1 || l > 5)) {
+          console.error(`CHANGELOG v${version} ${field}.${pillar}: levels must be integers 1-5, got ${JSON.stringify(levels)}.`);
+        }
+      }
+    }
+    // A cell cannot get harder and easier in the same release, and nothing else catches the overlap.
+    for (const [pillar, levels] of Object.entries(barRaised ?? {})) {
+      const both = (barEased?.[pillar] ?? []).filter((l) => Array.isArray(levels) && levels.includes(l));
+      if (both.length > 0) {
+        console.error(`CHANGELOG v${version}: ${pillar} L${both.join(", L")} appears in both barRaised and barEased.`);
+      }
+    }
   }
 }

@@ -8,21 +8,21 @@ export const EXPORT_FORMAT = "egf-profiles";
  * profile changes, and add a matching entry to {@link MIGRATIONS} that maps a payload
  * of the previous version up to this one. Import walks that chain so old files keep working.
  */
-export const EXPORT_VERSION = 2;
+export const EXPORT_VERSION = 3;
 
-/** Build the JSON payload for a set of saved profiles (always the current version). */
+/**
+ * Build the JSON payload for a set of saved profiles (always the current version).
+ *
+ * No field list here: callers pass rows from `loadProfilesFromStorage`, already shaped by
+ * `normalizeStoredProfile`, so re-listing fields would only filter nothing while risking drift.
+ * A new profile field still needs a matching step in {@link MIGRATIONS}.
+ */
 export function toExportPayload(profiles) {
   return {
     format: EXPORT_FORMAT,
     version: EXPORT_VERSION,
     source: PROFILES_STORAGE_KEY,
-    profiles: profiles.map((p) => ({
-      id: p.id,
-      title: p.title,
-      pillarLevels: p.pillarLevels,
-      attachedBadge: p.attachedBadge,
-      savedAt: p.savedAt,
-    })),
+    profiles: profiles.map((p) => ({ ...p })),
   };
 }
 
@@ -83,10 +83,8 @@ export function canSaveWithPicker() {
  *   - "cancelled" — user dismissed the save dialog; no file written, show nothing.
  *   - "started"   — anchor-download fallback fired; completion is unobservable in this browser.
  *
- * ONLY "saved" WARRANTS A SUCCESS MESSAGE. "started" is not a weaker "saved" — it carries no
- * information about the outcome at all, since the anchor click returns before the platform's own save
- * sheet is even up (iOS Safari), so a dismissal is indistinguishable from a save. Report nothing there
- * and let the platform, which does know, do the reporting.
+ * Only "saved" warrants a success message — "started" carries no real signal (the anchor click
+ * returns before iOS Safari's own save sheet even appears), so let the platform report it instead.
  */
 export async function exportProfilesToFile(profiles) {
   const json = JSON.stringify(toExportPayload(profiles), null, 2);
@@ -101,16 +99,14 @@ export async function exportProfilesToFile(profiles) {
  * Per-version upgrade steps. `MIGRATIONS[n]` transforms a version-`n` payload into a
  * version-`(n+1)` payload. Import applies them in order from the file's version up to
  * {@link EXPORT_VERSION}, so a v1→v3 file runs MIGRATIONS[1] then MIGRATIONS[2].
- *
- * Example for a future change:
- *   const MIGRATIONS = {
- *     1: (payload) => ({ ...payload, version: 2, profiles: payload.profiles.map(renameFooToBar) }),
- *   };
  */
 const MIGRATIONS = {
   // v1 → v2: sunset the `trackVariant` key for the cosmetic `attachedBadge` (legacy `fe` → `none`,
   // `be` → `be`). See migrateBadgeKey.
   1: (payload) => ({ ...payload, version: 2, profiles: payload.profiles.map(migrateBadgeKey) }),
+  // v2 → v3: profiles carry the framework version they were rated against. A v2 file predates stamping, so
+  // there's nothing to backfill from — leave it null and let the resolver date the row from its `savedAt`.
+  2: (payload) => ({ ...payload, version: 3, profiles: payload.profiles.map((p) => ({ ...p, frameworkVersion: p.frameworkVersion ?? null })) }),
 };
 
 /**

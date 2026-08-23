@@ -60,6 +60,9 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
               type="button"
               onClick={() => onTabChange(id)}
               aria-current={selected ? "page" : undefined}
+              // Spelled out, because the visible "·" is aria-hidden and "Theory v4.3" read aloud is the same
+              // ambiguity the dot exists to break. Says whose version it is.
+              aria-label={version ? `${label}, Framework ${version}` : label}
               className={cn(
                 "group relative flex min-h-14 flex-1 xs:max-w-[150px] cursor-pointer select-none flex-col items-center justify-center gap-1 font-semibold",
                 TOOL_TEXT.label,
@@ -97,9 +100,17 @@ export function AppBottomNav({ activeTab, onTabChange, theoryHasUnseenUpdates = 
               </span>
               <span className="flex items-baseline leading-none">
                 {label}
-                {/* Inherits size, weight and colour: "Theory v4.1" is one phrase, and a pinned value drifted
-                    darker than its own label once. The `ml-1` is the only reason this is a separate span. */}
-                {version ? <span className="ml-1 leading-none">{version}</span> : null}
+                {/* SEPARATED BY A MIDDOT, not just a space. The number is the FRAMEWORK's version, but the
+                    label beside it names the tab, and set as one phrase "Theory v4.3" reads as Theory's own
+                    version. The dot makes it a second fact about the tab rather than part of its name.
+                    Still inherits size, weight and colour: a pinned value drifted darker than its own label
+                    once, and the version is not subordinate here the way it is beside "Changelog". */}
+                {version ? (
+                  <span className="ml-1 leading-none">
+                    <span aria-hidden>· </span>
+                    {version}
+                  </span>
+                ) : null}
               </span>
             </button>
           );

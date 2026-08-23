@@ -1,0 +1,503 @@
+{
+  "format": "egf-profiles",
+  "version": 3,
+  "source": "fe-growth-framework:profiles:v1",
+  "_readme": {
+    "purpose": "Fixtures for the framework-version stamp. Import via Manage > Import (appends; the toast has an Undo).",
+    "how": "A = unstamped, dated across every shipped version. B = the same scores at different versions, showing when green is earned. C = grey. D = recorded stamps, which beat the date. E = per-pillar states.",
+    "note": "Every state is reachable by import: frameworkVersion and savedAt both live on the profile and survive import unchanged.",
+    "note_B6": "Scored to sit in every pillar gap after the 4.0/3.0 backfill. Green despite a v2.8 stamp. Recompute if any barRaised changes.",
+    "note_B7": "The eased-only case: Product Sense 0.5 against a 3.2-era date. 4.0 eased Product Sense L1 without raising it, so this resolves to eased (green, not amber) rather than mixed. Unreachable before the backfill."
+  },
+  "profiles": [
+    {
+      "id": "t-01",
+      "title": "A 4.3 · dated",
+      "pillarLevels": {
+        "coding": 2,
+        "domainLogic": 2,
+        "architecture": 2,
+        "ai": 2,
+        "uiUx": 2,
+        "productSense": 2,
+        "process": 2,
+        "communication": 2,
+        "ownership": 2
+      },
+      "attachedBadge": "none",
+      "savedAt": 1787371200000
+    },
+    {
+      "id": "t-02",
+      "title": "A 4.2 · dated",
+      "pillarLevels": {
+        "coding": 2,
+        "domainLogic": 2,
+        "architecture": 2,
+        "ai": 2,
+        "uiUx": 2,
+        "productSense": 2,
+        "process": 2,
+        "communication": 2,
+        "ownership": 2
+      },
+      "attachedBadge": "none",
+      "savedAt": 1786334400000
+    },
+    {
+      "id": "t-03",
+      "title": "A 4.1 · dated",
+      "pillarLevels": {
+        "coding": 2,
+        "domainLogic": 2,
+        "architecture": 2,
+        "ai": 2,
+        "uiUx": 2,
+        "productSense": 2,
+        "process": 2,
+        "communication": 2,
+        "ownership": 2
+      },
+      "attachedBadge": "none",
+      "savedAt": 1785211200000
+    },
+    {
+      "id": "t-04",
+      "title": "A 3.2 · dated",
+      "pillarLevels": {
+        "coding": 2,
+        "domainLogic": 2,
+        "architecture": 2,
+        "ai": 2,
+        "uiUx": 2,
+        "productSense": 2,
+        "process": 2,
+        "communication": 2,
+        "ownership": 2
+      },
+      "attachedBadge": "none",
+      "savedAt": 1784520000000
+    },
+    {
+      "id": "t-05",
+      "title": "A 3.1 · dated",
+      "pillarLevels": {
+        "coding": 2,
+        "domainLogic": 2,
+        "architecture": 2,
+        "ai": 2,
+        "uiUx": 2,
+        "productSense": 2,
+        "process": 2,
+        "communication": 2,
+        "ownership": 2
+      },
+      "attachedBadge": "none",
+      "savedAt": 1783656000000
+    },
+    {
+      "id": "t-06",
+      "title": "A 2.9 · dated",
+      "pillarLevels": {
+        "coding": 2,
+        "domainLogic": 2,
+        "architecture": 2,
+        "ai": 2,
+        "uiUx": 2,
+        "productSense": 2,
+        "process": 2,
+        "communication": 2,
+        "ownership": 2
+      },
+      "attachedBadge": "none",
+      "savedAt": 1782360000000
+    },
+    {
+      "id": "t-07",
+      "title": "A 2.8 · dated",
+      "pillarLevels": {
+        "coding": 2,
+        "domainLogic": 2,
+        "architecture": 2,
+        "ai": 2,
+        "uiUx": 2,
+        "productSense": 2,
+        "process": 2,
+        "communication": 2,
+        "ownership": 2
+      },
+      "attachedBadge": "none",
+      "savedAt": 1781755200000
+    },
+    {
+      "id": "t-08",
+      "title": "B1 · senior, stamped 4.3",
+      "pillarLevels": {
+        "coding": 4.5,
+        "domainLogic": 4,
+        "architecture": 4,
+        "ai": 4,
+        "uiUx": 4,
+        "productSense": 4,
+        "process": 4,
+        "communication": 4,
+        "ownership": 4
+      },
+      "attachedBadge": "none",
+      "savedAt": 1787371200000,
+      "frameworkVersion": "4.3"
+    },
+    {
+      "id": "t-09",
+      "title": "B2 · senior, dated 4.2",
+      "pillarLevels": {
+        "coding": 4.5,
+        "domainLogic": 4,
+        "architecture": 4,
+        "ai": 4,
+        "uiUx": 4,
+        "productSense": 4,
+        "process": 4,
+        "communication": 4,
+        "ownership": 4
+      },
+      "attachedBadge": "none",
+      "savedAt": 1786334400000
+    },
+    {
+      "id": "t-10",
+      "title": "B3 · senior, dated 2.8",
+      "pillarLevels": {
+        "coding": 4.5,
+        "domainLogic": 4,
+        "architecture": 4,
+        "ai": 4,
+        "uiUx": 4,
+        "productSense": 4,
+        "process": 4,
+        "communication": 4,
+        "ownership": 4
+      },
+      "attachedBadge": "none",
+      "savedAt": 1781755200000
+    },
+    {
+      "id": "t-11",
+      "title": "B4 · low scores, dated 2.8",
+      "pillarLevels": {
+        "coding": 1,
+        "domainLogic": 0.5,
+        "architecture": 0.5,
+        "ai": 1,
+        "uiUx": 0.5,
+        "productSense": 0.5,
+        "process": 1,
+        "communication": 0.5,
+        "ownership": 0.5
+      },
+      "attachedBadge": "none",
+      "savedAt": 1781755200000
+    },
+    {
+      "id": "t-12",
+      "title": "B5 · low scores, dated 4.2",
+      "pillarLevels": {
+        "coding": 1,
+        "domainLogic": 0.5,
+        "architecture": 0.5,
+        "ai": 1,
+        "uiUx": 0.5,
+        "productSense": 0.5,
+        "process": 1,
+        "communication": 0.5,
+        "ownership": 0.5
+      },
+      "attachedBadge": "none",
+      "savedAt": 1786334400000
+    },
+    {
+      "id": "t-gap",
+      "title": "B6 · gap-dodger, dated 2.8",
+      "pillarLevels": {
+        "coding": 4.5,
+        "domainLogic": 0.5,
+        "architecture": 0.5,
+        "ai": 0.5,
+        "uiUx": 0.5,
+        "productSense": 0,
+        "process": 0.5,
+        "communication": 0.5,
+        "ownership": 0.5
+      },
+      "attachedBadge": "none",
+      "savedAt": 1781755200000
+    },
+    {
+      "id": "t-13",
+      "title": "C1 · date before v2.8",
+      "pillarLevels": {
+        "coding": 2,
+        "domainLogic": 2,
+        "architecture": 2,
+        "ai": 2,
+        "uiUx": 2,
+        "productSense": 2,
+        "process": 2,
+        "communication": 2,
+        "ownership": 2
+      },
+      "attachedBadge": "none",
+      "savedAt": 1779249600000
+    },
+    {
+      "id": "t-14",
+      "title": "C2 · no date at all",
+      "pillarLevels": {
+        "coding": 2,
+        "domainLogic": 2,
+        "architecture": 2,
+        "ai": 2,
+        "uiUx": 2,
+        "productSense": 2,
+        "process": 2,
+        "communication": 2,
+        "ownership": 2
+      },
+      "attachedBadge": "none",
+      "savedAt": 0
+    },
+    {
+      "id": "t-15",
+      "title": "D 4.3 · stamped",
+      "pillarLevels": {
+        "coding": 2,
+        "domainLogic": 2,
+        "architecture": 2,
+        "ai": 2,
+        "uiUx": 2,
+        "productSense": 2,
+        "process": 2,
+        "communication": 2,
+        "ownership": 2
+      },
+      "attachedBadge": "none",
+      "savedAt": 1787371200000,
+      "frameworkVersion": "4.3"
+    },
+    {
+      "id": "t-16",
+      "title": "D 4.2 · stamped",
+      "pillarLevels": {
+        "coding": 2,
+        "domainLogic": 2,
+        "architecture": 2,
+        "ai": 2,
+        "uiUx": 2,
+        "productSense": 2,
+        "process": 2,
+        "communication": 2,
+        "ownership": 2
+      },
+      "attachedBadge": "none",
+      "savedAt": 1787371200000,
+      "frameworkVersion": "4.2"
+    },
+    {
+      "id": "t-17",
+      "title": "D 3.1 · stamped",
+      "pillarLevels": {
+        "coding": 2,
+        "domainLogic": 2,
+        "architecture": 2,
+        "ai": 2,
+        "uiUx": 2,
+        "productSense": 2,
+        "process": 2,
+        "communication": 2,
+        "ownership": 2
+      },
+      "attachedBadge": "none",
+      "savedAt": 1787371200000,
+      "frameworkVersion": "3.1"
+    },
+    {
+      "id": "t-18",
+      "title": "D 2.8 · stamped",
+      "pillarLevels": {
+        "coding": 2,
+        "domainLogic": 2,
+        "architecture": 2,
+        "ai": 2,
+        "uiUx": 2,
+        "productSense": 2,
+        "process": 2,
+        "communication": 2,
+        "ownership": 2
+      },
+      "attachedBadge": "none",
+      "savedAt": 1787371200000,
+      "frameworkVersion": "2.8"
+    },
+    {
+      "id": "t-19",
+      "title": "D 1.0 · stamped",
+      "pillarLevels": {
+        "coding": 2,
+        "domainLogic": 2,
+        "architecture": 2,
+        "ai": 2,
+        "uiUx": 2,
+        "productSense": 2,
+        "process": 2,
+        "communication": 2,
+        "ownership": 2
+      },
+      "attachedBadge": "none",
+      "savedAt": 1787371200000,
+      "frameworkVersion": "1.0"
+    },
+    {
+      "id": "t-20",
+      "title": "D 9.9 · stamped",
+      "pillarLevels": {
+        "coding": 2,
+        "domainLogic": 2,
+        "architecture": 2,
+        "ai": 2,
+        "uiUx": 2,
+        "productSense": 2,
+        "process": 2,
+        "communication": 2,
+        "ownership": 2
+      },
+      "attachedBadge": "none",
+      "savedAt": 1787371200000,
+      "frameworkVersion": "9.9"
+    },
+    {
+      "id": "t-21",
+      "title": "E1 · one pillar",
+      "pillarLevels": {
+        "coding": 4.5,
+        "domainLogic": 3,
+        "architecture": 4.5,
+        "ai": 2,
+        "uiUx": 2.5,
+        "productSense": 2.5,
+        "process": 1.5,
+        "communication": 0.5,
+        "ownership": 4
+      },
+      "attachedBadge": "none",
+      "savedAt": 1787371200000,
+      "frameworkVersion": "4.2"
+    },
+    {
+      "id": "t-22",
+      "title": "E2 · mixed pillar",
+      "pillarLevels": {
+        "coding": 1,
+        "domainLogic": 0.5,
+        "architecture": 0.5,
+        "ai": 1,
+        "uiUx": 1.5,
+        "productSense": 0.5,
+        "process": 1,
+        "communication": 0.5,
+        "ownership": 0.5
+      },
+      "attachedBadge": "none",
+      "savedAt": 1787371200000,
+      "frameworkVersion": "4.2"
+    },
+    {
+      "id": "t-23",
+      "title": "E3 · all zero",
+      "pillarLevels": {
+        "coding": 0,
+        "domainLogic": 0,
+        "architecture": 0,
+        "ai": 0,
+        "uiUx": 0,
+        "productSense": 0,
+        "process": 0,
+        "communication": 0,
+        "ownership": 0
+      },
+      "attachedBadge": "none",
+      "savedAt": 1787371200000,
+      "frameworkVersion": "4.2"
+    },
+    {
+      "id": "t-24",
+      "title": "E4 · all five",
+      "pillarLevels": {
+        "coding": 5,
+        "domainLogic": 5,
+        "architecture": 5,
+        "ai": 5,
+        "uiUx": 5,
+        "productSense": 5,
+        "process": 5,
+        "communication": 5,
+        "ownership": 5
+      },
+      "attachedBadge": "none",
+      "savedAt": 1787371200000,
+      "frameworkVersion": "4.2"
+    },
+    {
+      "id": "t-25",
+      "title": "E5 · badge FE",
+      "pillarLevels": {
+        "coding": 4.5,
+        "domainLogic": 4,
+        "architecture": 4,
+        "ai": 4,
+        "uiUx": 4,
+        "productSense": 4,
+        "process": 4,
+        "communication": 4,
+        "ownership": 4
+      },
+      "attachedBadge": "fe",
+      "savedAt": 1787371200000,
+      "frameworkVersion": "4.2"
+    },
+    {
+      "id": "t-26",
+      "title": "E6 · badge BE",
+      "pillarLevels": {
+        "coding": 2,
+        "domainLogic": 2,
+        "architecture": 2,
+        "ai": 2,
+        "uiUx": 2,
+        "productSense": 2,
+        "process": 2,
+        "communication": 2,
+        "ownership": 2
+      },
+      "attachedBadge": "be",
+      "savedAt": 1787371200000,
+      "frameworkVersion": "4.3"
+    },
+    {
+      "id": "t-eased",
+      "title": "B7 · eased-only (Product Sense)",
+      "pillarLevels": {
+        "coding": 4.5,
+        "domainLogic": 0.5,
+        "architecture": 0.5,
+        "ai": 0.5,
+        "uiUx": 0.5,
+        "productSense": 0.5,
+        "process": 0.5,
+        "communication": 0.5,
+        "ownership": 0.5
+      },
+      "attachedBadge": "none",
+      "savedAt": 1784520000000
+    }
+  ]
+}
