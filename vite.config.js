@@ -21,6 +21,15 @@ const pagesBase = process.env.GITHUB_PAGES === "true" ? (process.env.GITHUB_PAGE
 
 export default defineConfig({
   base: pagesBase,
+  // Pinned so the dev URL never drifts; fail instead of falling back to another port.
+  server: {
+    port: 5174,
+    strictPort: true,
+  },
+  preview: {
+    port: 5174,
+    strictPort: true,
+  },
   plugins: [react(), tailwindcss(), generateMetaPlugin()],
   resolve: {
     alias: {
