@@ -294,6 +294,22 @@ export function ProfileCombobox({ titleError = false }) {
     return () => window.removeEventListener("resize", decide);
   }, [open, rows.length]);
 
+  // Jump the list straight to the loaded profile's row on open, no animation — it's the row the user came
+  // in looking for, and a smooth scroll would just make them wait to see it. Deliberately keyed on `open`
+  // alone (not `rows`): openDropdown() always resets the search first, so this fires once against the
+  // full unfiltered list, and does NOT re-snap the scroll position while the user is typing a search.
+  useLayoutEffect(() => {
+    if (!open) {
+      return;
+    }
+    const activeIndex = rows.findIndex((pr) => pr.id === activeSavedProfileId);
+    setHighlight(activeIndex);
+    if (activeIndex >= 0) {
+      listRef.current?.children[activeIndex]?.scrollIntoView({ block: "nearest" });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
   // Redirect wheel events over the popover to the inner list and swallow them so the page behind
   // never scrolls. Native non-passive listener because React's onWheel is passive (preventDefault
   // is a no-op there). Ported from ProfilePicker.
