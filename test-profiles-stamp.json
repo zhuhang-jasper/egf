@@ -6,8 +6,8 @@
     "purpose": "Fixtures for the framework-version stamp. Import via Manage > Import (appends; the toast has an Undo).",
     "how": "A = unstamped, dated across every shipped version. B = the same scores at different versions, showing when green is earned. C = grey. D = recorded stamps, which beat the date. E = per-pillar states.",
     "note": "Every state is reachable by import: frameworkVersion and savedAt both live on the profile and survive import unchanged.",
-    "note_B6": "Scored to sit in every pillar gap after the 4.0/3.0 backfill. Green despite a v2.8 stamp. Recompute if any barRaised changes.",
-    "note_B7": "The eased-only case: Product Sense 0.5 against a 3.2-era date. 4.0 eased Product Sense L1 without raising it, so this resolves to eased (green, not amber) rather than mixed. Unreachable before the backfill."
+    "note_B7": "Scored to sit in every pillar gap after the 4.0/3.0 backfill. Green despite a v2.8 stamp. Recompute if any barRaised changes.",
+    "note_B8": "The eased-only case: Product Sense 0.5 against a 3.2-era date. 4.0 eased Product Sense L1 without raising it, so this resolves to eased (green, not amber) rather than mixed. Unreachable before the backfill."
   },
   "profiles": [
     {
@@ -284,8 +284,25 @@
       "savedAt": 1786334400000
     },
     {
+      "id": "t-highest-safe",
+      "title": "B6 · highest safe scores, dated 4.2",
+      "pillarLevels": {
+        "coding": 4.5,
+        "domainLogic": 4.5,
+        "architecture": 4.5,
+        "ai": 5,
+        "uiUx": 2.5,
+        "productSense": 2.5,
+        "process": 1.5,
+        "communication": 0.5,
+        "ownership": 3.5
+      },
+      "attachedBadge": "none",
+      "savedAt": 1786334400000
+    },
+    {
       "id": "t-gap",
-      "title": "B6 · gap-dodger, dated 2.8",
+      "title": "B7 · gap-dodger, dated 2.8",
       "pillarLevels": {
         "coding": 4.5,
         "domainLogic": 0.5,
@@ -552,7 +569,7 @@
     },
     {
       "id": "t-eased",
-      "title": "B7 · eased-only (Product Sense)",
+      "title": "B8 · eased-only (Product Sense)",
       "pillarLevels": {
         "coding": 4.5,
         "domainLogic": 0.5,

@@ -4,7 +4,7 @@
 profile and survive import unchanged, so a JSON file reaches every state — including grey.
 
 Manage → Import → `test-profiles-stamp.json`. It appends rather than replacing, and the toast has an Undo.
-32 rows, in five groups.
+33 rows, in five groups.
 
 Release windows, from the real bump commits:
 
@@ -51,10 +51,15 @@ The same profile at different versions, and the scores that stay clear.
 | B3 senior, dated 2.8     | `v2.8 !` | amber, 7  | same, from further back                   |
 | B4 low scores, dated 2.8 | `v2.8 ✓` | **green** | sits below every band that moved          |
 | B5 low scores, dated 4.2 | `v4.2 ✓` | **green** | same                                      |
+| B6 highest safe, dated 4.2 | `v4.2 ✓` | **green** | highest half-step avoiding every raised band |
 
 **B3 vs B4 is the feature.** Both are v2.8 profiles. The senior one flags seven pillars; the low-scoring
 one flags none, because a 0.5 in Communication still clears a hardened L1. Age alone does not flag —
 the score has to land in a band that actually moved.
+
+**B6** proves a 4.2 profile can avoid all flags at the highest safe score for each pillar. The safe maximums
+are Coding 4.5, Domain Logic 4.5, Architecture 4.5, AI 5.0, UI/UX 2.5, Product Sense 2.5, Process 1.5,
+Communication 0.5, and Ownership 3.5.
 
 ## C — grey `v???`
 
