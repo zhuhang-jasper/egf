@@ -519,7 +519,7 @@ export function ProfileCombobox({ titleError = false }) {
                         // `pr-1`, not `pr-3`: the trailing pad used to sit between the chip and the trash
                         // button, spending width the profile name needs. The chip carries its own `ml-2`,
                         // so it stays clear of the name while sitting close to the trash.
-                        "flex min-w-0 flex-1 select-none items-center py-2 pl-0 pr-1 text-left",
+                        "flex min-w-0 flex-1 select-none items-center py-2 pl-0 pr-2 text-left",
                         CONTROL_TEXT,
                         isActive ? "cursor-default" : "cursor-pointer",
                       )}
@@ -547,7 +547,7 @@ export function ProfileCombobox({ titleError = false }) {
                       type="button"
                       // `w-8`, down from w-9: still a 32px tap target (the accessible floor) with the row's
                       // trailing pad trimmed to match, so the width goes to the name instead of to margin.
-                      className="flex w-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-destructive hover:bg-destructive/10"
+                      className="flex w-8 shrink-0 cursor-pointer items-center justify-center rounded-md pr-1 text-destructive hover:bg-destructive/10"
                       aria-label={`Remove profile ${label}`}
                       onClick={(e) => {
                         e.stopPropagation();
