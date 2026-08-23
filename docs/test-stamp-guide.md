@@ -3,7 +3,7 @@
 **One import, no console.** Both inputs the resolver reads (`frameworkVersion` and `savedAt`) live on the
 profile and survive import unchanged, so a JSON file reaches every state — including grey.
 
-Manage → Import → `test-profiles-stamp.json`. It appends rather than replacing, and the toast has an Undo.
+Manage → Import → `docs/test-profiles-stamp.json`. It appends rather than replacing, and the toast has an Undo.
 33 rows, in five groups.
 
 Release windows, from the real bump commits:
@@ -44,13 +44,13 @@ rows spanning 4.2 down to 2.4.
 
 The same profile at different versions, and the scores that stay clear.
 
-| Row                      | Chip     | Colour    | Why                                       |
-| ------------------------ | -------- | --------- | ----------------------------------------- |
-| B1 senior, stamped 4.3   | `v4.3 ✓` | green     | rated under the current matrix            |
-| B2 senior, dated 4.2     | `v4.2 !` | amber, 7  | 4.3 hardened most of what a senior claims |
-| B3 senior, dated 2.8     | `v2.8 !` | amber, 7  | same, from further back                   |
-| B4 low scores, dated 2.8 | `v2.8 ✓` | **green** | sits below every band that moved          |
-| B5 low scores, dated 4.2 | `v4.2 ✓` | **green** | same                                      |
+| Row                        | Chip     | Colour    | Why                                          |
+| -------------------------- | -------- | --------- | -------------------------------------------- |
+| B1 senior, stamped 4.3     | `v4.3 ✓` | green     | rated under the current matrix               |
+| B2 senior, dated 4.2       | `v4.2 !` | amber, 7  | 4.3 hardened most of what a senior claims    |
+| B3 senior, dated 2.8       | `v2.8 !` | amber, 7  | same, from further back                      |
+| B4 low scores, dated 2.8   | `v2.8 ✓` | **green** | sits below every band that moved             |
+| B5 low scores, dated 4.2   | `v4.2 ✓` | **green** | same                                         |
 | B6 highest safe, dated 4.2 | `v4.2 ✓` | **green** | highest half-step avoiding every raised band |
 
 **B3 vs B4 is the feature.** Both are v2.8 profiles. The senior one flags seven pillars; the low-scoring
