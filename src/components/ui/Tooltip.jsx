@@ -45,6 +45,7 @@ function headerAwarePadding() {
  */
 export function Tooltip({ text, className, visible = false, placement = "top" }) {
   const anchorRef = useRef(null);
+  const [touchVisible, setTouchVisible] = useState(false);
 
   // The trigger is this component's PARENT (the `group relative` element), not a child it renders — that is the
   // existing contract at all seven call sites, so the reference element is resolved from the DOM after mount
@@ -87,9 +88,23 @@ export function Tooltip({ text, className, visible = false, placement = "top" })
     if (!anchor) {
       return undefined;
     }
+    const onClick = (event) => {
+      if (event.detail > 0 && window.matchMedia("(hover: none)").matches) {
+        setTouchVisible((current) => !current);
+      }
+    };
+    const onPointerDown = (event) => {
+      if (!anchor.contains(event.target)) {
+        setTouchVisible(false);
+      }
+    };
+    anchor.addEventListener("click", onClick);
+    document.addEventListener("pointerdown", onPointerDown);
     anchor.addEventListener("pointerenter", update);
     anchor.addEventListener("focusin", update);
     return () => {
+      anchor.removeEventListener("click", onClick);
+      document.removeEventListener("pointerdown", onPointerDown);
       anchor.removeEventListener("pointerenter", update);
       anchor.removeEventListener("focusin", update);
     };
@@ -112,7 +127,7 @@ export function Tooltip({ text, className, visible = false, placement = "top" })
           // string inside the viewport, which is also what lets `shift()` place it sensibly.
           "pointer-events-none w-max max-w-[calc(100vw-1rem)] rounded-md bg-slate-900 px-2 py-1 text-[11px] font-medium leading-none whitespace-nowrap text-white opacity-0 transition-opacity duration-100 group-hover:opacity-100 group-focus-visible:opacity-100",
           TOOLTIP_LAYER,
-          visible && "opacity-100",
+          (visible || touchVisible) && "opacity-100",
           className,
         )}
       >
