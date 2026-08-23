@@ -304,9 +304,21 @@ export function ProfileCombobox({ titleError = false }) {
     }
     const activeIndex = rows.findIndex((pr) => pr.id === activeSavedProfileId);
     setHighlight(activeIndex);
-    if (activeIndex >= 0) {
-      listRef.current?.children[activeIndex]?.scrollIntoView({ block: "nearest" });
-    }
+    const frame = requestAnimationFrame(() => {
+      const list = listRef.current;
+      const row = list?.children?.[activeIndex];
+      if (!list || !row || list.scrollHeight <= list.clientHeight) {
+        return;
+      }
+      const rowTop = row.offsetTop;
+      const rowBottom = rowTop + row.offsetHeight;
+      if (rowTop < list.scrollTop) {
+        list.scrollTop = rowTop;
+      } else if (rowBottom > list.scrollTop + list.clientHeight) {
+        list.scrollTop = rowBottom - list.clientHeight;
+      }
+    });
+    return () => cancelAnimationFrame(frame);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
