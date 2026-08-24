@@ -592,6 +592,20 @@ export const useAppStore = create((set, get) => ({
       id = newSavedProfileId();
     }
     const replaceIdx = existing.findIndex((p) => p.id === id);
+    const target = replaceIdx >= 0 ? existing[replaceIdx] : null;
+
+    // A save stamps the current framework version only when it CHANGED A LEVEL. Rename and badge-switch
+    // saves carry the old stamp forward, because the stamp asserts "these scores were rated against that
+    // matrix" and neither of those touched a score. Bumping on any write let a rename launder a stale
+    // profile clean: every amber flag cleared while the user never looked at a level.
+    //
+    // The cost is that a deliberate "I re-read it, 4.0 still stands" cannot heal, since it changes nothing
+    // to detect — that needs its own explicit affordance, not a silent side effect of Save.
+    //
+    // Compared against the row being WRITTEN INTO, not the linked profile: an overwrite-a-different-row
+    // save is judged against the row it lands on. A brand-new row has nothing to carry, so it stamps.
+    const levelsUnchanged = target != null && pillarLevelsMatch(state.pillarLevels, target.pillarLevels);
+    const carriedStamp = typeof target?.frameworkVersion === "string" && target.frameworkVersion ? target.frameworkVersion : null;
 
     const row = {
       id,
@@ -599,10 +613,9 @@ export const useAppStore = create((set, get) => ({
       pillarLevels: state.pillarLevels,
       attachedBadge: state.attachedBadge,
       savedAt: Date.now(),
-      // Every save stamps the current framework version, whether or not the levels changed: saving is the
-      // user asserting these scores are right under the matrix they can see now. This is the only place a
-      // stamp is recorded, so a stale profile heals by being saved and by nothing else.
-      frameworkVersion: FRAMEWORK_VERSION,
+      // `null` when an unstamped profile is renamed: it stays unstamped rather than inheriting a version it
+      // was never rated against. `resolveProfileStamp` then dates it from `savedAt` as before.
+      frameworkVersion: levelsUnchanged ? carriedStamp : FRAMEWORK_VERSION,
     };
     let next = replaceIdx >= 0 ? existing.map((p, i) => (i === replaceIdx ? row : p)) : [...existing, row];
     const removedSource = removeId != null && removeId !== id;
@@ -613,10 +626,10 @@ export const useAppStore = create((set, get) => ({
 
     // A destructive write replaces an existing row and/or removes the merged source. Snapshot the
     // whole prior list + link so the UI can offer an "Undo" that restores the exact previous state.
-    const overwrote = replaceIdx >= 0 ? existing[replaceIdx] : null;
-    const undo = overwrote || removedSource ? { profiles: existing, activeSavedProfileId: get().activeSavedProfileId } : null;
+    // `target` is that replaced row, resolved above for the stamp decision.
+    const undo = target || removedSource ? { profiles: existing, activeSavedProfileId: get().activeSavedProfileId } : null;
 
-    const mode = saveMode(replaceIdx, overwrote, state.title);
+    const mode = saveMode(replaceIdx, target, state.title);
 
     // Count only writes that ADD a row, so the reminder tracks profiles accumulated rather than saves made.
     // Deliberately NOT undone by restoreProfiles: an undo cannot un-show a modal the user has read, and
@@ -631,7 +644,7 @@ export const useAppStore = create((set, get) => ({
       saveFeedback: "saved",
     });
     get().persistDraft();
-    return { status: "saved", savedTitle: state.title, overwroteTitle: overwrote?.title ?? null, undo, backupReminder, mode };
+    return { status: "saved", savedTitle: state.title, overwroteTitle: target?.title ?? null, undo, backupReminder, mode };
   },
 
   // Save/Update the current draft. Updates the linked profile in place (renaming it if the title
@@ -768,20 +781,29 @@ function findNameBadgeCollision(profiles, title, badge, selfId) {
   );
 }
 
+/**
+ * True when two canonical pillar-level maps hold the same score for every pillar. Levels ONLY — the badge is
+ * deliberately excluded, because the stamp carry-forward in {@link writeProfile} turns on whether the ratings
+ * moved, and a badge is cosmetic.
+ */
+function pillarLevelsMatch(a, b) {
+  const left = fillPillarLevels(a);
+  const right = b ?? {};
+  const keys = new Set([...Object.keys(left), ...Object.keys(right)]);
+  for (const k of keys) {
+    if (left[k] !== right[k]) {
+      return false;
+    }
+  }
+  return true;
+}
+
 /** True when the stored profile's badge + canonical pillar levels equal the current draft's. */
 function profileLevelsMatch(saved, s) {
   if (normalizeAttachedBadge(saved.attachedBadge) !== normalizeAttachedBadge(s.attachedBadge)) {
     return false;
   }
-  const current = fillPillarLevels(s.pillarLevels);
-  const savedLevels = saved.pillarLevels ?? {};
-  const keys = new Set([...Object.keys(current), ...Object.keys(savedLevels)]);
-  for (const k of keys) {
-    if (current[k] !== savedLevels[k]) {
-      return false;
-    }
-  }
-  return true;
+  return pillarLevelsMatch(s.pillarLevels, saved.pillarLevels);
 }
 
 /**

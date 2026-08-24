@@ -347,6 +347,56 @@ function stub(moves) {
   check(g, "undo restores savedAt", snapshot[0].savedAt, 1000);
 }
 
+// ── Stamp-on-save: only a levels change heals ──────────────────────────────────────────────────────
+// Mirrors writeProfile's stamp decision (useAppStore.js). Modelled rather than imported for the same reason
+// as the carry group: the store needs an alias + import.meta.env. Keep the two in step.
+{
+  const g = "onsave";
+  const LIVE = "4.3";
+  const levelsMatch = (a, b) => {
+    const keys = new Set([...Object.keys(a ?? {}), ...Object.keys(b ?? {})]);
+    for (const k of keys) {
+      if ((a ?? {})[k] !== (b ?? {})[k]) {
+        return false;
+      }
+    }
+    return true;
+  };
+  // `target` null → a brand-new row, which always stamps.
+  const stampFor = (draft, target) => {
+    const unchanged = target != null && levelsMatch(draft.pillarLevels, target.pillarLevels);
+    const carried = typeof target?.frameworkVersion === "string" && target.frameworkVersion ? target.frameworkVersion : null;
+    return unchanged ? carried : LIVE;
+  };
+
+  const stored = { id: "a", title: "T", pillarLevels: { architecture: 1.5 }, attachedBadge: "none", savedAt: 1000, frameworkVersion: "4.1" };
+
+  // The laundering bug: neither of these touched a score, so neither may clear a flag.
+  check(g, "rename carries the old stamp", stampFor({ ...stored, title: "T2" }, stored), "4.1");
+  check(g, "badge switch carries the old stamp", stampFor({ ...stored, attachedBadge: "be" }, stored), "4.1");
+
+  // A real re-rate stamps, in either direction.
+  check(g, "a raised level stamps", stampFor({ ...stored, pillarLevels: { architecture: 2.5 } }, stored), LIVE);
+  check(g, "a lowered level stamps", stampFor({ ...stored, pillarLevels: { architecture: 0.5 } }, stored), LIVE);
+  // A pillar added/removed from the map is a levels change too — fillPillarLevels defaults it in the store,
+  // so this guards the key-union rather than a real user action.
+  check(g, "a differing pillar set stamps", stampFor({ ...stored, pillarLevels: { architecture: 1.5, testing: 3 } }, stored), LIVE);
+
+  check(g, "a new row stamps", stampFor(stored, null), LIVE);
+  // An unstamped profile renamed stays unstamped — it must not inherit a version it was never rated against,
+  // and resolveProfileStamp then dates it from savedAt as before.
+  check(g, "renaming an unstamped row keeps it unstamped", stampFor({ ...stored, title: "T2" }, { ...stored, frameworkVersion: null }), null);
+
+  // The behaviour that matters: the flag survives a rename and falls to a re-rate.
+  const changelog = stub({ "4.2": { barRaised: { architecture: [1] } } });
+  const flagged = (p) =>
+    resolveProfileState({ pillarLevels: p.pillarLevels, stamp: resolveProfileStamp({ profile: p, changelog }).version, changelog });
+  const renamed = { ...stored, title: "T2", savedAt: 2000, frameworkVersion: stampFor({ ...stored, title: "T2" }, stored) };
+  check(g, "flag survives a rename", flagged(renamed), PILLAR_STATE.raised);
+  const rerated = { ...stored, pillarLevels: { architecture: 2.5 }, savedAt: 2000 };
+  check(g, "flag clears on a re-rate", flagged({ ...rerated, frameworkVersion: stampFor(rerated, stored) }), PILLAR_STATE.clear);
+}
+
 // ── Report ─────────────────────────────────────────────────────────────────────────────────────────
 const failed = results.filter((r) => !r.pass);
 for (const r of failed) {
