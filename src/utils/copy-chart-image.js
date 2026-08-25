@@ -109,11 +109,15 @@ function setCreditLetterSpacing(ctx) {
  * `actualBoundingBox*` rather than the em box, so the credit is bounded by its glyphs like the top of the export
  * is — the em box carries leading the string does not use.
  */
-function measureAttribution(ctx, { hidden, scaleY }) {
-  const text = SITE_COPY.share.imageAttribution;
-  if (hidden || !text) {
+function measureAttribution(ctx, { hidden, scaleY, frameworkVersion = null }) {
+  const base = SITE_COPY.share.imageAttribution;
+  if (hidden || !base) {
     return null;
   }
+  // THE PROFILE'S OWN STAMP, not the current version: an exported PNG is the one artifact that leaves the
+  // tool, so it has to say which framework these numbers were rated against — naming the newest instead
+  // would relabel an old rating as a current one. Absent for an unstamped draft, which has nothing to claim.
+  const text = frameworkVersion ? `${base} v${frameworkVersion}` : base;
   // FAMILY IS "Inter Variable", the name index.css actually declares. It read plain `Inter` for a long time —
   // a family that does not exist here, so canvas fell silently through to system-ui (SF Pro on macOS) and the
   // credit was the one piece of the export not set in Inter. Nothing looked broken, which is why it survived:
@@ -132,7 +136,9 @@ function measureAttribution(ctx, { hidden, scaleY }) {
   setCreditLetterSpacing(ctx);
   const m = ctx.measureText(text);
   ctx.restore();
-  return { text, font, w: m.width, ascent: m.actualBoundingBoxAscent, descent: m.actualBoundingBoxDescent };
+  // No width: the export's is the chart's, and a credit wider than it is clipped rather than widening the
+  // canvas (see the exportW note). Only the ink HEIGHT is needed, to reserve the band.
+  return { text, font, ascent: m.actualBoundingBoxAscent, descent: m.actualBoundingBoxDescent };
 }
 
 /**
@@ -423,7 +429,7 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY, padX, padY) {
  * `canvas` and `chart` are the LIVE ones and are read only as a readiness signal — the pixels come from the
  * off-screen clone, which builds its own. See docs/DECISIONS.md#export-renders-from-an-off-screen-clone.
  */
-export async function renderChartImageBlob({ exportRoot, canvas, chart, attributionHidden = false, uhd = false }) {
+export async function renderChartImageBlob({ exportRoot, canvas, chart, attributionHidden = false, uhd = false, frameworkVersion = null }) {
   if (!exportRoot || !canvas || !chart) {
     return null;
   }
@@ -451,6 +457,7 @@ export async function renderChartImageBlob({ exportRoot, canvas, chart, attribut
       canvas: clone.canvas,
       chart: clone.chart,
       attributionHidden,
+      frameworkVersion,
       uhd,
       padPx,
     });
@@ -506,7 +513,7 @@ function getInkRowBounds(ctx, width, height) {
  * The capture itself, split out so `renderChartImageBlob` owns only the pinned-width window around it. Assumes
  * `exportRoot` is already pinned to the export WIDTH; the height is this function's own to settle.
  */
-async function rasterizeChart({ exportRoot, canvas, chart, attributionHidden, uhd, padPx }) {
+async function rasterizeChart({ exportRoot, canvas, chart, attributionHidden, uhd, padPx, frameworkVersion }) {
   const scaleMax = Math.max(1, Number(FE_UI.chart.exportImageCssScaleMax) || 12);
   const requestedScale = uhd ? Number(FE_UI.chart.exportImageCssScaleUhd) || 5 : Number(FE_UI.chart.exportImageCssScale) || 3;
   const cssScale = Math.max(0.25, Math.min(scaleMax, requestedScale));
@@ -571,7 +578,7 @@ async function rasterizeChart({ exportRoot, canvas, chart, attributionHidden, uh
       return null;
     }
 
-    const credit = measureAttribution(sctx, { hidden: attributionHidden, scaleY: pxPerCssY });
+    const credit = measureAttribution(sctx, { hidden: attributionHidden, scaleY: pxPerCssY, frameworkVersion });
     const padX = Math.round(padPx * pxPerCssX);
     const padY = Math.round(padPx * pxPerCssY);
     // THE BLOCK, IN ORDER: the content's ink, the gap, the credit's ink — and only then `padY`/`padX` around the
@@ -579,10 +586,12 @@ async function rasterizeChart({ exportRoot, canvas, chart, attributionHidden, uh
     // Zero without a credit, which leaves the foot the plain `padY`, same as the head.
     const bandPx = credit ? Math.round(getAttributionGapPx() * pxPerCssY) + Math.ceil(credit.ascent + credit.descent) : 0;
 
-    // The scratch is already the layout box plus its two horizontal margins, so it IS the export width. The
-    // `max` only stops a reworded credit wider than the box from being clipped, in which case the box centres
-    // inside the wider canvas rather than sitting at `padX`.
-    const exportW = Math.max(2, scratchW, Math.ceil(credit?.w ?? 0) + padX * 2);
+    // The scratch is already the layout box plus its two horizontal margins, so it IS the export width — the
+    // chart decides the image size, and nothing else may widen it. A credit longer than the box is CLIPPED at
+    // both ends (it is centred), which is the lesser surprise: this used to take the credit's own width as a
+    // floor, so one long string quietly produced a wider canvas with the chart floating in white space. The
+    // credit is a fixed string we control, so an overflow is copy to shorten, not a layout case to absorb.
+    const exportW = Math.max(2, scratchW);
     const exportH = Math.max(2, ink.h + bandPx + padY * 2);
 
     const out = document.createElement("canvas");
@@ -617,12 +626,12 @@ async function rasterizeChart({ exportRoot, canvas, chart, attributionHidden, uh
  * @param profileName Used only by the download fallback, to name the file. The clipboard path never sees
  *   it — a pasted image has no filename.
  */
-export async function copyChartAsImageToClipboard({ exportRoot, canvas, chart, profileName, attributionHidden, uhd }) {
+export async function copyChartAsImageToClipboard({ exportRoot, canvas, chart, profileName, attributionHidden, uhd, frameworkVersion }) {
   if (!exportRoot || !canvas || !chart) {
     return { ok: false, method: null };
   }
 
-  const blob = await renderChartImageBlob({ exportRoot, canvas, chart, attributionHidden, uhd });
+  const blob = await renderChartImageBlob({ exportRoot, canvas, chart, attributionHidden, uhd, frameworkVersion });
   if (!blob) {
     return { ok: false, method: null };
   }
@@ -673,12 +682,12 @@ function buildShareMessage(linkOverride) {
  * @param {string} [profileName] Profile name, slugged into the attachment filename.
  * @returns {{ ok: boolean, method: "share" | "share-fallback-clipboard" | "share-fallback-download" | null }}
  */
-export async function shareChartAsImage({ exportRoot, canvas, chart, url, profileName, attributionHidden, uhd }) {
+export async function shareChartAsImage({ exportRoot, canvas, chart, url, profileName, attributionHidden, uhd, frameworkVersion }) {
   if (!exportRoot || !canvas || !chart) {
     return { ok: false, method: null };
   }
 
-  const blob = await renderChartImageBlob({ exportRoot, canvas, chart, attributionHidden, uhd });
+  const blob = await renderChartImageBlob({ exportRoot, canvas, chart, attributionHidden, uhd, frameworkVersion });
   if (!blob) {
     return { ok: false, method: null };
   }

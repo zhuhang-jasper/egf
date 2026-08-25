@@ -16,7 +16,7 @@ import { useCompetencyChart } from "@/hooks/useCompetencyChart";
 import { useMenuPosition } from "@/hooks/useMenuPosition";
 import { useMiddleEllipsis } from "@/hooks/useMiddleEllipsis";
 
-import { CHART_EXPORT_TOAST_KEY, useAppStore } from "@/store/useAppStore";
+import { CHART_EXPORT_TOAST_KEY, selectExportFrameworkVersion, useAppStore } from "@/store/useAppStore";
 
 import { getChartTitleSizePx } from "@/chart/fonts";
 import {
@@ -228,6 +228,10 @@ export function ChartSection({ isVisible }) {
   // from the relayout deps below.
   const chartAttributionHidden = useAppStore((s) => s.chartAttributionHidden);
   const chartUhdExport = useAppStore((s) => s.chartUhdExport);
+  // The version the exported credit names. The loaded profile's own stamp where there is one (an unsaved clone
+  // included — see duplicateDraft), so the PNG says what these numbers were rated against; the current version
+  // for a plain draft, which is being rated now. Export-only, like chartAttributionHidden above.
+  const exportFrameworkVersion = useAppStore(selectExportFrameworkVersion);
   const chartBadgeHidden = useAppStore((s) => s.chartBadgeHidden);
   const chartTitleHidden = useAppStore((s) => s.chartTitleHidden);
   const footerScoresHidden = useAppStore((s) => s.footerScoresHidden);
@@ -288,6 +292,7 @@ export function ChartSection({ isVisible }) {
         profileName: title,
         attributionHidden: chartAttributionHidden,
         uhd: chartUhdExport,
+        frameworkVersion: exportFrameworkVersion,
       });
       if (result?.method === "clipboard") {
         track("chart_copied", { method: "clipboard" });
@@ -313,6 +318,7 @@ export function ChartSection({ isVisible }) {
         profileName: title,
         attributionHidden: chartAttributionHidden,
         uhd: chartUhdExport,
+        frameworkVersion: exportFrameworkVersion,
       });
       if (result?.method === "share") {
         // Native share sheet opened — completion is out of our hands, so don't claim success.

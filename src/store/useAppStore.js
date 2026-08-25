@@ -880,6 +880,21 @@ function pillarLevelsMatch(a, b) {
 }
 
 /**
+ * The framework version an EXPORT should name: the loaded profile's own stamp, else the stamp an unsaved clone
+ * inherited, else the current version for a plain draft (which is being rated now, against nothing else).
+ *
+ * Resolved rather than read raw, so a legacy row dated from `savedAt` names the version it actually resolves
+ * to instead of nothing.
+ */
+export function selectExportFrameworkVersion(s) {
+  const active = s.activeSavedProfileId != null ? s.profiles.find((p) => p.id === s.activeSavedProfileId) : null;
+  if (active) {
+    return resolveProfileStamp({ profile: active }).version ?? null;
+  }
+  return s.draftFrameworkVersion ?? FRAMEWORK_VERSION;
+}
+
+/**
  * True when the draft's badge + levels match the profile it is linked to — i.e. a rename in progress has
  * changed nothing but the name. Exported for the toolbar, which labels a rename that ALSO edits values
  * differently and offers both undos at once.
