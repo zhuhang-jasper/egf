@@ -270,7 +270,11 @@ export const useAppStore = create((set, get) => ({
     if (!pillarId) {
       return;
     }
-    set({ pillarLevels: fillPillarLevels({ ...get().pillarLevels, [pillarId]: value }) });
+    // Editing a level on an UNSAVED CLONE drops the stamp it inherited: the clone was the source's rating
+    // until the moment a score moved, and after that it is the user's own, so it stamps at the current
+    // version on save and its inherited flags go with it. A linked draft is unaffected — its stamp lives on
+    // the row, and writeProfile decides there.
+    set({ pillarLevels: fillPillarLevels({ ...get().pillarLevels, [pillarId]: value }), draftFrameworkVersion: null });
     get().persistDraft();
   },
 
@@ -696,7 +700,16 @@ export const useAppStore = create((set, get) => ({
     // A clone carries its source's RATING, so it carries the stamp too — same as "Save new", which keeps the
     // link and inherits it that way. Recorded, not left null: the copy gets a fresh `savedAt`, and a null
     // stamp would re-derive a version from that new date rather than from when the scores were actually set.
-    set({ title, activeSavedProfileId: null, draftFrameworkVersion: resolveProfileStamp({ profile: source }).version ?? null });
+    //
+    // ONLY WHILE THE SCORES STILL MATCH THE SOURCE. Copying a draft whose levels were already edited hands
+    // over someone else's stamp with the user's own numbers, and the inherited flags reappear on scores they
+    // have just changed. Same rule as setLevel: once a score moves, the rating is the user's.
+    const untouched = source != null && pillarLevelsMatch(get().pillarLevels, source.pillarLevels);
+    set({
+      title,
+      activeSavedProfileId: null,
+      draftFrameworkVersion: untouched ? (resolveProfileStamp({ profile: source }).version ?? null) : null,
+    });
     get().persistDraft();
   },
 
@@ -864,6 +877,17 @@ function pillarLevelsMatch(a, b) {
     }
   }
   return true;
+}
+
+/**
+ * True when the draft's badge + levels match the profile it is linked to — i.e. a rename in progress has
+ * changed nothing but the name. Exported for the toolbar, which labels a rename that ALSO edits values
+ * differently and offers both undos at once.
+ */
+export function selectDraftValuesMatchLink(s) {
+  const activeId = s.activeSavedProfileId;
+  const target = activeId != null ? s.profiles.find((p) => p.id === activeId) : null;
+  return target != null && profileLevelsMatch(target, s);
 }
 
 /** True when the stored profile's badge + canonical pillar levels equal the current draft's. */

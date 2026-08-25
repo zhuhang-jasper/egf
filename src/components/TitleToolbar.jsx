@@ -18,6 +18,7 @@ import { useTouchPrimary } from "@/hooks/useTouchPrimary";
 
 import {
   PROFILE_SAVE_TOAST_KEY,
+  selectDraftValuesMatchLink,
   selectHasUnsavedWork,
   selectProfileSaveStatus,
   TOAST_DURATION,
@@ -68,6 +69,15 @@ const SAVE_STATUS_META = {
     className: "",
     disabled: false,
   },
+  // A rename that also changed badge/levels. Not a real store status — the toolbar picks it when `renaming`
+  // is accompanied by edits (see renameWithEdits), because "Rename" alone understates what the save does.
+  applying: {
+    icon: Save,
+    label: "Apply",
+    title: "Renamed and modified — saving applies both to the linked profile",
+    className: "border-amber-500/50 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:text-amber-800",
+    disabled: false,
+  },
 };
 
 // Past-tense verb for the save-confirmation toast, keyed by the store's `mode` (see writeProfile).
@@ -90,9 +100,10 @@ const SAVE_TOAST_VERB = {
 // saved), while a caret opens a menu with the copy action (`copyAction` — "Save new" while renaming
 // saves a copy under the changed name, else "Save as copy" detaches with a "Copy of …" name), an optional
 // `restampAction` ("Mark as rated using v<current>" — only for a clean, flagged profile), and an optional undo
-// action (`undoAction` — "Undo rename" while renaming, "Undo changes" while modified) that reverts
-// the draft to the linked profile. For an unlinked draft ("new") it renders as a plain single button.
-function SaveButton({ statusMeta, showMenu, onSave, copyAction, undoAction, restampAction }) {
+// action list (`undoActions` — "Undo rename" while renaming, "Undo changes" while modified, BOTH when a
+// rename also carries edits) that reverts the draft to the linked profile. For an unlinked draft ("new") it
+// renders as a plain single button.
+function SaveButton({ statusMeta, showMenu, onSave, copyAction, undoActions = [], restampAction }) {
   const StatusIcon = statusMeta.icon;
   const rootRef = useRef(null);
   const menuRef = useRef(null);
@@ -104,7 +115,7 @@ function SaveButton({ statusMeta, showMenu, onSave, copyAction, undoAction, rest
     onClose: () => setMenuOpen(false),
     rootRef,
     menuRef,
-    remeasureKey: `${Boolean(undoAction)}|${Boolean(restampAction)}`,
+    remeasureKey: `${undoActions.length}|${Boolean(restampAction)}`,
   });
 
   // The label sizes to its own text — the row is allowed to shift as the status changes so the
@@ -119,7 +130,6 @@ function SaveButton({ statusMeta, showMenu, onSave, copyAction, undoAction, rest
       <Button
         type="button"
         variant="outline"
-        size="sm"
         shape="pill"
         disabled={statusMeta.disabled}
         className={cn("shrink-0 gap-1 px-2.5 print:hidden", statusMeta.className)}
@@ -140,7 +150,6 @@ function SaveButton({ statusMeta, showMenu, onSave, copyAction, undoAction, rest
       <Button
         type="button"
         variant="outline"
-        size="sm"
         shape="pill"
         disabled={statusMeta.disabled}
         className={cn("gap-1 rounded-r-none pl-2.5 pr-2", statusMeta.className)}
@@ -156,7 +165,6 @@ function SaveButton({ statusMeta, showMenu, onSave, copyAction, undoAction, rest
       <Button
         type="button"
         variant="outline"
-        size="sm"
         shape="pill"
         aria-label="More save options"
         aria-haspopup="menu"
@@ -190,20 +198,22 @@ function SaveButton({ statusMeta, showMenu, onSave, copyAction, undoAction, rest
               {restampAction.label}
             </MenuItem>
           ) : null}
-          {/* Reverts the draft to the linked profile — "Undo rename" (renaming) or "Undo changes"
-              (modified). Absent when there's nothing to revert (e.g. "saved"). */}
-          {undoAction ? (
+          {/* Reverts the draft to the linked profile. Empty when there's nothing to revert (e.g. "saved");
+              two entries when a rename also carries edits, so either half can go independently. Only the
+              first is `divided` — a rule between the two undos would read as separate groups. */}
+          {undoActions.map((action, i) => (
             <MenuItem
+              key={action.label}
               icon={Undo2}
-              divided
+              divided={i === 0}
               onClick={() => {
                 setMenuOpen(false);
-                undoAction.onSelect();
+                action.onSelect();
               }}
             >
-              {undoAction.label}
+              {action.label}
             </MenuItem>
-          ) : null}
+          ))}
         </MenuPanel>
       )}
     </div>
@@ -243,7 +253,13 @@ export function TitleToolbar() {
   };
 
   const saveStatus = useAppStore(selectProfileSaveStatus); // "saved" | "renaming" | "modified" | "new"
-  const statusMeta = SAVE_STATUS_META[saveStatus];
+  // A rename that ALSO changed badge/levels is neither a plain Rename nor a plain Update, so it gets its own
+  // label and offers both undos. `renaming` covers both cases in the store; this is what splits them.
+  // The selector runs on its own line, not behind a `&&`: short-circuiting it would call the hook only on
+  // some renders.
+  const draftValuesMatchLink = useAppStore(selectDraftValuesMatchLink);
+  const renameWithEdits = saveStatus === "renaming" && !draftValuesMatchLink;
+  const statusMeta = renameWithEdits ? SAVE_STATUS_META.applying : SAVE_STATUS_META[saveStatus];
 
   // Place the cursor in the name field so the user can type a name (Save as copy / New profile / Undo
   // rename). Skipped on touch — auto-focus there pops the on-screen keyboard unbidden. Touch users
@@ -331,7 +347,11 @@ export function TitleToolbar() {
       if (result.removedTitle) {
         savedMessage = `Merged “${result.removedTitle}” into “${result.savedTitle}”`;
       } else if (result.mode === "renamed" && result.overwroteTitle) {
-        savedMessage = `Renamed “${result.overwroteTitle}” to “${result.savedTitle}”`;
+        // A rename that also changed values says so: "Renamed" alone would report half of what was written,
+        // and this is the save the "Apply" button produces.
+        savedMessage = analytics.renameWithEdits
+          ? `Renamed “${result.overwroteTitle}” to “${result.savedTitle}” and saved your changes`
+          : `Renamed “${result.overwroteTitle}” to “${result.savedTitle}”`;
       } else {
         savedMessage = `${SAVE_TOAST_VERB[result.mode] ?? "Saved"} “${result.savedTitle}”`;
       }
@@ -363,6 +383,9 @@ export function TitleToolbar() {
   // The stamp is one field on the profile, so anything that advances it silences EVERY flagged pillar, not
   // just the ones edited. Gate in front of the action: run it only if there is nothing unreviewed, else open
   // the dialog and let its confirm run it. `restamp` only picks the dialog's wording.
+  //
+  // Only for a write that lands ON THE SOURCE. "Save new" and "Save as copy" create a separate row and leave
+  // the source untouched, so its warnings survive the save and there is nothing to confirm.
   const guardUnreviewed = (proceed, { restamp = false } = {}) => {
     const { profiles: rows, activeSavedProfileId: activeId, pillarLevels: levels } = useAppStore.getState();
     const source = activeId != null ? (rows.find((p) => p.id === activeId) ?? null) : null;
@@ -376,10 +399,10 @@ export function TitleToolbar() {
     proceed();
   };
 
-  const handleSave = () => guardUnreviewed(() => handleResult(saveProfile()));
+  const handleSave = () => guardUnreviewed(() => handleResult(saveProfile(), { renameWithEdits }));
 
   // "Save new" (while renaming): the name already differs, so save a copy under it immediately.
-  const handleSaveAsNew = () => guardUnreviewed(() => handleResult(saveAsNew(), { copy: true }));
+  const handleSaveAsNew = () => handleResult(saveAsNew(), { copy: true });
 
   // "Save as copy" (name still matches the source): detach into a new unsaved draft (same badge +
   // levels) with the name prefilled "Copy of <source>", then focus + select it (desktop) so the user
@@ -395,13 +418,19 @@ export function TitleToolbar() {
   const copyAction =
     saveStatus === "renaming" ? { label: "Save new", onSelect: handleSaveAsNew } : { label: "Save as copy", onSelect: handleDuplicate };
 
-  // The undo action reverts the draft to the linked profile: title while renaming, values while
-  // modified. No undo for "saved" (nothing changed) or "new" (no link).
+  // Reverts the draft to the linked profile: title while renaming, values while modified. Nothing for
+  // "saved" (no change) or "new" (no link). One entry per status; BOTH when a rename carries edits, so the user can drop either half without having
+  // to undo one to discover the other. Rename first: the name field is the more visible change.
   const UNDO_ACTIONS = {
-    renaming: { label: "Undo rename", onSelect: handleUndoRename },
-    modified: { label: "Undo changes", onSelect: handleUndoChanges },
+    renaming: [{ label: "Undo rename", onSelect: handleUndoRename }],
+    modified: [{ label: "Undo changes", onSelect: handleUndoChanges }],
   };
-  const undoAction = UNDO_ACTIONS[saveStatus];
+  const undoActions = renameWithEdits
+    ? [
+        { label: "Undo rename", onSelect: handleUndoRename },
+        { label: "Undo changes", onSelect: handleUndoChanges },
+      ]
+    : (UNDO_ACTIONS[saveStatus] ?? []);
 
   // Clears the flags on a saved profile whose levels the user re-read and kept. ONLY at status "saved": with
   // a dirty draft the ordinary Save is the right action, and restamping mid-edit would clear flags against
@@ -486,7 +515,7 @@ export function TitleToolbar() {
           showMenu={saveStatus === "saved" || saveStatus === "renaming" || saveStatus === "modified"}
           onSave={handleSave}
           copyAction={copyAction}
-          undoAction={undoAction}
+          undoActions={undoActions}
           restampAction={canRestamp ? { label: `Mark as rated using v${FRAMEWORK_VERSION}`, onSelect: () => handleRestamp() } : null}
         />
       </div>
@@ -501,7 +530,6 @@ export function TitleToolbar() {
         <Button
           type="button"
           variant="outline"
-          size="sm"
           shape="pill"
           className="shrink-0 gap-1.5"
           onClick={handleNewProfile}

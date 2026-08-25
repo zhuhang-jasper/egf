@@ -331,7 +331,6 @@ function InstallPill() {
     <Button
       type="button"
       variant="outline"
-      size="sm"
       shape="pill"
       // `gap-1` over the base `gap-2`, matching the Theory toolbar's pills at 14px. Explicit
       // `border-slate-300` + white fill, since `outline`'s default border is too faint on the header's tint.

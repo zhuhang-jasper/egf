@@ -186,7 +186,6 @@ function ExportMenu({ onCopy, onShare }) {
       <Button
         type="button"
         variant="outline"
-        size="sm"
         shape="pill"
         onClick={onCopy}
         className={cn(TOOLBAR_SURFACE, "group relative gap-1")}
@@ -200,7 +199,6 @@ function ExportMenu({ onCopy, onShare }) {
         <Button
           type="button"
           variant="outline"
-          size="sm"
           shape="pill"
           onClick={onShare}
           className={cn(TOOLBAR_SURFACE, "group relative gap-1")}

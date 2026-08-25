@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 
-import { HelpCircle } from "lucide-react";
+import { FileText } from "lucide-react";
 
 import { LevelInput } from "@/components/LevelInput";
 import { Tooltip } from "@/components/ui/Tooltip";
@@ -73,12 +73,23 @@ const PILLAR_MARK = {
     aria: "levels either side of your rating changed",
     tooltip: "Levels either side of your rating changed. Worth a re-read.",
   },
+  // Still flagged, but the user has moved this score, so it should stop reading as "still to check" while a
+  // run of flagged rows is worked through.
+  //
+  // THE SAME AMBER RING, minus the fill and the amber number. So the tinted rows are exactly the pillars
+  // still to check, while the outline keeps this one marked as flagged. A second hue (lime, yellow) was tried
+  // first and read as a third kind of state to learn rather than the same one, quieter.
+  [PILLAR_STATE.reviewed]: {
+    className: "ring-1 ring-inset ring-amber-500/50",
+    aria: "this level changed since you rated it, and you have adjusted your score",
+    tooltip: "This level moved, and you have adjusted your score. Set it back to see the original warning.",
+  },
 };
 
 function PillarLevelInput({ pillar, value, state, onChange }) {
   const mark = PILLAR_MARK[state] ?? null;
   return (
-    <span className={cn("group relative inline-flex", mark?.tooltip && "cursor-help")}>
+    <span className="group relative inline-flex">
       <LevelInput
         value={value}
         onChange={(v) => onChange(pillar.id, v)}
@@ -112,7 +123,9 @@ function PillarMatrixButton({ pillar, onOpenPillarInMatrix }) {
       // jumps to isn't on this printed page anyway.
       className="group relative inline-flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full text-slate-700 transition-colors hover:text-slate-900 active:text-slate-900 print:hidden"
     >
-      <HelpCircle className="size-3.5" aria-hidden />
+      {/* The Theory tab's own nav icon (see AppBottomNav), so the button pictures WHERE it goes rather
+          than asking a question — a help mark implied an explanation appearing in place. */}
+      <FileText className="size-3.5" aria-hidden />
       <Tooltip
         text={`${touchPrimary ? "Tap again" : "Click"} to view matrix in Theory tab`}
         visible={touchPrimary && touchTooltipVisible}
@@ -130,7 +143,8 @@ export function PillarCluster({ group, onOpenPillarInMatrix }) {
   const profiles = useAppStore((s) => s.profiles);
   const activeSavedProfileId = useAppStore((s) => s.activeSavedProfileId);
   const activeProfile = useMemo(() => profiles.find((p) => p.id === activeSavedProfileId) ?? null, [profiles, activeSavedProfileId]);
-  const stampStates = usePillarStampStates(activeProfile, pillarLevels);
+  const draftFrameworkVersion = useAppStore((s) => s.draftFrameworkVersion);
+  const stampStates = usePillarStampStates(activeProfile, pillarLevels, draftFrameworkVersion);
   const cluster = CLUSTERS[group.id];
 
   return (

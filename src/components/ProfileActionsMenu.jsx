@@ -109,7 +109,6 @@ export function ProfileActionsMenu() {
       <Button
         type="button"
         variant="outline"
-        size="sm"
         aria-label="Manage profiles — import, export, or delete all"
         aria-expanded={open}
         aria-haspopup="menu"

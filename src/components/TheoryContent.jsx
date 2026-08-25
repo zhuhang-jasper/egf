@@ -446,7 +446,6 @@ function TheoryContent({
             <Button
               type="button"
               variant="outline"
-              size="sm"
               shape="pill"
               onClick={() => {
                 track("theory_printed");
@@ -482,7 +481,6 @@ function TheoryContent({
             <Button
               type="button"
               variant="outline"
-              size="sm"
               shape="pill"
               onClick={handleShareTheory}
               aria-label="Share the framework"
@@ -515,7 +513,6 @@ function TheoryContent({
         <Button
           type="button"
           variant="outline"
-          size="sm"
           shape="pill"
           onClick={() => {
             // Stamped with the version the reader was ON when they opened it, the same param

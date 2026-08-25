@@ -60,6 +60,12 @@ export const PILLAR_STATE = {
   eased: "eased",
   mixed: "mixed",
   unverified: "unverified",
+  /**
+   * Flagged, but the user has since changed this pillar's score — so they have engaged with it. A VIEW state
+   * only: it never comes out of the resolver (which sees one score, not an edit), and it is never stored. The
+   * form derives it so a run of amber rows visibly shrinks as they are worked through.
+   */
+  reviewed: "reviewed",
 };
 
 /** "4.10" → 4.010, so minor numbers compare by magnitude rather than lexically. null if unparsable. */
