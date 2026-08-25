@@ -1,19 +1,17 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
-import { BadgeCheck, Calculator, CircleCheck, Copy, FilePlus, MoreVertical, Pencil, Save, Undo2 } from "lucide-react";
+import { Calculator, CircleCheck, FilePlus, Pencil, Save } from "lucide-react";
 
 import { BackupReminderDialog } from "@/components/BackupReminderDialog";
 import { ProfileActionsMenu } from "@/components/ProfileActionsMenu";
 import { ProfileByline } from "@/components/ProfileByline";
 import { ProfileCombobox } from "@/components/ProfileCombobox";
+import { SaveButton } from "@/components/SaveButton";
 import { SaveCollisionDialog } from "@/components/SaveCollisionDialog";
 import { Button } from "@/components/ui/button";
-import { MenuItem } from "@/components/ui/menu-item";
-import { MenuPanel } from "@/components/ui/menu-panel";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { UnreviewedWarningsDialog } from "@/components/UnreviewedWarningsDialog";
 
-import { useMenuPosition } from "@/hooks/useMenuPosition";
 import { useTouchPrimary } from "@/hooks/useTouchPrimary";
 
 import {
@@ -32,6 +30,7 @@ import { CONTROL_TEXT } from "@/styles/control-typography";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
 import { isStaleProfile, untouchedFlaggedPillars } from "@/utils/profile-stamp-state";
+import { buildSaveMessage } from "@/utils/save-message";
 import { readProfileCreateCount } from "@/utils/storage";
 
 // The Save button doubles as the save-status indicator. Each status sets the button's icon, label,
@@ -79,146 +78,6 @@ const SAVE_STATUS_META = {
     disabled: false,
   },
 };
-
-// Past-tense verb for the save-confirmation toast, keyed by the store's `mode` (see writeProfile).
-// DELIBERATELY ECHOES THE BUTTON that produced the save — `new`/`renaming`/`modified` above are
-// labelled Save/Rename/Update — so the notice reads as an answer to the thing the user just pressed
-// rather than as the app's own separate account of what happened.
-//
-// `renamed` is the fallback for a rename with no prior title to name; the normal path phrases it as
-// "Renamed from “<old>”" instead (see handleResult).
-const SAVE_TOAST_VERB = {
-  created: "Saved",
-  renamed: "Renamed",
-  updated: "Updated",
-};
-
-// Status-aware Save button, sitting on Row 1 next to the title input.
-//
-// For a linked profile (`showMenu` — status "saved", "renaming" or "modified") it becomes a split
-// button: the primary action Saves/Renames/Updates the linked profile (disabled when already
-// saved), while a caret opens a menu with the copy action (`copyAction` — "Save new" while renaming
-// saves a copy under the changed name, else "Save as copy" detaches with a "Copy of …" name), an optional
-// `restampAction` ("Mark as rated using v<current>" — only for a clean, flagged profile), and an optional undo
-// action list (`undoActions` — "Undo rename" while renaming, "Undo changes" while modified, BOTH when a
-// rename also carries edits) that reverts the draft to the linked profile. For an unlinked draft ("new") it
-// renders as a plain single button.
-function SaveButton({ statusMeta, showMenu, onSave, copyAction, undoActions = [], restampAction }) {
-  const StatusIcon = statusMeta.icon;
-  const rootRef = useRef(null);
-  const menuRef = useRef(null);
-  const [menuOpen, setMenuOpen] = useState(false);
-
-  // Either optional item appearing/disappearing changes the panel's height, so both drive a re-measure.
-  const { openUp } = useMenuPosition({
-    open: menuOpen,
-    onClose: () => setMenuOpen(false),
-    rootRef,
-    menuRef,
-    remeasureKey: `${undoActions.length}|${Boolean(restampAction)}`,
-  });
-
-  // The label sizes to its own text — the row is allowed to shift as the status changes so the
-  // control stays as narrow as possible, leaving more room for the title input.
-  const primaryLabel = <span className="whitespace-nowrap">{statusMeta.label}</span>;
-
-  // `print:hidden` on both branches below — saving is an action, and the status it reports ("Saved",
-  // "Modified") describes the draft's relationship to localStorage, which means nothing on paper.
-  // Plain single button — an unlinked draft has nothing to duplicate or rename.
-  if (!showMenu) {
-    return (
-      <Button
-        type="button"
-        variant="outline"
-        shape="pill"
-        disabled={statusMeta.disabled}
-        className={cn("shrink-0 gap-1 px-2.5 print:hidden", statusMeta.className)}
-        onClick={onSave}
-        aria-label={statusMeta.title}
-        title={statusMeta.title}
-      >
-        <StatusIcon className="h-4 w-4 shrink-0" aria-hidden />
-        {primaryLabel}
-      </Button>
-    );
-  }
-
-  return (
-    <div ref={rootRef} className="relative flex shrink-0 print:hidden">
-      {/* Primary Save/Update — pill flattened on its right edge to butt against the caret. Tighter
-          right padding since the divider (not empty space) closes off this side. */}
-      <Button
-        type="button"
-        variant="outline"
-        shape="pill"
-        disabled={statusMeta.disabled}
-        className={cn("gap-1 rounded-r-none pl-2.5 pr-2", statusMeta.className)}
-        onClick={onSave}
-        aria-label={statusMeta.title}
-        title={statusMeta.title}
-      >
-        <StatusIcon className="h-4 w-4 shrink-0" aria-hidden />
-        {primaryLabel}
-      </Button>
-      {/* Caret — opens the copy / Undo-rename menu. Kept enabled even when the primary is disabled
-          ("saved"), since forking an already-saved profile is still useful. */}
-      <Button
-        type="button"
-        variant="outline"
-        shape="pill"
-        aria-label="More save options"
-        aria-haspopup="menu"
-        aria-expanded={menuOpen}
-        className={cn("-ml-px min-w-9 justify-center rounded-l-none px-2", statusMeta.className)}
-        onClick={() => setMenuOpen((v) => !v)}
-      >
-        <MoreVertical className="h-4 w-4 shrink-0" aria-hidden />
-      </Button>
-      {menuOpen && (
-        <MenuPanel ref={menuRef} openUp={openUp} align="right" role="menu" aria-label="Save options" className="min-w-[100px]">
-          <MenuItem
-            icon={Copy}
-            onClick={() => {
-              setMenuOpen(false);
-              copyAction.onSelect();
-            }}
-          >
-            {copyAction.label}
-          </MenuItem>
-          {/* Present only when there are flags to clear, so it never reads as an action with no effect. Above
-              the undo divider because it acts on the SAVED profile, not the draft. */}
-          {restampAction ? (
-            <MenuItem
-              icon={BadgeCheck}
-              onClick={() => {
-                setMenuOpen(false);
-                restampAction.onSelect();
-              }}
-            >
-              {restampAction.label}
-            </MenuItem>
-          ) : null}
-          {/* Reverts the draft to the linked profile. Empty when there's nothing to revert (e.g. "saved");
-              two entries when a rename also carries edits, so either half can go independently. Only the
-              first is `divided` — a rule between the two undos would read as separate groups. */}
-          {undoActions.map((action, i) => (
-            <MenuItem
-              key={action.label}
-              icon={Undo2}
-              divided={i === 0}
-              onClick={() => {
-                setMenuOpen(false);
-                action.onSelect();
-              }}
-            >
-              {action.label}
-            </MenuItem>
-          ))}
-        </MenuPanel>
-      )}
-    </div>
-  );
-}
 
 export function TitleToolbar() {
   const setTitle = useAppStore((s) => s.setTitle);
@@ -328,33 +187,10 @@ export function TitleToolbar() {
         setBackupReminderOpen(true);
         track("backup_reminder_shown", { count: readProfileCreateCount() });
       }
-      // EVERY SAVE CONFIRMS ITSELF, because the button it came from does not: "Save" and "Update" leave
-      // the toolbar looking much as they found it, and on a rename the only visible change is text the
-      // user typed themselves. The verb comes from the store's `mode` so the notice describes what the
-      // write actually DID — a rename that said "Updated" was telling the user the wrong thing.
-      //
       // Only a DESTRUCTIVE save carries the Undo (an existing row was overwritten and/or a merged source
       // removed). A plain create has nothing to reverse, so it takes the short window instead of sitting
       // there for 8s offering an action it does not have.
-      // A RENAME NAMES BOTH TITLES. The old one because it just left the screen and is what Undo reverts to;
-      // the new one because the other modes name the current profile too, and the input above is not a
-      // reliable second copy — it truncates a long name, and 8s is a short window to go looking.
-      //
-      // `removedTitle` is checked FIRST and reads "Merged": a resolved name collision renames the draft AND
-      // deletes the row it clashed with, and `mode` alone reports that as a plain "Updated" — the only path
-      // where a profile disappears without the notice saying so.
-      let savedMessage;
-      if (result.removedTitle) {
-        savedMessage = `Merged “${result.removedTitle}” into “${result.savedTitle}”`;
-      } else if (result.mode === "renamed" && result.overwroteTitle) {
-        // A rename that also changed values says so: "Renamed" alone would report half of what was written,
-        // and this is the save the "Apply" button produces.
-        savedMessage = analytics.renameWithEdits
-          ? `Renamed “${result.overwroteTitle}” to “${result.savedTitle}” and saved your changes`
-          : `Renamed “${result.overwroteTitle}” to “${result.savedTitle}”`;
-      } else {
-        savedMessage = `${SAVE_TOAST_VERB[result.mode] ?? "Saved"} “${result.savedTitle}”`;
-      }
+      const savedMessage = buildSaveMessage(result, { renameWithEdits: analytics.renameWithEdits });
       if (result.undo) {
         showToast(savedMessage, {
           variant: "dark",
