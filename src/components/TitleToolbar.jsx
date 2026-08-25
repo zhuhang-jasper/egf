@@ -254,9 +254,8 @@ export function TitleToolbar() {
   const copyAction =
     saveStatus === "renaming" ? { label: "Save new", onSelect: handleSaveAsNew } : { label: "Save as copy", onSelect: handleDuplicate };
 
-  // Reverts the draft to the linked profile: title while renaming, values while modified. Nothing for
-  // "saved" (no change) or "new" (no link). One entry per status; BOTH when a rename carries edits, so the user can drop either half without having
-  // to undo one to discover the other. Rename first: the name field is the more visible change.
+  // Reverts the draft to the linked profile. Both entries when a rename carries edits, so either half can go
+  // without undoing the other first.
   const UNDO_ACTIONS = {
     renaming: [{ label: "Undo rename", onSelect: handleUndoRename }],
     modified: [{ label: "Undo changes", onSelect: handleUndoChanges }],
@@ -282,9 +281,7 @@ export function TitleToolbar() {
       return;
     }
     track("profile_restamped");
-    // Undoable like a destructive save (same single-Undo key): the only visible change is the warnings
-    // vanishing, so a mis-click would otherwise be silent. The held Updated date is stated by the confirm
-    // dialog when there was one, so the toast just names what was recorded.
+    // Undoable: the only visible change is the warnings vanishing, so a mis-click would be silent otherwise.
     showToast(`Marked as rated using Framework v${FRAMEWORK_VERSION}`, {
       variant: "dark",
       key: UNDO_TOAST_KEY,
@@ -313,8 +310,7 @@ export function TitleToolbar() {
     }
   };
 
-  // "Save anyway" / "Mark anyway": run the action the gate held back. It is the original thunk, so a Rename
-  // stays a rename and can still hit the collision dialog after this.
+  // Runs the thunk the gate held back — the original path, so a Rename stays a rename and can still collide.
   const handleConfirmUnreviewed = () => {
     const { proceed, count } = pendingUnreviewed;
     setPendingUnreviewed(null);

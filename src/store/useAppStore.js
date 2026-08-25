@@ -270,10 +270,8 @@ export const useAppStore = create((set, get) => ({
     if (!pillarId) {
       return;
     }
-    // Editing a level on an UNSAVED CLONE drops the stamp it inherited: the clone was the source's rating
-    // until the moment a score moved, and after that it is the user's own, so it stamps at the current
-    // version on save and its inherited flags go with it. A linked draft is unaffected — its stamp lives on
-    // the row, and writeProfile decides there.
+    // An unsaved clone's inherited stamp goes the moment a score moves: it is the user's own rating now.
+    // A linked draft is unaffected — writeProfile decides from the row.
     set({ pillarLevels: fillPillarLevels({ ...get().pillarLevels, [pillarId]: value }), draftFrameworkVersion: null });
     get().persistDraft();
   },
@@ -605,22 +603,14 @@ export const useAppStore = create((set, get) => ({
     const replaceIdx = existing.findIndex((p) => p.id === id);
     const target = replaceIdx >= 0 ? existing[replaceIdx] : null;
 
-    // A save bumps the stamp only when it CHANGED A LEVEL; rename and badge-switch saves carry the old one
-    // forward. Bumping on any write let a rename launder a stale profile clean, clearing every amber flag
-    // while the user never looked at a level. An unchanged rating heals via restampProfile instead.
-    //
-    // Judged against the SOURCE — the profile the draft was loaded from — not the row being written into.
-    // The stamp describes a RATING, and the rating is the draft's, wherever it lands. So a rename into a
-    // collision carries the source's stamp (only the name changed), while an unlinked draft overwriting a row
-    // stamps at the current version (it is a new assessment, and inherits nothing from the row it replaces).
+    // Only a levels change bumps the stamp — otherwise a rename would clear every amber flag unreviewed.
+    // Judged against the SOURCE, not the row written into: the stamp describes a rating, so it follows the
+    // draft wherever it lands. `resolveProfileStamp` not the raw field, or an unstamped row re-derives its
+    // version from the new `savedAt`. `inherited` covers a detached clone (see duplicateDraft).
     const sourceId = get().activeSavedProfileId;
     const source = sourceId != null ? (existing.find((p) => p.id === sourceId) ?? null) : null;
     const levelsUnchanged = source != null && pillarLevelsMatch(state.pillarLevels, source.pillarLevels);
-    // A detached clone ("Save as copy") has no source row, but did inherit its stamp — see duplicateDraft.
     const inherited = source == null ? get().draftFrameworkVersion : null;
-    // An UNSTAMPED row is dated from `savedAt`, so carrying a null stamp forward while `savedAt` moves would
-    // re-date it to the current version — the same laundering by another route. Recording the version it
-    // currently resolves to pins the verdict onto the row, freeing `savedAt` to be last-modified again.
     const carriedStamp = levelsUnchanged ? (resolveProfileStamp({ profile: source }).version ?? null) : inherited;
 
     const row = {
@@ -628,15 +618,13 @@ export const useAppStore = create((set, get) => ({
       title: state.title,
       pillarLevels: state.pillarLevels,
       attachedBadge: state.attachedBadge,
-      // Always moves: it is last-modified, and a rename or badge switch does modify the row. Safe because
-      // `carriedStamp` above pins the resolved version onto the row, so the date no longer decides it.
-      savedAt: Date.now(),
+      savedAt: Date.now(), // last-modified; safe to move because carriedStamp pinned the version above
       frameworkVersion: carriedStamp ?? FRAMEWORK_VERSION,
     };
     let next = replaceIdx >= 0 ? existing.map((p, i) => (i === replaceIdx ? row : p)) : [...existing, row];
     const removedSource = removeId != null && removeId !== id;
-    // Drop the merged-away source row (never the one we just wrote into). Its title is kept for the toast:
-    // this is the one path where a profile DISAPPEARS, and the notice has to be able to say which.
+    // Drop the merged-away source row (never the one just written into). Its title feeds the toast: the one
+    // path where a profile disappears.
     const removedTitle = removedSource ? (existing.find((p) => p.id === removeId)?.title ?? null) : null;
     if (removedSource) {
       next = next.filter((p) => p.id !== removeId);
@@ -654,9 +642,9 @@ export const useAppStore = create((set, get) => ({
     // re-counting a re-created profile would replay the 1st-profile reminder.
     const backupReminder = replaceIdx < 0 && isBackupReminderMilestone(bumpProfileCreateCount());
 
-    // For `profile_saved`: the state BEFORE this write, readable only here, in profile_loaded's `profile_state`
-    // vocabulary so one GA dimension spans both ends of the load → re-rate funnel. A create has no prior row,
-    // so it reports nothing — NOT `unverified`, which is a real verdict (the grey v??? chip).
+    // For `profile_saved`: the state BEFORE this write, readable only here, sharing profile_loaded's
+    // vocabulary so one GA dimension spans both funnel steps. A create reports nothing (not `unverified`,
+    // which is a real verdict).
     const priorState = target != null ? profileStampState(target).state : undefined;
 
     writeProfilesToStorage(next);
@@ -697,13 +685,8 @@ export const useAppStore = create((set, get) => ({
     const source = get().profiles.find((p) => p.id === get().activeSavedProfileId);
     const sourceName = String(source?.title ?? "").trim();
     const title = sourceName ? `Copy of ${sourceName}`.slice(0, MAX_PROFILE_NAME_LENGTH) : "";
-    // A clone carries its source's RATING, so it carries the stamp too — same as "Save new", which keeps the
-    // link and inherits it that way. Recorded, not left null: the copy gets a fresh `savedAt`, and a null
-    // stamp would re-derive a version from that new date rather than from when the scores were actually set.
-    //
-    // ONLY WHILE THE SCORES STILL MATCH THE SOURCE. Copying a draft whose levels were already edited hands
-    // over someone else's stamp with the user's own numbers, and the inherited flags reappear on scores they
-    // have just changed. Same rule as setLevel: once a score moves, the rating is the user's.
+    // A clone carries the source's rating, so it carries its stamp — recorded, not null, since the copy gets
+    // a fresh `savedAt` to re-derive from. Only while the scores still MATCH: past that it is the user's own.
     const untouched = source != null && pillarLevelsMatch(get().pillarLevels, source.pillarLevels);
     set({
       title,
@@ -713,11 +696,9 @@ export const useAppStore = create((set, get) => ({
     get().persistDraft();
   },
 
-  // "Mark as rated using v<current>" (the save caret): the escape hatch from writeProfile's only-a-levels-
-  // change-bumps rule, for a user who re-read the moved levels and kept their scores. Writes ONLY
-  // `frameworkVersion`, holding `savedAt` — that is the POINT, and what distinguishes it from the +1/save/-1/
-  // save round trip, which reaches the same stamp but re-dates the row. `undo` is restoreProfiles-shaped, so
-  // a misclick reverts like a destructive save; "not-stale" when there was nothing flagged to clear.
+  // "Mark as rated using v<current>" (the save caret), for a re-read that changed no score and so cannot heal
+  // via writeProfile. Writes ONLY `frameworkVersion`: holding `savedAt` is the point, and what separates it
+  // from the +1/save/-1/save route. "not-stale" when there was nothing flagged.
   restampProfile: () => {
     const activeId = get().activeSavedProfileId;
     if (activeId == null) {
@@ -760,10 +741,8 @@ export const useAppStore = create((set, get) => ({
         get().applyState(state, { profileId: restored.id });
       }
     } else {
-      // A snapshot from an UNLINKED draft carries a null link, and that null is what must be restored: the
-      // save had linked the draft to the row it wrote into, so leaving it attaches the draft to a profile it
-      // is not, and the chip and pillar flags read off that row's stamp. Only the link is undone — the values
-      // on screen are the user's own and stay put, so the draft reads as "new" again, ready to Save.
+      // An unlinked draft's snapshot carries a null link, and that null IS the thing to restore — the save had
+      // linked the draft to the row it wrote into. Values stay; only the link goes, so it reads as "new".
       set({ activeSavedProfileId: null, draftFrameworkVersion: null });
       get().persistDraft();
     }
@@ -880,11 +859,8 @@ function pillarLevelsMatch(a, b) {
 }
 
 /**
- * The framework version an EXPORT should name: the loaded profile's own stamp, else the stamp an unsaved clone
- * inherited, else the current version for a plain draft (which is being rated now, against nothing else).
- *
- * Resolved rather than read raw, so a legacy row dated from `savedAt` names the version it actually resolves
- * to instead of nothing.
+ * The version an export's credit names: the loaded profile's stamp, else a clone's inherited one, else current
+ * for a plain draft. Resolved, so a legacy row dated from `savedAt` names a version rather than nothing.
  */
 export function selectExportFrameworkVersion(s) {
   const active = s.activeSavedProfileId != null ? s.profiles.find((p) => p.id === s.activeSavedProfileId) : null;
