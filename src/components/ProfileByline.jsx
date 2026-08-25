@@ -4,7 +4,7 @@ import { useProfileStampState } from "@/hooks/useProfileStamp";
 
 import { useAppStore } from "@/store/useAppStore";
 
-import { FRAMEWORK_VERSION } from "@/constants/changelog";
+import { FRAMEWORK_VERSION, isNewerVersion } from "@/constants/changelog";
 import { TOOL_TEXT } from "@/styles/control-typography";
 import { cn } from "@/utils";
 import { PILLAR_STATE } from "@/utils/profile-stamp";
@@ -47,6 +47,10 @@ export function ProfileByline({ className }) {
 
   const savedAt = formatSavedAt(subject?.savedAt);
   const isStale = state === PILLAR_STATE.raised || state === PILLAR_STATE.eased || state === PILLAR_STATE.mixed;
+  // The QUIET GOOD NEWS, and the counterpart to the amber line: this profile predates the current framework,
+  // yet nothing it scored moved in between — so the older version is checked, not merely unexamined. Only
+  // when it is genuinely behind: at the current version there is nothing to reassure anyone about.
+  const isBehindButClear = state === PILLAR_STATE.clear && version != null && isNewerVersion(FRAMEWORK_VERSION, version);
   // Capital F: a short form of "9-Pillar Engineer Growth Framework", not the generic noun. Not "EGF" —
   // site.js already rejected a bare acronym nothing on the page spells out. "v?" keeps the same shape as the
   // stamped line; no bound like "< v3.1", which the data cannot support.
@@ -70,7 +74,10 @@ export function ProfileByline({ className }) {
       </p>
       {/* Own line, not a third middot clause: the line above states what IS, this what CHANGED SINCE. It is
           also the only clause that is ever amber. */}
-      {isStale ? <p className="text-amber-700">Some levels have changed since you rated this. Check the flagged pillars.</p> : null}
+      {isStale ? <p className="text-amber-700">Some levels have changed since. Check the flagged pillars.</p> : null}
+      {/* Green for the same reason the Saved button is: nothing to do. Mutually exclusive with the amber line
+          above — a profile cannot be both clear and flagged. */}
+      {isBehindButClear ? <p className="text-green-700">Framework has moved on since, but nothing you rated is affected.</p> : null}
     </div>
   );
 }
