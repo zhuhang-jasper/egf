@@ -5,7 +5,7 @@ import { FRAMEWORK_VERSION } from "@/constants/changelog";
 import { fillPillarLevels, getDefaultChartState, newSavedProfileId, normalizeSavedState, parseToCanonicalState } from "@/constants/levels";
 import { track } from "@/utils/analytics";
 import { resolveProfileStamp } from "@/utils/profile-stamp";
-import { profileStampState } from "@/utils/profile-stamp-state";
+import { isStaleProfile, profileStampState } from "@/utils/profile-stamp-state";
 import { exportProfilesToFile, parseImportedProfiles } from "@/utils/profile-transfer";
 import {
   bumpProfileCreateCount,
@@ -598,7 +598,7 @@ export const useAppStore = create((set, get) => ({
 
     // A save bumps the stamp only when it CHANGED A LEVEL; rename and badge-switch saves carry the old one
     // forward. Bumping on any write let a rename launder a stale profile clean, clearing every amber flag
-    // while the user never looked at a level.
+    // while the user never looked at a level. An unchanged rating heals via restampProfile instead.
     // Compared against the row being WRITTEN INTO (an overwrite lands on a different row than the link).
     const levelsUnchanged = target != null && pillarLevelsMatch(state.pillarLevels, target.pillarLevels);
     // An UNSTAMPED row is dated from `savedAt`, so carrying a null stamp forward while `savedAt` moves would
@@ -670,6 +670,32 @@ export const useAppStore = create((set, get) => ({
     const title = sourceName ? `Copy of ${sourceName}`.slice(0, MAX_PROFILE_NAME_LENGTH) : "";
     set({ title, activeSavedProfileId: null });
     get().persistDraft();
+  },
+
+  // "Mark as rated using v<current>" (the save caret): the escape hatch from writeProfile's only-a-levels-
+  // change-bumps rule, for a user who re-read the moved levels and kept their scores. Writes ONLY
+  // `frameworkVersion`, holding `savedAt` — that is the POINT, and what distinguishes it from the +1/save/-1/
+  // save round trip, which reaches the same stamp but re-dates the row. `undo` is restoreProfiles-shaped, so
+  // a misclick reverts like a destructive save; "not-stale" when there was nothing flagged to clear.
+  restampProfile: () => {
+    const activeId = get().activeSavedProfileId;
+    if (activeId == null) {
+      return { status: "error" };
+    }
+    const existing = loadProfilesFromStorage();
+    const idx = existing.findIndex((p) => p.id === activeId);
+    if (idx < 0) {
+      return { status: "error" };
+    }
+    const target = existing[idx];
+    if (!isStaleProfile(target)) {
+      return { status: "not-stale" };
+    }
+    const undo = { profiles: existing, activeSavedProfileId: activeId };
+    const next = existing.map((p, i) => (i === idx ? { ...p, frameworkVersion: FRAMEWORK_VERSION } : p));
+    writeProfilesToStorage(next);
+    set({ profiles: next });
+    return { status: "restamped", undo };
   },
 
   // Resolve a pending collision from the dialog's "Overwrite it": write into the clashing profile.

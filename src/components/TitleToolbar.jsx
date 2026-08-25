@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import { Calculator, CircleCheck, Copy, FilePlus, MoreVertical, Pencil, Save, Undo2 } from "lucide-react";
+import { BadgeCheck, Calculator, CircleCheck, Copy, FilePlus, MoreVertical, Pencil, Save, Undo2 } from "lucide-react";
 
 import { BackupReminderDialog } from "@/components/BackupReminderDialog";
 import { ProfileActionsMenu } from "@/components/ProfileActionsMenu";
@@ -24,9 +24,11 @@ import {
   useAppStore,
 } from "@/store/useAppStore";
 
+import { FRAMEWORK_VERSION } from "@/constants/changelog";
 import { CONTROL_TEXT } from "@/styles/control-typography";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
+import { isStaleProfile } from "@/utils/profile-stamp-state";
 import { readProfileCreateCount } from "@/utils/storage";
 
 // The Save button doubles as the save-status indicator. Each status sets the button's icon, label,
@@ -81,22 +83,23 @@ const SAVE_TOAST_VERB = {
 // For a linked profile (`showMenu` — status "saved", "renaming" or "modified") it becomes a split
 // button: the primary action Saves/Renames/Updates the linked profile (disabled when already
 // saved), while a caret opens a menu with the copy action (`copyAction` — "Save new" while renaming
-// saves a copy under the changed name, else "Save as copy" detaches with a "Copy of …" name) and an optional undo
+// saves a copy under the changed name, else "Save as copy" detaches with a "Copy of …" name), an optional
+// `restampAction` ("Mark as rated using v<current>" — only for a clean, flagged profile), and an optional undo
 // action (`undoAction` — "Undo rename" while renaming, "Undo changes" while modified) that reverts
 // the draft to the linked profile. For an unlinked draft ("new") it renders as a plain single button.
-function SaveButton({ statusMeta, showMenu, onSave, copyAction, undoAction }) {
+function SaveButton({ statusMeta, showMenu, onSave, copyAction, undoAction, restampAction }) {
   const StatusIcon = statusMeta.icon;
   const rootRef = useRef(null);
   const menuRef = useRef(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // The undo item appearing/disappearing changes the panel's height, so it drives a re-measure.
+  // Either optional item appearing/disappearing changes the panel's height, so both drive a re-measure.
   const { openUp } = useMenuPosition({
     open: menuOpen,
     onClose: () => setMenuOpen(false),
     rootRef,
     menuRef,
-    remeasureKey: Boolean(undoAction),
+    remeasureKey: `${Boolean(undoAction)}|${Boolean(restampAction)}`,
   });
 
   // The label sizes to its own text — the row is allowed to shift as the status changes so the
@@ -169,6 +172,19 @@ function SaveButton({ statusMeta, showMenu, onSave, copyAction, undoAction }) {
           >
             {copyAction.label}
           </MenuItem>
+          {/* Present only when there are flags to clear, so it never reads as an action with no effect. Above
+              the undo divider because it acts on the SAVED profile, not the draft. */}
+          {restampAction ? (
+            <MenuItem
+              icon={BadgeCheck}
+              onClick={() => {
+                setMenuOpen(false);
+                restampAction.onSelect();
+              }}
+            >
+              {restampAction.label}
+            </MenuItem>
+          ) : null}
           {/* Reverts the draft to the linked profile — "Undo rename" (renaming) or "Undo changes"
               (modified). Absent when there's nothing to revert (e.g. "saved"). */}
           {undoAction ? (
@@ -197,6 +213,8 @@ export function TitleToolbar() {
   const loadProfile = useAppStore((s) => s.loadProfile);
   const activeSavedProfileId = useAppStore((s) => s.activeSavedProfileId);
   const saveOverwriting = useAppStore((s) => s.saveOverwriting);
+  const restampProfile = useAppStore((s) => s.restampProfile);
+  const profiles = useAppStore((s) => s.profiles);
   const restoreProfiles = useAppStore((s) => s.restoreProfiles);
   const showToast = useAppStore((s) => s.showToast);
   const saveFeedback = useAppStore((s) => s.saveFeedback);
@@ -346,6 +364,35 @@ export function TitleToolbar() {
   };
   const undoAction = UNDO_ACTIONS[saveStatus];
 
+  // Clears the flags on a saved profile whose levels the user re-read and kept. ONLY at status "saved": with
+  // a dirty draft the ordinary Save is the right action, and restamping mid-edit would clear flags against
+  // numbers that aren't stored yet.
+  const activeProfile = profiles.find((p) => p.id === activeSavedProfileId) ?? null;
+  const canRestamp = saveStatus === "saved" && activeProfile != null && isStaleProfile(activeProfile);
+
+  const handleRestamp = () => {
+    const result = restampProfile();
+    if (result?.status !== "restamped") {
+      return;
+    }
+    track("profile_restamped");
+    // Undoable like a destructive save (same single-Undo key): the only visible change is the warnings
+    // vanishing, so a mis-click would otherwise be silent. No profile name — this acts on the one already
+    // named in the input above. The second sentence pre-empts the held "Updated" date reading as a bug, and
+    // is the only hint that the +1/save/-1/save route (which does re-date) exists.
+    showToast("Cleared pillar warnings. Updated date unchanged.", {
+      variant: "dark",
+      key: UNDO_TOAST_KEY,
+      action: {
+        label: "Undo",
+        onAction: () => {
+          restoreProfiles(result.undo);
+          track("profile_restamped_undone");
+        },
+      },
+    });
+  };
+
   // "New profile" — start a fresh blank draft, wiping the current one. Offer an Undo only when the
   // draft had genuine unsaved work (selectHasUnsavedWork): a clean loaded profile or an already-blank
   // draft loses nothing, so no toast. Routes through the shared "draft discarded" toast so New profile
@@ -391,6 +438,7 @@ export function TitleToolbar() {
           onSave={handleSave}
           copyAction={copyAction}
           undoAction={undoAction}
+          restampAction={canRestamp ? { label: `Mark as rated using v${FRAMEWORK_VERSION}`, onSelect: handleRestamp } : null}
         />
       </div>
       {/* Row 2 — New profile + keypad toggle (touch only) on the left, the "Manage" profile-actions

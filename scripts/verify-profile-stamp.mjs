@@ -416,6 +416,41 @@ function stub(moves) {
   check(g, "switching its badge keeps the flag", flagged(writeRow({ ...legacy, attachedBadge: "be" }, legacy)), PILLAR_STATE.raised);
 }
 
+// ── Restamp ("Mark as rated using v…"): the explicit heal for an unchanged rating ─────────────────
+// The escape hatch from the onsave rule: re-reading the moved levels and keeping your scores changes nothing,
+// so no save can heal it. Mirrors restampProfile (useAppStore.js).
+{
+  const g = "restamp";
+  const LIVE = "4.3";
+  const changelog = stub({ "4.3": { barRaised: { architecture: [1] } } });
+  const flagged = (p) =>
+    resolveProfileState({ pillarLevels: p.pillarLevels, stamp: resolveProfileStamp({ profile: p, changelog }).version, changelog });
+  // Levels AND savedAt untouched, stamp advanced — the whole point. savedAt stays put because it means
+  // "when the ratings last changed", and a restamp changes none.
+  const restamp = (p) => ({ ...p, frameworkVersion: LIVE });
+
+  const stale = { id: "a", title: "T", pillarLevels: { architecture: 1.5 }, attachedBadge: "none", savedAt: 1000, frameworkVersion: "4.2" };
+  check(g, "flagged before restamp", flagged(stale), PILLAR_STATE.raised);
+  const restamped = restamp(stale);
+  check(g, "restamp clears the flag", flagged(restamped), PILLAR_STATE.clear);
+  check(g, "restamp leaves the levels alone", restamped.pillarLevels.architecture, 1.5);
+  check(g, "restamp leaves savedAt alone", restamped.savedAt, 1000);
+  // Undo restores the PRIOR LIST, so the old stamp and the flag both come back.
+  check(g, "undo restores the flag", flagged(stale), PILLAR_STATE.raised);
+
+  // An unstamped profile is flaggable too (dated from savedAt), so restamp must reach it — otherwise the one
+  // cohort most likely to be stale has no way out.
+  const undated = { ...stale, frameworkVersion: null, savedAt: Date.parse("2026-07-27T16:04:18+08:00") };
+  check(g, "an unstamped stale profile is flagged", flagged(undated), PILLAR_STATE.raised);
+  // The recorded stamp must WIN over the older savedAt the row is still carrying — that ordering is what
+  // makes preserving savedAt safe here.
+  check(g, "restamp clears it too", flagged(restamp(undated)), PILLAR_STATE.clear);
+  check(g, "the recorded stamp beats the retained date", resolveProfileStamp({ profile: restamp(undated), changelog }), {
+    version: LIVE,
+    source: STAMP_SOURCE.recorded,
+  });
+}
+
 // ── Report ─────────────────────────────────────────────────────────────────────────────────────────
 const failed = results.filter((r) => !r.pass);
 for (const r of failed) {
