@@ -34,7 +34,7 @@ export function UnreviewedWarningsDialog({ count, restamp = false, onConfirm, on
         restamp ? (
           <>
             {pillars} {count === 1 ? "has a warning" : "have warnings"} you haven&rsquo;t reviewed. Marking this profile as rated against the current
-            framework clears {them}. This profile's Updated Date will remain unchanged.
+            framework clears {them}. <span className="font-semibold text-slate-900">This profile&rsquo;s Updated Date will remain unchanged.</span>
           </>
         ) : (
           <>
