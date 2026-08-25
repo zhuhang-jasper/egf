@@ -1,25 +1,18 @@
 import { useMemo } from "react";
 
 import { CHANGELOG } from "@/constants/changelog";
-import { isFlaggable, PILLAR_STATE, resolvePillarState, resolveProfileStamp, resolveProfileState } from "@/utils/profile-stamp";
+import { isFlaggable, PILLAR_STATE, resolvePillarState, resolveProfileStamp } from "@/utils/profile-stamp";
+import { profileStampState } from "@/utils/profile-stamp-state";
 
-/**
- * Binds the pure resolver to the app's real CHANGELOG. The one place that supplies it, so every surface
- * resolves through identical inputs.
- */
+/** Binds the pure per-pillar resolver to the app's real CHANGELOG (profile-stamp-state.js does the roll-up). */
 function resolveState(stamp, resolve) {
   return isFlaggable(stamp) ? resolve(stamp.version) : PILLAR_STATE.unverified;
 }
 
 /** Whole-profile roll-up for one saved row: amber iff anything it scored was raised. */
 export function useProfileStampState(profile) {
-  return useMemo(() => {
-    const stamp = resolveProfileStamp({ profile });
-    const state = resolveState(stamp, (version) =>
-      resolveProfileState({ pillarLevels: profile?.pillarLevels, stamp: version, changelog: CHANGELOG }),
-    );
-    return { ...stamp, state };
-  }, [profile]);
+  // Memoizes the same helper the store's analytics uses, so the chip and the events cannot disagree.
+  return useMemo(() => profileStampState(profile), [profile]);
 }
 
 /**

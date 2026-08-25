@@ -348,8 +348,8 @@ function stub(moves) {
 }
 
 // ── Stamp-on-save: only a levels change heals ──────────────────────────────────────────────────────
-// Mirrors writeProfile's stamp decision (useAppStore.js). Modelled rather than imported for the same reason
-// as the carry group: the store needs an alias + import.meta.env. Keep the two in step.
+// Mirrors writeProfile's stamp decision (useAppStore.js), modelled rather than imported for the carry group's
+// reason: the store needs an alias + import.meta.env. Keep the two in step.
 {
   const g = "onsave";
   const LIVE = "4.3";
@@ -362,39 +362,58 @@ function stub(moves) {
     }
     return true;
   };
-  // `target` null → a brand-new row, which always stamps.
-  const stampFor = (draft, target) => {
+  // The WHOLE written row, not just its stamp: an unstamped row is dated from `savedAt`, so a null stamp
+  // carried forward past a bumped date re-dates the row to the current version — the same laundering by
+  // another channel. Modelling only the stamp is what let that ship. So a stamp-preserving save RECORDS the
+  // version the row currently resolves to, pinning the verdict and freeing `savedAt` to be last-modified.
+  // `target` null → a brand-new row, which always stamps. NOW is any time after the 4.2 boundary.
+  const NOW = Date.parse("2026-08-20T00:00+08:00");
+  const writeRow = (draft, target) => {
     const unchanged = target != null && levelsMatch(draft.pillarLevels, target.pillarLevels);
-    const carried = typeof target?.frameworkVersion === "string" && target.frameworkVersion ? target.frameworkVersion : null;
-    return unchanged ? carried : LIVE;
+    const carried = unchanged ? (resolveProfileStamp({ profile: target }).version ?? null) : null;
+    return { ...draft, savedAt: NOW, frameworkVersion: unchanged ? carried : LIVE };
   };
+  const stampFor = (draft, target) => writeRow(draft, target).frameworkVersion;
 
   const stored = { id: "a", title: "T", pillarLevels: { architecture: 1.5 }, attachedBadge: "none", savedAt: 1000, frameworkVersion: "4.1" };
 
   // The laundering bug: neither of these touched a score, so neither may clear a flag.
   check(g, "rename carries the old stamp", stampFor({ ...stored, title: "T2" }, stored), "4.1");
   check(g, "badge switch carries the old stamp", stampFor({ ...stored, attachedBadge: "be" }, stored), "4.1");
+  // savedAt is last-modified, so it moves on every write — a rename and a badge switch DO modify the row.
+  check(g, "rename moves savedAt", writeRow({ ...stored, title: "T2" }, stored).savedAt, NOW);
+  check(g, "badge switch moves savedAt", writeRow({ ...stored, attachedBadge: "be" }, stored).savedAt, NOW);
 
-  // A real re-rate stamps, in either direction.
+  // A real re-rate stamps, in either direction, and moves the date.
   check(g, "a raised level stamps", stampFor({ ...stored, pillarLevels: { architecture: 2.5 } }, stored), LIVE);
   check(g, "a lowered level stamps", stampFor({ ...stored, pillarLevels: { architecture: 0.5 } }, stored), LIVE);
+  check(g, "a re-rate moves savedAt", writeRow({ ...stored, pillarLevels: { architecture: 2.5 } }, stored).savedAt, NOW);
   // A pillar added/removed from the map is a levels change too — fillPillarLevels defaults it in the store,
   // so this guards the key-union rather than a real user action.
   check(g, "a differing pillar set stamps", stampFor({ ...stored, pillarLevels: { architecture: 1.5, testing: 3 } }, stored), LIVE);
 
   check(g, "a new row stamps", stampFor(stored, null), LIVE);
-  // An unstamped profile renamed stays unstamped — it must not inherit a version it was never rated against,
-  // and resolveProfileStamp then dates it from savedAt as before.
-  check(g, "renaming an unstamped row keeps it unstamped", stampFor({ ...stored, title: "T2" }, { ...stored, frameworkVersion: null }), null);
+  // An unstamped row RECORDS the version its own date resolved to — not the current one, and not null (which
+  // would re-date it once savedAt moves). savedAt 1000 predates every release, so there is nothing to record.
+  const unstamped = { ...stored, frameworkVersion: null };
+  check(g, "an undatable unstamped row stays unstamped", stampFor({ ...stored, title: "T2" }, unstamped), null);
 
   // The behaviour that matters: the flag survives a rename and falls to a re-rate.
   const changelog = stub({ "4.2": { barRaised: { architecture: [1] } } });
   const flagged = (p) =>
     resolveProfileState({ pillarLevels: p.pillarLevels, stamp: resolveProfileStamp({ profile: p, changelog }).version, changelog });
-  const renamed = { ...stored, title: "T2", savedAt: 2000, frameworkVersion: stampFor({ ...stored, title: "T2" }, stored) };
-  check(g, "flag survives a rename", flagged(renamed), PILLAR_STATE.raised);
-  const rerated = { ...stored, pillarLevels: { architecture: 2.5 }, savedAt: 2000 };
-  check(g, "flag clears on a re-rate", flagged({ ...rerated, frameworkVersion: stampFor(rerated, stored) }), PILLAR_STATE.clear);
+  check(g, "flag survives a rename", flagged(writeRow({ ...stored, title: "T2" }, stored)), PILLAR_STATE.raised);
+  check(g, "flag survives a badge switch", flagged(writeRow({ ...stored, attachedBadge: "be" }, stored)), PILLAR_STATE.raised);
+  check(g, "flag clears on a re-rate", flagged(writeRow({ ...stored, pillarLevels: { architecture: 2.5 } }, stored)), PILLAR_STATE.clear);
+
+  // THE SHIPPED BUG, end to end: a pre-4.3 row carries no stamp, so it is dated from savedAt. Renaming it
+  // must not re-date it into the clear. Dated to the 4.1 era, where a 4.2 hardening still flags.
+  const legacy = { ...unstamped, savedAt: Date.parse("2026-07-28T00:00+08:00") };
+  // Its inferred 4.1 is RECORDED on the write, which is what survives the date moving to NOW.
+  check(g, "renaming a legacy row records its inferred version", stampFor({ ...legacy, title: "T2" }, legacy), "4.1");
+  check(g, "an unstamped legacy row is flagged", flagged(legacy), PILLAR_STATE.raised);
+  check(g, "renaming an unstamped legacy row keeps the flag", flagged(writeRow({ ...legacy, title: "T2" }, legacy)), PILLAR_STATE.raised);
+  check(g, "switching its badge keeps the flag", flagged(writeRow({ ...legacy, attachedBadge: "be" }, legacy)), PILLAR_STATE.raised);
 }
 
 // ── Report ─────────────────────────────────────────────────────────────────────────────────────────

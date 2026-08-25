@@ -4,6 +4,8 @@ import { MAX_PROFILE_NAME_LENGTH, normalizeAttachedBadge } from "@/constants";
 import { FRAMEWORK_VERSION } from "@/constants/changelog";
 import { fillPillarLevels, getDefaultChartState, newSavedProfileId, normalizeSavedState, parseToCanonicalState } from "@/constants/levels";
 import { track } from "@/utils/analytics";
+import { resolveProfileStamp } from "@/utils/profile-stamp";
+import { profileStampState } from "@/utils/profile-stamp-state";
 import { exportProfilesToFile, parseImportedProfiles } from "@/utils/profile-transfer";
 import {
   bumpProfileCreateCount,
@@ -594,27 +596,24 @@ export const useAppStore = create((set, get) => ({
     const replaceIdx = existing.findIndex((p) => p.id === id);
     const target = replaceIdx >= 0 ? existing[replaceIdx] : null;
 
-    // A save stamps the current framework version only when it CHANGED A LEVEL. Rename and badge-switch
-    // saves carry the old stamp forward, because the stamp asserts "these scores were rated against that
-    // matrix" and neither of those touched a score. Bumping on any write let a rename launder a stale
-    // profile clean: every amber flag cleared while the user never looked at a level.
-    //
-    // The cost is that a deliberate "I re-read it, 4.0 still stands" cannot heal, since it changes nothing
-    // to detect — that needs its own explicit affordance, not a silent side effect of Save.
-    //
-    // Compared against the row being WRITTEN INTO, not the linked profile: an overwrite-a-different-row
-    // save is judged against the row it lands on. A brand-new row has nothing to carry, so it stamps.
+    // A save bumps the stamp only when it CHANGED A LEVEL; rename and badge-switch saves carry the old one
+    // forward. Bumping on any write let a rename launder a stale profile clean, clearing every amber flag
+    // while the user never looked at a level.
+    // Compared against the row being WRITTEN INTO (an overwrite lands on a different row than the link).
     const levelsUnchanged = target != null && pillarLevelsMatch(state.pillarLevels, target.pillarLevels);
-    const carriedStamp = typeof target?.frameworkVersion === "string" && target.frameworkVersion ? target.frameworkVersion : null;
+    // An UNSTAMPED row is dated from `savedAt`, so carrying a null stamp forward while `savedAt` moves would
+    // re-date it to the current version — the same laundering by another route. Recording the version it
+    // currently resolves to pins the verdict onto the row, freeing `savedAt` to be last-modified again.
+    const carriedStamp = levelsUnchanged ? (resolveProfileStamp({ profile: target }).version ?? null) : null;
 
     const row = {
       id,
       title: state.title,
       pillarLevels: state.pillarLevels,
       attachedBadge: state.attachedBadge,
+      // Always moves: it is last-modified, and a rename or badge switch does modify the row. Safe because
+      // `carriedStamp` above pins the resolved version onto the row, so the date no longer decides it.
       savedAt: Date.now(),
-      // `null` when an unstamped profile is renamed: it stays unstamped rather than inheriting a version it
-      // was never rated against. `resolveProfileStamp` then dates it from `savedAt` as before.
       frameworkVersion: levelsUnchanged ? carriedStamp : FRAMEWORK_VERSION,
     };
     let next = replaceIdx >= 0 ? existing.map((p, i) => (i === replaceIdx ? row : p)) : [...existing, row];
@@ -636,6 +635,11 @@ export const useAppStore = create((set, get) => ({
     // re-counting a re-created profile would replay the 1st-profile reminder.
     const backupReminder = replaceIdx < 0 && isBackupReminderMilestone(bumpProfileCreateCount());
 
+    // For `profile_saved`: the state BEFORE this write, readable only here, in profile_loaded's `profile_state`
+    // vocabulary so one GA dimension spans both ends of the load → re-rate funnel. A create has no prior row,
+    // so it reports nothing — NOT `unverified`, which is a real verdict (the grey v??? chip).
+    const priorState = target != null ? profileStampState(target).state : undefined;
+
     writeProfilesToStorage(next);
     set({
       profiles: next,
@@ -644,7 +648,7 @@ export const useAppStore = create((set, get) => ({
       saveFeedback: "saved",
     });
     get().persistDraft();
-    return { status: "saved", savedTitle: state.title, overwroteTitle: target?.title ?? null, undo, backupReminder, mode };
+    return { status: "saved", savedTitle: state.title, overwroteTitle: target?.title ?? null, undo, backupReminder, mode, priorState };
   },
 
   // Save/Update the current draft. Updates the linked profile in place (renaming it if the title

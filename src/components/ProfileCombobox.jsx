@@ -16,6 +16,7 @@ import { LAYER, MAX_PROFILE_NAME_LENGTH, normalizeAttachedBadge, TRACK_BADGE_OPT
 import { CONTROL_TEXT, TOOL_TEXT } from "@/styles/control-typography";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
+import { profileStampState } from "@/utils/profile-stamp-state";
 import { getPopoverViewportBounds } from "@/utils/scroll";
 
 // Badge group order: the real badges (fe, be) in badge-dropdown order first, then "no badge" last.
@@ -197,7 +198,10 @@ export function ProfileCombobox({ titleError = false }) {
       return;
     }
     const result = loadProfile(pr.id);
-    track("profile_loaded", { attached_badge: pr.attachedBadge });
+    // The funnel's entry step — a load with a flagged state is a user being told to re-check, and the same
+    // param on `profile_saved` is where that lands. Read from the ROW, not the draft the load produced.
+    const stamp = profileStampState(pr);
+    track("profile_loaded", { attached_badge: pr.attachedBadge, profile_state: stamp.state, stamp_source: stamp.source });
     close();
     // If the load discarded unsaved work, warn (with an Undo) via the shared coalescing toast — so
     // load and "New profile" behave identically. Only one such toast shows at a time (a newer discard
