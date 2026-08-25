@@ -30,13 +30,10 @@ export function usePillarStampStates(activeProfile, pillarLevels, inheritedVersi
     const stored = activeProfile?.pillarLevels ?? null;
     const out = {};
     for (const [pillar, score] of Object.entries(pillarLevels ?? {})) {
-      // WHETHER a pillar is flagged is decided by the SAVED score, not the live one. Resolving the live value
-      // meant nudging a score out of the moved band cleared the flag outright — the user dodged the bar
-      // rather than reviewing it, and the row went silent as if nothing had changed under it.
+      // Flagged-ness comes from the SAVED score — see docs/DECISIONS.md#pillar-flags-read-the-saved-score.
       const basis = stored?.[pillar] ?? score;
       const state = resolveState(stamp, (version) => resolvePillarState({ pillar, score: basis, stamp: version, changelog: CHANGELOG }));
-      // The LIVE value only decides whether that flag reads as handled. Put the number back and the amber
-      // returns, because `state` above never depended on the edit.
+      // The live value only decides whether it reads as handled.
       const edited = stored != null && stored[pillar] !== score;
       out[pillar] = edited && state !== PILLAR_STATE.clear ? PILLAR_STATE.reviewed : state;
     }

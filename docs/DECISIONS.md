@@ -1431,3 +1431,67 @@ in the export subtree is a new instance of this bug.
 Two further properties fall out beyond the flash. The export no longer depends on the viewport, so it renders
 identically on a phone and a desktop; and it no longer has to restore anything, so an export that throws
 midway cannot leave the visible chart pinned at the wrong width.
+
+---
+
+## Framework stamping
+
+### stamp-follows-the-source-not-the-target
+
+A profile's `frameworkVersion` records the framework a RATING was made against, so on a save it is judged
+against the row the draft was loaded from, never the row being written into.
+
+Three attempts got this wrong before it settled, and each failure looks reasonable in isolation:
+
+1. **Bump on every write.** A rename or badge switch cleared every amber flag while the user never looked at a
+   level. The stamp asserts something about scores, and neither of those touches a score.
+2. **Carry the old field forward when levels match.** Correct for a stamped row, wrong for the entire legacy
+   population: an unstamped row derives its version from `savedAt`, so carrying `null` while `savedAt` moved
+   re-dated it to the current version. Same laundering, different channel. The fix is to record the version the
+   row currently RESOLVES to, which also converts an inference into a fact.
+3. **Judge against the write target.** Breaks both collision routes. Renaming A onto B changed no score, so the
+   survivor must keep A's stamp; an unlinked draft overwriting B is a new rating and must stamp current. B's own
+   stamp is never relevant — its data is being replaced.
+
+The same rule covers clones. "Save new" keeps the link so `writeProfile` sees the source; "Save as copy"
+detaches, so `duplicateDraft` parks the resolved version on the draft as `draftFrameworkVersion` and
+`writeProfile` falls back to it. Either way, editing a level drops it: past that point the rating is the user's
+own.
+
+### restamp-holds-the-updated-date
+
+`savedAt` moves on every write except `restampProfile`. That exception is the feature, not an oversight.
+
+The stamp can only advance when a level changes, which leaves a user who re-read the moved levels and decided
+their scores still stand with no way to clear the flags. "Mark as rated using v4.3" is that way, and holding
+the date is what distinguishes it from the +1/save/-1/save route, which reaches the same stamp and re-dates the
+row. Two paths, one choice: keep the provenance date or refresh it.
+
+Holding the date is safe because a recorded stamp beats the date in `resolveProfileStamp`, so a stale date can
+never contradict the chip.
+
+### pillar-flags-read-the-saved-score
+
+Whether a pillar is flagged comes from the STORED score; the live draft value only decides whether that flag
+reads as handled.
+
+Resolving the live value instead let a user nudge a score out of the moved band and silence the row without
+reviewing anything — the warning vanished as though nothing had changed under it. Now the flag persists and
+merely drops from the amber fill to a bare amber ring, so a run of flagged rows visibly shrinks as it is worked
+through, and putting a number back restores the fill.
+
+The colour took four attempts. `amber-50` is already the palette's faintest fill, so there is no room below it:
+a translucent version landed on ~#fffef8 and was invisible against the white input, and a step darker made the
+handled rows the loudest thing in the form. A second hue (yellow, then lime) read as a third state to learn
+rather than the same one turned down. Dropping the fill and keeping the ring is the only direction with real
+contrast available.
+
+### unreviewed-warnings-gate
+
+The stamp is one field per profile, so any save that advances it silences every flagged pillar at once — not
+just the ones edited. A confirm dialog states the count before that happens.
+
+It fires only for a write that lands on the source AND actually moves the stamp. A rename or badge switch
+carries the old stamp, so nothing is silenced; "Save new" and "Save as copy" write a separate row and leave the
+source untouched. A per-pillar stamp map would remove the need for the dialog entirely, but that is a storage
+change plus a migration, and the dialog is the honest interim.

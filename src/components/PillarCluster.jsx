@@ -76,9 +76,8 @@ const PILLAR_MARK = {
   // Still flagged, but the user has moved this score, so it should stop reading as "still to check" while a
   // run of flagged rows is worked through.
   //
-  // THE SAME AMBER RING, minus the fill and the amber number. So the tinted rows are exactly the pillars
-  // still to check, while the outline keeps this one marked as flagged. A second hue (lime, yellow) was tried
-  // first and read as a third kind of state to learn rather than the same one, quieter.
+  // The same ring, minus the fill: the tinted rows are exactly the pillars still to check.
+  // See docs/DECISIONS.md#pillar-flags-read-the-saved-score for the three colours tried first.
   [PILLAR_STATE.reviewed]: {
     className: "ring-1 ring-inset ring-amber-500/50",
     aria: "this level changed since you rated it, and you have adjusted your score",

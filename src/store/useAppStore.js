@@ -603,10 +603,8 @@ export const useAppStore = create((set, get) => ({
     const replaceIdx = existing.findIndex((p) => p.id === id);
     const target = replaceIdx >= 0 ? existing[replaceIdx] : null;
 
-    // Only a levels change bumps the stamp — otherwise a rename would clear every amber flag unreviewed.
-    // Judged against the SOURCE, not the row written into: the stamp describes a rating, so it follows the
-    // draft wherever it lands. `resolveProfileStamp` not the raw field, or an unstamped row re-derives its
-    // version from the new `savedAt`. `inherited` covers a detached clone (see duplicateDraft).
+    // Judged against the SOURCE, never the row written into, and resolved rather than read raw.
+    // See docs/DECISIONS.md#stamp-follows-the-source-not-the-target.
     const sourceId = get().activeSavedProfileId;
     const source = sourceId != null ? (existing.find((p) => p.id === sourceId) ?? null) : null;
     const levelsUnchanged = source != null && pillarLevelsMatch(state.pillarLevels, source.pillarLevels);
@@ -696,9 +694,8 @@ export const useAppStore = create((set, get) => ({
     get().persistDraft();
   },
 
-  // "Mark as rated using v<current>" (the save caret), for a re-read that changed no score and so cannot heal
-  // via writeProfile. Writes ONLY `frameworkVersion`: holding `savedAt` is the point, and what separates it
-  // from the +1/save/-1/save route. "not-stale" when there was nothing flagged.
+  // "Mark as rated using v<current>" (the save caret). Writes ONLY `frameworkVersion`, holding `savedAt` —
+  // see docs/DECISIONS.md#restamp-holds-the-updated-date. "not-stale" when there was nothing flagged.
   restampProfile: () => {
     const activeId = get().activeSavedProfileId;
     if (activeId == null) {

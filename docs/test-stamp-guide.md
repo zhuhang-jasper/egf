@@ -104,10 +104,10 @@ E5/E6 also check that badge + name + chip + trash fit one row at narrow width.
 ## Then check the form
 
 **Load `A 4.2`** — 8 of 9 pillars tinted amber (everything but AI Leverage). Byline reads
-`Rated using Framework v4.2 · Updated Aug 10, 2026 …` plus the amber "Some levels have changed since you
-rated this."
+`Rated using Framework v4.2 · Updated Aug 10, 2026 …` plus the amber "Some levels have changed since."
 
-**Load `B4`** — no tints, no amber line, despite a v2.8 stamp.
+**Load `B4`** — no tints, and instead of the amber line a GREEN one: "Framework has moved on since, but
+nothing you rated is affected." Being behind the current version with nothing flagged is its own state.
 
 **Load `C1`** — no tints at all, byline reads `Rated using Framework v???`.
 
@@ -115,12 +115,38 @@ rated this."
 
 ## Then the save guard
 
-With `E1` loaded:
+With `E1` loaded (one flagged pillar):
 
 1. Save button reads **"Saved" and is disabled** — a flagged profile cannot be cleared by a stray click.
-2. Nudge any level → it becomes **"Update"**. Press it.
-3. Chip flips to `v4.3 ✓`, the Ownership tint clears, byline updates.
+2. Nudge Ownership → it becomes **"Update"**, and its amber tint drops to a bare amber ring: still flagged,
+   but no longer in the "still to check" colour. Nudge it back and the tint returns.
+3. Press Update. Chip flips to `v4.3 ✓`, the ring clears, byline updates.
 4. Press **Undo** in the toast → `v4.2`, the old level and the tint all come back.
+
+With `E4` loaded (seven flagged pillars), the same nudge-then-Update opens the **Unreviewed pillar warnings**
+dialog first, counting the six untouched ones. "Save anyway" proceeds; Cancel writes nothing. Editing all
+seven first means no dialog.
+
+**Rename or badge-switch only** never opens that dialog and never clears a flag: those carry the old stamp
+forward. `Mark as rated using v4.3` in the save caret is the only way to clear flags without editing a score,
+and it holds the Updated date where every other write moves it.
+
+## Then the copies and collisions
+
+**Save as copy** from a flagged profile: the clone shows its source's chip and flags BEFORE the first save.
+Edit any level and both clear — an edited clone is the user's own rating, so it stamps 4.3 on save.
+
+**Save new** (rename first, then the caret) never opens the unreviewed dialog: it writes a separate row and
+leaves the source untouched.
+
+**Rename onto an existing name+badge** → Overwrite → the toast reads `Merged "<old>" into "<new>"` and the
+survivor keeps the SOURCE's stamp, not the overwritten row's. From an unlinked draft instead, the same
+overwrite stamps 4.3, and Undo leaves a detached draft whose button reads "Save".
+
+## Then the export
+
+Copy or share the chart from a v4.2 profile: the PNG's credit line ends `… Framework v4.2`, the profile's own
+stamp. From a blank draft it reads the current version instead.
 
 ## Then the round-trips
 

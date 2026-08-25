@@ -216,12 +216,8 @@ export function TitleToolbar() {
     }
   };
 
-  // The stamp is one field on the profile, so anything that advances it silences EVERY flagged pillar, not
-  // just the ones edited. Gate in front of the action: run it only if there is nothing unreviewed, else open
-  // the dialog and let its confirm run it. `restamp` only picks the dialog's wording.
-  //
-  // Only for a write that lands ON THE SOURCE. "Save new" and "Save as copy" create a separate row and leave
-  // the source untouched, so its warnings survive the save and there is nothing to confirm.
+  // Gate in front of the action; the dialog's confirm runs it. Only for writes landing ON THE SOURCE.
+  // See docs/DECISIONS.md#unreviewed-warnings-gate.
   const guardUnreviewed = (proceed, { restamp = false } = {}) => {
     const { profiles: rows, activeSavedProfileId: activeId, pillarLevels: levels } = useAppStore.getState();
     const source = activeId != null ? (rows.find((p) => p.id === activeId) ?? null) : null;

@@ -2,11 +2,6 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Verification
-
-- Do **not** run lint (`oxlint`, `npm run lint:*`) or build (`vite build`, `npm run build`) as part of completing a task. The user runs these themselves.
-- Only run them when explicitly asked.
-
 ## Commands
 
 Requires Node >= 24 (`.nvmrc` pins 24). The `prebuild` hook runs `scripts/check-node-version.js` before `dev`/`build` and fails fast on a mismatch.
