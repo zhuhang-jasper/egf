@@ -126,6 +126,7 @@ export const useAppStore = create((set, get) => ({
   clusterLabelColors: initialDraft.clusterLabelColors === true,
   pillarEmojiHidden: initialDraft.pillarEmojiHidden === true,
   activeSavedProfileId: validateActiveId(initialDraft.activeSavedProfileId, initialProfiles),
+  draftFrameworkVersion: initialDraft.draftFrameworkVersion ?? null,
   profiles: initialProfiles,
   saveFeedback: null,
   levelKeyboardInputEnabled: initialDraft.levelKeyboardInputEnabled === true,
@@ -289,7 +290,9 @@ export const useAppStore = create((set, get) => ({
       clusterLabelColors: get().clusterLabelColors,
       pillarEmojiHidden: get().pillarEmojiHidden,
     });
-    set({ activeSavedProfileId: profileId });
+    // Clears any inherited clone stamp (see duplicateDraft): this draft now IS a profile, or a blank, so
+    // the borrowed version no longer applies.
+    set({ activeSavedProfileId: profileId, draftFrameworkVersion: null });
     get().persistDraft();
   },
 
@@ -452,7 +455,7 @@ export const useAppStore = create((set, get) => ({
     }
 
     writeProfilesToStorage([]);
-    set({ profiles: [], activeSavedProfileId: null });
+    set({ profiles: [], activeSavedProfileId: null, draftFrameworkVersion: null });
     if (linkedActive) {
       get().resetDraftToBlank();
     }
@@ -534,6 +537,8 @@ export const useAppStore = create((set, get) => ({
       pillarLevels: { ...prev.pillarLevels },
       attachedBadge: normalizeAttachedBadge(prev.attachedBadge),
       activeSavedProfileId: prev.activeSavedProfileId,
+      // An unsaved clone's inherited stamp is part of the draft, so Undo has to bring it back with the rest.
+      draftFrameworkVersion: prev.draftFrameworkVersion ?? null,
     };
     // Warn only if the replaced draft actually had unsaved work (a blank all-default new draft loses
     // nothing), and never for a no-op reload of the already-active profile. Same dirty-test as
@@ -599,12 +604,20 @@ export const useAppStore = create((set, get) => ({
     // A save bumps the stamp only when it CHANGED A LEVEL; rename and badge-switch saves carry the old one
     // forward. Bumping on any write let a rename launder a stale profile clean, clearing every amber flag
     // while the user never looked at a level. An unchanged rating heals via restampProfile instead.
-    // Compared against the row being WRITTEN INTO (an overwrite lands on a different row than the link).
-    const levelsUnchanged = target != null && pillarLevelsMatch(state.pillarLevels, target.pillarLevels);
+    //
+    // Judged against the SOURCE — the profile the draft was loaded from — not the row being written into.
+    // The stamp describes a RATING, and the rating is the draft's, wherever it lands. So a rename into a
+    // collision carries the source's stamp (only the name changed), while an unlinked draft overwriting a row
+    // stamps at the current version (it is a new assessment, and inherits nothing from the row it replaces).
+    const sourceId = get().activeSavedProfileId;
+    const source = sourceId != null ? (existing.find((p) => p.id === sourceId) ?? null) : null;
+    const levelsUnchanged = source != null && pillarLevelsMatch(state.pillarLevels, source.pillarLevels);
+    // A detached clone ("Save as copy") has no source row, but did inherit its stamp — see duplicateDraft.
+    const inherited = source == null ? get().draftFrameworkVersion : null;
     // An UNSTAMPED row is dated from `savedAt`, so carrying a null stamp forward while `savedAt` moves would
     // re-date it to the current version — the same laundering by another route. Recording the version it
     // currently resolves to pins the verdict onto the row, freeing `savedAt` to be last-modified again.
-    const carriedStamp = levelsUnchanged ? (resolveProfileStamp({ profile: target }).version ?? null) : null;
+    const carriedStamp = levelsUnchanged ? (resolveProfileStamp({ profile: source }).version ?? null) : inherited;
 
     const row = {
       id,
@@ -614,7 +627,7 @@ export const useAppStore = create((set, get) => ({
       // Always moves: it is last-modified, and a rename or badge switch does modify the row. Safe because
       // `carriedStamp` above pins the resolved version onto the row, so the date no longer decides it.
       savedAt: Date.now(),
-      frameworkVersion: levelsUnchanged ? carriedStamp : FRAMEWORK_VERSION,
+      frameworkVersion: carriedStamp ?? FRAMEWORK_VERSION,
     };
     let next = replaceIdx >= 0 ? existing.map((p, i) => (i === replaceIdx ? row : p)) : [...existing, row];
     const removedSource = removeId != null && removeId !== id;
@@ -646,11 +659,21 @@ export const useAppStore = create((set, get) => ({
     set({
       profiles: next,
       activeSavedProfileId: id,
+      draftFrameworkVersion: null, // spent: the clone is a saved row now
       pillarLevels: { ...state.pillarLevels },
       saveFeedback: "saved",
     });
     get().persistDraft();
-    return { status: "saved", savedTitle: state.title, overwroteTitle: target?.title ?? null, undo, backupReminder, mode, priorState, removedTitle };
+    return {
+      status: "saved",
+      savedTitle: state.title,
+      overwroteTitle: target?.title ?? null,
+      undo,
+      backupReminder,
+      mode,
+      priorState,
+      removedTitle,
+    };
   },
 
   // Save/Update the current draft. Updates the linked profile in place (renaming it if the title
@@ -670,7 +693,10 @@ export const useAppStore = create((set, get) => ({
     const source = get().profiles.find((p) => p.id === get().activeSavedProfileId);
     const sourceName = String(source?.title ?? "").trim();
     const title = sourceName ? `Copy of ${sourceName}`.slice(0, MAX_PROFILE_NAME_LENGTH) : "";
-    set({ title, activeSavedProfileId: null });
+    // A clone carries its source's RATING, so it carries the stamp too — same as "Save new", which keeps the
+    // link and inherits it that way. Recorded, not left null: the copy gets a fresh `savedAt`, and a null
+    // stamp would re-derive a version from that new date rather than from when the scores were actually set.
+    set({ title, activeSavedProfileId: null, draftFrameworkVersion: resolveProfileStamp({ profile: source }).version ?? null });
     get().persistDraft();
   },
 
@@ -725,7 +751,7 @@ export const useAppStore = create((set, get) => ({
       // save had linked the draft to the row it wrote into, so leaving it attaches the draft to a profile it
       // is not, and the chip and pillar flags read off that row's stamp. Only the link is undone — the values
       // on screen are the user's own and stay put, so the draft reads as "new" again, ready to Save.
-      set({ activeSavedProfileId: null });
+      set({ activeSavedProfileId: null, draftFrameworkVersion: null });
       get().persistDraft();
     }
     set({ profiles: loadProfilesFromStorage() });
@@ -754,6 +780,7 @@ export const useAppStore = create((set, get) => ({
       pillarLevels: { ...defaults.pillarLevels },
       attachedBadge: normalizeAttachedBadge(defaults.attachedBadge),
       activeSavedProfileId: null,
+      draftFrameworkVersion: null,
     });
     get().persistDraft();
   },
@@ -768,6 +795,7 @@ export const useAppStore = create((set, get) => ({
       pillarLevels: { ...prev.pillarLevels },
       attachedBadge: normalizeAttachedBadge(prev.attachedBadge),
       activeSavedProfileId: prev.activeSavedProfileId,
+      draftFrameworkVersion: prev.draftFrameworkVersion ?? null,
     };
     // Whether the caller offers an Undo is decided by selectHasUnsavedWork on the pre-blank draft.
     get().resetDraftToBlank();
@@ -776,13 +804,14 @@ export const useAppStore = create((set, get) => ({
 
   // Restore a draft snapshot captured by createNew — undo of "New profile". Re-links to the saved
   // profile only if it still exists (it may have been deleted meanwhile); otherwise stays unlinked.
-  restoreDraft: ({ title, pillarLevels, attachedBadge, activeSavedProfileId }) => {
+  restoreDraft: ({ title, pillarLevels, attachedBadge, activeSavedProfileId, draftFrameworkVersion = null }) => {
     set({
       ...get(),
       title,
       pillarLevels: { ...pillarLevels },
       attachedBadge: normalizeAttachedBadge(attachedBadge),
       activeSavedProfileId: validateActiveId(activeSavedProfileId, get().profiles),
+      draftFrameworkVersion,
     });
     get().persistDraft();
   },

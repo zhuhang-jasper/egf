@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { SimpleModal } from "@/components/ui/Modal";
 
 import { ADMIN_PASSWORD_REQUESTED, unlockAdmin } from "@/constants";
+import { CONTROL_TEXT } from "@/styles/control-typography";
+import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
 
 /**
@@ -60,6 +62,7 @@ export function AdminUnlockPrompt() {
       open={ADMIN_PASSWORD_REQUESTED && !dismissed}
       title="Admin access"
       icon={Lock}
+      wideGlyph
       onClose={() => setDismissed(true)}
       // NOT click-to-dismiss: this appears in response to a deliberate `?admin=1` navigation and the
       // param is already consumed, so a stray tap that threw the question away would mean re-typing the
@@ -100,7 +103,7 @@ export function AdminUnlockPrompt() {
         </>
       }
     >
-      <p id="admin-unlock-desc" className="text-sm leading-snug text-slate-600">
+      <p id="admin-unlock-desc" className={cn("leading-snug text-slate-600", CONTROL_TEXT)}>
         Enter the password to unlock dev options.
       </p>
 

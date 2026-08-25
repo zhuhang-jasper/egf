@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { MenuItem } from "@/components/ui/menu-item";
 import { MenuPanel } from "@/components/ui/menu-panel";
 import { Tooltip } from "@/components/ui/Tooltip";
+import { UnreviewedWarningsDialog } from "@/components/UnreviewedWarningsDialog";
 
 import { useMenuPosition } from "@/hooks/useMenuPosition";
 import { useTouchPrimary } from "@/hooks/useTouchPrimary";
@@ -25,10 +26,11 @@ import {
 } from "@/store/useAppStore";
 
 import { FRAMEWORK_VERSION } from "@/constants/changelog";
+import { fillPillarLevels } from "@/constants/levels";
 import { CONTROL_TEXT } from "@/styles/control-typography";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
-import { isStaleProfile } from "@/utils/profile-stamp-state";
+import { isStaleProfile, untouchedFlaggedPillars } from "@/utils/profile-stamp-state";
 import { readProfileCreateCount } from "@/utils/storage";
 
 // The Save button doubles as the save-status indicator. Each status sets the button's icon, label,
@@ -278,6 +280,10 @@ export function TitleToolbar() {
   // open; it carries the blocked attempt's analytics so they survive to the resolution.
   const [pendingCollision, setPendingCollision] = useState(null);
 
+  // The action held back by unreviewed pillar warnings, if any: the count, which wording to use, and the
+  // thunk to run if the user confirms.
+  const [pendingUnreviewed, setPendingUnreviewed] = useState(null);
+
   // Open when a save just CREATED the user's 1st, 10th, 20th … profile (the store flags it — see
   // writeProfile). Raised here rather than in the store because it is one more piece of save-result
   // routing, and this is where every save path already lands.
@@ -354,10 +360,26 @@ export function TitleToolbar() {
     }
   };
 
-  const handleSave = () => handleResult(saveProfile());
+  // The stamp is one field on the profile, so anything that advances it silences EVERY flagged pillar, not
+  // just the ones edited. Gate in front of the action: run it only if there is nothing unreviewed, else open
+  // the dialog and let its confirm run it. `restamp` only picks the dialog's wording.
+  const guardUnreviewed = (proceed, { restamp = false } = {}) => {
+    const { profiles: rows, activeSavedProfileId: activeId, pillarLevels: levels } = useAppStore.getState();
+    const source = activeId != null ? (rows.find((p) => p.id === activeId) ?? null) : null;
+    // `requireLevelChange` on the save path: a rename or badge switch carries the old stamp, so its warnings
+    // survive and there is nothing to confirm. The restamp button advances the stamp on its own.
+    const count = source != null ? untouchedFlaggedPillars(source, fillPillarLevels(levels), { requireLevelChange: !restamp }) : 0;
+    if (count > 0) {
+      setPendingUnreviewed({ count, restamp, proceed });
+      return;
+    }
+    proceed();
+  };
+
+  const handleSave = () => guardUnreviewed(() => handleResult(saveProfile()));
 
   // "Save new" (while renaming): the name already differs, so save a copy under it immediately.
-  const handleSaveAsNew = () => handleResult(saveAsNew(), { copy: true });
+  const handleSaveAsNew = () => guardUnreviewed(() => handleResult(saveAsNew(), { copy: true }));
 
   // "Save as copy" (name still matches the source): detach into a new unsaved draft (same badge +
   // levels) with the name prefilled "Copy of <source>", then focus + select it (desktop) so the user
@@ -387,17 +409,18 @@ export function TitleToolbar() {
   const activeProfile = profiles.find((p) => p.id === activeSavedProfileId) ?? null;
   const canRestamp = saveStatus === "saved" && activeProfile != null && isStaleProfile(activeProfile);
 
-  const handleRestamp = () => {
+  const handleRestamp = () => guardUnreviewed(() => doRestamp(), { restamp: true });
+
+  const doRestamp = () => {
     const result = restampProfile();
     if (result?.status !== "restamped") {
       return;
     }
     track("profile_restamped");
     // Undoable like a destructive save (same single-Undo key): the only visible change is the warnings
-    // vanishing, so a mis-click would otherwise be silent. No profile name — this acts on the one already
-    // named in the input above. The second sentence pre-empts the held "Updated" date reading as a bug, and
-    // is the only hint that the +1/save/-1/save route (which does re-date) exists.
-    showToast("Cleared pillar warnings. Updated date unchanged.", {
+    // vanishing, so a mis-click would otherwise be silent. The held Updated date is stated by the confirm
+    // dialog when there was one, so the toast just names what was recorded.
+    showToast(`Marked as rated using Framework v${FRAMEWORK_VERSION}`, {
       variant: "dark",
       key: UNDO_TOAST_KEY,
       action: {
@@ -423,6 +446,15 @@ export function TitleToolbar() {
     if (hadUnsavedWork) {
       showDraftDiscardedToast(undo, () => track("new_profile_undone"));
     }
+  };
+
+  // "Save anyway" / "Mark anyway": run the action the gate held back. It is the original thunk, so a Rename
+  // stays a rename and can still hit the collision dialog after this.
+  const handleConfirmUnreviewed = () => {
+    const { proceed, count } = pendingUnreviewed;
+    setPendingUnreviewed(null);
+    track("unreviewed_warnings_confirmed", { count });
+    proceed();
   };
 
   // The collision dialog's "Overwrite it" carries the blocked attempt's analytics forward.
@@ -455,7 +487,7 @@ export function TitleToolbar() {
           onSave={handleSave}
           copyAction={copyAction}
           undoAction={undoAction}
-          restampAction={canRestamp ? { label: `Mark as rated using v${FRAMEWORK_VERSION}`, onSelect: handleRestamp } : null}
+          restampAction={canRestamp ? { label: `Mark as rated using v${FRAMEWORK_VERSION}`, onSelect: () => handleRestamp() } : null}
         />
       </div>
       {/* Row 2 — New profile + keypad toggle (touch only) on the left, the "Manage" profile-actions
@@ -520,6 +552,15 @@ export function TitleToolbar() {
           a printed chart should carry which framework revision it was rated against. Renders nothing
           when no profile is loaded, so it costs no vertical space on a fresh draft. */}
       <ProfileByline />
+      <UnreviewedWarningsDialog
+        count={pendingUnreviewed?.count ?? 0}
+        restamp={pendingUnreviewed?.restamp ?? false}
+        onConfirm={handleConfirmUnreviewed}
+        onCancel={() => {
+          track("unreviewed_warnings_cancelled", { count: pendingUnreviewed?.count });
+          setPendingUnreviewed(null);
+        }}
+      />
       <SaveCollisionDialog collision={pendingCollision} onOverwrite={handleOverwrite} onCancel={() => setPendingCollision(null)} />
       <BackupReminderDialog open={backupReminderOpen} onClose={() => setBackupReminderOpen(false)} />
     </div>

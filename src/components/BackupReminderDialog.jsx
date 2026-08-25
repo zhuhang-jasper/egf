@@ -5,6 +5,9 @@ import { GlobeX, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SimpleModal } from "@/components/ui/Modal";
 
+import { CONTROL_TEXT } from "@/styles/control-typography";
+import { cn } from "@/utils";
+
 /**
  * "Your profiles live in this browser" notice, shown at the milestones in constants/storage.js. The only
  * place the app says there is no server, at the moment the user first has something to lose.
@@ -23,6 +26,7 @@ export function BackupReminderDialog({ open, onClose }) {
       open={open}
       title="Saved on this device only"
       icon={GlobeX}
+      wideGlyph
       onClose={onClose}
       initialFocusRef={closeButtonRef}
       titleId="backup-reminder-title"
@@ -40,14 +44,14 @@ export function BackupReminderDialog({ open, onClose }) {
           are back the moment this browser is — so loss language there is false, and false in the
           direction that panics. Only the last sentence describes actual deletion, which is why it
           is the only one allowed to say "delete". */}
-      <p id="backup-reminder-desc" className="text-sm leading-snug text-slate-600">
+      <p id="backup-reminder-desc" className={cn("leading-snug text-slate-600", CONTROL_TEXT)}>
         Your profiles are stored in this browser, not on a server. They will not follow you to another browser or device. Clearing your browser data
         will delete them.
       </p>
       {/* The Manage control is an unlabelled wrench icon button, so naming it is not enough to find
           it — the same icon is drawn inline here (mirrored to match) so the sentence points at
           something the user can recognise on the toolbar. */}
-      <p className="text-sm leading-snug text-slate-600">
+      <p className={cn("leading-snug text-slate-600", CONTROL_TEXT)}>
         To keep a backup, open{" "}
         <span className="inline-flex translate-y-0.5 items-center gap-1 font-semibold text-slate-900">
           <Wrench className="size-3.5 -scale-x-100" aria-hidden />

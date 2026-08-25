@@ -168,35 +168,37 @@ function Modal({
  * Props: everything {@link Modal} takes, plus
  *   - title          — heading text (required; it is what labels the dialog).
  *   - icon           — optional lucide component, drawn white on a black disc beside the title.
- *   - compactIcon    — smaller disc, for a glyph that already fills its box (the high-risk dialogs'
- *                      bare exclamation). Default false suits lucide's own icons.
+ *   - wideGlyph      — for a glyph with built-in margin (lucide's own detailed icons), which needs more of
+ *                      the disc to stay legible. The DISC never changes size; only the ink inside it does.
  *   - actions        — the footer buttons, stacked. Rendered as a sibling of the copy (see below).
  *   - children       — body copy, grouped with the title. Put `descriptionId` on it to have it announced.
  */
-function SimpleModal({ title, icon: Icon = null, compactIcon = false, titleId, actions = null, children, ...modalProps }) {
+function SimpleModal({ title, icon: Icon = null, wideGlyph = false, titleId, actions = null, children, ...modalProps }) {
   return (
     <Modal titleId={titleId} panelClassName="max-w-sm gap-4 p-5" {...modalProps}>
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-3">
         {/* The icon disc is monochrome for every dialog on purpose: colour would rank one dialog above
             another, and the copy is what carries urgency.
 
-            Two disc sizes, chosen by `compactIcon` rather than by the caller, so a third cannot appear
-            later. The bare exclamation fills its box edge to edge and needs the smaller disc; lucide's own
-            detailed glyphs have built-in margin and go illegible if shrunk to match. In both the glyph runs
+            ONE DISC SIZE for every dialog: it is chrome, so it must not resize to suit whatever glyph it
+            holds — that made the same header look heavier on some dialogs than others. Only the ink inside
+            varies: a bare mark (the exclamation) is drawn edge to edge, while lucide's detailed glyphs carry
+            their own margin and need `wideGlyph` to stay legible at this size. Either way the glyph runs
             close to the disc edge, so it reads as an outline around the icon rather than a filled circle. */}
         <div className="flex items-center gap-2">
           {Icon ? (
-            <span className={cn("flex shrink-0 items-center justify-center rounded-full bg-slate-900 text-white", compactIcon ? "size-6" : "size-8")}>
-              <Icon className={compactIcon ? "size-4.5" : "size-5"} aria-hidden />
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white">
+              <Icon className={wideGlyph ? "size-4" : "size-4.5"} aria-hidden />
             </span>
           ) : null}
-          <h2 id={titleId} className="text-base font-bold text-slate-900">
+          <h2 id={titleId} className="text-base font-bold leading-snug text-slate-900">
             {title}
           </h2>
         </div>
-        {/* Body copy sits in the header block, at the tighter `gap-1.5`, so title and prose read as one
-            unit. `actions` is a SIBLING of that block rather than more children, which is what keeps the
-            wider `gap-4` between the copy and the buttons — the single visual break in the panel. */}
+        {/* Body copy sits in the header block, one rung tighter than the panel's own `gap-4`, so title and
+            prose still read as one unit against the buttons below. It was 1.5, which crowded the body into a
+            title that wrapped to two lines. `actions` is a SIBLING of this block rather than more children,
+            which is what keeps that wider gap as the single visual break in the panel. */}
         {children}
       </div>
 
@@ -245,7 +247,7 @@ function FullModal({ title, subtitle = null, titleId, closeLabel = "Close", foot
           two-line block instead would float it to the middle and cost the subtitle the ✕'s width. */}
       <header className="flex shrink-0 flex-col border-b border-slate-200 px-5 py-3.5">
         <div className="flex items-start justify-between gap-3">
-          <h2 id={titleId} className="min-w-0 text-base font-bold text-slate-900">
+          <h2 id={titleId} className="min-w-0 text-base font-bold leading-snug text-slate-900">
             {title}
           </h2>
           <button

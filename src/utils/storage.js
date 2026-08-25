@@ -75,6 +75,9 @@ export function toDraftStoragePayload(state) {
     // The saved profile this draft was loaded from, so the "Saved/Rename/Update" status survives a
     // refresh. Draft-only (never part of a saved profile's own shape); null when unlinked.
     activeSavedProfileId: state.activeSavedProfileId ?? null,
+    // A framework stamp the draft inherited without a link — set only by "Save as copy", which detaches from
+    // its source but must not let the clone re-derive a version from its own new savedAt. Null otherwise.
+    draftFrameworkVersion: state.draftFrameworkVersion ?? null,
     levelsPolygonHidden: state.levelsPolygonHidden,
     chartLevelTicksHidden: state.chartLevelTicksHidden,
     chartLegendHidden: state.chartLegendHidden,
@@ -106,7 +109,9 @@ export function loadDraftFromStorage() {
     }
     const display = parseChartDisplay(parsed);
     const activeSavedProfileId = parsed?.activeSavedProfileId ?? null;
-    const result = { ...normalized, ...display, activeSavedProfileId };
+    const raw2 = parsed?.draftFrameworkVersion;
+    const draftFrameworkVersion = typeof raw2 === "string" && raw2 ? raw2 : null;
+    const result = { ...normalized, ...display, activeSavedProfileId, draftFrameworkVersion };
     // Persist the migrated draft back once so the legacy `trackVariant` key is dropped for good.
     if (needsMigration) {
       saveDraftToStorage(result);

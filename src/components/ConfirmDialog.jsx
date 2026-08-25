@@ -3,6 +3,9 @@ import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { DESTRUCTIVE_CONFIRM_CLASS, ExclamationMark, SimpleModal } from "@/components/ui/Modal";
 
+import { CONTROL_TEXT } from "@/styles/control-typography";
+import { cn } from "@/utils";
+
 /**
  * Generic confirm dialog: a question, a confirm and a cancel. The shell (scrim, panel, Escape, scroll
  * lock, title row) comes from {@link SimpleModal} — this file is only the two buttons and the copy.
@@ -18,6 +21,10 @@ import { DESTRUCTIVE_CONFIRM_CLASS, ExclamationMark, SimpleModal } from "@/compo
  *   - confirmLabel      — confirm button text (default "Confirm").
  *   - cancelLabel       — cancel button text (default "Cancel").
  *   - destructive       — the whole high-risk treatment: exclamation icon + red outline confirm.
+ *   - destructiveConfirm — the red confirm ALONE, for a dialog whose action is lossy but not deleting, so
+ *                         it keeps its own `icon` instead of the exclamation.
+ *   - bareGlyph         — set when `icon` is a bare mark (a tick, an arrow) rather than one of lucide's
+ *                         detailed glyphs, so it fills the disc the way the exclamation does.
  *   - onConfirm / onCancel — handlers.
  */
 export function ConfirmDialog({
@@ -28,6 +35,8 @@ export function ConfirmDialog({
   confirmLabel = "Confirm",
   cancelLabel = "Cancel",
   destructive = false,
+  destructiveConfirm = false,
+  bareGlyph = false,
   onConfirm,
   onCancel,
 }) {
@@ -46,10 +55,10 @@ export function ConfirmDialog({
       // "this one is dangerous" before any of the words are read. `icon` still serves the non-destructive
       // dialogs (GlobeX, Lock), where there is no such thing to standardise on.
       icon={destructive ? ExclamationMark : icon}
-      // The exclamation is drawn edge to edge, unlike the lucide glyphs the safe dialogs use, so it takes
-      // the tighter disc. Rides along with `destructive` for the same reason the icon does: one flag, one
-      // locked-in look.
-      compactIcon={destructive}
+      // The disc is one fixed size everywhere (see SimpleModal); this only says how much of it the ink
+      // fills. A bare mark (the destructive exclamation, or an `icon` the caller flags as `bareGlyph`) is
+      // drawn edge to edge and takes the full box; lucide's detailed glyphs carry their own margin.
+      wideGlyph={!destructive && !bareGlyph}
       onClose={onCancel}
       closeLabel={cancelLabel}
       initialFocusRef={cancelButtonRef}
@@ -61,7 +70,7 @@ export function ConfirmDialog({
             type="button"
             variant="outline"
             shape="pill"
-            className={destructive ? DESTRUCTIVE_CONFIRM_CLASS : "justify-center"}
+            className={destructive || destructiveConfirm ? DESTRUCTIVE_CONFIRM_CLASS : "justify-center"}
             onClick={onConfirm}
           >
             {confirmLabel}
@@ -72,7 +81,7 @@ export function ConfirmDialog({
         </>
       }
     >
-      <p id="confirm-dialog-desc" className="text-sm leading-snug text-slate-600">
+      <p id="confirm-dialog-desc" className={cn("leading-snug text-slate-600", CONTROL_TEXT)}>
         {message}
       </p>
     </SimpleModal>

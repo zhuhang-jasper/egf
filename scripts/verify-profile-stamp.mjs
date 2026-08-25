@@ -368,9 +368,11 @@ function stub(moves) {
   // version the row currently resolves to, pinning the verdict and freeing `savedAt` to be last-modified.
   // `target` null → a brand-new row, which always stamps. NOW is any time after the 4.2 boundary.
   const NOW = Date.parse("2026-08-20T00:00+08:00");
-  const writeRow = (draft, target) => {
-    const unchanged = target != null && levelsMatch(draft.pillarLevels, target.pillarLevels);
-    const carried = unchanged ? (resolveProfileStamp({ profile: target }).version ?? null) : null;
+  // `source` is the profile the draft was LOADED FROM — null for an unlinked draft. The stamp describes a
+  // rating, so it follows the source wherever the write lands, never the row being overwritten.
+  const writeRow = (draft, source) => {
+    const unchanged = source != null && levelsMatch(draft.pillarLevels, source.pillarLevels);
+    const carried = unchanged ? (resolveProfileStamp({ profile: source }).version ?? null) : null;
     return { ...draft, savedAt: NOW, frameworkVersion: unchanged ? carried : LIVE };
   };
   const stampFor = (draft, target) => writeRow(draft, target).frameworkVersion;
@@ -393,6 +395,27 @@ function stub(moves) {
   check(g, "a differing pillar set stamps", stampFor({ ...stored, pillarLevels: { architecture: 1.5, testing: 3 } }, stored), LIVE);
 
   check(g, "a new row stamps", stampFor(stored, null), LIVE);
+
+  // A COLLISION IS JUDGED BY ITS SOURCE, not the row it lands on. Renaming A onto B changed no score, so the
+  // survivor keeps A's stamp — B's stamp is irrelevant, its data is being replaced.
+  check(g, "rename into a collision carries the source stamp", writeRow({ ...stored, title: "B" }, stored).frameworkVersion, "4.1");
+  // An UNLINKED draft overwriting a row has no source: a new assessment, so it stamps and inherits nothing.
+  check(g, "unlinked draft overwriting a row stamps", writeRow({ ...stored, title: "B" }, null).frameworkVersion, LIVE);
+  // Even when the draft's numbers happen to equal the row it replaces — coincidence is not provenance.
+  check(g, "unlinked draft stamps even with matching levels", writeRow({ ...stored }, null).frameworkVersion, LIVE);
+
+  // CLONES CARRY THE SOURCE'S RATING. "Save new" keeps the link, so the source basis covers it. "Save as
+  // copy" detaches first and instead inherits the stamp on the draft (`draftFrameworkVersion`), which the
+  // write falls back to — a clone gets a fresh savedAt, so a null stamp would re-derive from the wrong date.
+  const cloneRow = (draft, source, inherited) => {
+    const unchanged = source != null && levelsMatch(draft.pillarLevels, source.pillarLevels);
+    const carried = unchanged ? (resolveProfileStamp({ profile: source }).version ?? null) : (source == null ? inherited : null);
+    return { ...draft, savedAt: NOW, frameworkVersion: carried ?? LIVE };
+  };
+  check(g, "Save new carries the source stamp", cloneRow({ ...stored, title: "Copy" }, stored, null).frameworkVersion, "4.1");
+  check(g, "Save as copy carries the inherited stamp", cloneRow({ ...stored, title: "Copy" }, null, "4.1").frameworkVersion, "4.1");
+  // A clone of an undatable profile inherits nothing, so it is a fresh rating.
+  check(g, "a clone with nothing to inherit stamps", cloneRow({ ...stored, title: "Copy" }, null, null).frameworkVersion, LIVE);
   // An unstamped row RECORDS the version its own date resolved to — not the current one, and not null (which
   // would re-date it once savedAt moves). savedAt 1000 predates every release, so there is nothing to record.
   const unstamped = { ...stored, frameworkVersion: null };
@@ -449,6 +472,50 @@ function stub(moves) {
     version: LIVE,
     source: STAMP_SOURCE.recorded,
   });
+}
+
+// ── Untouched flags: what a whole-profile stamp silences ──────────────────────────────────────────
+// The stamp is one field on the profile, so a save that edits ONE pillar clears every pillar's warning.
+// Mirrors untouchedFlaggedPillars (profile-stamp-state.js), which feeds the count the save toast owns up to.
+{
+  const g = "untouched";
+  const changelog = stub({ "4.3": { barRaised: { architecture: [1], coding: [1], testing: [1] } } });
+  const target = { frameworkVersion: "4.2", savedAt: 1000, pillarLevels: { architecture: 1.5, coding: 1.5, testing: 1.5, design: 4.0 } };
+  const count = (draftLevels, requireLevelChange = false) => {
+    const stamp = resolveProfileStamp({ profile: target });
+    if (!isFlaggable(stamp)) {
+      return 0;
+    }
+    let changedAny = false;
+    let c = 0;
+    for (const [pillar, score] of Object.entries(target.pillarLevels)) {
+      if (draftLevels[pillar] !== score) {
+        changedAny = true;
+        continue;
+      }
+      const state = resolvePillarState({ pillar, score, stamp: stamp.version, changelog });
+      if (state === PILLAR_STATE.raised || state === PILLAR_STATE.eased || state === PILLAR_STATE.mixed) {
+        c += 1;
+      }
+    }
+    return requireLevelChange && !changedAny ? 0 : c;
+  };
+  const L = target.pillarLevels;
+
+  check(g, "editing one of three leaves two unreviewed", count({ ...L, architecture: 2.5 }), 2);
+  check(g, "editing two leaves one", count({ ...L, architecture: 2.5, coding: 2.5 }), 1);
+  // The message must NOT appear when every flag was addressed — that is the case the count exists to exclude.
+  check(g, "editing all three leaves none", count({ ...L, architecture: 2.5, coding: 2.5, testing: 2.5 }), 0);
+  // An unflagged pillar's edit addresses nothing, so all three still go unreviewed.
+  check(g, "editing an unflagged pillar leaves all three", count({ ...L, design: 5.0 }), 3);
+  // `requireLevelChange` is the save path: a rename or badge switch moves no level, carries the old stamp,
+  // and so clears nothing — the dialog must not appear. The restamp button passes false and still counts 3.
+  check(g, "no level moved, save path -> nothing to confirm", count({ ...L }, true), 0);
+  check(g, "no level moved, restamp path -> still 3", count({ ...L }, false), 3);
+
+  // Nothing to silence when the profile has no version to compare against.
+  const undatable = { ...target, frameworkVersion: null, savedAt: 0 };
+  check(g, "an unverified profile silences nothing", isFlaggable(resolveProfileStamp({ profile: undatable })), false);
 }
 
 // ── Report ─────────────────────────────────────────────────────────────────────────────────────────
