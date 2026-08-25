@@ -72,6 +72,9 @@ const SAVE_STATUS_META = {
 // DELIBERATELY ECHOES THE BUTTON that produced the save — `new`/`renaming`/`modified` above are
 // labelled Save/Rename/Update — so the notice reads as an answer to the thing the user just pressed
 // rather than as the app's own separate account of what happened.
+//
+// `renamed` is the fallback for a rename with no prior title to name; the normal path phrases it as
+// "Renamed from “<old>”" instead (see handleResult).
 const SAVE_TOAST_VERB = {
   created: "Saved",
   renamed: "Renamed",
@@ -311,7 +314,13 @@ export function TitleToolbar() {
       // Only a DESTRUCTIVE save carries the Undo (an existing row was overwritten and/or a merged source
       // removed). A plain create has nothing to reverse, so it takes the short window instead of sitting
       // there for 8s offering an action it does not have.
-      const savedMessage = `${SAVE_TOAST_VERB[result.mode] ?? "Saved"} “${result.savedTitle}”`;
+      // A RENAME NAMES BOTH TITLES. The old one because it just left the screen and is what Undo reverts to;
+      // the new one because the other modes name the current profile too, and the input above is not a
+      // reliable second copy — it truncates a long name, and 8s is a short window to go looking.
+      const savedMessage =
+        result.mode === "renamed" && result.overwroteTitle
+          ? `Renamed “${result.overwroteTitle}” to “${result.savedTitle}”`
+          : `${SAVE_TOAST_VERB[result.mode] ?? "Saved"} “${result.savedTitle}”`;
       if (result.undo) {
         showToast(savedMessage, {
           variant: "dark",
