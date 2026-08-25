@@ -720,6 +720,13 @@ export const useAppStore = create((set, get) => ({
       if (state) {
         get().applyState(state, { profileId: restored.id });
       }
+    } else {
+      // A snapshot from an UNLINKED draft carries a null link, and that null is what must be restored: the
+      // save had linked the draft to the row it wrote into, so leaving it attaches the draft to a profile it
+      // is not, and the chip and pillar flags read off that row's stamp. Only the link is undone — the values
+      // on screen are the user's own and stay put, so the draft reads as "new" again, ready to Save.
+      set({ activeSavedProfileId: null });
+      get().persistDraft();
     }
     set({ profiles: loadProfilesFromStorage() });
   },
