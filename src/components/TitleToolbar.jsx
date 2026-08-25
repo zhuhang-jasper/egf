@@ -190,7 +190,7 @@ export function TitleToolbar() {
       // Only a DESTRUCTIVE save carries the Undo (an existing row was overwritten and/or a merged source
       // removed). A plain create has nothing to reverse, so it takes the short window instead of sitting
       // there for 8s offering an action it does not have.
-      const savedMessage = buildSaveMessage(result, { renameWithEdits: analytics.renameWithEdits });
+      const savedMessage = buildSaveMessage(result, { renameWithEdits: analytics.rename_with_edits });
       if (result.undo) {
         showToast(savedMessage, {
           variant: "dark",
@@ -231,7 +231,7 @@ export function TitleToolbar() {
     proceed();
   };
 
-  const handleSave = () => guardUnreviewed(() => handleResult(saveProfile(), { renameWithEdits }));
+  const handleSave = () => guardUnreviewed(() => handleResult(saveProfile(), { rename_with_edits: renameWithEdits }));
 
   // "Save new" (while renaming): the name already differs, so save a copy under it immediately.
   const handleSaveAsNew = () => handleResult(saveAsNew(), { copy: true });
