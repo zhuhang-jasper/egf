@@ -618,7 +618,9 @@ export const useAppStore = create((set, get) => ({
     };
     let next = replaceIdx >= 0 ? existing.map((p, i) => (i === replaceIdx ? row : p)) : [...existing, row];
     const removedSource = removeId != null && removeId !== id;
-    // Drop the merged-away source row (never the one we just wrote into).
+    // Drop the merged-away source row (never the one we just wrote into). Its title is kept for the toast:
+    // this is the one path where a profile DISAPPEARS, and the notice has to be able to say which.
+    const removedTitle = removedSource ? (existing.find((p) => p.id === removeId)?.title ?? null) : null;
     if (removedSource) {
       next = next.filter((p) => p.id !== removeId);
     }
@@ -648,7 +650,7 @@ export const useAppStore = create((set, get) => ({
       saveFeedback: "saved",
     });
     get().persistDraft();
-    return { status: "saved", savedTitle: state.title, overwroteTitle: target?.title ?? null, undo, backupReminder, mode, priorState };
+    return { status: "saved", savedTitle: state.title, overwroteTitle: target?.title ?? null, undo, backupReminder, mode, priorState, removedTitle };
   },
 
   // Save/Update the current draft. Updates the linked profile in place (renaming it if the title

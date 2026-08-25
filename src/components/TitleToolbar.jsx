@@ -317,10 +317,18 @@ export function TitleToolbar() {
       // A RENAME NAMES BOTH TITLES. The old one because it just left the screen and is what Undo reverts to;
       // the new one because the other modes name the current profile too, and the input above is not a
       // reliable second copy — it truncates a long name, and 8s is a short window to go looking.
-      const savedMessage =
-        result.mode === "renamed" && result.overwroteTitle
-          ? `Renamed “${result.overwroteTitle}” to “${result.savedTitle}”`
-          : `${SAVE_TOAST_VERB[result.mode] ?? "Saved"} “${result.savedTitle}”`;
+      //
+      // `removedTitle` is checked FIRST and reads "Merged": a resolved name collision renames the draft AND
+      // deletes the row it clashed with, and `mode` alone reports that as a plain "Updated" — the only path
+      // where a profile disappears without the notice saying so.
+      let savedMessage;
+      if (result.removedTitle) {
+        savedMessage = `Merged “${result.removedTitle}” into “${result.savedTitle}”`;
+      } else if (result.mode === "renamed" && result.overwroteTitle) {
+        savedMessage = `Renamed “${result.overwroteTitle}” to “${result.savedTitle}”`;
+      } else {
+        savedMessage = `${SAVE_TOAST_VERB[result.mode] ?? "Saved"} “${result.savedTitle}”`;
+      }
       if (result.undo) {
         showToast(savedMessage, {
           variant: "dark",
