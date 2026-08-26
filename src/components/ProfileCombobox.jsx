@@ -3,11 +3,10 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, Search, Trash2 } from "lucide-react";
 
 import { BadgePicker } from "@/components/BadgePicker";
-import { FrameworkVersionChip } from "@/components/FrameworkVersionChip";
+import { ProfileVersionChip, ScrollingLabel } from "@/components/ProfileRowLabel";
 import { TrackBadge } from "@/components/TrackBadge";
 import { Input } from "@/components/ui/input";
 
-import { useProfileStampState } from "@/hooks/useProfileStamp";
 import { useTouchPrimary } from "@/hooks/useTouchPrimary";
 
 import { useAppStore } from "@/store/useAppStore";
@@ -16,17 +15,13 @@ import { LAYER, MAX_PROFILE_NAME_LENGTH, normalizeAttachedBadge, TRACK_BADGE_OPT
 import { CONTROL_TEXT, TOOL_TEXT } from "@/styles/control-typography";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
+import { computePopoverLayout } from "@/utils/popover-layout";
+import { sortProfilesForPicker } from "@/utils/profile-picker-sort";
 import { profileStampState } from "@/utils/profile-stamp-state";
 import { getPopoverViewportBounds } from "@/utils/scroll";
 
 // Badge group order: the real badges (fe, be) in badge-dropdown order first, then "no badge" last.
 const BADGE_SORT_ORDER = TRACK_BADGE_OPTIONS.filter((b) => b !== "none").concat("none");
-
-// Rank a profile's badge for grouping — lower sorts first; "none" always ranks last.
-function badgeRank(badge) {
-  const i = BADGE_SORT_ORDER.indexOf(normalizeAttachedBadge(badge));
-  return i === -1 ? BADGE_SORT_ORDER.length : i;
-}
 
 // Three deliberately different row counts: VISIBLE_ROWS caps the list, MIN_COMFORTABLE_ROWS decides
 // direction, MIN_ROWS is a hard floor the panel overlaps chrome to keep. Every ".5" is the peek affordance.
@@ -34,76 +29,6 @@ function badgeRank(badge) {
 const VISIBLE_ROWS = 6.5;
 const MIN_COMFORTABLE_ROWS = 4.5;
 const MIN_ROWS = 2.5;
-
-// Marquee scroll speed (px/sec) for names too long to fit — lower is slower/calmer.
-const MARQUEE_SPEED_PX_PER_SEC = 45;
-// Gap between the two looping copies of a scrolling name, so it doesn't read as one run-on word.
-const MARQUEE_GAP_PX = 40;
-
-/** One row's version chip. Its own component because the resolver is a hook and rows are mapped. */
-function ProfileVersionChip({ profile }) {
-  const { state, version } = useProfileStampState(profile);
-  return <FrameworkVersionChip state={state} version={version} className="ml-2" />;
-}
-
-/**
- * A profile name that scrolls like an LED sign when it is wider than the space available, and renders as a
- * plain span when it fits. Speed is proportional to length so long names don't whip past. `deps` lets the
- * caller force a re-measure when layout that affects width changes.
- */
-function ScrollingLabel({ label, className, deps }) {
-  const boxRef = useRef(null);
-  const textRef = useRef(null);
-  const [overflow, setOverflow] = useState(0); // scrollWidth − clientWidth, in px (0 = fits)
-
-  useLayoutEffect(() => {
-    const measure = () => {
-      const box = boxRef.current;
-      const text = textRef.current;
-      if (!box || !text) {
-        return;
-      }
-      // Measure the single (un-duplicated) text width against the box's inner width.
-      setOverflow(Math.max(0, Math.ceil(text.scrollWidth - box.clientWidth)));
-    };
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [label, deps]);
-
-  const scrolling = overflow > 0;
-
-  if (!scrolling) {
-    return (
-      <span ref={boxRef} className={cn("block min-w-0 flex-1 overflow-hidden whitespace-nowrap", className)}>
-        <span ref={textRef} className="inline-block">
-          {label}
-        </span>
-      </span>
-    );
-  }
-
-  // Each copy carries the gap as trailing padding, so one "unit" = textWidth + gap. Two units make
-  // the track; translateX(-50%) then lands the second unit exactly where the first started → seamless.
-  const textWidth = textRef.current?.scrollWidth ?? 0;
-  const durationSec = Math.max(4, (textWidth + MARQUEE_GAP_PX) / MARQUEE_SPEED_PX_PER_SEC);
-  const copyStyle = { paddingRight: `${MARQUEE_GAP_PX}px` };
-
-  return (
-    <span ref={boxRef} className={cn("block min-w-0 flex-1 overflow-hidden whitespace-nowrap", className)}>
-      <span className="marquee-track" style={{ animationDuration: `${durationSec}s` }}>
-        {/* First copy is the one we measure; the duplicate makes the loop seamless. */}
-        <span ref={textRef} className="inline-block" style={copyStyle}>
-          {label}
-        </span>
-        <span aria-hidden className="inline-block" style={copyStyle}>
-          {label}
-        </span>
-      </span>
-    </span>
-  );
-}
 
 /**
  * The profile name field plus a browse/load/delete dropdown. The name field never searches and saving lives
@@ -134,19 +59,9 @@ export function ProfileCombobox({ titleError = false }) {
   // keys but NOT for mouse hover (hovering a partially-visible row shouldn't yank the scrollbar).
   const keyboardMoveRef = useRef(false);
 
-  // Storage hands us profiles newest-first; grouped by badge then A–Z for display only.
   const q = query.trim().toLowerCase();
   const rows = useMemo(
-    () =>
-      profiles
-        .filter((p) => q === "" || String(p.title).toLowerCase().includes(q))
-        .sort((a, b) => {
-          const byBadge = badgeRank(a.attachedBadge) - badgeRank(b.attachedBadge);
-          if (byBadge !== 0) {
-            return byBadge;
-          }
-          return String(a.title).localeCompare(String(b.title), undefined, { sensitivity: "base" });
-        }),
+    () => sortProfilesForPicker(profiles, { query: q, badgeOrder: BADGE_SORT_ORDER, normalizeBadge: normalizeAttachedBadge }),
     [profiles, q],
   );
 
@@ -233,28 +148,23 @@ export function ProfileCombobox({ titleError = false }) {
       const spaceBelow = bottomBoundary - rootRect.bottom - gap - margin;
       const spaceAbove = rootRect.top - topBoundary - gap - margin;
 
-      // The search box is a non-scrolling sibling above the list, so reserve its height or the popover
-      // overflows even when the list fits.
+      // The search box is a non-scrolling sibling above the list, so its height is reserved separately.
       const searchBox = menu.firstElementChild;
-      const searchH = searchBox ? searchBox.getBoundingClientRect().height : 0;
       const firstRow = list.firstElementChild;
-      const rowH = firstRow ? firstRow.getBoundingClientRect().height : 0;
-      // List box padding (py-1) + bottom border, so the peek math targets the content area.
-      const listChrome = list.offsetHeight - list.clientHeight + 8;
-      const peekRows = rowH > 0 ? Math.round(VISIBLE_ROWS * rowH + listChrome) : Infinity;
-      const naturalListH = list.scrollHeight;
-
-      // Direction is decided against a SUFFICIENT height, not the ideal one.
-      const comfortableRows = rowH > 0 ? Math.round(MIN_COMFORTABLE_ROWS * rowH + listChrome) : Infinity;
-      const neededHeight = searchH + Math.min(naturalListH, comfortableRows);
-      const up = neededHeight > spaceBelow && spaceAbove > spaceBelow;
-      const available = Math.floor(up ? spaceAbove : spaceBelow);
+      const { up, listMaxHeight: nextListMaxHeight } = computePopoverLayout(
+        {
+          spaceBelow,
+          spaceAbove,
+          searchH: searchBox ? searchBox.getBoundingClientRect().height : 0,
+          rowH: firstRow ? firstRow.getBoundingClientRect().height : 0,
+          // List box padding (py-1) + bottom border, so the peek math targets the content area.
+          listChrome: list.offsetHeight - list.clientHeight + 8,
+          naturalListH: list.scrollHeight,
+        },
+        { visible: VISIBLE_ROWS, comfortable: MIN_COMFORTABLE_ROWS, min: MIN_ROWS },
+      );
       setOpenUp(up);
-
-      // This cap may EXCEED the band: past MIN_ROWS the panel overlaps chrome rather than collapsing.
-      const minListH = rowH > 0 ? Math.round(MIN_ROWS * rowH + listChrome) : 0;
-      const listCap = Math.min(peekRows, Math.max(minListH, available - searchH));
-      setListMaxHeight(naturalListH <= listCap ? null : listCap);
+      setListMaxHeight(nextListMaxHeight);
     };
     decide();
     window.addEventListener("resize", decide);

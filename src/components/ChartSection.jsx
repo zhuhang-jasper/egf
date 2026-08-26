@@ -16,6 +16,7 @@ import { CARD_PLAIN } from "@/styles/card";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
 import { copyChartAsImageToClipboard, shareChartAsImage } from "@/utils/copy-chart-image";
+import { resolveExportOutcome } from "@/utils/export-outcome";
 
 /**
  * The title row's leading, mirroring Tailwind's `leading-tight` on the <h2> inside it.
@@ -25,16 +26,6 @@ import { copyChartAsImageToClipboard, shareChartAsImage } from "@/utils/copy-cha
  * changes, change this with it.
  */
 const TITLE_ROW_LEADING = 1.25;
-
-// Share's clipboard fallback lands on literally what Copy does, so it reports it in Copy's words: two
-// phrasings for one result would only tell the user the app took a different path.
-//
-// THE DOWNLOAD PATH HAS NO ENTRY, deliberately. Handing the blob to an <a download> tells us nothing about
-// what happened next: on iOS the tap opens the system's save sheet, which the user may dismiss, and the
-// click() returns long before they decide. The platform reports that outcome itself, correctly.
-const EXPORT_TOAST = {
-  clipboard: "Copied to clipboard",
-};
 
 export function ChartSection({ isVisible }) {
   const exportRef = useRef(null);
@@ -80,17 +71,8 @@ export function ChartSection({ isVisible }) {
   // the part that usually tells two profiles apart). `isVisible` is passed through because the tool tab is
   // `display: none` when Theory is open and nothing can be measured there — see the hook.
   const fittedTitle = useMiddleEllipsis(titleMeasureRef, displayTitle, isVisible);
-  // Chart width alone, never what is in the row: the title and badge toggle independently, so the row must be one
-  // height in all four combinations or toggling either moves the chart. See docs/DECISIONS.md#chart-type-scale.
-  //
-  // IT MUST EQUAL THE <h2>'s LINE BOX, NOT A ROUNDED VERSION OF IT. The floor this briefly carried
-  // (`Math.floor(titleSizePx * 1.25)`) was smaller than the line box the rendered title actually produces —
-  // 22 against 22.5 at the cap — so the row grew by half a pixel the moment the title mounted, and hiding the
-  // profile name shifted everything below. `leading-tight` is the authority here; this only reserves the same
-  // height while the <h2> is unmounted.
-  //
-  // Whole-pixel-ness comes from `titleSizePx` being integral (see FE_UI.chart.titleRange), which makes both this
-  // and the line box land on x.0 or x.5 — enough that `items-center` has no sub-pixel to split.
+  // Chart width alone, never what is in the row, and it must EQUAL the <h2>'s line box rather than a rounded
+  // version of it. See docs/DECISIONS.md#the-chart-title-row-reserves-one-height
   const titleRowMinHeight = titleSizePx * TITLE_ROW_LEADING;
 
   useLayoutEffect(() => {
@@ -104,8 +86,18 @@ export function ChartSection({ isVisible }) {
   }, [chartTitleHidden, chartBadgeHidden, chartLegendHidden, relayout]);
 
   // Copy and Share share one toast key: they sit side by side, each is tappable again straight away,
-  // and every outcome below answers a single press — so the newest notice replaces the last rather
-  // than stacking a second card over it.
+  // and every outcome answers a single press — so the newest notice replaces the last rather than
+  // stacking a second card over it.
+  const reportExportOutcome = (result, kind) => {
+    const { ok, event, method, toast, toastVariant } = resolveExportOutcome(result, kind);
+    if (ok) {
+      track(event, { method });
+    }
+    if (toast) {
+      showToast(toast, { variant: toastVariant, key: CHART_EXPORT_TOAST_KEY });
+    }
+  };
+
   const handleCopy = async () => {
     try {
       const result = await copyChartAsImageToClipboard({
@@ -117,18 +109,10 @@ export function ChartSection({ isVisible }) {
         uhd: chartUhdExport,
         frameworkVersion: exportFrameworkVersion,
       });
-      if (result?.method === "clipboard") {
-        track("chart_copied", { method: "clipboard" });
-        showToast(EXPORT_TOAST.clipboard, { variant: "success", key: CHART_EXPORT_TOAST_KEY });
-      } else if (result?.method === "download") {
-        // Tracked but NOT toasted — the save is the platform's to confirm, not ours. See EXPORT_TOAST.
-        track("chart_copied", { method: "download" });
-      } else {
-        showToast("Couldn't copy the image", { variant: "error", key: CHART_EXPORT_TOAST_KEY });
-      }
+      reportExportOutcome(result, "copy");
     } catch (e) {
       console.error(e);
-      showToast("Couldn't copy the image", { variant: "error", key: CHART_EXPORT_TOAST_KEY });
+      reportExportOutcome(null, "copy");
     }
   };
 
@@ -143,54 +127,19 @@ export function ChartSection({ isVisible }) {
         uhd: chartUhdExport,
         frameworkVersion: exportFrameworkVersion,
       });
-      if (result?.method === "share") {
-        // Native share sheet opened — completion is out of our hands, so don't claim success.
-        track("chart_shared", { method: "share" });
-      } else if (result?.method === "share-fallback-clipboard") {
-        // Share fell back to what Copy does, so it says what Copy says. The analytics still record
-        // that this arrived via Share, which is where the distinction actually matters.
-        track("chart_shared", { method: "fallback-clipboard" });
-        showToast(EXPORT_TOAST.clipboard, { variant: "success", key: CHART_EXPORT_TOAST_KEY });
-      } else if (result?.method === "share-fallback-download") {
-        // Silent for the same reason as Copy's download branch — see EXPORT_TOAST.
-        track("chart_shared", { method: "fallback-download" });
-      } else {
-        showToast("Couldn't share the image", { variant: "error", key: CHART_EXPORT_TOAST_KEY });
-      }
+      reportExportOutcome(result, "share");
     } catch (e) {
       console.error(e);
-      showToast("Couldn't share the image", { variant: "error", key: CHART_EXPORT_TOAST_KEY });
+      reportExportOutcome(null, "share");
     }
   };
 
-  /* NO `gap` ON THIS COLUMN. The 16px under the toolbar used to be split across two classes — this column's
-     `gap-2` plus the row's own `mb-2` — which was described as matching how the theory tab expresses the same
-     space. It no longer was: theory's toolbar became a sibling of its sections column (dropping the `-mb-2`
-     hack it needed while inside it), so that side is a single `mb-4` and there is no gapped column at all.
-     The totals agreed while the construction did not, so comparing the two tabs meant adding two numbers on
-     one side only. The whole 16px is now the row's own `mb-4`, the same class theory uses. */
   return (
     <div className="flex w-full min-w-0 flex-col items-center">
-      {/* `mb-4` is 16px below this toolbar, in one class. Theory's changelog row is the same row at the same
-          position in the other tab and carries the same `mb-4` — keep the two in step, or the page appears to
-          shift when you switch tabs. (The `gap-2` in this row's own class list is unrelated: that one spaces
-          its buttons horizontally, and is matched to theory's button group separately.)
-
-          IT OWNS THE SPACING OUTRIGHT, which is why the parent column has no `gap`: with the margin here, the
-          space below the toolbar is one number in one place rather than a sum of two, and it cannot be changed
-          by adding a third child to that column. It also sits OUTSIDE `exportRef`, so it cannot reach the image.
-
-          `print:hidden` for the same reason theory's row carries it: these buttons only exist to be
-          clicked, and "Copy image" on paper is nonsense. The chart below is the thing being printed.
-
-          `justify-between` PINS ONE GROUP TO EACH END — the export actions at the left, the display-settings
-          gear at the right — which is the same division theory's toolbar makes (page actions left, changelog
-          right). Everything used to be bunched at the right together, so the gear (a settings control) read as
-          a third export button. */}
-      {/* `relative` WITHOUT A Z-INDEX, deliberately. Both children open dropdowns; a z-index here would make
-          this row a stacking context and cap those menus inside it, so the gear's menu lost to the form panel
-          below (`LAYER` in constants/layers.js has the full rule). Bare `relative` still paints above the
-          static chart. */}
+      {/* `mb-3` IS THE WHOLE SPACE below this toolbar, which is why the parent column has no `gap`. Keep it in
+          step with theory's changelog row. See docs/DECISIONS.md#the-tool-toolbar-owns-its-spacing
+          `relative` WITHOUT A Z-INDEX: that would make this row a stacking context and cap both children's
+          dropdowns inside it (`LAYER` in constants/layers.js has the rule). */}
       <div className="relative mb-3 flex w-full min-w-0 items-center justify-between gap-2 print:hidden">
         <ExportMenu onCopy={handleCopy} onShare={handleShare} />
         <ChartDisplayMenu />
@@ -207,14 +156,10 @@ export function ChartSection({ isVisible }) {
         )}
       >
         <div ref={exportRef} className="relative flex w-full min-w-0 flex-col self-stretch">
-          {/* THE ROW CARRIES THE TITLE'S SIZE and the <h2> inside inherits it, so there is exactly one place the
-            size is applied. The row's own `minHeight` is computed in JS (see `titleRowMinHeight`) rather than
-            left as `1.25em`, because an `em` of a fractional font size is a fractional height.
-
-            The old `leading-none` is gone: it existed to stop the row's own line box padding the height out
-            while the height came from JS, and it would now fight the `em` floor by resolving against a
-            different leading than the title's. Nothing else in the row renders bare text — the badge sets
-            `leading-none` itself and the title carries `leading-tight`. */}
+          {/* THE ROW CARRIES THE TITLE'S SIZE and the <h2> inherits it, so the size is applied in one place.
+            No `leading-none` here: nothing in the row renders bare text, the badge setting its own and the
+            title carrying `leading-tight`.
+            See docs/DECISIONS.md#the-chart-title-row-reserves-one-height */}
           {showTitleRow ? (
             <div
               data-chart-title-row
@@ -228,45 +173,19 @@ export function ChartSection({ isVisible }) {
               {showVisibleTitle ? (
                 <h2
                   id="competency-chart-heading"
-                  /* IDENTICAL TO THE THEORY TAB'S FRAMEWORK TITLE IN EVERY RESPECT BUT ALIGNMENT — same size
-                   (both call getChartTitleSizePx with the same chart width), same `leading-tight`, weight,
-                   tracking and color. Only `text-left` differs, because this one shares a row with the track
-                   badge while theory's is centred over its radar. Keep the two in step; they are meant to read
-                   as one piece of typography appearing in two places.
-
-                   `leading-tight` RATHER THAN AN INLINE `lineHeight`, which is what this used to have (at a
-                   slightly different 1.2). Two elements carrying the same utility class are the same by
-                   construction; two elements computing a number in separate files are the same only until one
-                   is edited.
-
-                   THE ROW'S FLOOR DOES DUPLICATE THE 1.25, as `TITLE_ROW_LEADING`. It was `1.25em`, which kept
-                   the number out of JS entirely, but an `em` of the fractional `titleSizePx` gave a fractional
-                   row height and so a sub-pixel for `items-center` to split — the badge's 1px shift. Keep the
-                   constant and this class in step (see `titleRowMinHeight`).
-
-                   NO `fontSize` OF ITS OWN: it inherits the row's, so this element's leading and the row's floor
-                   resolve against the same number rather than both being handed it separately.
-
-                   `truncate` IS NOT USED HERE and would be wrong: it ellipsises the END, and a profile name's
-                   end is the part most likely to distinguish it ("… Engineer L4" vs "… L5"). The middle is cut
-                   instead — see `useMiddleEllipsis` — which needs the text on ONE line, hence `whitespace-nowrap`
-                   in place of the wrapping this used to do.
-
-                   `title` CARRIES THE FULL NAME so the untruncated string is still reachable: a native tooltip
-                   on hover, and the accessible name via `aria-label`, since what is rendered may be elided. */
+                  /* IDENTICAL TO THE THEORY TAB'S FRAMEWORK TITLE but for `text-left`, and deliberately carrying
+                   `leading-tight` as a class rather than an inline `lineHeight`. NO `fontSize` of its own: it
+                   inherits the row's, so its leading and the row's floor resolve against one number.
+                   See docs/DECISIONS.md#the-chart-title-row-reserves-one-height */
                   className={`relative m-0 min-w-0 flex-1 overflow-hidden text-left leading-tight tracking-tight whitespace-nowrap only:ml-2 ${titleIsBlank ? "text-slate-900/30 font-regular" : "text-slate-900 font-extrabold"}`}
                   title={titleIsBlank ? undefined : displayTitle}
                   aria-label={titleIsBlank ? undefined : displayTitle}
                 >
-                  {/* THE MEASURING ELEMENT, and it is deliberately EMPTY as far as React is concerned. The fitting
-                    loop writes candidate strings into it and reads `scrollWidth` back; React renders nothing
-                    into it, so the two never fight over its contents (see the hook's note on `ref`).
-
-                    It is `absolute` so it takes no space and cannot affect the row — but `left-0 right-0` keeps
-                    it exactly as wide as this <h2>, which is the width the visible text is actually fitted
-                    against. It inherits font, weight and tracking from the heading, so what it measures is the
-                    same type that will be painted. `invisible` rather than `hidden`: it must still be laid out
-                    to have a `scrollWidth` at all. */}
+                  {/* THE MEASURING ELEMENT, EMPTY as far as React is concerned: the fitting loop writes
+                    candidates in and reads `scrollWidth` back, so the two never fight over its contents.
+                    `absolute` takes it out of the row while `left-0 right-0` holds it to this <h2>'s width,
+                    which is what the text is fitted against; it inherits the heading's type so it measures what
+                    will be painted. `invisible` not `hidden`, or it has no `scrollWidth` at all. */}
                   <span ref={titleMeasureRef} aria-hidden className="pointer-events-none invisible absolute left-0 right-0 whitespace-nowrap" />
                   {fittedTitle}
                 </h2>

@@ -713,6 +713,65 @@ Canvas 2D with `textBaseline: "middle"`, a font-metric-aware baseline, and reads
 which is indifferent to the wrapper. `export-clone.js` still keys its md/sm guard off the **outer** pill's
 inline `fontSize`, which the nesting does not move.
 
+### the-chart-title-row-reserves-one-height
+
+`titleRowMinHeight` is `titleSizePx * TITLE_ROW_LEADING`, derived from the **chart width alone and never from
+what is in the row**. Title and badge toggle independently, so the row must come out one height in all four
+combinations or toggling either moves the chart below it.
+
+**It must equal the `<h2>`'s line box, not a rounded version of it.** A `Math.floor(titleSizePx * 1.25)` was
+smaller than the box the rendered title actually produces (22 against 22.5 at the cap), so the row grew by half
+a pixel the moment the title mounted and hiding the profile name shifted everything below. `leading-tight` on the
+`<h2>` is the authority; this constant only reserves the same height while that element is unmounted, which is
+why the 1.25 is duplicated in JS at all. It was `1.25em` once, keeping the number out of JS entirely, but an `em`
+of a fractional font size gives a fractional row and so a sub-pixel for `items-center` to split — the badge's 1px
+shift. Whole-pixel-ness comes from `titleSizePx` being integral (see `FE_UI.chart.titleRange`), which lands both
+this and the line box on x.0 or x.5.
+
+**The tool title and the theory framework title are one piece of typography in two places.** Same size (both
+call `getChartTitleSizePx` at the same chart width), same `leading-tight`, weight, tracking and colour. Only the
+alignment differs, this one sharing a row with the track badge where theory's is centred over its radar. Both
+carry the utility class rather than an inline `lineHeight`: two elements carrying the same class are equal by
+construction, where two computing a number in separate files are equal only until one is edited.
+
+**The title is middle-ellipsised, not truncated.** `truncate` cuts the END, and a profile name's end is the part
+most likely to distinguish it ("… Engineer L4" against "… L5"). `useMiddleEllipsis` needs the text on one line,
+hence `whitespace-nowrap`. `title` and `aria-label` carry the full string, since what is rendered may be elided.
+
+### the-tool-toolbar-owns-its-spacing
+
+`mb-3` on the chart toolbar is the whole space below it, in one class, and the parent column carries no `gap` as
+a result. The space is then one number in one place rather than a sum of two, and adding a third child to that
+column cannot change it. It also sits OUTSIDE `exportRef`, so it cannot reach the exported image. It used to be
+split across the column's `gap-2` and the row's own `mb-2`, so comparing the two tabs meant adding two numbers
+on one side only.
+
+That margin must stay equal to the theory tab's changelog row, which is the same row at the same position in the
+other tab and carries the same `mb-3`. See [tab-toolbars-state-their-spacing-identically](#tab-toolbars-state-their-spacing-identically) —
+the row's own `gap-2` is a separate correspondence, spacing its buttons against theory's button group.
+
+`justify-between` pins the export actions left and the display-settings gear right, the same division theory's
+toolbar makes. Everything used to bunch at the right, where the gear read as a third export button.
+`print:hidden` because these buttons exist only to be clicked, and "Copy image" on paper is nonsense; the chart
+below is the thing being printed.
+
+### export-reporting-is-asymmetric
+
+`utils/export-outcome.js` maps one export result to what should be tracked and said. Copy and Share drive the
+same table rather than each handler branching for itself, and the two are deliberately not symmetrical:
+
+- **`event` follows the BUTTON, not the path taken.** Share's clipboard fallback lands on literally what Copy
+  does, but still records `chart_shared`. Which button a user reached for is the distinction that matters in
+  the analytics; `method` carries the path underneath it.
+- **The toast follows the path.** That same fallback borrows Copy's wording, because two phrasings for one
+  result would only tell the user which route the app took internally.
+- **`toast` is null wherever the outcome is not ours to claim.** A download hands off to the browser's save
+  sheet, which the user may dismiss long after the promise resolves, and the native share sheet's completion is
+  equally out of our hands. Both platforms report themselves, correctly. This is not a gap to fill in.
+
+An unrecognized method is a failure: reported to the user, never tracked, since there is no completed path to
+record. An unknown `kind` throws instead, that being a programming error rather than a runtime outcome.
+
 ### share-gates-are-deliberately-asymmetric
 
 The two share buttons probe the Web Share API differently, and the asymmetry is the point rather than an
@@ -919,9 +978,9 @@ The theory tab's toolbar row and the tool tab's export group sit at the same pla
 flips between them, so any difference in their spacing reads as the chrome nudging on tab switch. Two numbers
 have to stay in step, and neither is enforced:
 
-- **`mb-4` below the row**, i.e. 16px above the framework title. The tool tab's toolbar carries the same `mb-4`
-  against its own first element. It used to reach that 16px through a column `gap-2` plus its own `mb-2`, so the
-  two tabs agreed only on the total; stating it as one class in both places is what makes them comparable.
+- **`mb-3` below the row.** The tool tab's toolbar carries the same `mb-3` against its own first element. The
+  tool side used to reach its total through a column `gap-2` plus its own `mb-2`, so the two tabs agreed only on
+  the sum; stating it as one class in both places is what makes them comparable.
 - **`gap-2` between the pills.** Theory's was `gap-1.5` against the tool group's `gap-2`, a 2px difference
   nobody chose but visible as the buttons shifting between tabs. That is the same drift `TOOLBAR_SURFACE` exists
   to prevent for their colours.
