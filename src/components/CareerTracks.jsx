@@ -232,7 +232,7 @@ function FoundationalPhase({ isVisible, emojiSpokes, gridLayout }) {
     <article
       // `print:overflow-visible` so this card can be split across a page break — a clipped box is
       // monolithic in paged media and gets shunted whole to the next sheet (leaving a blank gap behind)
-      // or allowed to overlap what follows. See the fuller note in CompetencyMatrix.
+      // or allowed to overlap what follows. See the fuller note in PillarMatrixCard.
       className={cn(cardClass, "overflow-hidden p-3 print:overflow-visible")}
       style={clusterCardStyle(style.chipBg, style.bezel)}
     >
@@ -318,7 +318,7 @@ function CareerTrackCard({ track, number, emojiSpokes }) {
     <article
       // `print:break-inside-avoid` because a track card is well under a page: splitting one would put its
       // radar on one sheet and the roles it belongs to on the next. `print:overflow-visible` for the
-      // paged-media clipping reason documented in CompetencyMatrix.
+      // paged-media clipping reason documented in PillarMatrixCard.
       className={cn(
         cardClass,
         "flex flex-col gap-3 overflow-hidden p-3 sm:row-span-5 sm:grid sm:grid-rows-subgrid print:overflow-visible print:break-inside-avoid",

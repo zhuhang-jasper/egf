@@ -150,7 +150,7 @@ export function PillarCluster({ group, onOpenPillarInMatrix }) {
     <div
       // `print:break-inside-avoid` keeps a cluster's pillars together on one sheet — a cluster is at most
       // four rows, so it either fits or moves whole. `print:overflow-visible` for the paged-media
-      // clipping reason documented in CompetencyMatrix.
+      // clipping reason documented in PillarMatrixCard.
       className={cn(CARD_TINTED, "relative w-full overflow-hidden px-3 xs:px-4 py-3 print:overflow-visible print:break-inside-avoid")}
       data-cluster={group.id}
       style={clusterCardStyle(cluster.surfaceBg, cluster.bezel)}

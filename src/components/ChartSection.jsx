@@ -143,25 +143,21 @@ const CAN_SHARE_FILES = (() => {
   }
 })();
 
-// Outcome messages for the export buttons. Share's clipboard fallback lands on literally what Copy
-// does, so it reports it in Copy's words. Two phrasings for one result would only tell the user the
-// app took a different path, which is not something they need to know.
-//
-// THE DOWNLOAD PATH HAS NO ENTRY, deliberately — it is not an oversight to fill in. Handing the blob
-// to an <a download> tells us nothing about what happened next: on iOS the tap opens the system's own
-// save sheet, which the user may dismiss, and the click() returns long before they decide. Any toast
-// there is a claim the app cannot check, and it fired on a cancel. The platform is already reporting
-// the outcome itself, correctly, so we say nothing and let it. See the branches in handleCopy/handleShare.
 /**
  * The title row's leading, mirroring Tailwind's `leading-tight` on the <h2> inside it.
  *
  * Duplicated in JS rather than left to CSS because the row must reserve its height whether or not the title is
- * rendered — with the title hidden there is no line box to derive it from. It was `minHeight: "1.25em"` for a
- * while, which avoided the duplication but resolved against a fractional font size and so produced a fractional
- * row; see `titleRowMinHeight`. If `leading-tight` on the <h2> changes, change this with it.
+ * rendered: with the title hidden there is no line box to derive it from. If `leading-tight` on the <h2>
+ * changes, change this with it.
  */
 const TITLE_ROW_LEADING = 1.25;
 
+// Share's clipboard fallback lands on literally what Copy does, so it reports it in Copy's words: two
+// phrasings for one result would only tell the user the app took a different path.
+//
+// THE DOWNLOAD PATH HAS NO ENTRY, deliberately. Handing the blob to an <a download> tells us nothing about
+// what happened next: on iOS the tap opens the system's save sheet, which the user may dismiss, and the
+// click() returns long before they decide. The platform reports that outcome itself, correctly.
 const EXPORT_TOAST = {
   clipboard: "Copied to clipboard",
 };
