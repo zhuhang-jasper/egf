@@ -603,14 +603,11 @@ export default function PosterPage() {
           />
         </div>
       </div>
-      {/* Scaling stage: reserves the scaled footprint so the canvas stays centred and scrolls cleanly; the
-          article inside keeps its true pixel size for export. Its height tracks the MEASURED article height,
-          so switching a band off reclaims the page scroll instead of leaving a tall gap below the paper.
-
-          `relative` AND `mt-6` ARE FOR THE SIZE LABEL, which is pinned to this box's top-right corner: the box
-          is the paper's SCALED width, so the label tracks the paper's right edge at any zoom rather than the
-          viewport's. The top margin is the room the label sits in — without it the label would overlap the
-          toolbar's buttons, since it is positioned outside this box's own bounds. */}
+      {/* Scaling stage: reserves the scaled footprint while the article inside keeps its true pixel size for
+          export, its height tracking the MEASURED article height so switching a band off reclaims the scroll.
+          `relative` AND `mt-6` ARE FOR THE SIZE LABEL, pinned to this box's top-right: the box is the paper's
+          SCALED width, so the label tracks the paper's right edge at any zoom. The margin is the room it sits
+          in, it being positioned outside this box's own bounds. */}
       <div className="relative mt-6 shrink-0" style={{ width: CANVAS_W * scale, height: canvasH * scale }}>
         {/* Clipped to the paper's top edge: `bottom-full` puts it directly above, touching, and outside the
             `<article>` entirely so it can never reach the rasterized PNG. */}

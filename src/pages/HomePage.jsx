@@ -23,12 +23,10 @@ const appVersion = import.meta.env.VITE_APP_VERSION;
 const VALID_TABS = IS_ADMIN ? ["tool", "theory", "admin"] : ["tool", "theory"];
 
 /**
- * A tab's content region. Panels stay MOUNTED once rendered and toggle with `hidden`: chart sizing passes and
- * scroll positions are expensive to rebuild, and `isVisible` is what children use to skip work while off
- * screen. Each panel carries its OWN `widthStyle` measure, so a hidden panel lays out at the width it will be
- * shown at and its charts can be pre-fitted.
- * See docs/DECISIONS.md#tab-panel-prefit and docs/DECISIONS.md#tab-switch-scrollbar-jump before changing the
- * `overflow-x-clip` rules or the one-sided transition.
+ * A tab's content region. Panels stay MOUNTED once rendered and toggle with `hidden`, `isVisible` being what
+ * children use to skip work while off screen. Each carries its OWN `widthStyle`, so a hidden panel lays out at
+ * the width it will be shown at and its charts can be pre-fitted. Read docs/DECISIONS.md#tab-panel-prefit and
+ * docs/DECISIONS.md#tab-switch-scrollbar-jump before changing the `overflow-x-clip` rules or the transition.
  */
 function TabPanel({ label, active, prefit = false, leaving = false, animating = false, direction = "left", widthStyle, children }) {
   // The leaving panel only has to avoid being seen and taking space, which is why there is so little
@@ -251,12 +249,10 @@ export default function HomePage() {
        surround beside the content measure, and `body`'s identical value is what an over-pull past the document
        reveals. Both now read ONE token, so they cannot drift the way two literals could. */
     <div className="flex min-h-dvh flex-col bg-page-base print:block print:min-h-0 print:bg-white print:p-0">
-      {/* The bottom nav's height is reserved with padding alone, deliberately NOT a matching
-          `min-h-[calc(100dvh - …)]`: arithmetic on a viewport unit in the box the fixed nav's `bottom: 0` anchor
-          is compared against makes the bar paint high for a frame on every tab switch. Bare `min-h-dvh` is safe;
-          the arithmetic was the hazard. The `env(safe-area-inset-bottom)` term matches the bar's own so the
-          reservation tracks the real painted height on a notched iPhone. See
-          docs/DECISIONS.md#bottom-nav-height-reservation. */}
+      {/* Padding alone reserves the nav's height, deliberately NOT a `min-h-[calc(100dvh - …)]`: the
+          arithmetic on a viewport unit is the hazard, not `min-h-dvh` itself. The `env(safe-area-inset-bottom)`
+          term matches the bar's own, so the reservation tracks the real painted height on a notched iPhone.
+          See docs/DECISIONS.md#bottom-nav-height-reservation */}
       <main
         /* `relative` anchors a leaving tab panel, which goes `absolute` for the frames it lingers so it does not
            stack below the incoming one. `absolute` alone does not keep it out of the layout, which is why the
@@ -336,20 +332,11 @@ export default function HomePage() {
           </TabPanel>
         ) : null}
 
-        {/* Rendered once inside `main` and outside both tabpanels, so it survives tab switches untouched.
-            `mt-auto` pins it to the bottom of a short tab's content area. Not fixed: it is passive text, and
-            AppBottomNav below it is what earns permanent viewport height.
-
-            No background and no border, inheriting `main`'s white on purpose. AppBottomNav already separates
-            itself from white content with an upward shadow, so a tint here (which would need a `border-t` to stay
-            crisp) puts a second separator 56px from the first. See docs/DECISIONS.md#footer-has-no-chrome.
-
-            `data-print-running` makes this a running footer on paper, repeated at the foot of every sheet. The
-            print form differs from the screen one in both directions, because paper travels without the header,
-            tab bar and URL that identify this on screen: it names the framework and stamps its version and date,
-            while dropping the app build number (see the two spans below). Both forms read ownership first
-            (copyright, licence) and identity second, so only the tail of the line swaps.
-            See docs/DECISIONS.md#print-running-footer and the `@page` rules in index.css. */}
+        {/* Rendered once inside `main` and outside both tabpanels, so it survives tab switches untouched;
+            `mt-auto` pins it to the bottom of a short tab. `data-print-running` makes it a running footer on
+            paper, where the form differs in both directions because paper travels without the header, tab bar
+            and URL that identify this on screen.
+            See docs/DECISIONS.md#footer-has-no-chrome and docs/DECISIONS.md#print-running-footer */}
         <footer data-print-running className="mt-auto px-3 pb-2 pt-4 text-center text-[11px] text-slate-500 print:pt-2">
           {/* Both halves of the ownership head link out, each to the thing that authenticates it: the name to
               its author, the licence to its terms. On paper the URLs are lost and only the underlines print,

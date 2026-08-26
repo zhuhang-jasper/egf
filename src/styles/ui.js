@@ -95,12 +95,11 @@ export const FE_UI = {
        export renders at one pinned width, so there is no scale to track. No band-height constant, the strip
        being `exportImageAttributionGapPx + this line's measured ink`. */
     exportImageAttributionFontPx: 9,
-    /* Space between the content's lowest ink and the credit line's highest, whatever that content is.
-       NOT COMPARABLE TO THE `mt-*` ABOVE IT, which is the trap: the legend and scores blocks space themselves
-       BOX to BOX (`mt-4` = 16px) while this is INK to INK, and the credit's glyphs start ~2-3px inside their own
-       line box, so matching `mt-4` optically means ~18-19 here rather than 16. If the credit regroups with the
-       legend go UP, not down, and use this knob rather than the credit's colour or weight, which are shared with
-       every other footer in the app. See docs/DECISIONS.md#export-margins-crop-the-rows-not-the-columns */
+    /* Content's lowest ink to the credit line's highest. NOT COMPARABLE TO THE `mt-*` ABOVE IT: those space
+       BOX to BOX where this is INK to INK, and the credit's glyphs start ~2-3px inside their line box, so
+       matching `mt-4` optically means ~18-19 rather than 16. If the credit regroups with the legend go UP, and
+       use this knob, not the credit's shared colour or weight.
+       See docs/DECISIONS.md#export-margins-crop-the-rows-not-the-columns */
     exportImageAttributionGapPx: 20,
     /* slate-500, THE ONE CREDIT GREY, at ~4.8:1 on white. These lines carry the CC BY-NC attribution on
        artifacts that get printed and projected, so WCAG AA binds here.

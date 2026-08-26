@@ -214,12 +214,10 @@ function SeniorityStepper() {
       </div>
 
       <div className="hidden sm:block">
-        {/* Three shared rows (badge / title / description) declared on the track, with each card a
-            `grid-rows-subgrid` spanning all three, so every row is sized by the tallest card and the
-            three parts line up horizontally across all five columns. `breakAfterSlash` splits each
-            title at the slash, making the title band a uniform two lines rather than letting each
-            column wrap wherever it happens to run out of width. `items-start` top-aligns each part
-            within its row band. */}
+        {/* Three shared rows declared on the track, each card a `grid-rows-subgrid` spanning all three, so
+            every row is sized by the tallest card and the parts line up across all five columns.
+            `breakAfterSlash` makes the title band a uniform two lines rather than letting each column wrap
+            wherever it runs out of width. */}
         <div className="grid grid-cols-5 grid-rows-[repeat(3,auto)] gap-2">
           {SENIORITY_LEVEL_DEFINITIONS.map(({ code, phase, description }) => (
             <div key={code} className={cn(cardClass, "row-span-3 grid min-w-0 grid-rows-subgrid items-start gap-y-2 p-3")}>
@@ -313,12 +311,10 @@ function TheoryContent({
     const targetPillar = section === THEORY_SECTIONS.matrix ? deepLink.pillar : null;
     const targetId = targetPillar ? getPillarCardElementId(targetPillar) : sectionId;
 
-    // Staged so a shared link reads as navigation rather than a teleport:
-    //   1. double rAF — let the hidden tabpanel lay out so restore lands at the remembered scroll.
-    //   2. after DEEPLINK_RESTORE_SETTLE_MS — switch to the deep-link pillar. `cancelRestoreRef` flips here
-    //      so restore stops re-asserting the old position against this expand.
-    //   3. after the expand — re-aim until the card stops moving (the old pillar may still be collapsing
-    //      above it), then smooth-glide. A single scroll lands the target gapless under the bar.
+    // Staged so a shared link reads as navigation rather than a teleport: double rAF to let the hidden panel
+    // lay out and restore land, then the pillar switch (`cancelRestoreRef` flipping so restore stops
+    // re-asserting against the expand), then a re-aim until the card stops moving before the glide. A single
+    // scroll would land short, the old pillar still collapsing above it.
     let settleTimer = null;
     let glideTimer = null;
     let inner = null;
@@ -477,12 +473,9 @@ function TheoryContent({
             "flex flex-col gap-3 p-3 print:mt-[18vh] print:rounded-none print:border-0 print:bg-transparent print:p-0 print:shadow-none",
           )}
         >
-          {/* NOT A HEADING ELEMENT, and `aria-hidden`: the page's <h1> is the lockup in the sticky header
-              (see AppShellBrandMark), which announces this exact string and is present on both tabs. A
-              second h1 here would compete with it, and an h2 would sit above section I's own h2 for no
-              structural reason.
-
-              `mb-2` on screen, `print:mb-[5vh]` on paper, and the version line is print-only.
+          {/* NOT A HEADING ELEMENT, and `aria-hidden`: the page's <h1> is the sticky header's lockup, which
+              announces this exact string on both tabs. A second h1 would compete with it, and an h2 would sit
+              above section I's own h2 for no structural reason.
               See docs/DECISIONS.md#theory-hero-plate-sizes-against-the-chart */}
           <p
             aria-hidden
@@ -598,12 +591,9 @@ function TheoryContent({
           <SectionSentinel section={THEORY_SECTIONS.matrix} edge="tail" gapClass="-mt-3" />
         </section>
 
-        {/* `gap-3` like the other sections. This was `gap-1` for as long as the section's intro was empty:
-            a bare h2 title line has to hug the h3 subsection title below it, which otherwise reads as
-            detached across 12px. (Section III's intro is empty too but keeps `gap-3`, because what follows
-            it is a bordered card rather than another heading.) Now that the intro carries the S1-S5 / L1-L5
-            note, the heading is a title plus a paragraph — the same shape as sections I and II — and the
-            paragraph is what separates the two headings, so the tight gap has nothing left to fix. */}
+        {/* `gap-3` like the other sections, now that the intro carries the S1-S5 / L1-L5 note: the paragraph
+            is what separates this h2 from the h3 below it. It was `gap-1` while the intro was empty, a bare
+            title line having to hug the subsection title that otherwise read as detached across 12px. */}
         <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.tracks]} className="flex flex-col gap-3 print:break-before-page">
           <SectionSentinel section={THEORY_SECTIONS.tracks} edge="head" gapClass="-mb-3" />
           <SectionHeading
