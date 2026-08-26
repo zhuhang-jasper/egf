@@ -110,11 +110,7 @@ export function LevelInput({ value, onChange, ariaLabel, ariaLabelUp, ariaLabelD
             e.currentTarget.blur();
           }
         }}
-        className={cn(
-          "w-12 text-center bg-transparent border-x border-x-[#e0e0e0] px-1 py-[7px] xs:py-2",
-          TOOL_TEXT.field,
-          inputClassName,
-        )}
+        className={cn("w-12 text-center bg-transparent border-x border-x-[#e0e0e0] px-1 py-[7px] xs:py-2", TOOL_TEXT.field, inputClassName)}
       />
       <button
         type="button"

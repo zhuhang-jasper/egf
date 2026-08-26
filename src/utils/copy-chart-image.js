@@ -579,10 +579,9 @@ async function rasterizeChart({ exportRoot, canvas, chart, attributionHidden, uh
     }
 
     const credit = measureAttribution(sctx, { hidden: attributionHidden, scaleY: pxPerCssY, frameworkVersion });
-    const padX = Math.round(padPx * pxPerCssX);
     const padY = Math.round(padPx * pxPerCssY);
-    // THE BLOCK, IN ORDER: the content's ink, the gap, the credit's ink — and only then `padY`/`padX` around the
-    // whole of it. So the band carries NO padding of its own; the white below the credit is the margin itself.
+    // THE BLOCK, IN ORDER: the content's ink, the gap, the credit's ink, and only then `padY` around the whole
+    // of it. So the band carries NO padding of its own; the white below the credit is the margin itself.
     // Zero without a credit, which leaves the foot the plain `padY`, same as the head.
     const bandPx = credit ? Math.round(getAttributionGapPx() * pxPerCssY) + Math.ceil(credit.ascent + credit.descent) : 0;
 

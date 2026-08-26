@@ -28,19 +28,11 @@ function badgeRank(badge) {
   return i === -1 ? BADGE_SORT_ORDER.length : i;
 }
 
-// Rows shown before the list scrolls; the trailing ".5" leaves the next row half-visible so users
-// can tell there's more below (the standard "peek" scroll affordance). Ported from ProfilePicker.
+// Three deliberately different row counts: VISIBLE_ROWS caps the list, MIN_COMFORTABLE_ROWS decides
+// direction, MIN_ROWS is a hard floor the panel overlaps chrome to keep. Every ".5" is the peek affordance.
+// See docs/DECISIONS.md#profile-dropdown-sizing-and-direction
 const VISIBLE_ROWS = 6.5;
-
-// Rows that make a downward menu worth keeping. The direction decision uses this floor, not
-// VISIBLE_ROWS: staying put and showing 5 rows beats flipping over the input to show 6.5, because a
-// menu that jumps sides is more disorienting than one that scrolls slightly sooner. Below this the
-// list is too short to browse, so the extra room above wins. Keeps the ".5" peek for the same reason.
 const MIN_COMFORTABLE_ROWS = 4.5;
-
-// The list never shrinks below this, even when the band between the header and nav can't hold it — the panel
-// overlaps the chrome instead. A search box over an empty list is useless, and that is what bounding to the band
-// alone produced on a short viewport. 2.5 keeps the peek, so the floor still reads as "more below".
 const MIN_ROWS = 2.5;
 
 // Marquee scroll speed (px/sec) for names too long to fit — lower is slower/calmer.
@@ -48,21 +40,17 @@ const MARQUEE_SPEED_PX_PER_SEC = 45;
 // Gap between the two looping copies of a scrolling name, so it doesn't read as one run-on word.
 const MARQUEE_GAP_PX = 40;
 
-/**
- * A profile name that fits normally, but scrolls like an LED sign when it's wider than the space
- * available (once the dropdown has grown to its page-width cap). Measures on mount/resize/label
- * change; only overflowing labels animate, and the speed is proportional to length so long names
- * don't whip past. When it fits, it renders as a plain (non-truncated) span.
- *
- * `deps` lets the caller force a re-measure when layout that affects width changes (e.g. the list
- * opening, or the row count changing the scrollbar).
- */
 /** One row's version chip. Its own component because the resolver is a hook and rows are mapped. */
 function ProfileVersionChip({ profile }) {
   const { state, version } = useProfileStampState(profile);
   return <FrameworkVersionChip state={state} version={version} className="ml-2" />;
 }
 
+/**
+ * A profile name that scrolls like an LED sign when it is wider than the space available, and renders as a
+ * plain span when it fits. Speed is proportional to length so long names don't whip past. `deps` lets the
+ * caller force a re-measure when layout that affects width changes.
+ */
 function ScrollingLabel({ label, className, deps }) {
   const boxRef = useRef(null);
   const textRef = useRef(null);
@@ -118,16 +106,8 @@ function ScrollingLabel({ label, className, deps }) {
 }
 
 /**
- * The profile name field plus a browse/load/delete dropdown.
- *
- * Two intents are kept deliberately SEPARATE (an earlier "type in the field = search" combobox
- * conflated them and broke naming): the name <Input> is only for naming/creating the draft — it
- * never filters and never auto-opens anything. Browsing is a distinct surface: the caret opens a
- * dropdown that has its OWN search box at the top; searching, keyboard nav, load and delete all
- * live there. Picking a row loads it; the trailing bin deletes it with the usual Undo toast.
- *
- * Saving is NOT handled here — the status-aware Save button next to this input owns
- * Save/Rename/Update + the collision dialog.
+ * The profile name field plus a browse/load/delete dropdown. The name field never searches and saving lives
+ * elsewhere: see docs/DECISIONS.md#profile-name-field-does-not-search
  */
 export function ProfileCombobox({ titleError = false }) {
   const title = useAppStore((s) => s.title);
@@ -154,8 +134,7 @@ export function ProfileCombobox({ titleError = false }) {
   // keys but NOT for mouse hover (hovering a partially-visible row shouldn't yank the scrollbar).
   const keyboardMoveRef = useRef(false);
 
-  // Filtered rows (by the dropdown's search box), grouped by badge (badge-dropdown order) then A–Z
-  // within each group. Storage hands us profiles newest-first; we re-sort for display only.
+  // Storage hands us profiles newest-first; grouped by badge then A–Z for display only.
   const q = query.trim().toLowerCase();
   const rows = useMemo(
     () =>
@@ -171,15 +150,13 @@ export function ProfileCombobox({ titleError = false }) {
     [profiles, q],
   );
 
-  // Open the dropdown fresh (search cleared, showing all). On desktop, focus the search box so you
-  // can type immediately; on touch, DON'T — auto-focus would pop the on-screen keyboard on every
-  // open, which is intrusive when you're just browsing. Touch users tap the search box to type.
+  // No search autofocus on touch: it would pop the on-screen keyboard on every open, intrusive when
+  // browsing.
   const openDropdown = () => {
     setQuery("");
     setHighlight(-1);
     setOpen(true);
     if (!touchPrimary) {
-      // Focus after the popover mounts.
       requestAnimationFrame(() => searchRef.current?.focus());
     }
   };
@@ -192,27 +169,24 @@ export function ProfileCombobox({ titleError = false }) {
   };
 
   const handleLoad = (pr) => {
-    // The already-loaded profile isn't loadable — it's the current draft. Just close.
+    // The already-loaded profile is the current draft, not a load target.
     if (pr.id === activeSavedProfileId) {
       close();
       return;
     }
     const result = loadProfile(pr.id);
-    // The funnel's entry step — a load with a flagged state is a user being told to re-check, and the same
-    // param on `profile_saved` is where that lands. Read from the ROW, not the draft the load produced.
+    // Read from the ROW, not the draft the load produced: this is the funnel's entry step, paired with the
+    // same param on `profile_saved`.
     const stamp = profileStampState(pr);
     track("profile_loaded", { attached_badge: pr.attachedBadge, profile_state: stamp.state, stamp_source: stamp.source });
     close();
-    // If the load discarded unsaved work, warn (with an Undo) via the shared coalescing toast — so
-    // load and "New profile" behave identically. Only one such toast shows at a time (a newer discard
-    // replaces it), so Undo recovers the most recent. A clean/"saved" draft or a no-op reload recovers
-    // nothing.
+    // Coalescing toast, shared with "New profile": only one shows at a time, so Undo recovers the most
+    // recent discard.
     if (result?.hadUnsavedChanges) {
       showDraftDiscardedToast(result.undo, () => track("profile_load_undone"));
     }
   };
 
-  // Outside-click + Escape close (ported from ProfilePicker).
   useEffect(() => {
     if (!open) {
       return undefined;
@@ -236,13 +210,11 @@ export function ProfileCombobox({ titleError = false }) {
     };
   }, [open]);
 
-  // Position + size the popover on open (and on resize). Prefer opening downward, but flip up when
-  // there isn't room below and there's more above (e.g. the input scrolled near the page bottom).
-  // Then cap the scrollable list to ~6.5 rows or the space on the chosen side, so a row peeks and
-  // the menu never spills off-screen. Mirrors ProfilePicker's old logic.
+  // Position + size the popover on open and on resize.
+  // See docs/DECISIONS.md#profile-dropdown-sizing-and-direction
   useLayoutEffect(() => {
-    // No reset on close: both values are read only inside the `open` branch of the render, and
-    // `decide()` overwrites them before the menu is shown again.
+    // No reset on close: both are read only inside the render's `open` branch, and `decide()` overwrites
+    // them before the menu is shown again.
     if (!open) {
       return;
     }
@@ -256,16 +228,13 @@ export function ProfileCombobox({ titleError = false }) {
       const gap = 4;
       const margin = 8; // keep the menu clear of the viewport edge
       const rootRect = root.getBoundingClientRect();
-      // The menu clears the pinned chrome at BOTH ends — the sticky header above, the fixed bottom nav below —
-      // down to the MIN_ROWS floor, past which it overlaps instead. Not a stacking issue (the menu is at
-      // LAYER.dropdown, above chrome) but covering the title, or disappearing behind the navigation, reads as
-      // broken either way. The header boundary tracks the intro's expand/collapse for free, being measured live.
+      // Measured live, so the header boundary tracks the intro's expand/collapse for free.
       const { top: topBoundary, bottom: bottomBoundary } = getPopoverViewportBounds();
       const spaceBelow = bottomBoundary - rootRect.bottom - gap - margin;
       const spaceAbove = rootRect.top - topBoundary - gap - margin;
 
-      // The search box (menu's first child) is a non-scrolling sibling above the list — reserve its
-      // height so the whole popover, not just the list, fits within the available space.
+      // The search box is a non-scrolling sibling above the list, so reserve its height or the popover
+      // overflows even when the list fits.
       const searchBox = menu.firstElementChild;
       const searchH = searchBox ? searchBox.getBoundingClientRect().height : 0;
       const firstRow = list.firstElementChild;
@@ -275,20 +244,14 @@ export function ProfileCombobox({ titleError = false }) {
       const peekRows = rowH > 0 ? Math.round(VISIBLE_ROWS * rowH + listChrome) : Infinity;
       const naturalListH = list.scrollHeight;
 
-      // Direction is decided against a SUFFICIENT height, not the ideal one: the menu only needs room
-      // for MIN_COMFORTABLE_ROWS (or the whole list, when it's shorter) to be worth opening downward.
-      // It then stretches into whatever space is actually there, up to the VISIBLE_ROWS cap. Deciding
-      // on the ideal height instead flipped menus upward that could have shown 5 or 6 rows below.
+      // Direction is decided against a SUFFICIENT height, not the ideal one.
       const comfortableRows = rowH > 0 ? Math.round(MIN_COMFORTABLE_ROWS * rowH + listChrome) : Infinity;
       const neededHeight = searchH + Math.min(naturalListH, comfortableRows);
-      // Down whenever the floor fits below, however much room is above. Only when it does not fit
-      // does the roomier side win (and if above is no better, stay down and squeeze).
       const up = neededHeight > spaceBelow && spaceAbove > spaceBelow;
       const available = Math.floor(up ? spaceAbove : spaceBelow);
       setOpenUp(up);
 
-      // MIN_ROWS is the floor, so this cap may EXCEED the band — that is the point: past it the panel overlaps
-      // the chrome rather than collapsing to a search box with nothing under it.
+      // This cap may EXCEED the band: past MIN_ROWS the panel overlaps chrome rather than collapsing.
       const minListH = rowH > 0 ? Math.round(MIN_ROWS * rowH + listChrome) : 0;
       const listCap = Math.min(peekRows, Math.max(minListH, available - searchH));
       setListMaxHeight(naturalListH <= listCap ? null : listCap);
@@ -298,10 +261,8 @@ export function ProfileCombobox({ titleError = false }) {
     return () => window.removeEventListener("resize", decide);
   }, [open, rows.length]);
 
-  // Jump the list straight to the loaded profile's row on open, no animation — it's the row the user came
-  // in looking for, and a smooth scroll would just make them wait to see it. Deliberately keyed on `open`
-  // alone (not `rows`): openDropdown() always resets the search first, so this fires once against the
-  // full unfiltered list, and does NOT re-snap the scroll position while the user is typing a search.
+  // Keyed on `open` alone, not `rows`: openDropdown() resets the search first, so this fires once against
+  // the full list and never re-snaps the scroll while the user is typing.
   useLayoutEffect(() => {
     if (!open) {
       return;
@@ -326,9 +287,7 @@ export function ProfileCombobox({ titleError = false }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  // Redirect wheel events over the popover to the inner list and swallow them so the page behind
-  // never scrolls. Native non-passive listener because React's onWheel is passive (preventDefault
-  // is a no-op there). Ported from ProfilePicker.
+  // Native non-passive listener because React's onWheel is passive, where preventDefault is a no-op.
   useEffect(() => {
     const root = rootRef.current;
     if (!open || !root) {
@@ -345,9 +304,8 @@ export function ProfileCombobox({ titleError = false }) {
     return () => root.removeEventListener("wheel", onWheel);
   }, [open]);
 
-  // Keep the highlighted row scrolled into view as the user arrows through the list — but only for
-  // keyboard moves. Mouse hover also sets `highlight`, and scrolling then would auto-yank a
-  // partially-visible hovered row into full view, which is jarring.
+  // Keyboard moves only: hover also sets `highlight`, and scrolling then would yank a partially-visible
+  // hovered row into view.
   useEffect(() => {
     if (!open || highlight < 0 || !keyboardMoveRef.current) {
       keyboardMoveRef.current = false;
@@ -359,8 +317,7 @@ export function ProfileCombobox({ titleError = false }) {
     row?.scrollIntoView({ block: "nearest" });
   }, [highlight, open]);
 
-  // Keyboard nav for the dropdown's search box: arrows move the highlight, Enter loads it, Escape
-  // closes. (The name <Input> has none of this — it's a plain text field.)
+  // The dropdown's search box only; the name <Input> is a plain text field.
   const handleSearchKeyDown = (e) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
@@ -387,7 +344,7 @@ export function ProfileCombobox({ titleError = false }) {
   return (
     <div ref={rootRef} className="relative min-w-0 flex-1">
       <BadgePicker onOpen={close} />
-      {/* The name field — naming/creating only. It never filters and never opens the dropdown, so
+      {/* Naming and creating only. It never filters and never opens the dropdown, so
           "Save as copy"/"New profile" can focus it for typing a name without triggering a browse/load. */}
       <Input
         ref={inputRef}
@@ -403,17 +360,9 @@ export function ProfileCombobox({ titleError = false }) {
             setTitle(trimmed);
           }
         }}
-        // `pl-*` CLEARS THE BADGE PICKER, which sits over this input's left edge as an absolute
-        // adornment. The trigger is fixed px (padding, gap, chevron, divider) apart from the pill,
-        // whose box is all `em` — so it widens on the same rungs the pill's font does, and the
-        // padding must step with it. TWO RUNGS NOW, MATCHING THE PILL: its font moved from `sm`/`md`
-        // (640/768) to a single `xs` step, because the tool column caps at 470 and those rungs fired
-        // where nothing else changed — see styles/control-typography.js. The bare rung stays
-        // UNPREFIXED so phones under 470 keep their clearance; an `xs:`-only pair would leave them
-        // with none and put the name under the badge.
+        // `pl-*` clears the badge picker and must step on the pill's own rungs; the weights are deliberate.
+        // See docs/DECISIONS.md#profile-controls-read-at-one-rung
         className={cn(
-          // 600 on the NAME, 500 on the placeholder: a typed name is the profile's identity (the chart title
-          // renders it at 800), while the placeholder is instruction text and stays at body weight.
           "pl-18 pr-9 font-semibold shadow-none placeholder:font-medium xs:pl-20",
           titleError && "border-red-500 focus-visible:ring-red-500/40",
         )}
@@ -436,9 +385,8 @@ export function ProfileCombobox({ titleError = false }) {
         <ChevronDown className={cn("h-4 w-4 opacity-60 transition-transform", open && "rotate-180")} />
       </button>
       {open ? (
-        // Sizes to the widest row (w-max), never narrower than the input (min-w-full) nor wider than
-        // the page (max-w-[calc(100vw-2rem)]); a name past that cap scrolls (see ScrollingLabel).
-        // Flips above the input when there's no room below (see the positioning effect).
+        // Sizes to the widest row, bounded by the input and the page width; a name past that cap scrolls
+        // (see ScrollingLabel).
         <div
           ref={menuRef}
           className={cn(
@@ -456,8 +404,8 @@ export function ProfileCombobox({ titleError = false }) {
               type="text"
               value={query}
               placeholder="Search profiles…"
-              // Native <input> with role="combobox" IS the WAI-ARIA combobox pattern — there is no tag
-              // that supplies it, and the listbox below cannot be a native <select>.
+              // The WAI-ARIA combobox pattern: no tag supplies it, and the listbox below cannot be a
+              // native <select>.
               role="combobox"
               aria-expanded="true"
               aria-controls="profile-combobox-list"
@@ -468,10 +416,6 @@ export function ProfileCombobox({ titleError = false }) {
                 setHighlight(-1);
               }}
               onKeyDown={handleSearchKeyDown}
-              // Same size as the option rows below it: you are typing to filter that list, so the query and the
-              // results it produces read at one size. It sat a rung under them for a while, on the argument that
-              // the search is secondary to the name field this dropdown hangs off — true of the field, but the
-              // rows are what it is actually paired with.
               className={cn("w-full bg-transparent py-2 pl-8 pr-3 placeholder:text-muted-foreground focus-visible:outline-none", CONTROL_TEXT)}
             />
           </div>
@@ -480,8 +424,8 @@ export function ProfileCombobox({ titleError = false }) {
           ) : (
             <ul
               ref={listRef}
-              // ARIA listbox: a <ul>/<li> carrying listbox/option roles, since a native
-              // <select>/<option> can't hold the badge + name + delete-button row layout.
+              // <ul>/<li> with listbox/option roles, since a native <select> can't hold the
+              // badge + name + delete-button row layout.
               // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-to-interactive-role
               role="listbox"
               id="profile-combobox-list"
@@ -501,12 +445,8 @@ export function ProfileCombobox({ titleError = false }) {
                     role="option"
                     aria-selected={isHighlighted}
                     aria-current={isActive ? "true" : undefined}
-                    // Three distinct, non-conflicting states:
-                    //  - hover: a soft transient tint.
-                    //  - active/loaded: solid tint + left accent bar + bold label ("now playing").
-                    //  - keyboard highlight: an inset primary ring + firmer tint. The ring is an
-                    //    outline (not a background), so it layers cleanly on top of the active row
-                    //    rather than competing with its tint.
+                    // Hover, active/loaded and keyboard highlight must not conflict, so the highlight is an
+                    // outline rather than a background: it layers over the active row's tint.
                     className={cn(
                       "relative flex items-stretch pr-0.5 hover:bg-muted/60",
                       isActive && "bg-muted before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:bg-primary hover:bg-muted",
@@ -515,14 +455,12 @@ export function ProfileCombobox({ titleError = false }) {
                   >
                     <button
                       type="button"
-                      // The active profile is already loaded — its row isn't a load target (just the
-                      // delete button stays live). Disabled so the click reads as "already loaded"
-                      // rather than a dead click.
+                      // Disabled so clicking the loaded profile reads as "already loaded" rather than dead.
+                      // Its delete button stays live.
                       disabled={isActive}
                       className={cn(
-                        // `pr-1`, not `pr-3`: the trailing pad used to sit between the chip and the trash
-                        // button, spending width the profile name needs. The chip carries its own `ml-2`,
-                        // so it stays clear of the name while sitting close to the trash.
+                        // `pr-1`, not `pr-3`: the chip carries its own `ml-2`, so the trailing pad would only
+                        // spend width the profile name needs.
                         "flex min-w-0 flex-1 select-none items-center py-2 pl-0 pr-2 text-left",
                         CONTROL_TEXT,
                         isActive ? "cursor-default" : "cursor-pointer",
@@ -530,10 +468,8 @@ export function ProfileCombobox({ titleError = false }) {
                       onMouseEnter={() => setHighlight(i)}
                       onClick={() => handleLoad(pr)}
                     >
-                      {/* Badge slot spans from the row's left edge to where the input text starts. No-badge rows show an em-dash.
-                          `annotation` (9/11) rather than TrackBadge's own `label` (10/12), matching BadgePicker's
-                          pill: these rows sit directly under that control, and the two reading a rung apart looked
-                          like a bug. The narrower slot it allows goes to the profile name. */}
+                      {/* Badge slot spans from the row's left edge to where the input text starts. No-badge rows
+                          show an em-dash. See docs/DECISIONS.md#profile-controls-read-at-one-rung */}
                       <span className="flex w-12 shrink-0 items-center justify-center">
                         {normalizeAttachedBadge(pr.attachedBadge) === "none" ? (
                           <span className="text-muted-foreground">{TRACK_BADGE_UI.none.shortLabel}</span>
@@ -549,8 +485,7 @@ export function ProfileCombobox({ titleError = false }) {
                     </button>
                     <button
                       type="button"
-                      // `w-8`, down from w-9: still a 32px tap target (the accessible floor) with the row's
-                      // trailing pad trimmed to match, so the width goes to the name instead of to margin.
+                      // `w-8` is still a 32px tap target, the accessible floor, so the rest goes to the name.
                       className="flex w-8 shrink-0 cursor-pointer items-center justify-center rounded-md pr-1 text-destructive hover:bg-destructive/10"
                       aria-label={`Remove profile ${label}`}
                       onClick={(e) => {

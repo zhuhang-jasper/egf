@@ -859,6 +859,40 @@ printed as a stray strip of a second shade. This stays load-bearing now that the
 black: a slate wash over the unused part of a sheet is quieter than a black one, but it is still ink nobody
 asked to spend.
 
+### theory-hero-plate-sizes-against-the-chart
+
+The theory tab's hero title is sized from the hero radar's MEASURED width via the same `getChartTitleSizePx` the
+tool tab's title uses, so the two match at every viewport. A title above a chart scales against the chart, not
+the document's breakpoint ladder: the theory panel is 900 wide and hits the radar's cap long before `md` fires.
+The 0 fallback keeps the first paint at mobile size.
+
+**Paper must not inherit the screen's size.** The inline `fontSize` is measured from the live frame and is stale
+in print, so a second value, `--print-title-size`, runs the same function at the width paper actually uses. It
+is computed in JS rather than hardcoded in CSS so it cannot drift from `chartMaxWidthPx`. See
+[print-chart-frame-height-is-stale](#print-chart-frame-height-is-stale) for why no `beforeprint` measurement can
+fix this: that event fires before the print layout exists.
+
+The version line under the title is **print-only**. On screen the bottom nav's Theory tab already carries the
+version badge, so repeating it said the same number twice within a thumb's reach; a printout has no nav, and a
+reference document should say which version it is. It is two sibling spans, which the plate's `flex-col` sets as
+two rows, and `text-xl` (20px) pins it a step under the title rather than inheriting it. Inheriting the last
+SCREEN measurement is what made the pair invert on a phone: a floored title over a 20px version line. No date
+here; the version dates itself in the running footer, which repeats on every sheet rather than only the one
+carrying the cover.
+
+**One order for both media: title, radar, tagline.** All three are siblings, so no ordering utility is involved
+and what you see is what prints. This briefly ran radar-first on screen with `print:order-first` lifting the
+title on paper, a divergence inherited from the days when the title lived in the app header and the tagline had
+to be rendered a second time under the radar, because no CSS could interleave two components with a tab panel
+between them.
+
+`print:mt-[18vh]` on the cover is **a reserve, not a measurement**: it pushes the trio down the sheet so it
+reads as a cover rather than sitting at the top with the rest blank. The block's height is content-driven, the
+radar sized at runtime and the tagline wrapping to its own measure, so there is nothing to centre against from
+here. Landing a little above true centre is the safe direction, since overflowing the sheet by a pixel makes the
+cover two pages. The title's `print:mb-[5vh]` is paired with the tagline's matching `print:mt-[5vh]` so the
+radar sits in equal air, the printed cover having a whole sheet for three elements.
+
 ### print-chart-frame-height-is-stale
 
 Print never re-runs the chart fit. `applyChartFrameLayout` writes the frame's `height` as an inline px value
@@ -1013,7 +1047,102 @@ When redirecting call sites leaves a token unused, delete it — `DOC_TEXT.meta`
 from the measured chart width, because the PNG export renders from an off-screen clone at a pinned width where
 media queries do not resolve. See [chart-type-scale](#chart-type-scale).
 
+## Profile dropdown
+
+### profile-dropdown-sizing-and-direction
+
+Three row counts govern the profile dropdown, and they are deliberately different numbers.
+
+- `VISIBLE_ROWS` (6.5) is the cap on the scrollable list. The trailing `.5` leaves the next row half-visible,
+  the standard peek affordance for "more below".
+- `MIN_COMFORTABLE_ROWS` (4.5) decides **direction**, not height. The menu opens downward whenever this floor
+  fits below, however much room is above; only when it does not fit does the roomier side win, and if above is
+  no better it stays down and squeezes. Deciding direction against the _ideal_ height instead flipped menus
+  upward that could have shown 5 or 6 rows below, and a menu that jumps sides is more disorienting than one
+  that scrolls slightly sooner. Having chosen a side, the menu stretches into whatever space is there, up to
+  `VISIBLE_ROWS`.
+- `MIN_ROWS` (2.5) is a hard floor the list never shrinks below, so on a short viewport the panel **overlaps
+  the chrome** rather than collapsing. Bounding purely to the band between the sticky header and the fixed
+  bottom nav produced a search box over an empty list, which is useless.
+
+The menu otherwise clears the pinned chrome at both ends, measured live so the header boundary tracks the
+intro's expand/collapse for free. This is not a stacking problem (the menu sits at `LAYER.dropdown`, above
+chrome) but covering the title or vanishing behind the nav reads as broken either way. The search box is a
+non-scrolling sibling above the list, so its height plus the list box's own padding and border are subtracted
+before the peek math, or the popover as a whole overflows even when the list fits.
+
+### profile-name-field-does-not-search
+
+The name `<Input>` in `ProfileCombobox` is only for naming and creating the draft: it never filters and never
+auto-opens anything. Browsing is a separate surface, opened by the caret, with its **own** search box at the
+top; search, keyboard nav, load and delete all live there. An earlier "type in the field = search" combobox
+conflated the two intents and broke naming. Saving is not handled here either: the status-aware Save button
+beside the input owns Save/Rename/Update and the collision dialog.
+
+### profile-controls-read-at-one-rung
+
+The profile row's controls are deliberately typographically flat, because they sit within a thumb's reach of
+each other and a rung of difference between adjacent controls reads as a bug rather than a hierarchy.
+
+- The dropdown's **search box** matches the option rows below it: you type to filter that list, so the query
+  and the results it produces read at one size. It sat a rung under them for a while, on the argument that the
+  search is secondary to the name field the dropdown hangs off. True of the field, but the rows are what it is
+  actually paired with.
+- A row's **badge slot** uses `annotation` (9/11) rather than `TrackBadge`'s own `label` (10/12), matching
+  BadgePicker's pill directly above it. The narrower slot that allows goes to the profile name.
+- The **name field** is the exception, and only in weight: 600 on a typed name against 500 on the placeholder,
+  because the name is the profile's identity (the chart title renders it at 800) while the placeholder is
+  instruction text.
+
+The name input's `pl-*` exists to clear the badge picker, an absolute adornment over its left edge. The picker's
+trigger is a fixed number of px (padding, gap, chevron, divider) apart from the pill, whose box is all `em`, so
+it widens on the same rungs the pill's font does and the padding must step with it. Two rungs, matching the
+pill: its font moved from `sm`/`md` (640/768) to a single `xs` step, because the tool column caps at 470 and
+those rungs fired where nothing else changed. **The bare rung stays UNPREFIXED** so phones under 470 keep their
+clearance; an `xs:`-only pair leaves them with none and puts the name under the badge.
+
 ## Copy
+
+### changelog-entries-are-what-the-theory-tab-shows
+
+`CHANGELOG` in `constants/changelog.js` documents the **Theory tab**, not the source PDF. A bullet earns its
+place only if a reader can open the tab and see what it describes, so PDF revisions for material that never
+shipped here are skipped. Entries are newest-first (the build-time regex in
+`vite-plugins/resolve-framework-version.js` reads the first `version:` in the file) and summarise which
+sections changed rather than every detail.
+
+**Entries are historical records.** Use the section name as it stood AT THAT VERSION and never retitle a past
+entry when something is renamed. Sections are referred to by name, never by roman numeral, because numerals go
+stale on any reorder.
+
+`sections` drives the per-section unseen dots, so it must stay in sync with the bullets: a bullet naming a
+section absent from the array raises no dot, and a bullet claiming "all sections" has to list them all. The
+section named is where the change RENDERS, not the concept it belongs to. These come apart, e.g. a skill-tier
+change drawn on the Matrix pillar cards is a Matrix bullet. One section prefix per bullet, so
+"Pillars and Competency Matrix: ..." splits in two.
+
+Style: section name, colon, plain sentences. No em dashes and no semicolons; split into two sentences.
+
+`barRaised` / `barEased` mark levels whose **bar actually moved**, judged per cell, not "was this rewritten" —
+a release can rework most cells and leave every bar where it was. `barRaised` means someone rated there may no
+longer clear it, `barEased` that they may now clear more. Some entries are backfilled from the cell diff for
+versions that never shipped live (4.0, 4.2): the marks still count, because that content reached users inside
+the next release and `movedLevelsSince` unions every entry newer than a profile's stamp.
+
+### changelog-draft-is-a-separate-export
+
+Work in progress lives in `CHANGELOG_DRAFT`, a standalone export, rather than a `draft: true` flag on
+`CHANGELOG[0]`. Four separate things read "the newest entry" and every one must ignore a draft:
+`FRAMEWORK_VERSION` (the version printed on the tab), `SECTION_LATEST_VERSION` (which raises the per-section
+dots), `changelogRank`'s ordering, and the build-time regex in `vite-plugins/resolve-framework-version.js`
+that publishes `frameworkVersion` to `dist/meta.json`. A flag means remembering to filter in all four; a
+separate binding means none of them can see it.
+
+A draft carries no `sections`, since that field only feeds the dots and a draft must raise none. To publish:
+add `date` and `sections`, move the object into `CHANGELOG`'s first slot, set the draft to null. That one move
+is what bumps the framework version, which is why `FRAMEWORK_VERSION` is derived from the newest entry rather
+than declared: a bump with no matching entry leaves every unseen dot stuck on forever, and a hand-maintained
+constant could disagree with the changelog it summarises.
 
 ### changelog-rank-sentinels
 
@@ -1042,6 +1171,22 @@ silently swallowed updates.
 **Consequence: the array's length is the horizon.** Pruning old entries shifts users still sitting at those
 versions from a finite rank to `Infinity`. Harmless while both show every dot, but it would start to matter
 if anything ever read the rank as a count of versions behind.
+
+### one-credit-grey-one-credit-weight
+
+Every attribution footer in the app is slate-500 at weight 400, and there are four of them: the poster's credit
+line (`pages/PosterPage.jsx`), the app footer's screen and print forms (`pages/HomePage.jsx`), and the chart
+export's hand-painted canvas band (`exportImageAttributionColor` in `styles/ui.js`, measured in
+`utils/copy-chart-image.js`). No `font-medium` anywhere among them. Two of the four are DOM and use Tailwind's
+class while the painted band reads the constant, so a change to the grey has to be made in both places.
+
+The poster's credit is plain DOM rather than a painted band because the poster is rasterized from the DOM by
+snapdom: it needs no measuring and renders on screen exactly as it will in the PNG.
+
+Its gap to whatever precedes it is `mt-10`, the literal match for the paper's `pb-10`, so the credit sits in an
+even 40px band whichever band comes before it. **Keep that flat.** If a band reads loose against the credit,
+the fault is that band's own bottom margin and belongs there (the ring's `mb-3` was the first such case), not
+in a per-band tuning of this number.
 
 ### docs-grey-ladder
 

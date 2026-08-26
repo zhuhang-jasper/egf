@@ -73,11 +73,11 @@ function parseVersion(version) {
   if (typeof version !== "string") {
     return null;
   }
-  const match = /^(\d+)(?:\.(\d+))?/.exec(version.trim());
+  const match = /^(?<major>\d+)(?:\.(?<minor>\d+))?/.exec(version.trim());
   if (!match) {
     return null;
   }
-  return Number(match[1]) + Number(match[2] ?? 0) / 1000;
+  return Number(match.groups.major) + Number(match.groups.minor ?? 0) / 1000;
 }
 
 /**

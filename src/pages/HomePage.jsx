@@ -23,47 +23,35 @@ const appVersion = import.meta.env.VITE_APP_VERSION;
 const VALID_TABS = IS_ADMIN ? ["tool", "theory", "admin"] : ["tool", "theory"];
 
 /**
- * A tab's content region. Once rendered, panels stay MOUNTED and toggle with `hidden` rather than being
- * conditionally rendered: chart sizing passes and scroll positions are expensive to rebuild, and `isVisible` is
- * what children use to skip work while off screen. Only the first render skips a panel (see `inactivePhase`).
- *
- * Each panel carries its OWN `widthStyle` measure (Theory 900, tool 574) rather than both taking the active
- * tab's, so a hidden panel lays out at the width it will be shown at and its charts can be pre-fitted.
- *
- * `prefit` is the first-paint preload: a `display: none` panel has no width, so its charts cannot converge.
- * This mode lays the panel out for real but clips it to zero height with `inert` on. See
- * docs/DECISIONS.md#tab-panel-prefit.
- *
- * The `overflow-x-clip` rules and the one-sided transition both guard the same one-frame horizontal scrollbar,
- * which makes the fixed bottom nav jump. See docs/DECISIONS.md#tab-switch-scrollbar-jump before changing them.
+ * A tab's content region. Panels stay MOUNTED once rendered and toggle with `hidden`: chart sizing passes and
+ * scroll positions are expensive to rebuild, and `isVisible` is what children use to skip work while off
+ * screen. Each panel carries its OWN `widthStyle` measure, so a hidden panel lays out at the width it will be
+ * shown at and its charts can be pre-fitted.
+ * See docs/DECISIONS.md#tab-panel-prefit and docs/DECISIONS.md#tab-switch-scrollbar-jump before changing the
+ * `overflow-x-clip` rules or the one-sided transition.
  */
 function TabPanel({ label, active, prefit = false, leaving = false, animating = false, direction = "left", widthStyle, children }) {
-  // The leaving panel is invisible and zero-height, which is why there is so little machinery here: it only has
-  // to avoid being seen (`opacity: 0`) and taking space (`h-0`). An earlier version faded it out and needed
-  // measured `fixed` positioning to do so; the visible exit is what caused the ghosting.
+  // The leaving panel only has to avoid being seen and taking space, which is why there is so little
+  // machinery here.
   return (
     <div
       className={cn(
         "w-full self-center px-3",
-        // `h-0` instead of the margins whenever the panel is laid out but must occupy no height: both `prefit`
-        // and `leaving` display the panel so its contents lay out for real. Margin on a zero-height box still
-        // grows the document, which is the whole thing these modes exist to avoid.
+        // `h-0` instead of the margins whenever the panel lays out but must occupy no height: margin on a
+        // zero-height box still grows the document, which is what these modes exist to avoid.
         prefit || leaving ? "h-0 overflow-hidden" : "mt-3 mb-0",
 
-        // Keyed off `active` and it must stay that way: widening this to "active OR leaving" reintroduces the
-        // scrollbar jump, since a leaving panel is still laid out at its own measure. It also clips the slide,
-        // whose transform lives on the inner wrapper below for exactly that reason.
+        // Must stay keyed off `active`: "active OR leaving" reintroduces the scrollbar jump, a leaving panel
+        // still being laid out at its own measure, and clips the slide.
         !active && "overflow-x-clip",
 
-        // `absolute` alone does NOT keep the leaving panel out of the layout: an out-of-flow box still extends
-        // its containing block's scrollable overflow, so Theory's height propped the scrollbar open after
-        // switching to Tool. `h-0 overflow-hidden` above is the fix. What stays here is leaving-specific:
-        // `absolute` so the box cannot affect the flex column, `inset-x-0` so width resolves against `main`.
+        // `absolute` alone does NOT take the leaving panel out of layout: an out-of-flow box still extends its
+        // containing block's scrollable overflow, which is what `h-0 overflow-hidden` above handles. Here it
+        // keeps the box off the flex column, with `inset-x-0` resolving width against `main`.
         leaving && "pointer-events-none absolute inset-x-0",
 
-        // The arriving panel is clipped for the length of its entrance, because the enter animation's
-        // horizontal offset is itself overflow. `clip` not `hidden`: `hidden` would make this a scroll
-        // container, and an ancestor scroll container stops the sticky header pinning to the viewport.
+        // The enter animation's horizontal offset is itself overflow. `clip` not `hidden`: `hidden` makes this
+        // a scroll container, and an ancestor scroll container stops the sticky header pinning.
         active && !prefit && animating && "overflow-x-clip",
       )}
       /* `min(measure, 100%)` so the panel's border-box can never be what overflows the document. Inline rather
@@ -73,7 +61,7 @@ function TabPanel({ label, active, prefit = false, leaving = false, animating = 
       style={{
         maxWidth: `min(${widthStyle.maxWidth}px, 100%)`,
         // Feeds the `.tab-enter-*` / `.tab-leave-*` rules in index.css. Lives in JS because the same number
-        // drives the timer keeping a leaving panel mounted. Unset when idle, so no stray custom property.
+        // drives the timer keeping a leaving panel mounted.
         ...(active && animating ? { "--tab-transition-ms": `${TAB_TRANSITION_MS}ms` } : null),
       }}
       role="tabpanel"
@@ -103,31 +91,28 @@ function TabPanel({ label, active, prefit = false, leaving = false, animating = 
   );
 }
 
-// Parse once at module evaluation time so the URL is read before React renders.
 const BOOT_DEEP_LINK = parseTheoryDeepLink();
 
 /** Per-tab content measure, in px. TabPanel clamps it with `min(…, 100%)` rather than using it raw. */
 const TAB_WIDTH_STYLE = {
   tool: { maxWidth: FE_UI.page.maxWidthPx },
   theory: { maxWidth: FE_UI.page.theoryMaxWidthPx },
-  // The tool's measure, not theory's: two cards in a row want the narrower column, and it matches the
-  // bottom nav's own cap so the Admin item sits under the content it navigates.
+  // The tool's measure, not theory's: it matches the bottom nav's cap, so the Admin item sits under the
+  // content it navigates.
   admin: { maxWidth: FE_UI.page.maxWidthPx },
 };
 
 /**
  * How long the inactive panel stays in `prefit` before going back to `hidden`. Only has to outlast the charts'
- * startup (two rAFs each), and the panel is invisible throughout, so this is generous rather than tight.
+ * startup, and the panel is invisible throughout, so it is generous rather than tight.
  */
 const PREFIT_WINDOW_MS = 300;
 
 /**
  * How long a tab switch's cross-slide runs. Drives both the CSS animation (via `--tab-transition-ms`) and the
- * timer keeping the outgoing panel mounted, so it is one constant rather than a value in the stylesheet.
- *
- * Short on purpose: this fires on every navigation, and it should convey direction, not be watched. Do not
- * raise it to make the slide more visible; the keyframe distance is that knob, and it is the one that was
- * turned when the slide read as invisible on a phone. See docs/DECISIONS.md#tab-transition-duration.
+ * timer keeping the outgoing panel mounted, so it is one constant rather than a stylesheet value. Do not raise
+ * it to make the slide more visible; the keyframe distance is that knob.
+ * See docs/DECISIONS.md#tab-transition-duration
  */
 const TAB_TRANSITION_MS = 160;
 
@@ -162,42 +147,36 @@ export default function HomePage() {
     return tab;
   });
 
-  // Consumed-once ref: passed to TheoryContent on first render, then nulled so
-  // subsequent tab switches don't re-trigger the scroll/expand.
+  // Consumed-once: nulled after the first render so later tab switches don't re-trigger the scroll/expand.
   const deepLinkRef = useRef(BOOT_DEEP_LINK);
 
-  // Flipped by an in-tab scroll (matrix jump, deep-link) so the restore loop yields to it. Restore still runs
-  // first, landing at the remembered scroll, then the jump takes over. Reset by the hook on each tab switch.
-  // This is what lets a shared link restore the previous position before gliding, rather than starting at top.
+  // Flipped by an in-tab scroll so the restore loop yields to it. Restore still runs first and the jump then
+  // takes over, which is what lets a shared link glide from the remembered position rather than from the top.
   const cancelRestoreRef = useRef(false);
 
   const { saveActiveTabScroll } = useTabScrollMemory(activeTab, cancelRestoreRef);
 
-  // Cross-tab jump from a tool-form pillar's help icon into the theory matrix. The `seq` bump makes
-  // repeated clicks on the same pillar re-trigger the expand + scroll even when the tab is already open.
+  // Cross-tab jump from a pillar's help icon into the theory matrix. The `seq` bump makes repeated clicks on
+  // the same pillar re-trigger the expand + scroll even when the tab is already open.
   const [matrixNav, setMatrixNav] = useState(null);
 
-  // The cross-slide's only state: which tab is leaving and which way. One object rather than two pieces of
-  // state so tab and direction can never be applied on different renders, which would show a frame sliding the
-  // wrong way. Null whenever nothing is animating.
+  // One object rather than two pieces of state, so tab and direction can never be applied on different
+  // renders and show a frame sliding the wrong way.
   const [tabExit, setTabExit] = useState(null);
   const exitTimerRef = useRef(0);
 
-  // Clear the timer if the component unmounts mid-transition, so a stale callback can't set state on a
-  // torn-down tree. (Re-entrant switches clear it in `goToTab` itself — see there.)
+  // Re-entrant switches clear this in `goToTab` itself; here it guards unmount mid-transition.
   useEffect(() => () => clearTimeout(exitTimerRef.current), []);
 
   /**
-   * The one place a tab actually changes. Both entry points (a nav tap, and the pillar help icon's jump into
-   * the matrix) go through here so the transition and the bookkeeping cannot drift between them.
-   *
-   * The caller is responsible for the no-op check; by the time we're here the tab IS changing.
+   * The one place a tab changes: both a nav tap and the pillar help icon's jump route through here, so the
+   * transition and the bookkeeping cannot drift. The CALLER owns the no-op check.
    */
   const goToTab = (nextTab) => {
     saveActiveTabScroll();
 
-    // A switch during a switch replaces the one in flight rather than queueing behind it, so only ever one
-    // panel is exiting: the panel that was arriving starts leaving from wherever it had got to.
+    // A switch during a switch replaces the one in flight rather than queueing, so only one panel is ever
+    // exiting.
     clearTimeout(exitTimerRef.current);
     setTabExit({ tab: activeTab, direction: slideDirection(activeTab, nextTab) });
     exitTimerRef.current = setTimeout(() => setTabExit(null), TAB_TRANSITION_MS);
@@ -206,9 +185,8 @@ export default function HomePage() {
     syncTabInUrl(nextTab);
   };
 
-  // Keeps the inactive tab's charts off the first-paint path: deferred (active only) → prefit (mounted,
-  // clipped, converging via TabPanel's `prefit`) → mounted (hidden, already fitted). Makes the first switch
-  // to Theory a memo hit instead of eight converge loops firing at once.
+  // deferred (active only) → prefit (mounted, clipped, converging) → mounted (hidden, already fitted), so
+  // the first switch to Theory is a memo hit instead of eight converge loops firing at once.
   const [inactivePhase, setInactivePhase] = useState("deferred");
   const inactiveMounted = inactivePhase !== "deferred";
 
@@ -227,9 +205,8 @@ export default function HomePage() {
     return () => clearTimeout(timer);
   }, [inactivePhase]);
 
-  // Theory tab's version-bump dots. `unseenSections` per heading, `theoryHasUnseenUpdates` their aggregate
-  // on the tab label. Dismissal requires BOTH a section's head and tail seen, not just tab-open, so a
-  // drive-by visit does not clear the dot; half-read progress persists across sessions.
+  // Version-bump dots. Dismissal requires BOTH a section's head and tail seen, not just tab-open, so a
+  // drive-by visit does not clear the dot.
   const {
     hasUnseenUpdates: theoryHasUnseenUpdates,
     unseenSections,
@@ -240,15 +217,10 @@ export default function HomePage() {
 
   const handleTabChange = (nextTab) => {
     if (nextTab === activeTab) {
-      // Re-tapping the active tab scrolls it to the top, the platform convention, but ONLY on the tool tab.
-      // From a bottom bar under the thumb the active item is the easiest thing to hit by accident, so this is
-      // only worth its risk where a mis-tap is cheap: the tool is two screenfuls, and theory is a long read
-      // where losing your place costs real effort (it has the ScrollTopFab instead, which cannot be hit by
-      // accident). Smooth, matching the FAB: the motion is the feedback, and it makes a stray tap legible
-      // rather than a teleport.
-      //
-      // This is shorthand for the user flicking to the top themselves, so it takes over from a restore burst
-      // still in flight exactly as a real gesture would — via the same `cancelRestoreRef` the matrix jump uses.
+      // Re-tap-to-top, the platform convention, but ONLY on the tool tab: from a bottom bar under the thumb
+      // the active item is the easiest thing to mis-hit, and the tool is two screenfuls where theory is a long
+      // read (it gets the ScrollTopFab instead). Smooth, so a stray tap reads as motion rather than a
+      // teleport. Cancels a restore burst in flight, as a real gesture would.
       if (activeTab === "tool" && getWindowScrollY() > 0) {
         cancelRestoreRef.current = true;
         scrollWindowToTop({ behavior: "smooth" });
@@ -264,18 +236,16 @@ export default function HomePage() {
       return;
     }
     if (activeTab !== "theory") {
-      // Theory restores its remembered scroll first; the matrix jump below then takes over. The slide is a
-      // transform, so it moves no scroll coordinates and the two do not interfere.
+      // The slide is a transform, so it moves no scroll coordinates and does not interfere with the restore.
       goToTab("theory");
     }
     setMatrixNav((prev) => ({ pillarId, seq: (prev?.seq ?? 0) + 1, cancelRestoreRef }));
   };
 
-  // `min-w` sits on `main` so it measures against the VIEWPORT, not a nested panel's smaller effective floor.
-  // Nothing here may clip that overflow, or the right edge becomes unreachable instead of scrollable.
-  // `main` has no max-width (that's per-tab, on the panels) so the sticky header does not change width or
-  // shape on tab switch. `flex-1`, not a viewport height, keeps viewport units out of this box — see
-  // docs/DECISIONS.md#tab-switch-scrollbar-jump for why that matters.
+  // `min-w` sits on `main` so it measures against the VIEWPORT, not a nested panel's smaller floor, and
+  // nothing here may clip that overflow or the right edge stops being scrollable. No max-width (that is
+  // per-tab, on the panels) so the sticky header does not reshape on tab switch. `flex-1` rather than a
+  // viewport height: see docs/DECISIONS.md#tab-switch-scrollbar-jump
   return (
     /* `bg-page-base` matches `body` in index.css, and the pairing is the point: this wrapper paints the
        surround beside the content measure, and `body`'s identical value is what an over-pull past the document
@@ -302,7 +272,7 @@ export default function HomePage() {
             chrome that earns its permanent 56px on every screenful of both tabs. */}
         <AppShellHeaderStack />
 
-        {/* `active || inactiveMounted` rather than `active`: a panel is mounted for good once it has been
+        {/* Not just `active`: a panel is mounted for good once it has been
             rendered even once, so switching away never tears down a chart or a scroll position. Only the very
             first render can skip a panel — see `inactivePhase`. */}
         <TabPanel
@@ -389,8 +359,8 @@ export default function HomePage() {
             href="https://www.linkedin.com/in/zhuhangloo/"
             target="_blank"
             rel="noopener noreferrer"
-            // `target="_blank"` means the click never unloads this page, so the event has time to send without
-            // needing `transport_type: beacon`. Same for the licence link below.
+            // `target="_blank"` never unloads this page, so the event has time to send without
+            // `transport_type: beacon`. Same for the licence link below.
             onClick={() => track("author_profile_clicked")}
             className="underline underline-offset-2 hover:text-slate-700"
           >

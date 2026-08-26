@@ -408,8 +408,12 @@ function stub(moves) {
   // copy" detaches first and instead inherits the stamp on the draft (`draftFrameworkVersion`), which the
   // write falls back to — a clone gets a fresh savedAt, so a null stamp would re-derive from the wrong date.
   const cloneRow = (draft, source, inherited) => {
-    const unchanged = source != null && levelsMatch(draft.pillarLevels, source.pillarLevels);
-    const carried = unchanged ? (resolveProfileStamp({ profile: source }).version ?? null) : (source == null ? inherited : null);
+    let carried = null;
+    if (source == null) {
+      carried = inherited;
+    } else if (levelsMatch(draft.pillarLevels, source.pillarLevels)) {
+      carried = resolveProfileStamp({ profile: source }).version ?? null;
+    }
     return { ...draft, savedAt: NOW, frameworkVersion: carried ?? LIVE };
   };
   check(g, "Save new carries the source stamp", cloneRow({ ...stored, title: "Copy" }, stored, null).frameworkVersion, "4.1");

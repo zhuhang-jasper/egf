@@ -1,18 +1,7 @@
 import { ADMIN_UNLOCK_KEY } from "@/constants/storage";
 
-/**
- * Admin (dev) unlock. `?admin=1` asks for a password (AdminUnlockPrompt renders the form) and persists the
- * result; `?admin=0` clears it. The param is stripped once consumed. Resolved once at module-eval, since the
- * URL is already correct before React mounts and this need not react mid-session. localStorage access is
- * guarded, so a disabled store simply stays locked.
- *
- * The password is hashed at build time (PBKDF2, see vite-plugins/resolve-admin-hash.js) from the
- * VITE_ADMIN_PASSWORD Actions secret, so only the digest ships. That keeps the plaintext out of the bundle;
- * it does NOT protect the gate, which is still a client-side check anyone can bypass in devtools.
- * See docs/DECISIONS.md#admin-gating-is-not-a-security-boundary.
- *
- * When the hash is absent (local dev, preview, forks) admin stays locked rather than falling back.
- */
+// Build-time PBKDF2 digest of VITE_ADMIN_PASSWORD; absent in local dev, preview and forks, where admin
+// stays locked. See docs/DECISIONS.md#admin-gating-is-not-a-security-boundary.
 const ADMIN_PASSWORD_HASH = import.meta.env.VITE_ADMIN_PASSWORD_HASH;
 const PBKDF2 = import.meta.env.VITE_ADMIN_PBKDF2;
 
@@ -29,17 +18,13 @@ function stripAdminParam() {
   }
 }
 
-/**
- * NOTHING HERE MAY BLOCK. This module is evaluated before React mounts, so a `window.prompt` (which this
- * used to do) white-screens the app wherever modals are suppressed. This only reports that the question is
- * outstanding; AdminUnlockPrompt renders the form after mount.
- * See docs/DECISIONS.md#admin-gating-is-not-a-security-boundary.
- */
+// NOTHING HERE MAY BLOCK: this runs at module-eval, before React mounts. It only reports that the password
+// question is outstanding; AdminUnlockPrompt renders the form after mount.
+// See docs/DECISIONS.md#admin-gating-is-not-a-security-boundary.
 function resolveAdminState() {
   if (typeof window === "undefined") {
     return { isAdmin: false, passwordRequested: false };
   }
-  // No password configured (local dev, preview, forks): stay locked. Asking would be unanswerable.
   if (!ADMIN_PASSWORD_HASH) {
     stripAdminParam();
     return { isAdmin: false, passwordRequested: false };
@@ -51,13 +36,12 @@ function resolveAdminState() {
       return { isAdmin: false, passwordRequested: false };
     }
     const alreadyUnlocked = localStorage.getItem(ADMIN_UNLOCK_KEY) === "1";
-    // THE UNLOCK CHECK COMES BEFORE THE REQUEST, so `?admin=1` on a device that is already unlocked is a
-    // no-op rather than a second password question. A wrong answer cannot lock a device out either: the
-    // stored state is returned untouched, and only `?admin=0` ever clears it.
+    // Unlock check precedes the request, so `?admin=1` on an unlocked device is a no-op rather than a
+    // second password question.
     return { isAdmin: alreadyUnlocked, passwordRequested: param === "1" && !alreadyUnlocked };
   } catch {
-    // No localStorage: the unlock cannot be persisted, so there is nothing an answer could achieve
-    // beyond this load — and `unlockAdmin` reloads to apply it. Don't ask a question we can't honour.
+    // Without localStorage the unlock cannot outlive the reload `unlockAdmin` uses to apply it, so don't
+    // ask a question we can't honour.
     return { isAdmin: false, passwordRequested: false };
   } finally {
     stripAdminParam();
@@ -72,13 +56,8 @@ export const IS_ADMIN = ADMIN_STATE.isAdmin;
 /** True when `?admin=1` was visited on a locked device — AdminUnlockPrompt asks for the password. */
 export const ADMIN_PASSWORD_REQUESTED = ADMIN_STATE.passwordRequested;
 
-/**
- * PBKDF2 over WebCrypto, matching the build-time parameters exactly. Async by nature — `deriveBits` has no
- * sync form — which is why `unlockAdmin` is async and only ever called from an event handler, never on the
- * module-eval path that `IS_ADMIN` depends on.
- *
- * Returns "" when crypto.subtle is unavailable (non-secure context), which reads as a failed unlock.
- */
+// Async because `deriveBits` has no sync form; returns "" when crypto.subtle is unavailable, which reads as
+// a failed unlock.
 async function derivePasswordHash(password) {
   if (!password || !globalThis.crypto?.subtle) {
     return "";
@@ -102,7 +81,7 @@ async function derivePasswordHash(password) {
   }
 }
 
-/** Constant-time string compare, so a wrong answer's failure point is not observable in the timing. */
+/** Constant-time compare, so a wrong answer's failure point is not observable in the timing. */
 function timingSafeEqual(a, b) {
   if (a.length !== b.length) {
     return false;
@@ -115,20 +94,12 @@ function timingSafeEqual(a, b) {
 }
 
 /**
- * Check `password` and, if it is right, unlock and RELOAD.
- *
- * The reload is what keeps `IS_ADMIN` a plain module constant: everything derived from it is computed at
- * module-eval (see the note above), so re-evaluating the whole bundle is both the simplest and the most
- * complete way to apply a mid-session unlock. Alternative would be making the flag reactive state and
- * threading it through every consumer, for a once-per-device event.
- *
- * `.trim()` because a soft keyboard will happily append a space, and a trailing space is an invisible
- * wrong password.
- *
- * @returns a promise resolving false when the password is wrong. On success the page reloads instead.
+ * Unlocks and RELOADS on a correct password, resolving false otherwise. The reload is what keeps `IS_ADMIN` a
+ * plain module constant: re-evaluating the bundle applies a mid-session unlock everywhere it is derived from.
+ * `.trim()` because a soft keyboard's trailing space is an invisible wrong password.
  */
 export async function unlockAdmin(password) {
-  // Guard the unset case explicitly: an empty answer must not match an absent hash.
+  // Explicit, so an empty answer cannot match an absent hash.
   if (!ADMIN_PASSWORD_HASH) {
     return false;
   }
@@ -139,7 +110,7 @@ export async function unlockAdmin(password) {
   try {
     localStorage.setItem(ADMIN_UNLOCK_KEY, "1");
   } catch {
-    // A store that cannot be written means the reload would come back locked. Nothing useful to do.
+    // An unwritable store means the reload comes back locked.
     return false;
   }
   window.location.reload();
@@ -150,50 +121,32 @@ export async function unlockAdmin(password) {
 export const FEATURE_SCORES_SETTINGS = IS_ADMIN;
 
 /**
- * When false, hides the "Chart" and "Level labels" display toggles. Admin-gated because both strip
- * information the exported image needs to stand on its own: the polygon IS the data and the 0-5 ticks are the
- * only scale to read it against.
- *
- * Gating the toggle is not enough on its own: parseChartDisplay() in utils/storage.js also forces both flags
- * off whenever this is false, or a draft persisted while the toggle was reachable would strand a public user
- * with a broken chart and no way back.
+ * When false, hides the "Chart" and "Level labels" toggles: both strip information the exported image needs
+ * to stand on its own. parseChartDisplay() in utils/storage.js must also force both flags off, or a draft
+ * persisted while the toggle was reachable strands a public user with a broken chart.
  */
 export const FEATURE_CHART_STRUCTURE_SETTINGS = IS_ADMIN;
 
 /**
- * When false, hides the "Attribution" toggle so every exported chart PNG carries the credit line.
- *
- * The line is what makes a shared image traceable: an exported chart travels without the message it was
- * posted with, and the framework content is CC BY-NC, which requires attribution. So the public build has no
- * control to remove it, and parseChartDisplay() forces the flag back off whenever this is false, or a draft
- * persisted while the toggle was reachable would keep stripping it.
- *
- * Admin-gated rather than absent because the author's own materials (poster, README, slides) already carry
- * the credit around the image and do not need it burned in twice.
+ * When false, hides the "Attribution" toggle so every exported PNG carries the credit line, which CC BY-NC
+ * requires and which travels with an image that has left its posting context. Admin-gated rather than absent
+ * because the author's own materials already carry the credit around the image.
+ * parseChartDisplay() must also force the flag off, or a draft persisted while the toggle was reachable
+ * keeps stripping it.
  */
 export const FEATURE_CHART_ATTRIBUTION_SETTING = IS_ADMIN;
 
 /**
- * When false, hides the high-res export toggle so every exported chart PNG uses the default scale
- * (exportImageCssScale, tuned for social feeds — see the note there).
- *
- * The default is the right one for sharing: it lands just above the width the feeds render at, and it keeps the
- * file small. The higher scale only pays off when the still is blown up well past that — print, or stretched
- * across a slide — which is an authoring need rather than a sharing one, so it is admin-gated instead of a
- * public choice nobody has the context to make.
- *
- * Gating the toggle is not enough on its own: parseChartDisplay() in utils/storage.js also forces the flag
- * off whenever this is false, or a draft persisted while the toggle was reachable would leave a public user
- * exporting oversized files they never asked for and have no control to switch off.
+ * When false, pins exports to the default scale (exportImageCssScale, tuned for social feeds). The higher
+ * scale only pays off in print or across a slide, an authoring need rather than a sharing one.
+ * parseChartDisplay() must also force the flag off, or a draft persisted while the toggle was reachable
+ * leaves a public user exporting oversized files with no control to switch off.
  */
 export const FEATURE_CHART_UHD_EXPORT_SETTING = IS_ADMIN;
 
 /**
- * When false, hides the "Legend" display toggle so every chart carries the cluster legend.
- *
- * Deliberately separate from FEATURE_CHART_STRUCTURE_SETTINGS despite both being IS_ADMIN today, because only
- * this one is a judgement call: hiding the polygon makes the image unreadable, whereas hiding the legend only
- * costs reach. The legend is what names the model and marks a shared chart as this framework rather than a
- * generic radar. That is a promotion bet worth revisiting, so keep it independently flippable.
+ * When false, every chart carries the cluster legend. Separate from FEATURE_CHART_STRUCTURE_SETTINGS despite
+ * both being IS_ADMIN today: hiding the polygon makes the image unreadable, whereas hiding the legend only
+ * costs the reach of naming the framework. That bet is worth revisiting, so keep it independently flippable.
  */
 export const FEATURE_CHART_LEGEND_SETTING = IS_ADMIN;

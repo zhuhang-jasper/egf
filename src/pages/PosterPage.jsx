@@ -21,8 +21,7 @@ import { copyShareToClipboard, downloadSharePng } from "@/utils/export-image";
 // bands toggle independently, so height is `auto` and `useMeasuredHeight` reads it back out.
 const CANVAS_W = 1080;
 
-// A deliberately well-rounded-but-varied profile so the radar reads as a rich,
-// asymmetric shape rather than a flat ring — purely illustrative for the poster.
+// Illustrative only: varied so the radar reads as an asymmetric shape rather than a flat ring.
 const POSTER_PROFILE = {
   coding: 4.5,
   domainLogic: 4,
@@ -37,10 +36,8 @@ const POSTER_PROFILE = {
 
 const POSTER_LEVELS = PILLAR_ORDER.map((id) => POSTER_PROFILE[id] ?? 3);
 
-// Lookups keyed by pillar id, derived from the theory data, so the ring cards reuse the canonical
-// signature questions and cluster colours straight from CLUSTERS (constants/framework.js) — `midtone` is
-// the same static tone the theory tab's career-track titles/badges use, so no separate poster palette to
-// keep in sync.
+// Derived from the theory data so the ring cards reuse the canonical signature questions and CLUSTERS
+// colours; `midtone` is the tone the theory tab's career-track titles use, so there is no poster palette.
 const PILLAR_INFO = Object.fromEntries(
   PILLAR_CLUSTER_GROUPS.flatMap((group) =>
     group.pillars.map((p) => [
@@ -61,21 +58,18 @@ function splitPillarLabel(label) {
   return { emoji, name: rest };
 }
 
-// The 9 pillars in radar-axis order, each tagged with the angle of its axis so the ring
-// card and the chart spoke line up. Axis 0 is at the top (12 o'clock); axes step clockwise.
+// Tagged with each axis's angle so the ring card and the chart spoke line up. Axis 0 is at 12 o'clock,
+// stepping clockwise.
 const RING_PILLARS = PILLAR_ORDER.map((id, i, arr) => {
   const { emoji, name } = splitPillarLabel(getPillarLabel(id));
   const angleDeg = (360 / arr.length) * i - 90;
   return { id, emoji, name, angleDeg, ...PILLAR_INFO[id] };
 });
 
-// Emoji + cluster colour keyed by the plain pillar name (no organ), so a track's
-// keyFocusPillars (e.g. "Domain Logic") resolve to chips.
+// Keyed by the plain pillar name (no organ), so a track's keyFocusPillars resolve to chips.
 const PILLAR_BY_NAME = Object.fromEntries(RING_PILLARS.map((p) => [p.name, p]));
 
-// Each track's colour follows its dominant cluster, read straight from CLUSTERS: `surfaceBg`/`bezel` are the
-// card fill/brightened border; `title`/`badge` both use `midtone`, also for the chip ring — no more plain
-// `color`/`accent` anywhere on the poster.
+// Each track's colour follows its dominant cluster, read straight from CLUSTERS.
 function clusterTone(id) {
   const cluster = CLUSTERS[id];
   return { surfaceBg: cluster.surfaceBg, bezel: cluster.bezel, title: cluster.midtone, badge: cluster.midtone };
@@ -86,9 +80,7 @@ const TRACK_TONE = {
   "people-delivery": clusterTone("operational"),
 };
 
-// Career tracks rebuilt from the canonical profiles: the characteristic chart shape,
-// the key pillars (as chips), and the S-level → role ladder. No prose. People & Delivery has a
-// 5th rung (S7 CTO); the first four (S3–S6) still align row-for-row with the other two tracks.
+// People & Delivery has a 5th rung (S7 CTO); the first four still align row-for-row with the other tracks.
 const TRACKS = CAREER_TRACK_PROFILES.map((t, i) => ({
   id: t.id,
   name: t.name,
@@ -103,8 +95,8 @@ const TRACKS = CAREER_TRACK_PROFILES.map((t, i) => ({
 }));
 
 /**
- * Visual fit-scale for the preview only, fitting the viewport WIDTH. renderShareBlob strips the transform
- * before capture, so the export stays pixel-exact while the preview scales.
+ * Visual fit-scale for the preview only. renderShareBlob strips the transform before capture, so the export
+ * stays pixel-exact while the preview scales.
  */
 function useFitScale() {
   const [scale, setScale] = useState(1);
@@ -122,9 +114,8 @@ function useFitScale() {
 }
 
 /**
- * The article's own rendered height in CANVAS pixels — measured, not summed, so it cannot drift from the
- * real layout. `/ scale` undoes the preview transform; rounded UP so a fractional height cannot crop a
- * device pixel off the export.
+ * The article's rendered height in CANVAS pixels: measured, not summed, so it cannot drift from the real
+ * layout. `/ scale` undoes the preview transform, rounded UP so a fraction cannot crop a device pixel.
  */
 function useMeasuredHeight(ref, scale) {
   const [height, setHeight] = useState(null);
@@ -147,33 +138,17 @@ function useMeasuredHeight(ref, scale) {
   return height;
 }
 
-// The poster's PNG export runs through the shared share-image pipeline (font embedding, the off-screen
-// clone, canvas mirroring, snapdom capture) — see src/utils/export-image.js. Height is passed per call
-// rather than baked in, since it is whatever the content came out to (see useMeasuredHeight).
+// Runs through the shared share-image pipeline, see src/utils/export-image.js. Height is passed per call
+// since it is whatever the content came out to (see useMeasuredHeight).
 const POSTER_FILENAME = "9-pillar-engineer-growth-framework-poster.png";
 const copyPosterToClipboard = (node, height) => copyShareToClipboard(node, CANVAS_W, height, "poster");
 const downloadPosterPng = (node, height) => downloadSharePng(node, CANVAS_W, height, POSTER_FILENAME, "poster");
 
 /**
- * The credit line at the foot of the paper. Shares the chart export's ownership head but ends on the app URL
- * rather than the framework name, which the masthead above already carries — see SITE_COPY.share.
- *
- * A plain DOM element, unlike the chart export's hand-painted canvas band: the poster is rasterized from the
- * DOM by snapdom, so it needs no measuring, and it renders on screen exactly as it will in the PNG.
- *
- * ONE GAP FOR EVERY BAND — `mt-10`, the literal match for the paper's `pb-10`, so the credit sits in an even
- * 40px band whichever band precedes it. Keep it flat: if a band reads loose against it, the fault is that
- * band's own bottom margin, so fix it there (the ring's `mb-3` was the first such case) rather than tuning this
- * number per band.
- *
- * `spaced` is false only when every band is off, leaving the credit alone on the paper with the top padding as
- * its whole margin.
- *
- * SLATE-500 AND WEIGHT 400, the one credit grey and the one credit weight, shared by every footer in the app:
- * this one, the app footer's screen and print forms (pages/HomePage.jsx), and the chart export's painted band
- * (exportImageAttributionColor in styles/ui.js and measureAttribution in utils/copy-chart-image.js, where the
- * reasoning lives). No `font-medium` here for that reason. Tailwind's class rather than the constant because this
- * footer is ordinary DOM — but if the grey changes, it changes in both.
+ * The credit line at the foot of the paper. Ends on the app URL rather than the framework name, which the
+ * masthead above already carries (see SITE_COPY.share). `spaced` is false only when every band is off, leaving
+ * the credit alone with the top padding as its whole margin.
+ * See docs/DECISIONS.md#one-credit-grey-one-credit-weight
  */
 function PosterCredit({ spaced }) {
   return <p className={`shrink-0 text-center text-[19px] text-slate-500 ${spaced ? "mt-10" : ""}`}>{SITE_COPY.share.posterAttribution}</p>;
@@ -190,38 +165,32 @@ function SectionLabel({ children }) {
   );
 }
 
-// Radial ring geometry, in poster pixels. The ring is an ellipse — wider than tall — so the
-// nine cards spread across the available width and stay clear of one another top-to-bottom.
+// Radial ring geometry, in poster pixels. An ellipse, wider than tall, so the nine cards spread across the
+// available width and stay clear of one another top-to-bottom.
 const RING_W = 984; // stage width (canvas minus side padding)
 // The ring's LAYOUT BOX, not the height the band occupies on paper. Every label's `cy` is measured from
-// `RING_H / 2`, so this is the ring's vertical ORIGIN as much as its size — changing it moves all nine labels
-// rather than trimming the box. Deliberately taller than the labels need, to keep the placement math simple;
-// `PillarRing` measures their real union and pulls the band in to fit, so the slack costs nothing on paper.
+// `RING_H / 2`, so changing this moves all nine labels rather than trimming the box. Deliberately taller than
+// the labels need; `PillarRing` measures their union and pulls the band in, so the slack costs nothing.
 const RING_H = 620;
 const RING_RX = 300; // horizontal radius to each label centre
 const RING_RY = 250; // vertical radius to each label centre — pulled in toward the hub
-// Diagonal/corner labels (Architecture, Domain Logic, Process, Product Sense…) sit closer to
-// their neighbours and the hub, so push them further out by up to this much; |sin(2θ)| peaks
-// at the 45° diagonals and is zero at the cardinal (top/bottom/side) positions.
+// Diagonal labels sit closer to their neighbours and the hub, so push them out by up to this much;
+// |sin(2θ)| peaks at the 45° diagonals and is zero at the cardinals.
 const RING_CORNER_BOOST = 64;
 const CARD_W = 360; // label width — wide enough for the longest question to fit in exactly 2 rows
 const CHART_SIZE = 400; // box for the centred radar hub — larger so its grid reaches the labels
-// Track-card radar. A constant, not a Tailwind arbitrary value, because PosterRadar renders at an
-// explicit px size (responsive off) and the two must not drift apart.
+// A constant, not a Tailwind arbitrary value: PosterRadar renders at an explicit px size with responsive
+// off, and the two must not drift apart.
 const TRACK_CHART_SIZE = 170;
-// Poster-only grid tone. The shared FE_UI value (0.15 alpha) is tuned for a backlit screen and reads
-// washed out on the printed/exported poster, so the web spokes and rings get their own darker alpha here.
+// FE_UI's 0.15 alpha is tuned for a backlit screen and reads washed out on the exported poster.
 const POSTER_GRID_COLOR = "rgba(0, 0, 0, 0.32)";
-// Tick text + backdrop, aligned with the theory HERO radar (THEORY_CHART_UI sets the same 0.4 text) rather
-// than reading its preset: the poster's grid above is deliberately darker, so the match is chosen, not
-// inherited — and the backdrop runs a touch more solid here for that reason. The tool chart keeps FE_UI's
-// softer 0.3/0.5, where the ticks are a background scale beside live inputs rather than a legend.
+// Aligned with the theory hero radar rather than reading its preset: the grid above is deliberately darker,
+// so the match is chosen, not inherited, and the backdrop runs a touch more solid for that reason.
 const POSTER_TICK_BACKDROP_COLOR = "rgba(255, 255, 255, 0.65)";
 const POSTER_TICK_LABEL_COLOR = "rgba(0, 0, 0, 0.45)";
-// Backdrop padding, PRE-MULTIPLIED rather than derived: FE_UI's {1.5, 2} is absolute px tuned for the hero's
-// ~11px ticks, and spreading it under the poster's fixed 20px left the plate proportionally half as inset.
-// These are that padding x 1.8 (= 20/11, the font ratio), so the pill's optical inset matches the hero's.
-// Hardcoded because both inputs are constants — if FE_UI.tickBackdropPad changes, recompute these.
+// PRE-MULTIPLIED, not derived: FE_UI's {1.5, 2} is absolute px tuned for the hero's ~11px ticks, so under the
+// poster's fixed 20px it left the plate half as inset. These are that padding x 1.8 (= 20/11, the font ratio).
+// If FE_UI.tickBackdropPad changes, recompute these.
 const POSTER_TICK_BACKDROP_PAD = { top: 2.7, bottom: 2.7, left: 3.6, right: 3.6 };
 
 // Per-pillar manual nudges (px) after the ring math, to relieve specific crowding.
@@ -284,17 +253,9 @@ function PillarNode({ pillar }) {
 Chart.register(RadarController, RadialLinearScale, PointElement, LineElement, Filler);
 
 /**
- * Self-contained square radar. Unlike StaticCompetencyChart it does NOT auto-measure its frame.
- *
- * NOT `responsive`, which is a bug fix: the poster renders under a `transform: scale()`, and Chart.js's
+ * Self-contained square radar, which unlike StaticCompetencyChart does NOT auto-measure its frame. `size` must
+ * therefore match the box. NOT `responsive`: the poster renders under a `transform: scale()`, and Chart.js's
  * observer sizes the canvas from the SCALED rect inside an unscaled box, collapsing it to a blob.
- *
- * @param levels       per-pillar values in fe order
- * @param size         edge length in px — must match the box, since nothing measures it
- * @param showClusters draw the colour-coded cluster wedges (the track mini-charts use this)
- * @param showPolygon  draw the data polygon (false on the hub → just a labelled L1–L5 grid)
- * @param showTicks    show the L1–L5 ring tick labels
- * @param lineWidth    stroke width
  */
 function PosterRadar({ levels, size, showClusters = false, showPolygon = true, showTicks = false, lineWidth = 3, pointRadius = 3 }) {
   const canvasRef = useRef(null);
@@ -339,9 +300,8 @@ function PosterRadar({ levels, size, showClusters = false, showPolygon = true, s
               backdropColor: POSTER_TICK_BACKDROP_COLOR,
               backdropPadding: POSTER_TICK_BACKDROP_PAD,
               showLabelBackdrop: (ctx) => ctx.tick?.value >= 1 && ctx.tick?.value <= 5,
-              // 500, a notch above the hero's default-normal ticks: the poster prints at a fixed canvas over a
-              // darker grid, where normal read thin. The size stays fixed at 20 (not the hero's round(width/48)
-              // ramp), which would give an unreadable 8px here.
+              // A notch above the hero's normal ticks, which read thin over the darker grid. Size stays fixed
+              // at 20; the hero's round(width/48) ramp would give an unreadable 8px here.
               font: { size: 20, weight: 500, family: TICK_FONT_FAMILY },
               callback: (v) => (v >= 1 && v <= 5 ? `L${v}` : ""),
               z: 1,
@@ -356,9 +316,8 @@ function PosterRadar({ levels, size, showClusters = false, showPolygon = true, s
     });
     return () => chart.destroy();
   }, [levels, size, showClusters, showPolygon, showTicks, lineWidth, pointRadius]);
-  // width/height ATTRIBUTES, not CSS: with responsive off these are the render size Chart.js draws at,
-  // and the matching CSS box keeps the bitmap 1:1 with its layout box (the poster's own scale does the
-  // visual sizing). devicePixelRatio still applies on top, so the export stays sharp.
+  // ATTRIBUTES, not CSS: with responsive off these are the size Chart.js draws at, and the matching CSS box
+  // keeps the bitmap 1:1 with its layout box. devicePixelRatio still applies on top.
   return <canvas ref={canvasRef} width={size} height={size} style={{ width: size, height: size }} aria-label="competency radar chart" />;
 }
 
@@ -369,8 +328,8 @@ function PosterRadar({ levels, size, showClusters = false, showPolygon = true, s
  */
 function PillarRing() {
   const innerRef = useRef(null);
-  // null until measured — until then the band reserves the full RING_H, which is the pre-existing
-  // behaviour and never smaller than the fit, so the first paint can't clip anything.
+  // Until measured the band reserves the full RING_H, never smaller than the fit, so the first paint cannot
+  // clip anything.
   const [fit, setFit] = useState(null);
 
   useEffect(() => {
@@ -393,8 +352,8 @@ function PillarRing() {
         bottom = Math.max(bottom, (r.bottom - base.top) / scale);
       }
       if (Number.isFinite(top) && Number.isFinite(bottom)) {
-        // Clamp to the layout box: the labels' boxes overhang it horizontally (and the paper clips that),
-        // so refuse to report a fit taller than the space the positions were computed in.
+        // The labels' boxes overhang horizontally and the paper clips that, so never report a fit taller than
+        // the space the positions were computed in.
         setFit({ top: Math.max(0, Math.floor(top)), height: Math.min(RING_H, Math.ceil(bottom - Math.max(0, top))) });
       }
     };
@@ -408,8 +367,8 @@ function PillarRing() {
   }, []);
 
   return (
-    // `overflow-hidden` on the clamp box: once it is shorter than RING_H, the inner box's unused bottom
-    // slack must not push the paper's own height back out.
+    // Once the clamp box is shorter than RING_H, the inner box's unused bottom slack must not push the
+    // paper's height back out.
     <div className="relative mx-auto overflow-hidden" style={{ width: RING_W, height: fit ? fit.height : RING_H }}>
       {/* Lifted by the measured top slack, so trimming the box crops empty space rather than the labels. */}
       <div ref={innerRef} className="absolute left-0" style={{ width: RING_W, height: RING_H, top: fit ? -fit.top : 0 }}>
@@ -427,8 +386,7 @@ function PillarRing() {
 }
 
 /**
- * One track column: its characteristic radar SHAPE, the key pillars as emoji chips, and the
- * L-level → role ladder. No prose — the visual shape carries the meaning.
+ * One track column: its characteristic radar shape, the key pillars as chips, and the L-level role ladder.
  */
 function TrackCard({ careerTrack }) {
   return (
@@ -445,7 +403,7 @@ function TrackCard({ careerTrack }) {
         <PosterRadar levels={careerTrack.levels} size={TRACK_CHART_SIZE} showClusters lineWidth={2.5} pointRadius={0} />
       </div>
 
-      {/* Key pillars — plain names, no emoji. Fixed height (2 rows) so the role ladders below
+      {/* Plain names, no emoji. Fixed height (2 rows) so the role ladders below
           start at the same Y across all three cards and align row-for-row. */}
       <div className="-mx-3 flex h-[80px] flex-wrap content-center justify-center gap-[4px] overflow-hidden">
         {careerTrack.keyPillars.map((p) => (
@@ -490,8 +448,8 @@ function TrackCard({ careerTrack }) {
 }
 
 /**
- * One toggle row, a copy of {@link MenuCheckboxItem} rather than an import since this menu needs its own colours
- * for the poster's BLACK chrome. `select-none` so repeated clicks do not select the label.
+ * One toggle row, a copy of {@link MenuCheckboxItem} rather than an import since this menu needs its own
+ * colours for the poster's black chrome.
  */
 function PosterToggle({ label, checked, onChange }) {
   return (
@@ -509,8 +467,8 @@ function PosterToggle({ label, checked, onChange }) {
 }
 
 /**
- * Which bands the poster shows. State is owned by the PAGE, not the app store: view state for one admin
- * page, unlike the tool's toggles which are part of the persisted draft.
+ * Which bands the poster shows. Owned by the PAGE, not the app store: view state for one admin page, unlike
+ * the tool's toggles which are part of the persisted draft.
  */
 function PosterSettingsMenu({ showHeader, setShowHeader, showPillars, setShowPillars, showTracks, setShowTracks, showCredit, setShowCredit }) {
   const [open, setOpen] = useState(false);
@@ -572,17 +530,15 @@ function PosterSettingsMenu({ showHeader, setShowHeader, showPillars, setShowPil
 export default function PosterPage() {
   const posterRef = useRef(null);
   const showToast = useAppStore((s) => s.showToast);
-  // Which action (if any) is running. NO per-action result state: the outcome is a toast, not a button label,
-  // so nothing here feeds the controls' text (see ExportPngControls).
+  // No per-action result state: the outcome is a toast, not a button label.
   const [busy, setBusy] = useState(null); // null | "copy" | "download"
-  // Which bands the paper carries. All on by default — the full poster is what this page is for.
   const [showHeader, setShowHeader] = useState(true);
   const [showPillars, setShowPillars] = useState(true);
   const [showTracks, setShowTracks] = useState(true);
   const [showCredit, setShowCredit] = useState(true);
   const scale = useFitScale();
-  // Null until the first measurement lands (one frame). Callers fall back to a width-based estimate
-  // rather than 0, so the stage doesn't collapse and re-expand on mount.
+  // Callers fall back to a width-based estimate rather than 0, so the stage doesn't collapse and re-expand
+  // on mount.
   const measuredHeight = useMeasuredHeight(posterRef, scale);
   const canvasH = measuredHeight ?? Math.round(CANVAS_W * 1.5);
 
@@ -593,15 +549,14 @@ export default function PosterPage() {
     setBusy(action);
     try {
       await fn(posterRef.current, canvasH);
-      // Height and bands ride along because the poster is no longer one fixed artifact: without them
-      // an export event can't be told apart from any other shape the toggles produce.
+      // Height and bands ride along because the poster is not one fixed artifact: without them an export
+      // event can't be told apart from any other shape the toggles produce.
       const bands =
         [showHeader && "header", showPillars && "pillars", showTracks && "tracks", showCredit && "credit"].filter(Boolean).join("+") || "none";
       track("poster_exported", { action, height: canvasH, bands });
-      // COPY IS CONFIRMED, DOWNLOAD IS NOT — the same split as the tool's chart export (see EXPORT_TOAST in
-      // components/ChartSection.jsx): a download hands off to the browser's own save sheet, which reports the
-      // outcome itself and may be cancelled long after this resolves, so a toast there would be a claim we
-      // cannot check. A clipboard write has genuinely finished when the await returns.
+      // COPY IS CONFIRMED, DOWNLOAD IS NOT, the same split as the tool's chart export (see EXPORT_TOAST in
+      // components/ChartSection.jsx): a download hands off to the browser's save sheet, which may be cancelled
+      // long after this resolves, so a toast there would be a claim we cannot check.
       if (action === "copy") {
         showToast("Poster copied to clipboard", { variant: "success", key: SHARE_EXPORT_TOAST_KEY });
       }
@@ -632,7 +587,7 @@ export default function PosterPage() {
           slot wide enough to hold it between a back link and three controls. */}
       <div className="mb-2 flex w-full items-center justify-between gap-3">
         <BackToToolButton />
-        {/* Settings sits RIGHT OF DOWNLOAD: the two export actions are the row's primary controls, and the
+        {/* Settings sits right of Download: the two export actions are the row's primary controls, and the
             display toggles are what you reach for before exporting rather than instead of it. */}
         <div className="flex shrink-0 items-center gap-3">
           <ExportPngControls onCopy={handleCopy} onDownload={handleDownload} busy={Boolean(busy)} />
@@ -709,12 +664,9 @@ export default function PosterPage() {
             </header>
           ) : null}
 
-          {/* The 9 pillars as a radial ring around the central radar. No negative top margin any more —
-              PillarRing trims its own top edge now, so the band sits on the ordinary gap.
-              NO BOTTOM MARGIN, deliberately: it used to carry `mb-3`, which on top of the credit's flat
-              `mt-10` made this band sit ~12px looser than the tracks card's hard border. Dropping it (rather
-              than cancelling it with `-mb-3`, which overshoots by the same 12px) leaves the credit an even 40px
-              above and below. The ring's labels end on their own text, so no extra correction is wanted. */}
+          {/* The 9 pillars as a radial ring around the central radar. PillarRing trims its own top edge, so
+              the band sits on the ordinary gap. NO BOTTOM MARGIN, deliberately: the ring's labels end on their
+              own text, so the credit's flat `mt-10` is already the even 40px band. */}
           {showPillars ? (
             <div className={`flex flex-col gap-3 ${showHeader ? "mt-6" : ""}`}>
               <SectionLabel>The 9 Pillars</SectionLabel>

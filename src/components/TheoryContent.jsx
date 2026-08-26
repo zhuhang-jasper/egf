@@ -47,11 +47,9 @@ import {
 const cardClass = CARD_PLAIN;
 
 /**
- * Whether the OS share sheet can be opened at all, computed once at module load.
- *
- * A plain `navigator.share` check, deliberately NOT the `canShare({ files })` probe gating the chart's Share
- * button: the link is the payload and `shareTheoryLink` already falls back to text, so gating on file support
- * would hide the button from browsers that can still deliver it.
+ * Whether the OS share sheet can be opened at all. A plain `navigator.share` check, deliberately NOT the
+ * `canShare({ files })` probe gating the chart's Share button: the link is the payload here, so gating on file
+ * support would hide the button from browsers that can still deliver it.
  */
 const CAN_SHARE_LINK = typeof navigator !== "undefined" && typeof navigator.share === "function";
 
@@ -61,12 +59,10 @@ const NO_UNSEEN_SECTIONS = new Set();
 const noop = () => {};
 const returnsFalse = () => false;
 
-// Skill-tier band geometry is static — resolve the chained start/width percentages once.
 const SKILL_TIER_BANDS = getSkillTierBands();
 
-// The matrix opens its first pillar on a fresh visit, so the section shows what a card contains rather than
-// reading as a second copy of the Section I pillar grid with the 45 cells nowhere on screen. Read from the
-// matrix data rather than hardcoded, so it follows the authored pillar order.
+// Opening the first pillar on a fresh visit stops the section reading as a second copy of the Section I
+// pillar grid with the 45 cells nowhere on screen. Read from the data, so it follows the authored order.
 const DEFAULT_EXPANDED_PILLAR = COMPETENCY_MATRIX[0].pillarId;
 
 /**
@@ -83,25 +79,21 @@ function getInitialExpandedPillar(deepLink) {
   return deepLinkPillar ? null : DEFAULT_EXPANDED_PILLAR;
 }
 
-// Hero radar pillar-label sizing, 12-15px linear — shared with the tool chart (FE_UI.chart.pointLabelPxRange)
-// and kept at stable module identity since StaticCompetencyChart memoizes on this object.
+// Shared with the tool chart (FE_UI.chart.pointLabelPxRange); stable module identity because
+// StaticCompetencyChart memoizes on this object.
 const HERO_POINT_LABEL_PX_RANGE = FE_UI.chart.pointLabelPxRange;
 
-// On a deep-link boot, how long to let the scroll-restore loop settle at the remembered position
-// before we switch the expanded pillar. Long enough to clear restore's initial frames; short enough
-// that the transition still feels prompt.
+// Long enough to clear scroll-restore's initial frames, short enough that the transition still feels prompt.
 const DEEPLINK_RESTORE_SETTLE_MS = 350;
-// Expand/collapse animation length — matches the `duration-300` on the matrix panel. After switching
-// to the deep-link pillar we wait this out so the card has stopped moving before we measure & glide.
+// Matches the `duration-300` on the matrix panel; waited out so the card has stopped moving before we
+// measure and glide.
 const DEEPLINK_EXPAND_ANIM_MS = 300;
 
 /**
- * Zero-height marker bracketing a section's content, used by `useSectionSeenObserver` to detect that the
- * head/tail has been in view.
- *
- * MUST stay IN FLOW: its document position IS the signal, and an `absolute` version collapses both sentinels
- * onto the section's origin. The cost is that flex charges `gap` for a zero-height child, which `gapClass`
- * cancels — passed in per section because the parents do not share a gap.
+ * Zero-height marker bracketing a section's content, read by `useSectionSeenObserver`. MUST stay IN FLOW: its
+ * document position IS the signal, and `absolute` collapses both sentinels onto the section's origin. Flex
+ * then charges `gap` for a zero-height child, which `gapClass` cancels per section since the parents do not
+ * share a gap.
  */
 function SectionSentinel({ section, edge, gapClass }) {
   return <span id={getSectionSentinelId(section, edge)} aria-hidden className={cn("block h-0 w-full shrink-0", gapClass)} />;
@@ -148,15 +140,11 @@ function SeniorityPhaseTitle({ phase, className, breakAfterSlash = false }) {
 }
 
 /**
- * The three cumulative skill tiers, drawn as staggered bands across the L1-L5 axis. Each band starts at the
- * MIDPOINT of the one before it: the overlap is the whole point of the diagram, so the stagger is kept at
- * every width rather than degrading to a stacked list on mobile.
- *
- * ONE layout at all sizes, bound by the narrowest band since it carries the longest label. If a label looks
- * cramped, widen the band in `SKILL_TIERS` rather than shrinking the type — a clipped word is a bug.
- *
- * SELF-CONTAINED AXIS: ruler and bands are both percentages of this card's own track, so they stay exact
- * against each other. Keep it that way; computing band edges through an outer grid's gutters broke it once.
+ * The three cumulative skill tiers as staggered bands across the L1-L5 axis, each starting at the MIDPOINT of
+ * the one before. The overlap is the point of the diagram, so the stagger is kept at every width rather than
+ * degrading to a stacked list. ONE layout at all sizes, bound by the narrowest band since it carries the
+ * longest label: if a label looks cramped, widen the band in `SKILL_TIERS` rather than shrinking the type.
+ * Ruler and bands are both percentages of this card's OWN track, so they stay exact against each other.
  */
 function SkillTierBands() {
   return (
@@ -167,23 +155,22 @@ function SkillTierBands() {
       <div className="grid grid-cols-5 border-b border-slate-200 pb-1">
         {SENIORITY_LEVEL_DEFINITIONS.map(({ code }) => (
           // The in-card grey (see doc-typography.js), hardcoded because `badgeMicro` carries no color of its
-          // own. It was slate-400 — the lightest text on the page — which left the ruler fainter than the
-          // caption directly below it in the same card. Keep it in step if that grey ever moves again.
+          // own. Keep it in step if that grey moves.
           <span key={code} className={cn("text-center", DOC_TEXT.badgeMicro, "text-slate-600")}>
             {code}
           </span>
         ))}
       </div>
 
-      {/* Bands are normal flow rows, indented with a margin rather than absolutely positioned, so the
+      {/* Normal flow rows, indented with a margin rather than absolutely positioned, so the
           track's height comes from its content and the row gap is just the flex `gap`. A margin (not a
           grid column) is what lets an edge land mid-column. */}
       <div className="mt-1.5 flex flex-col gap-1 sm:gap-2">
         {SKILL_TIER_BANDS.map(({ id, label, startPct, widthPct, bandClass }) => (
           <div
             key={id}
-            // `bodySemibold` for the 12/13/14 body ramp (these labels are content, not a heading);
-            // `bandClass` stays last so the tier's text color beats that token's `text-slate-800`.
+            // These labels are content, not a heading. `bandClass` stays last so the tier's color beats the
+            // token's `text-slate-800`.
             className={cn(
               // `px-2` at sm and up, not `px-3`: the widest label ("Foundational") sits in the NARROWEST
               // band, so horizontal padding is charged against the tightest budget on the track.
@@ -191,8 +178,7 @@ function SkillTierBands() {
               DOC_TEXT.bodySemibold,
               bandClass,
             )}
-            // Straight percentages of the track, no clamping needed. `minWidth: max-content` guards the
-            // label and wins over exact positioning where it binds — a clipped word is a bug.
+            // `minWidth: max-content` guards the label and wins over exact positioning where it binds.
             style={{
               marginLeft: `${startPct}%`,
               width: `${widthPct}%`,
@@ -204,16 +190,14 @@ function SkillTierBands() {
         ))}
       </div>
 
-      {/* `metaBody`, the captions rung: 11px and one shade below in-card body, so this reads as annotation
+      {/* The captions rung: 11px and one shade below in-card body, so this reads as annotation
           on the figure rather than as another paragraph of the section's prose. */}
       <p className={cn("mt-2 border-t border-slate-200 pt-2", DOC_TEXT.metaBody)}>{SKILL_TIERS_CAPTION}</p>
     </div>
   );
 }
 
-// The two branches are mutually exclusive breakpoint views of the same five levels, so a fragment is
-// enough — there is nothing left to space now that the Skill Tiers card has moved to the matrix
-// section (it was the only sibling this needed a flex column for).
+// Mutually exclusive breakpoint views of the same five levels, so a fragment is enough.
 function SeniorityStepper() {
   return (
     <>
@@ -267,26 +251,24 @@ function TheoryContent({
   const taglineProbeRef = useRef(null);
   const taglineFitsOneLine = useFitsOneLine(taglineProbeRef, isVisible);
 
-  // Clears a section's dot once both its head and tail have been in view AND the section has settled
-  // on screen. Observes only the still-unseen sections, so this is inert for a caught-up user.
+  // Observes only the still-unseen sections, so this is inert for a caught-up user.
   useSectionSeenObserver(isVisible, unseenSections, markSectionEdgeSeen, isSectionEdgePairComplete, markSectionSeen);
 
   // Expanded pillar state lives here so the matrix share button can read it.
   // See docs/DECISIONS.md#theory-deeplink-boot-order for why this starts from the PERSISTED pillar.
   const [expandedPillar, setExpandedPillar] = useState(() => getInitialExpandedPillar(deepLink));
 
-  // The "What's New" highlighter is permanently OFF (hardcoded `false` below) — the `**…**` markers stay in
-  // the copy for future use, but the page toggle was replaced by the "Show changelog" button.
+  // Permanently off: the `**…**` markers stay in the copy for future use, but the page toggle is now the
+  // "Show changelog" button.
   const [changelogOpen, setChangelogOpen] = useState(false);
 
-  // The hero radar's measured frame width, republished by `onFrameWidthChange`; sizes the title above it.
-  // `useCallback` because an inline arrow would refire the notify effect on every render of this tab.
+  // The hero radar's measured frame width, which sizes the title above it. `useCallback` because an inline
+  // arrow would refire the notify effect on every render of this tab.
   const [heroChartWidth, setHeroChartWidth] = useState(0);
   const handleHeroFrameWidth = useCallback((width) => setHeroChartWidth(width), []);
 
-  // In-app jump from a tool-form pillar's help icon. Expanding the pillar makes CompetencyMatrix
-  // scroll to it; persist so the choice survives like a normal expand. Keyed on `seq` so clicking
-  // the same pillar again re-runs (a no-op state change wouldn't re-trigger the matrix scroll).
+  // Expanding the pillar is what makes CompetencyMatrix scroll to it. Keyed on `seq` so clicking the same
+  // pillar again re-runs, where a no-op state change would not.
   const matrixNavSeq = matrixNav?.seq;
   useEffect(() => {
     const pillarId = matrixNav?.pillarId;
@@ -298,10 +280,10 @@ function TheoryContent({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matrixNavSeq]);
 
-  // Chromium positions the `position: fixed` running footer (see print-running-footer in DECISIONS.md)
-  // relative to the scroll offset at the moment print starts, not per-page from a clean slate — printing
-  // from partway down the document loses the footer on some sheets. `beforeprint` fires however print was
-  // triggered (in-app button, Cmd+P, browser menu), so this is the one place that catches all of them.
+  // Chromium positions the fixed running footer relative to the scroll offset when print starts, not
+  // per-page, so printing from partway down loses it on some sheets. `beforeprint` fires however print was
+  // triggered, so this is the one place that catches all of them.
+  // See docs/DECISIONS.md#print-running-footer
   useEffect(() => {
     const handleBeforePrint = () => scrollWindowToTop();
     window.addEventListener("beforeprint", handleBeforePrint);
@@ -327,8 +309,7 @@ function TheoryContent({
       return undefined;
     }
 
-    // For a matrix pillar deep-link, scroll to the (expanded) pillar card itself, not the
-    // section heading. Falls back to the section when no pillar is targeted.
+    // A pillar deep-link aims at the expanded card, not the section heading.
     const targetPillar = section === THEORY_SECTIONS.matrix ? deepLink.pillar : null;
     const targetId = targetPillar ? getPillarCardElementId(targetPillar) : sectionId;
 
@@ -382,11 +363,9 @@ function TheoryContent({
   }, []);
 
   /**
-   * Hand the theory tab's URL, plus the pillar poster image, to the OS share sheet.
-   *
-   * `buildTheoryShareUrl(null, null)` gives the plain `?tab=theory` link because this is the tab-level
-   * control: it shares the document, not the reader's scroll position. NO TOAST on either outcome — the sheet
-   * is its own feedback, and a dismissal is a decision rather than an error.
+   * Hands the theory tab's URL plus the pillar poster image to the OS share sheet. The plain `?tab=theory`
+   * link, because this is the tab-level control: it shares the document, not the reader's scroll position.
+   * No toast either way, the sheet being its own feedback and a dismissal a decision rather than an error.
    */
   const handleShareTheory = async () => {
     const result = await shareTheoryLink(buildTheoryShareUrl(null, null));
@@ -515,9 +494,8 @@ function TheoryContent({
           variant="outline"
           shape="pill"
           onClick={() => {
-            // Stamped with the version the reader was ON when they opened it, the same param
-            // `theory_section_seen` carries: it says whether a release is what drives people to read
-            // what changed.
+            // The version the reader was ON when they opened it, the same param `theory_section_seen` carries,
+            // so the pair answers whether a release is what drives people to read what changed.
             track("changelog_opened", { framework_version: FRAMEWORK_VERSION });
             setChangelogOpen(true);
           }}
@@ -547,26 +525,14 @@ function TheoryContent({
             sheet carries exactly this: the framework title, the empty radar, and the tagline.
 
             NOT A NUMBERED SECTION. It has no content of its own, so it gets no heading, no share link
-            and no unseen dot — it is the title plate that the four sections follow. That is also why
-            the app header carries no title block any more: this is where the framework introduces
-            itself, one tap from the tool rather than permanently above it.
+            and no unseen dot: it is the title plate that the four sections follow, and the reason the app
+            header carries no title block of its own.
 
-            ONE ORDER FOR BOTH MEDIA: title, radar, tagline. This block briefly ran radar-first on screen
-            with `print:order-first` lifting the title on paper, a divergence inherited from the days when
-            the title lived in the app header and the tagline had to be rendered a SECOND time under the
-            radar (the old `AppShellPrintTagline`) because no CSS could interleave two components with a
-            tab panel between them. With all three as siblings here, the ordering utility is gone too:
-            what you see is what prints.
+            One order for both media, and `print:mt-[18vh]` is a reserve rather than a measurement.
+            See docs/DECISIONS.md#theory-hero-plate-sizes-against-the-chart
 
-            `print:mt-[18vh]` — A RESERVE, NOT A MEASUREMENT: it pushes the trio down the sheet so it
-            reads as a cover rather than sitting at the top with the rest blank. The block's height is
-            content-driven (the radar is sized at runtime, the tagline wraps to its own measure), so
-            there is nothing to centre against from here. Landing a little above true centre is the
-            safe direction — overflow the sheet by a pixel and the cover becomes two pages.
-
-            NO BOTTOM MARGIN: this is a sibling of the four sections now, so the parent column's `gap-6`
-            sets the distance to section I, the same distance that separates every other pair. It used to
-            carry `mb-4` because it lived in a nested `gap-2` column with section I inside it. */}
+            NO BOTTOM MARGIN: this is a sibling of the four sections, so the parent column's `gap-6` sets
+            the distance to section I, the same distance that separates every other pair. */}
         {/* A card on screen (matches ChartSection's), the cover page on paper — every card property stripped
             with `print:*`, including `bg-transparent` so a painted background doesn't print as an off-white
             block behind the title. The `print:mt-[18vh]` cover reserve stays on this element. */}
@@ -581,43 +547,21 @@ function TheoryContent({
               second h1 here would compete with it, and an h2 would sit above section I's own h2 for no
               structural reason.
 
-              `mb-2` on screen, `print:mb-[5vh]` on paper. The printed cover has a whole sheet for three
-              elements, so the title and the plate below it read as a title and a figure rather than a
-              heading jammed against a chart; that generous space is paired with the tagline's matching
-              `print:mt-[5vh]` on the other side, so the radar sits in equal air.
-
-              The version is print-only. On screen it is already in the bottom nav's Theory tab. */}
+              `mb-2` on screen, `print:mb-[5vh]` on paper, and the version line is print-only.
+              See docs/DECISIONS.md#theory-hero-plate-sizes-against-the-chart */}
           <p
             aria-hidden
             data-print-hero-title
-            /* SIZED FROM THE HERO RADAR'S MEASURED WIDTH via the same getChartTitleSizePx the tool tab's
-               title uses, so the two match at every viewport. A title above a chart scales against the chart,
-               not the document's breakpoint ladder — the theory panel is 900 wide and hits the radar's cap
-               long before `md` fires. The 0 fallback keeps the first paint at mobile size. */
             className="text-balance mx-auto flex w-full flex-col items-center font-extrabold leading-tight tracking-tight text-slate-900 text-center print:mb-[5vh]"
-            /* TWO SIZES, AND PAPER MUST NOT INHERIT THE SCREEN'S. `fontSize` is measured from the live frame
-               and is stale on paper; `--print-title-size` is the same function at the width paper actually
-               uses, computed here rather than hardcoded in CSS so it cannot drift from `chartMaxWidthPx`.
-               See docs/DECISIONS.md#print-chart-frame-height-is-stale. */
+            /* TWO SIZES: the measured one for screen, and `--print-title-size` because paper must not inherit
+               it. See docs/DECISIONS.md#theory-hero-plate-sizes-against-the-chart */
             style={{
               "fontSize": getChartTitleSizePx(heroChartWidth || FE_UI.page.chartMinWidthPx),
               "--print-title-size": `${getChartTitleSizePx(FE_UI.page.chartMaxWidthPx)}px`,
             }}
           >
-            {/* THE VERSION IS PRINT-ONLY. On screen the bottom nav's Theory tab already carries a `v4.1`
-                badge, so stating it again under the title said the same number twice within a thumb's reach.
-                A printout has no nav, and a reference document should say which version of the framework it
-                is — so paper gets it and the screen does not.
-
-                Two sibling spans, which the plate's `flex-col` sets as two rows: that is the layout paper
-                wants, and on screen the second one is simply not rendered. `text-xl` (20px) holds it a step
-                under the title rather than inheriting it — the title prints at ~21.3px, the size the print
-                rule pins it to from the printed frame width (see `--print-title-size` on this element). It
-                used to inherit whatever the last SCREEN measurement gave, which is what made this pair
-                invert on a phone: a floored title (16.8px then, 14px now) over a 20px version line.
-
-                NO DATE HERE. The version dates itself in the running footer instead, which repeats on every
-                sheet rather than only the one that happens to carry the cover. */}
+            {/* Two sibling spans, which the plate's `flex-col` sets as two rows; the second is print-only and
+                pinned a step under the title. See docs/DECISIONS.md#theory-hero-plate-sizes-against-the-chart */}
             <span>{SITE_COPY.title}</span>
             <span className="hidden text-xl print:block">v{FRAMEWORK_VERSION}</span>
           </p>
