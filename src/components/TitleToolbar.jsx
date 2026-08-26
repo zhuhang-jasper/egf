@@ -99,10 +99,17 @@ export function TitleToolbar() {
   };
 
   // "Undo changes" (modified) — reload the linked profile, reverting the edited badge/levels to its
-  // saved state (the title already matches, so reloading only restores the values).
+  // saved state. `loadProfile` restores the title too, which is right for a plain `modified` draft (the
+  // title already matches) but wrong when a rename carries edits: there this sits beside "Undo rename"
+  // and must leave the typed name alone, so it is put back after the load.
   const handleUndoChanges = () => {
-    if (activeSavedProfileId != null) {
-      loadProfile(activeSavedProfileId);
+    if (activeSavedProfileId == null) {
+      return;
+    }
+    const typedTitle = useAppStore.getState().title;
+    loadProfile(activeSavedProfileId);
+    if (typedTitle !== useAppStore.getState().title) {
+      setTitle(typedTitle);
     }
   };
 
