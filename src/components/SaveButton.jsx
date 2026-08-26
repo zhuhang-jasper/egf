@@ -8,6 +8,7 @@ import { MenuPanel } from "@/components/ui/menu-panel";
 
 import { useMenuPosition } from "@/hooks/useMenuPosition";
 
+import { SAVE_STATUS_LABELS } from "@/constants/save-status";
 import { cn } from "@/utils";
 
 // Status-aware Save button, sitting on Row 1 next to the title input.
@@ -35,9 +36,21 @@ export function SaveButton({ statusMeta, showMenu, onSave, copyAction, undoActio
     remeasureKey: `${undoActions.length}|${Boolean(restampAction)}`,
   });
 
-  // The label sizes to its own text — the row is allowed to shift as the status changes so the
-  // control stays as narrow as possible, leaving more room for the title input.
-  const primaryLabel = <span className="whitespace-nowrap">{statusMeta.label}</span>;
+  // Width is reserved for the longest possible label, so switching status (Save → Rename → Update →
+  // Apply) never resizes the button or nudges the title input beside it. Every label shares one grid
+  // cell: the hidden copies set the column width, the visible one centres in it.
+  // Only from `xs` (470) up — the rung the rest of this row steps on. Below it the name input sharing
+  // the row is the thing starved for space, so the label sizes to its own text and the row may shift.
+  const primaryLabel = (
+    <span className="grid whitespace-nowrap">
+      {SAVE_STATUS_LABELS.map((label) => (
+        <span key={label} aria-hidden className="col-start-1 row-start-1 hidden xs:invisible xs:block">
+          {label}
+        </span>
+      ))}
+      <span className="col-start-1 row-start-1 justify-self-center">{statusMeta.label}</span>
+    </span>
+  );
 
   // `print:hidden` on both branches below — saving is an action, and the status it reports ("Saved",
   // "Modified") describes the draft's relationship to localStorage, which means nothing on paper.
@@ -86,7 +99,7 @@ export function SaveButton({ statusMeta, showMenu, onSave, copyAction, undoActio
         aria-label="More save options"
         aria-haspopup="menu"
         aria-expanded={menuOpen}
-        className={cn("-ml-px min-w-9 justify-center rounded-l-none px-2", statusMeta.className)}
+        className={cn("-ml-px justify-center rounded-l-none pl-1.5 pr-2", statusMeta.className)}
         onClick={() => setMenuOpen((v) => !v)}
       >
         <MoreVertical className="h-4 w-4 shrink-0" aria-hidden />

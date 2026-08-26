@@ -12,7 +12,7 @@ const STATE_LABEL = {
 };
 
 /**
- * Green and amber lifted from `SAVE_STATUS_META` (TitleToolbar) so settled/needs-action match app-wide.
+ * Green and amber lifted from `SAVE_STATUS_META` (constants/save-status.js) so settled/needs-action match app-wide.
  * `eased` is amber too: a changed level needs review even when the change may qualify the user for more.
  * `mixed` is amber because "may be wrong in some direction" is caution, and must not borrow the grey that
  * means "no information".
