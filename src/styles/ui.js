@@ -16,28 +16,17 @@ export const FE_UI = {
      * growth exactly at viewport 470 — the same width `xs:` fires at, so the chart's cap and the type rungs
      * beside it happen at one moment rather than 15px apart.
      *
-     * DELIBERATELY IGNORES MOBILE, where there is no persistent bar: the column there stops growing at viewport
-     * 455 and leaves the last 15px unused. The rendered chart is the SAME 405px either way, so only the width at
-     * which growth stops differs, never the composition. Accepted so one number serves both.
-     *
-     * The bar is ~15px on macOS and 17 on Windows, so Windows caps ~2px late. Tuned for the former.
-     *
-     * `minWidthPx` gets NO such subtraction; see the note there for why that is consistent rather than an
-     * oversight (each end is compensated for the platform that actually reaches it).
+     * Mobile has no persistent bar, so the column there stops growing at viewport 455 and leaves 15px unused —
+     * the rendered chart is the same 405px either way. The bar is ~15px on macOS, 17 on Windows, so Windows caps
+     * ~2px late. `minWidthPx` gets no such subtraction; see the note there.
      */
     maxWidthPx: 455,
     /**
      * Layout floor only (page + bottom nav must match). See docs/DECISIONS.md#page-min-width-vs-chart-min-width.
      *
-     * NO SCROLLBAR SUBTRACTION HERE, unlike `maxWidthPx` — and the two are not inconsistent. Both constants are
-     * content-box widths, and content box = viewport − scrollbar, but they solve that for different unknowns:
-     * `maxWidthPx` targets a chosen VIEWPORT (`xs`) so the bar comes off it, while this is a floor whose viewport
-     * is merely an outcome. A 350px layout is only ever reached on a phone, where the bar is an overlay and takes
-     * no width, so content box == viewport and the floor binds at 350 as written. Below it the page h-scrolls
-     * rather than shrinking further.
-     *
-     * (On a desktop window narrowed to 350 the floor binds at viewport 365, since the bar is 15px there. Nothing
-     * targets that number; it falls out.)
+     * NO SCROLLBAR SUBTRACTION HERE, unlike `maxWidthPx`, and the two are consistent: that one targets a chosen
+     * VIEWPORT (`xs`) so the bar comes off it, while this is a floor whose viewport is merely an outcome. A 350px
+     * layout is only reached on a phone, where the bar is an overlay, so the floor binds at 350 as written.
      */
     minWidthPx: 350,
     /** Radar frame width at minWidthPx: 350 − 24 (tab panel `px-3`) − 24 (card `p-3`) − 2 (card border) = 300.
@@ -72,24 +61,11 @@ export const FE_UI = {
   chart: {
     /**
      * CHART TITLE SIZE — two authored endpoints in px, interpolated across chart width by getChartTitleSizePx.
-     * `minPx` at `page.chartMinWidthPx` (300), `maxPx` at `page.chartMaxWidthPx` (405).
+     * Authored rather than a ratio of anything: see docs/DECISIONS.md#chart-type-scale.
      *
-     * AUTHORED, NOT A RATIO. This was `{ labelMultiplier: 1.4 }` against a shared `chartFonts.chromeRange`
-     * reference size, on the reasoning that one number kept the title, badge and legend in proportion by
-     * construction. That reasoning is gone: the badge and legend need INTEGER sizes and now carry their own
-     * `secondaryLabelRungs`, so the reference had exactly one consumer left — this multiplication — and a
-     * reference size that nothing else references is just indirection. It also made the title unsettable: 18px
-     * needed `maxPx: 12.857`, since 18/1.4 is not a round number.
-     *
-     * FRACTIONAL ON PURPOSE, unlike the badge. The title is large enough that a fractional size is invisible,
-     * and nothing measures or clips its box, so it can scale smoothly instead of stepping. The badge cannot —
-     * see `secondaryLabelRungs` for why its glyphs creep at fractional sizes.
-     *
-     * `maxPx` IS THE EXPORT'S TITLE SIZE, since `exportImageLayoutWidthPx` equals `page.chartMaxWidthPx`. Keep
-     * `opsz` in index.css equal to it (now simply `round(maxPx)` — no multiplication to reproduce).
-     *
-     * The theory tab's framework title runs off the same function, so the two are equal by construction.
-     * Leading is Tailwind's `leading-tight` alone. See docs/DECISIONS.md#chart-type-scale.
+     * Fractional on purpose, unlike the badge: nothing measures or clips the title's box, so it scales smoothly.
+     * `maxPx` IS the export's title size (`exportImageLayoutWidthPx` equals `page.chartMaxWidthPx`) — keep
+     * `opsz` in index.css equal to it. The theory hero runs off the same function, so the two match.
      */
     titleRange: { minPx: 14, maxPx: 18, minWidthPx: 300, maxWidthPx: 405 },
     layoutPaddingHorizontal: { minPx: 2, maxPx: 5 },
@@ -103,29 +79,11 @@ export const FE_UI = {
     /**
      * TRACK BADGE + CLUSTER LEGEND SIZE — an authored rung table, read top-down by getChartSecondaryLabelSizePx.
      * `fromChartWidthPx` is the frame width the rung starts at; the last entry omits it and is the floor.
+     * Integer sizes and hand-placed boundaries are both load-bearing: docs/DECISIONS.md#badge-ink-centring.
      *
-     * INTEGERS, AND BOUNDARIES SOMEONE CHOSE. Both properties are load-bearing and were arrived at the hard way:
-     *
-     * - Integer, because the badge's glyphs creep at a fractional size. `line-height: round(1.4em, 1px)` keeps
-     *   the pill's line box whole, so the PILL holds still, but `align-items: center` splits the leftover
-     *   half-leading — which drifts continuously when the font size does (2.319 → 2.113 across chart 355-371).
-     *   See docs/DECISIONS.md#badge-ink-centring: "the pill held perfectly still and only the glyphs moved".
-     * - Authored, because `Math.round` on a continuous ramp places the boundaries itself, wherever the value
-     *   crosses `.5`. On the previous 10→13 curve that was chart 361 and 400 — 59px then 39px apart, uneven and
-     *   picked by nobody. That unevenness is what the ramp rewrite was supposed to fix and only reduced.
-     *
-     * WHY 405 FOR THE TOP RUNG: it is `page.chartMaxWidthPx`, the width the chart reaches at the `xs` breakpoint
-     * (viewport 470). In chart-width terms that looks like a one-pixel band; in VIEWPORT terms it is 470 upward,
-     * i.e. the whole desktop range, because the chart is pinned at its cap there. Tying it to `xs` is what makes
-     * the badge's last step land at the same moment as every `xs:` type rung elsewhere in the app.
-     *
-     * 355 for the 10→11 step sits mid-band (viewport 420) and is pure taste — move it freely.
-     *
-     * 10 is the app's common smallest rung — TrackBadge sm, the score cards' labels, the pillar cluster labels and
-     * the bottom nav all sit there at base — so the chart's key reads level with the chrome around it rather than
-     * a size the rest of the UI never uses. Two things sit a rung BELOW at 9, both for reasons of their own: the
-     * score cards' sub-label (an annotation on the value above it, not a label in its own right) and BadgePicker's
-     * pill (an `em` box that stands taller than the text beside it, so it needs the smaller font to fit the row).
+     * 405 is `page.chartMaxWidthPx`, so the top rung starts where the chart caps (viewport 470) and the badge's
+     * last step lands with every `xs:` rung in the app. 355 is taste. 10 is the app's common smallest rung, so
+     * the chart's key reads level with the chrome around it.
      */
     secondaryLabelRungs: [{ fromChartWidthPx: 405, px: 12 }, { fromChartWidthPx: 355, px: 11 }, { px: 10 }],
     /** Floor for the rung table above — also the value a malformed table falls back to. */

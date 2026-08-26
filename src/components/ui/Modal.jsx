@@ -177,14 +177,8 @@ function SimpleModal({ title, icon: Icon = null, wideGlyph = false, titleId, act
   return (
     <Modal titleId={titleId} panelClassName="max-w-sm gap-4 p-5" {...modalProps}>
       <div className="flex flex-col gap-3">
-        {/* The icon disc is monochrome for every dialog on purpose: colour would rank one dialog above
-            another, and the copy is what carries urgency.
-
-            ONE DISC SIZE for every dialog: it is chrome, so it must not resize to suit whatever glyph it
-            holds — that made the same header look heavier on some dialogs than others. Only the ink inside
-            varies: a bare mark (the exclamation) is drawn edge to edge, while lucide's detailed glyphs carry
-            their own margin and need `wideGlyph` to stay legible at this size. Either way the glyph runs
-            close to the disc edge, so it reads as an outline around the icon rather than a filled circle. */}
+        {/* Monochrome, and ONE SIZE for every dialog: the disc is chrome, so it must not resize to suit its
+            glyph. Only the ink varies — a bare mark fills the box, lucide's detailed glyphs need `wideGlyph`. */}
         <div className="flex items-center gap-2">
           {Icon ? (
             <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white">
@@ -195,10 +189,8 @@ function SimpleModal({ title, icon: Icon = null, wideGlyph = false, titleId, act
             {title}
           </h2>
         </div>
-        {/* Body copy sits in the header block, one rung tighter than the panel's own `gap-4`, so title and
-            prose still read as one unit against the buttons below. It was 1.5, which crowded the body into a
-            title that wrapped to two lines. `actions` is a SIBLING of this block rather than more children,
-            which is what keeps that wider gap as the single visual break in the panel. */}
+        {/* Tighter than the panel's own `gap-4`, so title and prose read as one unit against the buttons.
+            `actions` is a SIBLING of this block, which is what keeps that wider gap as the only break. */}
         {children}
       </div>
 

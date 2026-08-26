@@ -17,11 +17,8 @@
  *   chart PNG             · 9-Pillar Engineer Growth Framework    names the work — the PNG travels alone
  *   poster PNG            · zhuhang-jasper.github.io/egf          the way back, for print and projection
  *
- * ORDER IS OWNERSHIP FIRST, IDENTITY SECOND, and the licence sits beside the name it qualifies rather than
- * after the work's title. The exception is the canonical attribution string reusers copy (the block in
- * README.md, mirrored in index.html's <noscript>), which is work-first because that is the form CC prescribes.
- * That one is prose and takes "licensed under"; these lockups take the bare identifier, since a `·` list
- * next to a `©` does not need the verb.
+ * ORDER IS OWNERSHIP FIRST, IDENTITY SECOND. The exception is the canonical attribution reusers copy (README,
+ * mirrored in index.html's <noscript>), which is work-first because that is the form CC prescribes.
  */
 const CREDIT_OWNERSHIP = "© 2026 Jasper Loo Zhu Hang · CC BY-NC 4.0";
 
@@ -64,25 +61,16 @@ export const SITE_COPY = {
       "Jasper's 9-Pillar Engineer Growth Framework: a model for measuring software engineering mastery and guiding career paths. {link}",
     toolLinkQuery: "?tab=tool",
     /**
-     * Credit line painted along the bottom of an exported chart PNG. Not in the DOM: it is a property of the
-     * exported artifact rather than of the on-screen chart, so renderChartImageBlob reserves a strip for it
-     * and draws it straight onto the canvas (the same way the export's own padding is synthesized).
+     * Credit line painted along the bottom of an exported chart PNG — not in the DOM, since it belongs to the
+     * artifact rather than the on-screen chart (renderChartImageBlob reserves a strip and draws it).
      *
-     * NAMES THE WORK, unlike the app footer, and that difference is the point rather than an inconsistency.
-     * The footer sits inside the app, where the header, the title and the tab all say what this is; an
-     * exported chart PNG lands in a chat or a slide deck with NOTHING around it, so it has to identify the
-     * framework as well as the author and the terms. The poster is the other way round (its masthead names the
-     * framework already), which is why `posterAttribution` below spends its tail on the URL instead.
+     * NAMES THE WORK, unlike the app footer: a PNG lands in a chat or a deck with nothing around it, so it has
+     * to identify the framework as well as the author. The poster is the reverse — its masthead already does,
+     * which is why `posterAttribution` spends its tail on the URL. Order matches the footer: ownership first.
      *
-     * THE FULL TITLE, NOT `shortName`, and the type shrinks to pay for it. Naming the work in full does not
-     * fit at the cluster legend's size over a ~320-530px chart, so renderAttribution steps the font down
-     * until the line fits — landing around 70-80% of the legend, which is still comfortably legible at the
-     * 8x export scale. Identification wins over matching the legend exactly: an abbreviation nobody can
-     * expand is a weaker credit on an image that travels with no context to expand it from.
+     * The framework version is appended at export time from the profile's own stamp (see measureAttribution).
+     * The type is a pinned 9px and a line longer than the chart is CLIPPED, so keep this short.
      */
-    // ORDER MATCHES THE APP FOOTER: ownership first (copyright, then licence), identity second. The licence
-    // belongs beside the name it qualifies, not after the work's title. See the footer in pages/HomePage.jsx,
-    // whose screen and print forms swap only their tail for the same reason.
     imageAttribution: `${CREDIT_OWNERSHIP} · 9-Pillar Engineer Growth Framework`,
     /**
      * The poster's own credit line. Same ownership head as the chart export, DIFFERENT TAIL: the poster's
@@ -90,9 +78,8 @@ export const SITE_COPY = {
      * thing on the paper said twice. The tail is the app URL instead — the poster is the artifact most likely
      * to be printed or projected, where a link is the only way back to the tool.
      *
-     * A LITERAL, not `window.location.origin` like getToolShareLink: this one is rasterized into a PNG, so a
-     * dev-server origin would ship inside the image. Kept bare (no scheme, no `?tab=`) because it is being
-     * read off paper by a person, not clicked.
+     * A LITERAL, not `window.location.origin`: rasterized into a PNG, so a dev origin would ship inside the
+     * image. Bare (no scheme, no `?tab=`) because it is read off paper, not clicked.
      */
     posterAttribution: `${CREDIT_OWNERSHIP} · zhuhang-jasper.github.io/egf`,
     // `{profileName}` and `{date}` are filled by buildChartFileName. Date last, so one profile's exports
