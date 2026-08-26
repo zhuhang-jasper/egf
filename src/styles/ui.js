@@ -154,7 +154,7 @@ export const FE_UI = {
     exportImageCssScaleMax: 12,
     /** Admin-gated high-res multiplier (FEATURE_CHART_UHD_EXPORT_SETTING) — for print and for stills displayed far
         larger than natural size. Not literally UHD: true 4K would need 9x at this layout width, and the content is
-        flat fills and text, so past this the extra pixels only add edge precision. Keep the ChartSection toggle's
+        flat fills and text, so past this the extra pixels only add edge precision. Keep the ChartToolbar toggle's
         label in step with this number. */
     exportImageCssScaleUhd: 5,
     /* White margin on the copied image only — all four edges take this one number, but they measure it from

@@ -391,7 +391,7 @@ function TheoryContent({
           state the spacing identically instead of only agreeing on the total. Keep them in step, or the page
           appears to shift when you switch tabs. */}
       <div className="mb-3 flex items-center justify-between gap-2 print:hidden">
-        {/* `gap-2` MATCHES THE TOOL TAB'S EXPORT GROUP (see ChartSection's ExportMenu), which is the same row of
+        {/* `gap-2` MATCHES THE TOOL TAB'S EXPORT GROUP (see ChartToolbar's ExportMenu), which is the same row of
             same-sized pills at the same place in the other tab. This was `gap-1.5` against that group's `gap-2` —
             a 2px difference nobody chose, but visible as the buttons shifting when you flip tabs, which is the
             exact drift TOOLBAR_SURFACE exists to prevent for their colours. Keep the two in step, or switching
@@ -416,7 +416,7 @@ function TheoryContent({
               `group relative` + `<Tooltip>` rather than a native `title`: one tooltip mechanism across the app,
               with no browser delay and the app's own styling. See components/ui/Tooltip.jsx.
 
-              LABELLED, in the same pill as the tool tab's Share/Copy (see ChartSection's ExportMenu). These two
+              LABELLED, in the same pill as the tool tab's Share/Copy (see ChartToolbar's ExportMenu). These two
               rows sit at the same place on the page and the user flips between them, so a bare icon here beside
               a labelled pill there read as two different kinds of control. The `aria-label` stays longer than
               the visible word: the label says which action, the aria-label says what it acts on, which is what

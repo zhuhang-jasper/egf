@@ -31,7 +31,7 @@ export function AdminLockBadge({ className, label = "Admin only" }) {
         // fractional anchor (the nav's `flex-1` buttons never land on whole pixels) they rounded opposite
         // ways, so the lock sat 1px off-centre and the direction flipped on resize.
         //
-        // `inline-grid` rather than `grid` so the one inline caller (ChartSection's display menu) needs no
+        // `inline-grid` rather than `grid` so the one inline caller (ChartToolbar's display menu) needs no
         // display class of its own. Callers must not pass one: tailwind-merge would replace this and the
         // centring silently dies. Inline-ness is irrelevant to the absolutely-positioned corner callers.
         "[&>*]:col-start-1 [&>*]:row-start-1",
