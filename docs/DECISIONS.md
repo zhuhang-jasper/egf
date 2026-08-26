@@ -764,6 +764,60 @@ size, and that arithmetic is what keeps them there.
 Letter is 816px and lands ~22px wider, which the bitmap rescale absorbs without visible loss. The theory
 panel's own 900px cap never binds, since paper is narrower than that.
 
+### chart-width-arithmetic
+
+Every width in `FE_UI.page` is one arithmetic chain, and the constants are the results rather than independent
+taste calls. **50px of chrome** separates a page measure from the radar frame inside it: 24 (tab panel `px-3`)
+
+- 24 (card `p-3`) + 2 (the card BORDER, 1px each side).
+
+  maxWidthPx 455 - 50 = chartMaxWidthPx 405
+  minWidthPx 350 - 50 = chartMinWidthPx 300
+
+**The border is the easy term to miss.** `CARD_PLAIN` carries `border border-slate-200` under
+`box-sizing: border-box`, so it takes 2px out of the frame. Leaving it out put `chartMaxWidthPx` 2px above
+anything the frame ever measures, and the title exposed it: the interpolation reaches `titleRange.maxPx` AT the
+cap, so an unreachable cap stalled the title at 17.92 instead of the authored 18. `chartMinWidthPx` read 302 for
+the same reason. Verify with
+`document.querySelector('[data-chart-frame]').getBoundingClientRect().width` after changing either.
+
+**`maxWidthPx` subtracts the desktop scrollbar; `minWidthPx` does not.** The two are consistent once you see
+what each targets. The cap is `max-width: min(455px, 100%)` on the panel, and `100%` resolves against the
+CONTENT box, which a visible desktop scrollbar has already taken ~15px out of while the viewport keeps counting
+it. Subtracting the bar is what lands the column's growth exactly at viewport 470, the width `xs:` fires at, so
+the chart's cap and the type rungs beside it happen at one moment instead of 15px apart. `minWidthPx` is a floor
+whose viewport is merely an outcome, and a 350px layout is only reached on a phone where the bar is an overlay,
+so it binds at 350 as written.
+
+Mobile has no persistent bar, so the column stops growing at viewport 455 and leaves 15px unused; the rendered
+chart is 405 either way. The bar is ~15px on macOS and 17 on Windows, so Windows caps ~2px late.
+
+`chartMaxWidthPx` is also `exportImageLayoutWidthPx` and the far endpoint of both `titleRange` and
+`pointLabelPxRange`. None of that is enforced in code: if this number moves, move those with it, and `opsz` in
+`index.css` too. See [chart-type-scale](#chart-type-scale).
+
+### export-scale-targets-the-feed
+
+`chart.exportImageCssScale` is a resolution multiplier on the pinned layout width, affecting pixel dimensions
+only and never proportion. Width is exactly
+`(exportImageLayoutWidthPx + exportImagePaddingPx * 2) * scale`; height is content-driven and then ink-cropped,
+so there is nothing to spec.
+
+**3x targets the feed.** LinkedIn and X render in-feed images at ~1200px and Instagram at 1080, so the default
+lands just above the widest of them and the platform downscales once, by a little, instead of upscaling a
+smaller image. 2x was the old default and sat under all of them. 8x was tried and produced 3-4k-wide files
+whose extra pixels only paid off under heavy zoom.
+
+**Keep these integers.** The objection is to FRACTIONAL scales, not odd ones. 2.5 costs pixel-grid alignment:
+429 x 2.5 = 1072.5, which `rasterizeChart` rounds, making the effective scale 2.5012 — every glyph then lands a
+fraction off the device grid, and the smallest text (the credit line) shows it first. Whole numbers are exact, 5
+included.
+
+The admin-gated `exportImageCssScaleUhd` (5) is for print and for stills displayed far larger than natural size.
+It is not literally UHD: true 4K would need 9x at this layout width, and since the content is flat fills and
+text, past this the extra pixels only add edge precision. Keep the ChartToolbar toggle's label in step with the
+number.
+
 ### page-min-width-vs-chart-min-width
 
 `FE_UI.page.minWidthPx` used to be one number doing two jobs: the layout floor on `main`, and the narrow end
@@ -858,6 +912,114 @@ because only `body` was ever painted, so past the end of body's box the sheet fe
 printed as a stray strip of a second shade. This stays load-bearing now that the surround is pale rather than
 black: a slate wash over the unused part of a sheet is quieter than a black one, but it is still ink nobody
 asked to spend.
+
+### tab-toolbars-state-their-spacing-identically
+
+The theory tab's toolbar row and the tool tab's export group sit at the same place on the page, and the reader
+flips between them, so any difference in their spacing reads as the chrome nudging on tab switch. Two numbers
+have to stay in step, and neither is enforced:
+
+- **`mb-4` below the row**, i.e. 16px above the framework title. The tool tab's toolbar carries the same `mb-4`
+  against its own first element. It used to reach that 16px through a column `gap-2` plus its own `mb-2`, so the
+  two tabs agreed only on the total; stating it as one class in both places is what makes them comparable.
+- **`gap-2` between the pills.** Theory's was `gap-1.5` against the tool group's `gap-2`, a 2px difference
+  nobody chose but visible as the buttons shifting between tabs. That is the same drift `TOOLBAR_SURFACE` exists
+  to prevent for their colours.
+
+The row lives **outside the sections column**, as a sibling rather than its first child. That column's `gap-6`
+is the spacing between sections; this row is page chrome, and being inside meant inheriting a 24px gap and
+cancelling most of it back with a `-mb-2` whose only job was to undo the container it had been put in.
+
+**The left-hand group can be empty, and usually is.** Print is admin-gated and Share is mobile-only, so a
+desktop reader without the dev unlock renders neither. No special case is needed: an empty flex child is
+zero-width, the row's gap collapses against it, and `justify-between` still pins Changelog to the right edge.
+The wrapper stays rather than being flattened into the row, because it is what groups the left actions when they
+are present.
+
+**Print is a button, not a feature.** The theory tab is built to print as a reference document, and the print CSS
+ships for everyone: `window.print()` from the browser's own menu produces the same layout, and `@page` plus the
+print rules in `index.css` are what make it insensitive to the paper size, margins and destination that only the
+browser's dialog can set. Gating the button costs a reader the affordance, not the capability.
+
+Both toolbars label their pills rather than showing bare icons, for the same cross-tab reason: a bare icon in one
+row beside a labelled pill in the other read as two different kinds of control. `aria-label` stays longer than
+the visible word, the label saying which action and the aria-label what it acts on.
+
+### the-version-rides-the-changelog-button
+
+The framework version is printed on the Changelog button because that is the one control which explains it: the
+number says which version you are reading, and the thing it is printed on tells you what changed to get here.
+Anywhere else it is a bare stamp the reader cannot act on.
+
+**It does not duplicate the bottom nav's badge at any distance that matters.** This row is at the top of a
+scrolling page while the nav is pinned to the bottom of the viewport, so the two are never read in one glance,
+and the nav's badge is a "which tab" label where this is the document's own version. The hero plate is the case
+where the distance _does_ matter, which is why its version stays print-only. See
+[theory-hero-plate-sizes-against-the-chart](#theory-hero-plate-sizes-against-the-chart).
+
+Three details follow from the label being two runs and a separator: `aria-label` carries the whole string, or a
+screen reader announces "Changelog · v 4.2" as punctuation between fragments; the middot is its own sibling span
+so it takes the separator's muted grey instead of inheriting the label's weight, matching the footer's dividers;
+and `tabular-nums` matches the footer's app version, because a proportional `1` in `v4.1` would set the pill's
+width jittering against `v4.2` on the next release.
+
+### section-iii-pairs-a-paragraph-with-what-it-introduces
+
+Section III is two blocks, each opening with its own paragraph, so its spacing runs as **two `gap-2` pairs
+inside the section's `gap-3`**. The asymmetry does the work: 8px below a paragraph ties it to what follows, 12px
+between the groups keeps them apart, so neither paragraph can be read as a caption for the block above it.
+
+That was the actual bug. The tier prose sat BELOW the bands, arriving after the reader had already worked out
+three tiers and five levels from the picture, and the matrix lead-in sat under the section heading, two cards
+above the cards it described.
+
+**The tier pair is the legend for the second.** Every pillar card labels its focus areas with the same three
+pills in the same tints as these bands, so the key has to come first. It used to trail the five level cards in
+section II, where on a phone it landed as a sixth card in a stack of five about something else, and where that
+section's intro never mentioned tiers at all.
+
+**No subtitle under this heading**, unlike I and II: a third paragraph in the subtitle slot would be introducing
+an introduction. The heading still keeps `gap-3` where section IV drops to `gap-1`, because there the next
+element is an h3 subsection title that looked detached across 12px, whereas here it is a paragraph opening a
+group of its own. Pulling it to 4px would make it look like the subtitle this section deliberately does not
+have, and would break it away from the diagram it belongs to.
+
+On paper both pairs share the section's opening sheet with pillar 1: heading, two paragraphs, the diagram, then
+Coding, whose level grid runs over onto the next sheet. Pillars 2-9 each get their own sheet. Giving Coding a
+page break of its own was tried and is worse, leaving this sheet two-thirds empty to save a card from splitting
+that is only visible on one pillar out of nine.
+
+### tagline-breaks-are-measured-not-styled
+
+The hero tagline's second sentence breaks onto its own line **only if the first sentence fits on one line**,
+measured by `useFitsOneLine`. When the first already wraps, forcing a break too leaves an orphaned word with the
+next sentence stranded below it, so letting it run on fills the lines instead.
+
+    first fits  -> `block`, the detail starts its own line
+    first wraps -> `inline`, the detail continues the flow
+
+The byline follows the same measurement, inverted, being nested inside the detail's span and so subject to that
+decision before taking its own:
+
+    tagline fits  -> `mt-1 block`, attribution on its own line
+    tagline wraps -> inline, trailing the detail wherever it ends
+
+Which sounds backwards until you look at the results. Compact, the plate has three short centred lines and room
+to give the credit its own; already wrapped, it is three or four full-measure lines and a fourth holding two
+words reads as a stray fragment. `mt-1` is paired with `block` rather than set unconditionally because a vertical
+margin on an inline span pushes nothing apart, so leaving it on in the wrapped case would be a rule that
+silently does nothing.
+
+**The measurement reads a probe, not the visible text.** The probe is always `block`, so its height answers
+"would this fit on one line here?" independently of what the visible copy is doing. Measuring the real span
+would be circular: switching it between `block` and `inline` changes the very height the decision is read from,
+and the two states could oscillate. The probe is `invisible` rather than `hidden` so it still lays out and has a
+height, and absolutely positioned plus `aria-hidden` so it costs no space and is not announced twice.
+
+**Not `text-pretty` on the paragraph.** That algorithm shortens earlier lines to avoid a short final one, and
+against the byline's unbreakable `whitespace-nowrap` run it produced ragged lines with dead space at both ends,
+reading as padding where none exists. The byline keeps its `nowrap`, since a name should not split; it just must
+not meet an algorithm that reacts to it.
 
 ### theory-hero-plate-sizes-against-the-chart
 

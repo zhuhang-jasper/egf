@@ -376,51 +376,17 @@ function TheoryContent({
 
   return (
     <>
-      {/* Toolbar row: page actions (print, and share where the browser can) at the left, changelog at the right.
-          This also held admin shortcuts to the Poster/Social pages, which have moved to their own Admin tab (see
-          AdminContent) — so `justify-between` now pins one group to each end for every user, admin or not.
-
-          OUTSIDE THE SECTIONS COLUMN, and a sibling of it rather than its first child. That column's `gap-6`
-          is the spacing BETWEEN SECTIONS; this row is page chrome, not a section, and being in there meant
-          inheriting a 24px gap and then cancelling most of it back with `-mb-2` — a negative margin whose
-          only job was to undo the container it had been put in.
-
-          `mb-4` is the real number: 16px above the framework title. The tool tab's toolbar row carries the
-          same `mb-4` against its own first element (see ChartSection) — it reached the same 16px through a
-          column `gap-2` plus its own `mb-2` until that was collapsed into this one class, so the two tabs now
-          state the spacing identically instead of only agreeing on the total. Keep them in step, or the page
-          appears to shift when you switch tabs. */}
+      {/* Toolbar row: page actions at the left, changelog at the right. OUTSIDE the sections column, and its
+          spacing must stay in step with the tool tab's export group.
+          See docs/DECISIONS.md#tab-toolbars-state-their-spacing-identically */}
       <div className="mb-3 flex items-center justify-between gap-2 print:hidden">
-        {/* `gap-2` MATCHES THE TOOL TAB'S EXPORT GROUP (see ChartToolbar's ExportMenu), which is the same row of
-            same-sized pills at the same place in the other tab. This was `gap-1.5` against that group's `gap-2` —
-            a 2px difference nobody chose, but visible as the buttons shifting when you flip tabs, which is the
-            exact drift TOOLBAR_SURFACE exists to prevent for their colours. Keep the two in step, or switching
-            tabs appears to nudge the chrome.
-
-            THIS GROUP CAN BE EMPTY, and is for the common case: Print is admin-gated and Share is mobile-only,
-            so a desktop reader without the dev unlock renders neither. That is fine and needs no special case —
-            an empty flex child is zero-width, the row's `gap-2` collapses against it, and `justify-between`
-            still puts Changelog on the right edge. It is kept as a wrapper rather than flattened into the row
-            because it is what groups the left-hand actions when they ARE present. */}
+        {/* `gap-2` matches the tool tab's export group (ChartToolbar's ExportMenu). This group is commonly
+            EMPTY, which needs no special case.
+            See docs/DECISIONS.md#tab-toolbars-state-their-spacing-identically */}
         <div className="flex items-center gap-2">
-          {/* PRINT, ADMIN ONLY. The theory tab is built to print as a reference document — a cover sheet, then a
-              page per pillar — and the print CSS stays in the build for everyone: `window.print()` from the
-              browser's own menu still produces that layout, and `@page` and the print rules in index.css are
-              what make it insensitive to the paper size, margins and destination that only the browser's dialog
-              can set. This button is just the in-page shortcut to it, and it is now gated behind the dev unlock
-              (see constants/features.js) rather than shown to every reader.
-
-              THE FEATURE IS NOT GONE, ONLY THE BUTTON. Nothing about the printed output depends on this being
-              rendered, so hiding it costs a reader the affordance and not the capability.
-
-              `group relative` + `<Tooltip>` rather than a native `title`: one tooltip mechanism across the app,
-              with no browser delay and the app's own styling. See components/ui/Tooltip.jsx.
-
-              LABELLED, in the same pill as the tool tab's Share/Copy (see ChartToolbar's ExportMenu). These two
-              rows sit at the same place on the page and the user flips between them, so a bare icon here beside
-              a labelled pill there read as two different kinds of control. The `aria-label` stays longer than
-              the visible word: the label says which action, the aria-label says what it acts on, which is what
-              a screen reader needs when the surrounding heading isn't being read. */}
+          {/* PRINT, ADMIN ONLY — the button is gated, the printed output is not.
+              `group relative` + `<Tooltip>` rather than a native `title`: one tooltip mechanism across the app.
+              See docs/DECISIONS.md#tab-toolbars-state-their-spacing-identically */}
           {IS_ADMIN ? (
             <Button
               type="button"
@@ -435,18 +401,10 @@ function TheoryContent({
             >
               <Printer className="size-3.5 shrink-0" aria-hidden />
               Print
-              {/* BADGED ON THE PILL'S OWN CORNER, using the `relative` the Tooltip beside it already requires —
-                  and `-top-1.5 -right-1.5` rather than the nav's `-right-1.5 -bottom-1` because a pill's corner
-                  is a curve, not a right angle: the same offsets that sit on a square glyph's corner would sit
-                  in the empty space outside the radius here.
-
-                  TOP-RIGHT, WHICH IS WHERE THE TOOLTIP IS NOT. The tooltip opens BELOW this button (`placement`
-                  above — the toolbar sits under a sticky header, so a top tooltip would render into it), so the
-                  bottom corners are the ones that would be crossed on hover.
-
-                  UNLIKE THE MENU ROWS, THIS ONE KEEPS ITS `label`. There is no wrapping <label> element whose
-                  accessible name would absorb it, and the button's own `aria-label` says what the action does
-                  rather than who can reach it, so the badge is again the only carrier of that fact. */}
+              {/* Offsets differ from the nav's because a pill's corner is a curve, not a right angle: the same
+                  numbers would sit outside the radius. TOP-RIGHT is where the tooltip is not, it opening below
+                  this button. Keeps its `label`, unlike the menu rows, there being no wrapping <label> whose
+                  accessible name would absorb it. */}
               <AdminLockBadge className="-top-0.5 -right-1" />
               <Tooltip text="Print the framework" placement="bottom" />
             </Button>
@@ -471,24 +429,9 @@ function TheoryContent({
             </Button>
           ) : null}
         </div>
-        {/* THE VERSION RIDES THE CHANGELOG BUTTON, because this is the one control that explains it: the number
-            says which version you are reading, and the thing it is printed on is what tells you what changed to
-            get here. Anywhere else it is a bare stamp the reader cannot act on.
-
-            IT DOES NOT DUPLICATE THE BOTTOM NAV'S BADGE at any distance that matters. The hero plate keeps its
-            version print-only for exactly that reason (see its note) — it sits a thumb's reach from the nav's
-            `v4.2`, so on screen it would state the number twice in one glance. This row is at the top of a
-            scrolling page while the nav is pinned to the bottom of the viewport, so the two are never read
-            together, and the nav's badge is a "which tab" label where this is the document's own version.
-
-            `aria-label` CARRIES THE WHOLE STRING, since the visible text is now two runs and a middot: a screen
-            reader would otherwise announce "Changelog · v 4.2" as punctuation between fragments.
-
-            THE MIDDOT IS A SIBLING SPAN, not part of either run, so it takes the separator's own muted grey
-            rather than inheriting the label's weight — the same treatment the footer gives its dividers.
-
-            `tabular-nums` MATCHES THE FOOTER'S app version (see HomePage). Version strings are figures, and a
-            proportional `1` in `v4.1` would set the pill's width jittering against `v4.2` on the next release. */}
+        {/* THE VERSION RIDES THE CHANGELOG BUTTON: the `aria-label`, the sibling-span middot and `tabular-nums`
+            all follow from the label being two runs and a separator.
+            See docs/DECISIONS.md#the-version-rides-the-changelog-button */}
         <Button
           type="button"
           variant="outline"
@@ -521,18 +464,10 @@ function TheoryContent({
       {/* THE SECTIONS COLUMN. `gap-6` here means one thing only: the distance between the cover and the four
           numbered sections, and between those sections. Nothing that is not one of those five belongs in it. */}
       <div className="flex flex-col gap-6 print:max-w-none">
-        {/* THE INTRO BLOCK, AND ON PAPER THE COVER PAGE — section I forces a page break, so the first
-            sheet carries exactly this: the framework title, the empty radar, and the tagline.
-
-            NOT A NUMBERED SECTION. It has no content of its own, so it gets no heading, no share link
-            and no unseen dot: it is the title plate that the four sections follow, and the reason the app
-            header carries no title block of its own.
-
-            One order for both media, and `print:mt-[18vh]` is a reserve rather than a measurement.
-            See docs/DECISIONS.md#theory-hero-plate-sizes-against-the-chart
-
-            NO BOTTOM MARGIN: this is a sibling of the four sections, so the parent column's `gap-6` sets
-            the distance to section I, the same distance that separates every other pair. */}
+        {/* THE INTRO BLOCK, AND ON PAPER THE COVER PAGE, section I forcing a page break after it.
+            NOT A NUMBERED SECTION: no heading, no share link and no unseen dot, and NO BOTTOM MARGIN either,
+            being a sibling of the four sections whose distance the parent column's `gap-6` already sets.
+            See docs/DECISIONS.md#theory-hero-plate-sizes-against-the-chart */}
         {/* A card on screen (matches ChartSection's), the cover page on paper — every card property stripped
             with `print:*`, including `bg-transparent` so a painted background doesn't print as an off-white
             block behind the title. The `print:mt-[18vh]` cover reserve stays on this element. */}
@@ -586,46 +521,14 @@ function TheoryContent({
             />
           </div>
 
-          {/* THE SECOND SENTENCE BREAKS ONLY IF THE FIRST FITS ON ONE LINE (see `useFitsOneLine`). When the
-              first sentence already has to wrap, forcing a break too leaves an orphaned word with the next
-              sentence stranded below it; letting it run on instead fills the lines. So:
-
-                first fits    → `block`, `detail` starts its own line
-                first wraps   → `inline`, `detail` continues the flow
-
-              NOT `text-pretty` on the paragraph. That algorithm shortens earlier lines to avoid a short
-              final one, and against the byline's unbreakable `whitespace-nowrap` run it produced ragged
-              lines with dead space at both ends — the text read as padded even though nothing here has
-              horizontal padding. The byline keeps its `nowrap` (a name should not split); it just must not
-              meet an algorithm that reacts to it.
-
-              THE BYLINE FOLLOWS THE SAME MEASUREMENT, INVERTED. It is nested inside `detail`'s span, so it
-              is subject to that span's decision first, and then takes one of its own:
-
-                tagline fits  → `mt-1 block`, attribution on its own line, 4px under `detail`
-                tagline wraps → inline, trailing `detail` wherever that sentence happens to end
-
-              Which sounds backwards until you look at the two results. Compact, the plate has three short
-              centred lines and room to give the credit its own; already wrapped, the text is three or four
-              full-measure lines and a fourth holding two words would read as a stray fragment, so trailing
-              is tidier. `whitespace-nowrap` in both cases — a name should not split — and that unbreakable
-              run is also why `text-pretty` cannot be used on the paragraph to tidy any of this up.
-
-              `mt-1` is paired with `block` rather than set unconditionally because it is only meaningful in
-              that branch: a vertical margin on an inline span pushes nothing apart, so leaving it on in the
-              wrapped case would be a rule that silently does nothing.
-
-              `print:px-[15vw]` narrows the measure on paper: `vw` resolves against the page box in print,
-              and a 900px line is far too long to track on a printed sheet. */}
+          {/* Both the second sentence's break and the byline's are MEASURED, not styled, and the two decisions
+              are inverted. `print:px-[15vw]` narrows the measure on paper, where `vw` resolves against the page
+              box and a 900px line is too long to track.
+              See docs/DECISIONS.md#tagline-breaks-are-measured-not-styled */}
           <p className="relative mx-auto w-full text-center text-xs sm:text-sm leading-tight text-slate-700 print:mt-[5vh] print:px-[15vw] print:text-base">
-            {/* The measurement PROBE, not the visible text. It is always `block`, so its height answers
-                "would this sentence fit on one line here?" independently of what the visible copy is
-                currently doing — measuring the real span would be circular, since switching it between
-                `block` and `inline` changes the very height the decision is read from, and the two states
-                could oscillate.
-
-                `invisible` rather than `hidden`: it must still be laid out to have a height. Absolutely
-                positioned and `aria-hidden` so it costs no space and is not announced twice. */}
+            {/* The measurement PROBE, not the visible text: `invisible` rather than `hidden` because it must
+                still lay out to have a height.
+                See docs/DECISIONS.md#tagline-breaks-are-measured-not-styled */}
             <span ref={taglineProbeRef} aria-hidden className="invisible pointer-events-none absolute inset-x-0 top-0 block">
               {SITE_COPY.tagline}
             </span>
@@ -666,15 +569,8 @@ function TheoryContent({
           <SectionSentinel section={THEORY_SECTIONS.seniority} edge="tail" gapClass="-mt-3" />
         </section>
 
-        {/* NO SUBTITLE UNDER THIS HEADING, unlike I and II. This section is two blocks, each opening with
-            its own paragraph (see below), so a third paragraph in the subtitle slot would be introducing an
-            introduction. What used to sit there was the matrix lead-in, which described cards two blocks
-            further down and read as a caption for the tier diagram in between.
-
-            Still `gap-3` with a bare heading, where section IV drops to `gap-1`: there the next element is an
-            h3 subsection title that looked detached from the h2 across 12px, whereas here it is a paragraph
-            that opens a group of its own. Pulling that to 4px would make it look like the subtitle this
-            section deliberately does not have, and would break it away from the diagram it belongs to. */}
+        {/* NO SUBTITLE UNDER THIS HEADING, unlike I and II, and still `gap-3` where section IV drops to `gap-1`.
+            See docs/DECISIONS.md#section-iii-pairs-a-paragraph-with-what-it-introduces */}
         <section id={THEORY_SECTION_IDS[THEORY_SECTIONS.matrix]} className="flex flex-col gap-3 print:break-before-page">
           <SectionSentinel section={THEORY_SECTIONS.matrix} edge="head" gapClass="-mb-3" />
           <SectionHeading
@@ -683,24 +579,9 @@ function TheoryContent({
             section={THEORY_SECTIONS.matrix}
             hasUnseenUpdates={unseenSections.has(THEORY_SECTIONS.matrix)}
           />
-          {/* TWO PAIRS, EACH ITS OWN `gap-2` GROUP INSIDE THE SECTION'S `gap-3`: a paragraph bound to the
-              thing it introduces, twice. The asymmetry is what does the work — 8px below a paragraph ties it
-              to what follows, 12px between the groups keeps them apart — so neither paragraph can be read as
-              a caption for the block above it. That was the actual bug here: the tier prose sat BELOW the
-              bands, arriving after the reader had already worked out three tiers and five levels from the
-              picture, and the matrix lead-in sat under the section heading, two cards above the cards it
-              described.
-
-              THE TIER PAIR IS THE LEGEND FOR THE SECOND. Every pillar card labels its focus areas with the
-              same three pills in the same tints as these bands, so the key has to come first. It used to
-              trail the five level cards in section II, where on a phone it landed as a sixth card in a stack
-              of five about something else, and where that section's intro never mentioned tiers at all.
-
-              On paper both pairs share the section's opening sheet with pillar 1, which is a denser page than
-              it was before the tier block moved in: heading, two paragraphs, the diagram, then Coding, whose
-              level grid runs over onto the next sheet. Pillars 2-9 each get their own sheet. Giving Coding a
-              page break of its own instead was tried and is worse — it leaves this sheet two-thirds empty to
-              save a card from splitting, and the split is only visible on one pillar out of nine. */}
+          {/* TWO PAIRS, EACH ITS OWN `gap-2` GROUP INSIDE THE SECTION'S `gap-3`, so neither paragraph reads as a
+              caption for the block above it. The tier pair is the legend for the second.
+              See docs/DECISIONS.md#section-iii-pairs-a-paragraph-with-what-it-introduces */}
           <div className="flex flex-col gap-2">
             <p className={DOC_SECTION.intro}>{SKILL_TIERS_INTRO}</p>
             <SkillTierBands />
