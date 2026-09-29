@@ -1,13 +1,4 @@
-import {
-  CAREER_BREADTH_WEIGHT,
-  CAREER_PEAK_WEIGHT,
-  CAREER_STAGE_BANDS,
-  CAREER_STAGE_REQUIREMENTS,
-  getPillarGroupOrder,
-  MIN_PILLAR_EXCLUDED,
-  PILLAR_ORDER,
-  TRACKS,
-} from "@/constants";
+import { CAREER_STAGE_BANDS, CAREER_STAGE_REQUIREMENTS, getPillarGroupOrder, MIN_PILLAR_EXCLUDED, PILLAR_ORDER, TRACKS } from "@/constants";
 
 /**
  * Every score below reads a `{ pillarId: level }` map, not a positional array — pillar order is a
@@ -54,30 +45,32 @@ export function computeClusterAvgs(pillarLevels) {
   return avgs;
 }
 
-export function computeCareerScore(peak, breadth) {
-  if (!Number.isFinite(peak) || !Number.isFinite(breadth)) {
-    return NaN;
-  }
-  return peak * CAREER_PEAK_WEIGHT + breadth * CAREER_BREADTH_WEIGHT;
-}
-
 const STAGE_RANK = new Map(CAREER_STAGE_BANDS.map(({ code }, i) => [code, i]));
 
-/** Highest stage (S5 → S2) whose three minimums all pass; else S1. Raw values, never rounded. */
-function stageForTrack(requirements, keyMean, supportMean, minPillar) {
-  for (let i = CAREER_STAGE_BANDS.length - 1; i >= 1; i--) {
-    const { code } = CAREER_STAGE_BANDS[i];
-    const req = requirements[code];
-    if (keyMean >= req.keyMean && supportMean >= req.supportMean && (req.minPillar === null || minPillar >= req.minPillar)) {
-      return code;
+/** The first of a stage's minimums the scores miss, or null when all pass. Raw values, never rounded. */
+function firstUnmet(req, scores) {
+  for (const metric of ["keyMean", "supportMean", "minPillar"]) {
+    if (req[metric] !== null && !(scores[metric] >= req[metric])) {
+      return { metric, required: req[metric] };
     }
   }
-  return CAREER_STAGE_BANDS[0].code;
+  return null;
+}
+
+/** Highest stage (S5 → S2) whose minimums all pass, else S1; `next` is what blocks the stage above. */
+function stageForTrack(requirements, scores) {
+  for (let i = CAREER_STAGE_BANDS.length - 1; i >= 1; i--) {
+    if (!firstUnmet(requirements[CAREER_STAGE_BANDS[i].code], scores)) {
+      const above = CAREER_STAGE_BANDS[i + 1];
+      return { stage: CAREER_STAGE_BANDS[i].code, next: above ? firstUnmet(requirements[above.code], scores) : null };
+    }
+  }
+  return { stage: CAREER_STAGE_BANDS[0].code, next: firstUnmet(requirements[CAREER_STAGE_BANDS[1].code], scores) };
 }
 
 /**
  * Best stage across {@link TRACKS}; that track is the match. Ties go to the higher keyMean, then to
- * TRACKS order.
+ * TRACKS order. `tracks` holds every track's own result, in TRACKS order.
  */
 export function careerStageFromScores(pillarLevels) {
   const minPillar = Math.min(
@@ -87,36 +80,36 @@ export function careerStageFromScores(pillarLevels) {
     ),
   );
 
-  let best = null;
-  for (const [track, { keyPillars }] of Object.entries(TRACKS)) {
-    const keyMean = mean(pillarValues(pillarLevels, keyPillars));
-    const supportMean = mean(
-      pillarValues(
-        pillarLevels,
-        PILLAR_ORDER.filter((id) => !keyPillars.includes(id)),
+  const tracks = Object.entries(TRACKS).map(([track, { keyPillars }]) => {
+    const scores = {
+      keyMean: mean(pillarValues(pillarLevels, keyPillars)),
+      supportMean: mean(
+        pillarValues(
+          pillarLevels,
+          PILLAR_ORDER.filter((id) => !keyPillars.includes(id)),
+        ),
       ),
-    );
-    const stage = stageForTrack(CAREER_STAGE_REQUIREMENTS[track], keyMean, supportMean, minPillar);
-    const rank = STAGE_RANK.get(stage);
-    const bestRank = best ? STAGE_RANK.get(best.stage) : -1;
-    if (rank > bestRank || (rank === bestRank && keyMean > best.keyMean)) {
-      best = { stage, track, keyMean, supportMean, minPillar };
+      minPillar,
+    };
+    return { track, ...stageForTrack(CAREER_STAGE_REQUIREMENTS[track], scores), ...scores };
+  });
+
+  let best = tracks[0];
+  for (const t of tracks) {
+    const rank = STAGE_RANK.get(t.stage);
+    const bestRank = STAGE_RANK.get(best.stage);
+    if (rank > bestRank || (rank === bestRank && t.keyMean > best.keyMean)) {
+      best = t;
     }
   }
-  return best;
+  const { stage, track, keyMean, supportMean } = best;
+  return { stage, track, keyMean, supportMean, minPillar, tracks };
 }
 
 export function computeAverages(pillarLevels) {
-  const career = careerStageFromScores(pillarLevels);
-  const peak = career.keyMean;
-  const breadth = career.supportMean;
-
   return {
     overall: mean(pillarValues(pillarLevels)),
-    peak,
-    breadth,
-    effective: computeCareerScore(peak, breadth),
     clusters: computeClusterAvgs(pillarLevels),
-    career,
+    career: careerStageFromScores(pillarLevels),
   };
 }

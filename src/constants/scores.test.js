@@ -24,13 +24,30 @@ describe("careerStageFromScores", () => {
   });
 
   it("returns the matched track's means", () => {
-    expect(careerStageFromScores(levels([5, 4.5, 5, 3.5, 2.5, 3, 3, 3.5, 4]))).toEqual({
+    expect(careerStageFromScores(levels([5, 4.5, 5, 3.5, 2.5, 3, 3, 3.5, 4]))).toMatchObject({
       stage: "S4",
       track: "deepTechnical",
       keyMean: 4.5,
       supportMean: 3.2,
       minPillar: 2.5,
     });
+  });
+
+  it("reports every track's stage and what blocks the next one", () => {
+    const { tracks } = careerStageFromScores(levels([5, 4.5, 5, 3.5, 2.5, 3, 3, 3.5, 4]));
+    expect(tracks).toEqual([
+      { track: "deepTechnical", stage: "S4", next: { metric: "supportMean", required: 3.3 }, keyMean: 4.5, supportMean: 3.2, minPillar: 2.5 },
+      { track: "productFocused", stage: "S3", next: { metric: "keyMean", required: 3.5 }, keyMean: 3.375, supportMean: 4.1, minPillar: 2.5 },
+      { track: "peopleDelivery", stage: "S3", next: { metric: "keyMean", required: 3.5 }, keyMean: 3.375, supportMean: 4.1, minPillar: 2.5 },
+    ]);
+  });
+
+  it("names the lowest pillar when it is the blocker", () => {
+    expect(careerStageFromScores({ ...all(5), ownership: 0 }).tracks[0].next).toEqual({ metric: "minPillar", required: 0.5 });
+  });
+
+  it("has no next stage at S5", () => {
+    expect(careerStageFromScores(all(5)).tracks.every(({ next }) => next === null)).toBe(true);
   });
 });
 

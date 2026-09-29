@@ -1,6 +1,4 @@
 export const LEVEL_STEP = 0.5;
-export const CAREER_PEAK_WEIGHT = 0.55;
-export const CAREER_BREADTH_WEIGHT = 0.45;
 export const DEFAULT_PILLAR_LEVEL = 2;
 
 /**

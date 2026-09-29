@@ -49,7 +49,7 @@ A single-page React 19 app (Vite 8, Tailwind v4, Zustand) that renders an intera
 
 `careerStageFromScores` gates the stage per track. Each of the three `TRACKS` (Deep Technical, Product-Focused, People & Delivery) has 4 key pillars, which overlap between tracks on purpose; the other 5 are its support set. Per track it computes `keyMean`, `supportMean` and `minPillar` (lowest pillar, same for every track, `MIN_PILLAR_EXCLUDED` leaves out `ai` so AI Leverage never caps a stage). It then walks S5 → S2 against `CAREER_STAGE_REQUIREMENTS` (keyed by track, then stage) and takes the first stage where all three pass, else S1. The profile's stage is the best across tracks; ties go to the higher `keyMean`, then `TRACKS` order. Raw values are compared; rounding is display-only. The stage is computed live and never stored.
 
-Display: Peak and Breadth are the matched track's `keyMean` and `supportMean`; Effective (55/45 blend) is display-only and never decides the stage. Tracks fork at `TRACK_FORK_STAGE` (S3), so below it the Track card reads "Foundation". `computeClusterAvgs` feeds only the cluster cards, not the gate.
+It also returns `tracks`: every track's own stage, means, and `next` (the first minimum blocking the stage above, null at S5). The score cards show three rows: cluster averages (`computeClusterAvgs`, display-only, not part of the gate), one debug card per track (stage, Peak = `keyMean`, Breadth = `supportMean`, and `next`), and a summary card (stage, role, track). Tracks fork at `TRACK_FORK_STAGE` (S3), so below it the summary reads "Foundation" instead of a track. The summary is the card meant for non-admins; hiding the other rows from them is not built yet.
 
 ### Chart
 
