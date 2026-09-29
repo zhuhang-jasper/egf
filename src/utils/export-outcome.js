@@ -1,6 +1,6 @@
 /**
- * What an image-export attempt should report. Pure lookup, no DOM and no analytics calls, so
- * verify-export-outcome.mjs runs it under bare node; the caller performs whatever this describes.
+ * What an image-export attempt should report. Pure lookup, no DOM and no analytics calls; the caller
+ * performs whatever this describes.
  * See docs/DECISIONS.md#export-reporting-is-asymmetric
  */
 

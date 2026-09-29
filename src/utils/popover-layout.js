@@ -1,6 +1,6 @@
 /**
  * Direction and list height for the profile dropdown. Measurements arrive as plain numbers and the row counts
- * as parameters, so verify-popover-layout.mjs runs this under bare node; the caller does the measuring.
+ * as parameters; the caller does the measuring.
  * See docs/DECISIONS.md#profile-dropdown-sizing-and-direction
  */
 

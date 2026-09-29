@@ -2,7 +2,16 @@ import { Tooltip } from "@/components/ui/Tooltip";
 
 import { useAppStore } from "@/store/useAppStore";
 
-import { BREADTH_TOP_RATIO, CAREER_BREADTH_WEIGHT, CAREER_PEAK_WEIGHT, CLUSTERS, getPillarGroupOrder } from "@/constants";
+import {
+  CAREER_BREADTH_WEIGHT,
+  CAREER_PEAK_WEIGHT,
+  CAREER_STAGE_BANDS,
+  CLUSTERS,
+  getPillarGroupOrder,
+  PILLAR_COUNT,
+  TRACK_FORK_STAGE,
+  TRACKS,
+} from "@/constants";
 import { computeAverages, formatAvgScore } from "@/constants/scores";
 import { TOOL_TEXT } from "@/styles/control-typography";
 import { cn } from "@/utils";
@@ -64,36 +73,56 @@ function buildClusterCards(clusters) {
     .filter(Boolean);
 }
 
-/** Aggregate summary cards (breadth / peak / effective / seniority), with static cluster-agnostic themes. */
-function buildSummaryCards({ breadth, human, effective, career, breadthK, pillarCount, effectiveTitle }) {
+/** The matched track's averages (breadth / peak) and their weighted blend (effective). */
+function buildAverageCards({ peak, breadth, effective, career }) {
+  const { label, keyPillars } = TRACKS[career.track];
+  const supportCount = PILLAR_COUNT - keyPillars.length;
   return [
     {
       key: "breadth",
       label: "Breadth",
       value: formatAvgScore(breadth),
-      title: `Mean of your ${breadthK} highest pillar scores (of ${pillarCount}).`,
+      title: `Mean of the ${supportCount} pillars outside the ${label} track's key pillars.`,
       className: "border-slate-600 bg-slate-50 text-slate-800 [&_span:nth-child(2)]:text-slate-900",
     },
     {
       key: "peak",
       label: "Peak",
-      value: formatAvgScore(human),
-      title: `Mean of your 3 highest pillar scores (of ${pillarCount}).`,
+      value: formatAvgScore(peak),
+      title: `Mean of the ${keyPillars.length} key pillars of the ${label} track.`,
       className: "border-amber-600 bg-amber-50 text-amber-900 [&_span:nth-child(2)]:text-amber-700",
     },
     {
       key: "effective",
       label: "Effective",
       value: formatAvgScore(effective),
-      title: effectiveTitle,
+      title: `${Math.round(CAREER_PEAK_WEIGHT * 100)}% peak + ${Math.round(CAREER_BREADTH_WEIGHT * 100)}% breadth. For reference only, it does not set your stage.`,
       className: "border-violet-600 bg-violet-50 text-violet-900 [&_span:nth-child(2)]:text-violet-700",
+    },
+  ];
+}
+
+/** Stage and the track it was reached on; below the fork the track reads as the shared foundation. */
+function buildStageCards({ career }) {
+  const band = CAREER_STAGE_BANDS.find(({ code }) => code === career.stage);
+  const forked = CAREER_STAGE_BANDS.indexOf(band) >= CAREER_STAGE_BANDS.findIndex(({ code }) => code === TRACK_FORK_STAGE);
+  return [
+    {
+      key: "track",
+      label: "Track",
+      value: forked ? TRACKS[career.track].label : "Foundation",
+      title: forked
+        ? "The career track your stage was reached on."
+        : `Tracks fork at ${TRACK_FORK_STAGE}. Until then the whole chart grows as one foundation.`,
+      className: "border-sky-600 bg-sky-50 text-sky-900 [&_span:nth-child(2)]:text-sky-700",
     },
     {
       key: "seniority",
       label: "Seniority",
-      value: career ? career.code : "—",
-      sub: career ? career.role : "",
-      // No tooltip for now — was: "L2+ needs peak, breadth, and cluster mins (technical all tracks; product FE only) — see scoring constants."
+      value: band.code,
+      sub: band.role,
+      title:
+        "Best stage across the three tracks. Each stage needs a minimum key-pillar mean, support mean, and lowest pillar (AI Leverage excluded).",
       className: "border-teal-600 bg-teal-50 text-teal-900 [&_span:nth-child(2)]:text-teal-700",
     },
   ];
@@ -102,25 +131,22 @@ function buildSummaryCards({ breadth, human, effective, career, breadthK, pillar
 export function ChartScores() {
   const pillarLevels = useAppStore((s) => s.pillarLevels);
 
-  const { breadth, human, effective, career, clusters, pillarCount } = computeAverages(pillarLevels);
-  const breadthK = Math.ceil(pillarCount * BREADTH_TOP_RATIO);
-  const effectiveTitle = `${Math.round(CAREER_PEAK_WEIGHT * 100)}% peak + ${Math.round(CAREER_BREADTH_WEIGHT * 100)}% breadth — composite for seniority bands.`;
-
-  const clusterCards = buildClusterCards(clusters);
-  const summaryCards = buildSummaryCards({ breadth, human, effective, career, breadthK, pillarCount, effectiveTitle });
+  const scores = computeAverages(pillarLevels);
+  const rows = [
+    { key: "clusters", cols: "grid-cols-3", cards: buildClusterCards(scores.clusters) },
+    { key: "averages", cols: "grid-cols-3", cards: buildAverageCards(scores) },
+    { key: "stage", cols: "grid-cols-2", cards: buildStageCards(scores) },
+  ];
 
   return (
     <>
-      <div className="grid grid-cols-3 gap-2 xs:gap-3">
-        {clusterCards.map(({ key, ...card }) => (
-          <ScoreCard key={key} {...card} />
-        ))}
-      </div>
-      <div className="grid grid-cols-4 gap-2 xs:gap-3">
-        {summaryCards.map(({ key, ...card }) => (
-          <ScoreCard key={key} {...card} />
-        ))}
-      </div>
+      {rows.map(({ key, cols, cards }) => (
+        <div key={key} className={cn("grid gap-2 xs:gap-3", cols)}>
+          {cards.map(({ key: cardKey, ...card }) => (
+            <ScoreCard key={cardKey} {...card} />
+          ))}
+        </div>
+      ))}
     </>
   );
 }

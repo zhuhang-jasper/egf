@@ -19,6 +19,8 @@
     "format:check": "oxfmt -c .oxfmtrc.json --check .",
     "format:fix": "oxfmt -c .oxfmtrc.json --write .",
     "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "updateDependencies": "npx npm-check-updates --target minor -u",
     "checkForUpdates": "npx npm-check-updates",
     "checkForUpdates:minor": "npx npm-check-updates --target minor",
@@ -51,6 +53,7 @@
     "oxlint": "^1.86.0",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",
-    "vite": "^8.3.1"
+    "vite": "^8.3.1",
+    "vitest": "^5.0.2"
   }
 }

@@ -1,9 +1,8 @@
 /**
  * Which framework revision a profile was rated against, and whether anything it scored has moved since.
  *
- * Dependency-free on purpose: the changelog is passed in, not imported, so verify-profile-stamp.mjs can run
- * this under bare node and stub its own history (changelog.js needs an alias and import.meta.env). Treated
- * as newest-first throughout.
+ * Dependency-free on purpose: the changelog is passed in, not imported, so profile-stamp.test.js can stub
+ * its own history. Treated as newest-first throughout.
  */
 
 /** A profile's stamp is either recorded (saved with one) or inferred from when the profile was saved. */
