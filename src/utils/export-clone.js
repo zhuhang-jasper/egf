@@ -81,11 +81,7 @@ export function createExportClone(exportRoot, widthPx) {
   // Before the host is attached, so the dropped rows never take part in the layout the fit measures.
   for (const el of root.querySelectorAll("[data-export-omit]")) {
     el.remove();
-  }
-  for (const el of root.querySelectorAll("[data-export-only]")) {
-    el.hidden = false;
-  }
-  // The live element is `w-full` in a narrower column; the clone must not inherit a cap below the export width.
+  }  // The live element is `w-full` in a narrower column; the clone must not inherit a cap below the export width.
   Object.assign(root.style, { width: `${widthPx}px`, maxWidth: "none" });
 
   host.append(root);

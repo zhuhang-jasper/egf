@@ -130,7 +130,7 @@ function buildSummaryCard({ tracks, track: strongest }, selected) {
     value: band.code,
     sub: `${band.role} · ${forked ? TRACKS[selected].label : "Foundation"}`,
     title,
-    className: cn("border-2 border-teal-600 bg-teal-50 text-teal-900 [&_span:nth-child(2)]:text-teal-700", selected !== strongest && "border-dotted opacity-75"),
+    className: "border-2 border-teal-600 bg-teal-50 text-teal-900 [&_span:nth-child(2)]:text-teal-700",
   };
 }
 
@@ -145,25 +145,15 @@ export function ChartScores() {
   const onSelect = (track) => setPicked({ profileId, track });
 
   const rows = [
-    { key: "clusters", cols: "grid-cols-3", exportOmit: true, cards: buildClusterCards(clusters) },
+    { key: "clusters", cols: "grid-cols-3", hidden: true, exportOmit: true, cards: buildClusterCards(clusters) },
     { key: "tracks", cols: "grid-cols-3", exportOmit: true, cards: buildTrackCards(career, selected, onSelect) },
-    { key: "summary", cols: "grid-cols-1", exportOmit: selected !== career.track, cards: [buildSummaryCard(career, selected)] },
+    { key: "summary", cols: "grid-cols-1", cards: [buildSummaryCard(career, selected)] },
   ];
-  // The export always shows the strongest track, so a different selection ships a hidden twin for export-clone to reveal.
-  if (selected !== career.track) {
-    rows.push({ key: "summary-export", cols: "grid-cols-1", exportOnly: true, cards: [buildSummaryCard(career, career.track)] });
-  }
 
   return (
     <>
-      {rows.map(({ key, cols, exportOmit, exportOnly, cards }) => (
-        <div
-          key={key}
-          data-export-omit={exportOmit || undefined}
-          data-export-only={exportOnly || undefined}
-          hidden={exportOnly}
-          className={cn("grid gap-2 xs:gap-3", cols)}
-        >
+      {rows.map(({ key, cols, hidden, exportOmit, cards }) => (
+        <div key={key} hidden={hidden} data-export-omit={exportOmit || undefined} className={cn("grid gap-2 xs:gap-3", cols)}>
           {cards.map(({ key: cardKey, ...card }) => (
             <ScoreCard key={cardKey} {...card} />
           ))}
