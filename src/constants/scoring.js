@@ -1,34 +1,37 @@
 export const LEVEL_STEP = 0.5;
-export const HUMAN_STRENGTH_TOP_K = 3;
-/** Mean of top ceil(n × ratio) pillars — breadth score (9→6, 8→6). */
-export const BREADTH_TOP_RATIO = 2 / 3;
-export const CAREER_PEAK_WEIGHT = 0.55;
-export const CAREER_BREADTH_WEIGHT = 0.45;
 export const DEFAULT_PILLAR_LEVEL = 2;
-export const SENIORITY_LEVEL_COUNT = 5;
-
-/** Core technical pillars for career floor (excludes AI — newer, role-dependent). */
-export const TECHNICAL_FLOOR_PILLARS = ["coding", "domainLogic", "architecture"];
 
 /**
- * Career level = highest band where peak, breadth, and cluster avgs all meet mins.
- * `clusters.technical` — coding + domain + architecture (AI excluded; see TECHNICAL_FLOOR_PILLARS).
- * `feClusters` — FE only (product/UI). Operational is not gated (L4→L5 growth lives there).
- *
- * Intended step feel: L1→L2 small · L2→L3 big · L3→L4 big · L4→L5 moderate.
- * L1 has no requirements (default). Evaluated L5 → L2 in code.
+ * Career tracks for the stage gate. Key pillars overlap between tracks on purpose; a track's support set is
+ * every pillar not in its key set. Object order is the final tie-break. Mirrors the theory tab's
+ * CAREER_TRACK_PROFILES key pillars.
  */
-export const CAREER_LEVEL_REQUIREMENTS = {
-  L5: { peak: 4.6, breadth: 3.6, clusters: { technical: 3.0 }, feClusters: { product: 3.0 } },
-  L4: { peak: 3.6, breadth: 3.1, clusters: { technical: 3.0 }, feClusters: { product: 2.5 } },
-  L3: { peak: 2.6, breadth: 2.3, clusters: { technical: 2.5 }, feClusters: { product: 2.0 } },
-  L2: { peak: 1.6, breadth: 1.5, clusters: { technical: 1.5 }, feClusters: { product: 1.5 } },
+export const TRACKS = {
+  deepTechnical: { label: "Deep Technical", keyPillars: ["coding", "domainLogic", "architecture", "ai"] },
+  productFocused: { label: "Product-Focused", keyPillars: ["domainLogic", "uiUx", "productSense", "communication"] },
+  peopleDelivery: { label: "People & Delivery", keyPillars: ["productSense", "process", "communication", "ownership"] },
 };
 
-export const CAREER_LEVEL_BY_AVG_BAND = [
-  { code: "L1", phase: "Adherence / Learner", role: "Junior" },
-  { code: "L2", phase: "Autonomy / Practitioner", role: "Mid" },
-  { code: "L3", phase: "Complexity / Expert", role: "Senior" },
-  { code: "L4", phase: "Influence / Mentor", role: "Lead/Staff" },
-  { code: "L5", phase: "Impact / Strategist", role: "Principal" },
+/** AI Leverage is good to have, so a low AI score never caps the stage through the lowest-pillar floor. */
+export const MIN_PILLAR_EXCLUDED = ["ai"];
+
+/** Tracks fork at S3; below it the matched track is only the tie-break default, so it is not shown. */
+export const TRACK_FORK_STAGE = "S3";
+
+const STAGE_THRESHOLDS = {
+  S5: { keyMean: 4.5, supportMean: 3.3, minPillar: 1.5 },
+  S4: { keyMean: 3.5, supportMean: 2.5, minPillar: 1.0 },
+  S3: { keyMean: 2.6, supportMean: 2.0, minPillar: 0.5 },
+  S2: { keyMean: 1.6, supportMean: 1.2, minPillar: null },
+};
+
+/** Per track, per stage (S5 → S2). S1 has no requirements. `minPillar: null` always passes. */
+export const CAREER_STAGE_REQUIREMENTS = Object.fromEntries(Object.keys(TRACKS).map((id) => [id, STAGE_THRESHOLDS]));
+
+export const CAREER_STAGE_BANDS = [
+  { code: "S1", role: "Junior" },
+  { code: "S2", role: "Mid" },
+  { code: "S3", role: "Senior" },
+  { code: "S4", role: "Lead/Staff" },
+  { code: "S5", role: "Principal" },
 ];

@@ -13,7 +13,7 @@ Requires Node >= 24 (`.nvmrc` pins 24). The `prebuild` hook runs `scripts/check-
 - `npm run format:check` / `format:fix` — oxfmt (config in `.oxfmtrc.json`)
 - `npm run bumpver:patch|minor|major` — bump `package.json` version with no git tag (the version bump is what triggers release; see Deploy)
 
-There is no test suite.
+- `npm test` / `test:watch` — vitest; tests sit next to their source as `*.test.js`. The two browser smoke scripts (`scripts/verify-poster-export.mjs`, `verify-scroll-behavior.mjs`) stay outside it.
 
 ## Architecture
 
@@ -45,7 +45,11 @@ A single-page React 19 app (Vite 8, Tailwind v4, Zustand) that renders an intera
 
 ### Scoring
 
-[src/constants/scores.js](src/constants/scores.js) computes derived metrics from a `pillarLevels` map; the tunable parameters (weights, thresholds, `CAREER_LEVEL_REQUIREMENTS` for L1–L5) live in [src/constants/scoring.js](src/constants/scoring.js). Career level is the highest band where peak, breadth, and cluster-average floors are all met. `computeAverages` returns `pillarCount` alongside the scores, so callers don't need the array's length.
+[src/constants/scores.js](src/constants/scores.js) computes derived metrics from a `pillarLevels` map; the tunable parameters live in [src/constants/scoring.js](src/constants/scoring.js). Career stages are written **S1–S5** so a bare L1–L5 only ever means pillar proficiency.
+
+`careerStageFromScores` gates the stage per track. Each of the three `TRACKS` (Deep Technical, Product-Focused, People & Delivery) has 4 key pillars, which overlap between tracks on purpose; the other 5 are its support set. Per track it computes `keyMean`, `supportMean` and `minPillar` (lowest pillar, same for every track, `MIN_PILLAR_EXCLUDED` leaves out `ai` so AI Leverage never caps a stage). It then walks S5 → S2 against `CAREER_STAGE_REQUIREMENTS` (keyed by track, then stage) and takes the first stage where all three pass, else S1. The profile's stage is the best across tracks; ties go to the higher `keyMean`, then `TRACKS` order. Raw values are compared; rounding is display-only. The stage is computed live and never stored.
+
+It also returns `tracks`: every track's own stage, means, and `next` (the first minimum blocking the stage above, null at S5). The score cards show three rows: cluster averages (`computeClusterAvgs`, display-only, not part of the gate), one debug card per track (stage, Peak = `keyMean`, Breadth = `supportMean`, and `next`), and a summary card (stage, role, track). Tracks fork at `TRACK_FORK_STAGE` (S3), so below it the summary reads "Foundation" instead of a track. The summary is the card meant for non-admins; hiding the other rows from them is not built yet.
 
 ### Chart
 

@@ -1,7 +1,6 @@
 /**
- * Row ordering for the profile dropdown. No `@/` imports and no store access, so this runs under bare node
- * for scripts/verify-profile-picker-sort.mjs: the badge order arrives as a parameter rather than being read
- * from constants here, the same injection profile-stamp.js uses for its changelog.
+ * Row ordering for the profile dropdown. No store access, and the badge order arrives as a parameter rather
+ * than being read from constants here, so profile-picker-sort.test.js can pass its own order.
  */
 
 /**

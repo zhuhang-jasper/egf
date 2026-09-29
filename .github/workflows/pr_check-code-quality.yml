@@ -57,3 +57,17 @@ jobs:
 
     - name: Oxfmt (check only)
       run: npm run format:check
+
+  test:
+    name: Vitest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.imports == 'true'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - uses: ./.github/actions/setup-node
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Unit tests
+      run: npm test

@@ -1,23 +1,13 @@
-import {
-  BREADTH_TOP_RATIO,
-  CAREER_BREADTH_WEIGHT,
-  CAREER_LEVEL_BY_AVG_BAND,
-  CAREER_LEVEL_REQUIREMENTS,
-  CAREER_PEAK_WEIGHT,
-  getPillarGroupOrder,
-  HUMAN_STRENGTH_TOP_K,
-  PILLAR_ORDER,
-  TECHNICAL_FLOOR_PILLARS,
-} from "@/constants";
+import { CAREER_STAGE_BANDS, CAREER_STAGE_REQUIREMENTS, getPillarGroupOrder, MIN_PILLAR_EXCLUDED, PILLAR_ORDER, TRACKS } from "@/constants";
 
 /**
  * Every score below reads a `{ pillarId: level }` map, not a positional array — pillar order is a
  * chart-axis concern and scores do not depend on it. `pillarValues` is the one place that flattens the
  * map, so the aggregate helpers stay plain number-list maths.
  */
-function pillarValues(pillarLevels) {
+function pillarValues(pillarLevels, pillarIds = PILLAR_ORDER) {
   const values = [];
-  for (const id of PILLAR_ORDER) {
+  for (const id of pillarIds) {
     const level = pillarLevels?.[id];
     if (level !== undefined) {
       values.push(level);
@@ -26,73 +16,22 @@ function pillarValues(pillarLevels) {
   return values;
 }
 
-function computePillarSubsetAvg(pillarLevels, pillarIds) {
+function mean(values) {
+  if (!values.length) {
+    return NaN;
+  }
   let sum = 0;
-  let count = 0;
-  for (const pillarId of pillarIds) {
-    const level = pillarLevels?.[pillarId];
-    if (level !== undefined) {
-      sum += level;
-      count++;
-    }
+  for (const v of values) {
+    sum += v;
   }
-  return count ? sum / count : NaN;
-}
-
-function resolveClusterRequirements(requirements) {
-  const floors = { ...requirements.clusters };
-  if (requirements.feClusters) {
-    Object.assign(floors, requirements.feClusters);
-  }
-  return floors;
+  return sum / values.length;
 }
 
 export function formatAvgScore(n) {
   if (!Number.isFinite(n)) {
-    return "—";
+    return "n/a";
   }
   return (Math.round(n * 100) / 100).toFixed(2);
-}
-
-export function computeOverallPillarAvg(levels) {
-  if (!levels?.length) {
-    return NaN;
-  }
-  let sum = 0;
-  for (let i = 0; i < levels.length; i++) {
-    sum += levels[i];
-  }
-  return sum / levels.length;
-}
-
-/** @deprecated Use {@link computeOverallPillarAvg}. */
-export const computeOverallSevenPillarAvg = computeOverallPillarAvg;
-
-function computeTopKAvg(levels, k) {
-  if (!levels?.length) {
-    return NaN;
-  }
-  const take = Math.min(k, levels.length);
-  const sorted = [...levels].sort((a, b) => b - a);
-  let sum = 0;
-  for (let i = 0; i < take; i++) {
-    sum += sorted[i];
-  }
-  return sum / take;
-}
-
-/** Mean of top-3 pillars — peak / specialization signal. */
-export function computeHumanStrengthIndex(levels) {
-  return computeTopKAvg(levels, HUMAN_STRENGTH_TOP_K);
-}
-
-/** Mean of top ceil(n × {@link BREADTH_TOP_RATIO}) pillars — rounded breadth signal. */
-export function computeBreadthScore(levels) {
-  if (!levels?.length) {
-    return NaN;
-  }
-  const k = Math.ceil(levels.length * BREADTH_TOP_RATIO);
-  return computeTopKAvg(levels, k);
 }
 
 /** Mean pillar score per cluster (for display). */
@@ -100,83 +39,77 @@ export function computeClusterAvgs(pillarLevels) {
   const avgs = {};
 
   for (const { id, pillars } of getPillarGroupOrder()) {
-    avgs[id] = computePillarSubsetAvg(pillarLevels, pillars);
+    avgs[id] = mean(pillarValues(pillarLevels, pillars));
   }
 
   return avgs;
 }
 
-/** Cluster avgs used for career floors (technical excludes AI). */
-export function computeCareerFloorClusterAvgs(pillarLevels) {
-  const avgs = computeClusterAvgs(pillarLevels);
-  avgs.technical = computePillarSubsetAvg(pillarLevels, TECHNICAL_FLOOR_PILLARS);
-  return avgs;
-}
+const STAGE_RANK = new Map(CAREER_STAGE_BANDS.map(({ code }, i) => [code, i]));
 
-export function computeCareerScore(peak, breadth) {
-  if (!Number.isFinite(peak) || !Number.isFinite(breadth)) {
-    return NaN;
-  }
-  return peak * CAREER_PEAK_WEIGHT + breadth * CAREER_BREADTH_WEIGHT;
-}
-
-function meetsClusterFloors(clusterAvgs, clusterRequirements) {
-  if (!clusterRequirements) {
-    return true;
-  }
-
-  for (const [clusterId, min] of Object.entries(clusterRequirements)) {
-    const avg = clusterAvgs[clusterId];
-    if (!Number.isFinite(avg) || avg < min) {
-      return false;
+/** The first of a stage's minimums the scores miss, or null when all pass. Raw values, never rounded. */
+function firstUnmet(req, scores) {
+  for (const metric of ["keyMean", "supportMean", "minPillar"]) {
+    if (req[metric] !== null && !(scores[metric] >= req[metric])) {
+      return { metric, required: req[metric] };
     }
   }
-
-  return true;
+  return null;
 }
 
-function meetsCareerRequirements(peak, breadth, clusterAvgs, requirements) {
-  return peak >= requirements.peak && breadth >= requirements.breadth && meetsClusterFloors(clusterAvgs, resolveClusterRequirements(requirements));
-}
-
-/** Highest level (L5→L2) where peak, breadth, and cluster floors pass; else L1. */
-export function careerLevelFromScores(peak, breadth, clusterAvgs = {}) {
-  if (!Number.isFinite(peak) || !Number.isFinite(breadth)) {
-    return null;
-  }
-
-  for (let i = CAREER_LEVEL_BY_AVG_BAND.length - 1; i >= 1; i--) {
-    const band = CAREER_LEVEL_BY_AVG_BAND[i];
-    const requirements = CAREER_LEVEL_REQUIREMENTS[band.code];
-    if (requirements && meetsCareerRequirements(peak, breadth, clusterAvgs, requirements)) {
-      return band;
+/** Highest stage (S5 → S2) whose minimums all pass, else S1; `next` is what blocks the stage above. */
+function stageForTrack(requirements, scores) {
+  for (let i = CAREER_STAGE_BANDS.length - 1; i >= 1; i--) {
+    if (!firstUnmet(requirements[CAREER_STAGE_BANDS[i].code], scores)) {
+      const above = CAREER_STAGE_BANDS[i + 1];
+      return { stage: CAREER_STAGE_BANDS[i].code, next: above ? firstUnmet(requirements[above.code], scores) : null };
     }
   }
-
-  return CAREER_LEVEL_BY_AVG_BAND[0];
+  return { stage: CAREER_STAGE_BANDS[0].code, next: firstUnmet(requirements[CAREER_STAGE_BANDS[1].code], scores) };
 }
 
-/** @deprecated Use {@link careerLevelFromScores}. */
-export const careerLevelFromAvg = (avg) => careerLevelFromScores(avg, avg);
+/**
+ * Best stage across {@link TRACKS}; that track is the match. Ties go to the higher keyMean, then to
+ * TRACKS order. `tracks` holds every track's own result, in TRACKS order.
+ */
+export function careerStageFromScores(pillarLevels) {
+  const minPillar = Math.min(
+    ...pillarValues(
+      pillarLevels,
+      PILLAR_ORDER.filter((id) => !MIN_PILLAR_EXCLUDED.includes(id)),
+    ),
+  );
 
-/** @deprecated Use {@link careerLevelFromScores}. */
-export const careerLevelFromStrengthIndex = careerLevelFromAvg;
+  const tracks = Object.entries(TRACKS).map(([track, { keyPillars }]) => {
+    const scores = {
+      keyMean: mean(pillarValues(pillarLevels, keyPillars)),
+      supportMean: mean(
+        pillarValues(
+          pillarLevels,
+          PILLAR_ORDER.filter((id) => !keyPillars.includes(id)),
+        ),
+      ),
+      minPillar,
+    };
+    return { track, ...stageForTrack(CAREER_STAGE_REQUIREMENTS[track], scores), ...scores };
+  });
+
+  let best = tracks[0];
+  for (const t of tracks) {
+    const rank = STAGE_RANK.get(t.stage);
+    const bestRank = STAGE_RANK.get(best.stage);
+    if (rank > bestRank || (rank === bestRank && t.keyMean > best.keyMean)) {
+      best = t;
+    }
+  }
+  const { stage, track, keyMean, supportMean } = best;
+  return { stage, track, keyMean, supportMean, minPillar, tracks };
+}
 
 export function computeAverages(pillarLevels) {
-  const values = pillarValues(pillarLevels);
-  const peak = computeHumanStrengthIndex(values);
-  const breadth = computeBreadthScore(values);
-  const effective = computeCareerScore(peak, breadth);
-  const clusters = computeClusterAvgs(pillarLevels);
-  const floorClusters = computeCareerFloorClusterAvgs(pillarLevels);
-
   return {
-    pillarCount: values.length,
-    overall: computeOverallPillarAvg(values),
-    human: peak,
-    breadth,
-    effective,
-    clusters,
-    career: careerLevelFromScores(peak, breadth, floorClusters),
+    overall: mean(pillarValues(pillarLevels)),
+    clusters: computeClusterAvgs(pillarLevels),
+    career: careerStageFromScores(pillarLevels),
   };
 }
