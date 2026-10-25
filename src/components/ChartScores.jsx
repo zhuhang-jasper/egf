@@ -103,7 +103,8 @@ function buildTrackCards({ tracks, track: strongest, minPillar }, selected, onSe
       connector: track === selected ? cn("border-sky-600", track !== strongest && "border-dotted") : null,
       className: cn(
         "border-2",
-        track !== strongest && "border-dotted opacity-75",
+        // Mutes the children rather than the card, since opacity on the card would also fade its tooltip.
+        track !== strongest && "border-dotted [&>:not(:has([role=tooltip]))]:opacity-75",
         track === selected
           ? "border-sky-600 bg-sky-50 text-sky-900 [&_span:nth-child(2)]:text-sky-700"
           : "border-slate-300 bg-white text-slate-600 hover:border-slate-400 [&_span:nth-child(2)]:text-slate-700",
