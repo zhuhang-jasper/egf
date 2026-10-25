@@ -554,8 +554,8 @@ export default function PosterPage() {
       const bands =
         [showHeader && "header", showPillars && "pillars", showTracks && "tracks", showCredit && "credit"].filter(Boolean).join("+") || "none";
       track("poster_exported", { action, height: canvasH, bands });
-      // COPY IS CONFIRMED, DOWNLOAD IS NOT, the same split as the tool's chart export (see EXPORT_TOAST in
-      // components/ChartSection.jsx): a download hands off to the browser's save sheet, which may be cancelled
+      // COPY IS CONFIRMED, DOWNLOAD IS NOT, the same split as the tool's chart export (see the TOAST table in
+      // utils/export-outcome.js): a download hands off to the browser's save sheet, which may be cancelled
       // long after this resolves, so a toast there would be a claim we cannot check.
       if (action === "copy") {
         showToast("Poster copied to clipboard", { variant: "success", key: SHARE_EXPORT_TOAST_KEY });

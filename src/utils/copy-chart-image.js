@@ -51,7 +51,7 @@ export function buildChartFileName(profileName) {
   return withName.replace("{date}", getLocalDateStamp());
 }
 
-function sanitizeColorForHtml2Canvas(value) {
+function toCanvasColor(value) {
   const trimmed = String(value ?? "").trim();
   if (!trimmed || trimmed === "transparent") {
     return trimmed;
@@ -321,11 +321,11 @@ function drawSvgIcon(ctx, svg, rootRect, scaleX, scaleY, padX, padY) {
   for (const path of svg.querySelectorAll("path")) {
     const p = new Path2D(path.getAttribute("d") ?? "");
     if (cs.fill && cs.fill !== "none") {
-      ctx.fillStyle = sanitizeColorForHtml2Canvas(cs.fill);
+      ctx.fillStyle = toCanvasColor(cs.fill);
       ctx.fill(p);
     }
     if (cs.stroke && cs.stroke !== "none") {
-      ctx.strokeStyle = sanitizeColorForHtml2Canvas(cs.stroke);
+      ctx.strokeStyle = toCanvasColor(cs.stroke);
       ctx.stroke(p);
     }
   }
@@ -350,8 +350,8 @@ function renderScoreCard(ctx, card, rootRect, scaleX, scaleY, padX, padY) {
     w,
     h,
     radius,
-    sanitizeColorForHtml2Canvas(cs.backgroundColor),
-    sanitizeColorForHtml2Canvas(cs.borderTopColor),
+    toCanvasColor(cs.backgroundColor),
+    toCanvasColor(cs.borderTopColor),
     lineWidth,
   );
 
@@ -363,7 +363,7 @@ function renderScoreCard(ctx, card, rootRect, scaleX, scaleY, padX, padY) {
     const scs = window.getComputedStyle(span);
     const spanAlpha = Number.parseFloat(scs.opacity);
     ctx.globalAlpha = alpha * (Number.isFinite(spanAlpha) ? spanAlpha : 1);
-    ctx.fillStyle = sanitizeColorForHtml2Canvas(scs.color);
+    ctx.fillStyle = toCanvasColor(scs.color);
     ctx.font = buildFont(scs, scaleY);
     applyLetterSpacing(ctx, scs, scaleY);
     ctx.textAlign = "center";
@@ -381,7 +381,7 @@ function renderScoreCard(ctx, card, rootRect, scaleX, scaleY, padX, padY) {
     const ccs = window.getComputedStyle(connector);
     const r = getRelativeRect(connector, rootRect, scaleX, scaleY, padX, padY);
     const cx = r.x + r.w / 2;
-    ctx.strokeStyle = sanitizeColorForHtml2Canvas(ccs.borderLeftColor);
+    ctx.strokeStyle = toCanvasColor(ccs.borderLeftColor);
     ctx.lineWidth = r.w;
     applyBorderDash(ctx, ccs.borderLeftStyle, r.w);
     // Inset by half a stroke so round caps stay inside the gap, as the CSS dots do.
@@ -412,7 +412,7 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY, padX, padY) {
     if (text) {
       const cs = window.getComputedStyle(title);
       const { x, y, w, h } = getRelativeRect(title, rootRect, scaleX, scaleY, padX, padY);
-      ctx.fillStyle = sanitizeColorForHtml2Canvas(cs.color);
+      ctx.fillStyle = toCanvasColor(cs.color);
       const baseSize = Number.parseFloat(cs.fontSize) || 14;
       const weight = getCanvasWeight(cs, "exportImageTitleWeightDelta");
       const family = buildTitleFontFamily(cs);
@@ -450,8 +450,8 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY, padX, padY) {
       w,
       h,
       radius,
-      sanitizeColorForHtml2Canvas(cs.backgroundColor),
-      sanitizeColorForHtml2Canvas(cs.borderTopColor),
+      toCanvasColor(cs.backgroundColor),
+      toCanvasColor(cs.borderTopColor),
       lineWidth,
     );
   }
@@ -468,10 +468,10 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY, padX, padY) {
         const scs = window.getComputedStyle(swatch);
         const sr = getRelativeRect(swatch, rootRect, scaleX, scaleY, padX, padY);
         const borderW = (Number.parseFloat(scs.borderTopWidth) || 1) * scaleX;
-        ctx.fillStyle = sanitizeColorForHtml2Canvas(scs.backgroundColor);
+        ctx.fillStyle = toCanvasColor(scs.backgroundColor);
         ctx.fillRect(sr.x, sr.y, sr.w, sr.h);
         if (borderW > 0) {
-          ctx.strokeStyle = sanitizeColorForHtml2Canvas(scs.borderTopColor);
+          ctx.strokeStyle = toCanvasColor(scs.borderTopColor);
           ctx.lineWidth = borderW;
           ctx.strokeRect(sr.x + borderW / 2, sr.y + borderW / 2, sr.w - borderW, sr.h - borderW);
         }
@@ -481,7 +481,7 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY, padX, padY) {
         if (text) {
           const lcs = window.getComputedStyle(label);
           const lr = getRelativeRect(label, rootRect, scaleX, scaleY, padX, padY);
-          ctx.fillStyle = sanitizeColorForHtml2Canvas(lcs.color);
+          ctx.fillStyle = toCanvasColor(lcs.color);
           ctx.font = buildFont(lcs, scaleY);
           applyLetterSpacing(ctx, lcs, scaleY);
           ctx.textAlign = "left";
@@ -499,8 +499,8 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY, padX, padY) {
       const cs = window.getComputedStyle(trackBadge);
       const { x, y, w, h } = getRelativeRect(trackBadge, rootRect, scaleX, scaleY, padX, padY);
       const radius = (Number.parseFloat(cs.borderRadius) || 6) * scaleX;
-      drawRoundedRect(ctx, x, y, w, h, radius, sanitizeColorForHtml2Canvas(cs.backgroundColor), null, 0);
-      ctx.fillStyle = sanitizeColorForHtml2Canvas(cs.color);
+      drawRoundedRect(ctx, x, y, w, h, radius, toCanvasColor(cs.backgroundColor), null, 0);
+      ctx.fillStyle = toCanvasColor(cs.color);
       ctx.font = buildFont(cs, scaleY, getCanvasWeight(cs, "exportImageBadgeWeightDelta"));
       applyLetterSpacing(ctx, cs, scaleY);
       ctx.textAlign = "center";
@@ -724,12 +724,8 @@ async function rasterizeChart({ exportRoot, canvas, chart, attributionHidden, uh
  * @param profileName Used only by the download fallback, to name the file. The clipboard path never sees
  *   it — a pasted image has no filename.
  */
-export async function copyChartAsImageToClipboard({ exportRoot, canvas, chart, profileName, attributionHidden, uhd, frameworkVersion }) {
-  if (!exportRoot || !canvas || !chart) {
-    return { ok: false, method: null };
-  }
-
-  const blobPromise = renderChartImageBlob({ exportRoot, canvas, chart, attributionHidden, uhd, frameworkVersion });
+export async function copyChartAsImageToClipboard({ profileName, ...renderOptions }) {
+  const blobPromise = renderChartImageBlob(renderOptions);
 
   if (canWriteClipboardImage()) {
     try {
@@ -755,16 +751,11 @@ export async function copyChartAsImageToClipboard({ exportRoot, canvas, chart, p
   return { ok: true, method: "download" };
 }
 
-export async function downloadChartImage({ exportRoot, canvas, chart, profileName, attributionHidden, uhd, frameworkVersion }) {
-  if (!exportRoot || !canvas || !chart) {
-    return { ok: false, method: null };
-  }
-
-  const blob = await renderChartImageBlob({ exportRoot, canvas, chart, attributionHidden, uhd, frameworkVersion });
+export async function downloadChartImage({ profileName, ...renderOptions }) {
+  const blob = await renderChartImageBlob(renderOptions);
   if (!blob) {
     return { ok: false, method: null };
   }
-
   saveBlob(blob, buildChartFileName(profileName));
   return { ok: true, method: "download" };
 }
@@ -795,12 +786,8 @@ function buildShareMessage(linkOverride) {
  * @param {string} [profileName] Profile name, slugged into the attachment filename.
  * @returns {{ ok: boolean, method: "share" | "share-fallback-clipboard" | "share-fallback-download" | null }}
  */
-export async function shareChartAsImage({ exportRoot, canvas, chart, url, profileName, attributionHidden, uhd, frameworkVersion }) {
-  if (!exportRoot || !canvas || !chart) {
-    return { ok: false, method: null };
-  }
-
-  const blob = await renderChartImageBlob({ exportRoot, canvas, chart, attributionHidden, uhd, frameworkVersion });
+export async function shareChartAsImage({ url, profileName, ...renderOptions }) {
+  const blob = await renderChartImageBlob(renderOptions);
   if (!blob) {
     return { ok: false, method: null };
   }

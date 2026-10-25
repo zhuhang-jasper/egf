@@ -53,7 +53,7 @@ It also returns `tracks`: every track's own stage, means, and `next` (the first 
 
 ### Chart
 
-Chart.js radar lives under [src/chart/](src/chart/), driven by React hooks in `src/hooks/` (`useCompetencyChart`, `useStaticCompetencyChart`). `instance.js` creates/updates the chart imperatively; `radar-center.js`/`fonts.js` handle fitting the radar into its frame (a multi-pass converge loop); `plugins.js` draws cluster background wedges. `src/utils/copy-chart-image.js` (html2canvas) exports the chart as an image.
+Chart.js radar lives under [src/chart/](src/chart/), driven by React hooks in `src/hooks/` (`useCompetencyChart`, `useStaticCompetencyChart`). `instance.js` creates/updates the chart imperatively; `radar-center.js`/`fonts.js` handle fitting the radar into its frame (a multi-pass converge loop); `plugins.js` draws cluster background wedges. `src/utils/copy-chart-image.js` exports the chart as a PNG by painting the radar and its DOM chrome onto a canvas by hand; the poster/social pages use snapdom instead (`src/utils/export-image.js`).
 
 ### Conventions
 

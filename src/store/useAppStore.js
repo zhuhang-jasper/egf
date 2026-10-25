@@ -47,7 +47,7 @@ export const UNDO_TOAST_KEY = "undo";
 // One key per action family, so a re-tap of the same control replaces its notice instead of piling a
 // second card on the first. Every outcome of a family shares its key — success, fallback and error are
 // mutually exclusive answers to one press, so the newest is the only true one.
-export const CHART_EXPORT_TOAST_KEY = "chart-export"; // Copy + Share on the chart
+export const CHART_EXPORT_TOAST_KEY = "chart-export"; // Copy + Download + Share on the chart
 export const PROFILE_IO_TOAST_KEY = "profile-io"; // Export / Import failures in the profiles menu
 // Non-destructive save confirmations (create / rename / update). A DESTRUCTIVE save takes
 // UNDO_TOAST_KEY instead, since it carries an Undo and must contend for that single slot.
