@@ -48,10 +48,10 @@ function ScoreCard({ label, value, sub, detail, className, title, cardStyle, val
       {detail ? <span className={cn("max-w-[12rem] font-semibold opacity-80", TOOL_TEXT.annotation)}>{detail}</span> : null}
       <Tooltip text={title} className="w-[12rem] max-w-[80vw] whitespace-normal text-center font-normal leading-snug" />
       {/* Last child, so it does not shift the `span:nth-child(2)` value colour the card themes rely on. */}
-      {starred ? <Star aria-label="Strongest track" role="img" className="absolute -left-2 -top-2 size-5 fill-amber-400 text-amber-500" /> : null}
+      {starred ? <Star aria-label="Strongest track" role="img" data-chart-export="chart-score-star" className="absolute -left-2 -top-2 size-5 fill-amber-400 text-amber-500" /> : null}
       {/* Starts past this card's 2px border and spans only the row gap (gap-2 / xs:gap-3), so it never overlaps either border. */}
       {connector ? (
-        <span aria-hidden className={cn("absolute left-1/2 top-[calc(100%+2px)] h-2 -translate-x-1/2 border-l-2 xs:h-3", connector)} />
+        <span aria-hidden data-chart-export="chart-score-connector" className={cn("absolute left-1/2 top-[calc(100%+2px)] h-2 -translate-x-1/2 border-l-2 xs:h-3", connector)} />
       ) : null}
     </Tag>
   );
@@ -146,7 +146,7 @@ export function ChartScores() {
 
   const rows = [
     { key: "clusters", cols: "grid-cols-3", hidden: true, exportOmit: true, cards: buildClusterCards(clusters) },
-    { key: "tracks", cols: "grid-cols-3", exportOmit: true, cards: buildTrackCards(career, selected, onSelect) },
+    { key: "tracks", cols: "grid-cols-3", cards: buildTrackCards(career, selected, onSelect) },
     { key: "summary", cols: "grid-cols-1", cards: [buildSummaryCard(career, selected)] },
   ];
 

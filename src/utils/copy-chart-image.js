@@ -267,6 +267,137 @@ function getOwnText(el) {
   return out.trim();
 }
 
+/**
+ * The element's own text split into the lines the DOM wrapped it onto, each with its client rect. A narrow track
+ * card wraps its sub-lines, and one `fillText` of the whole string would run past the card's edges.
+ */
+function getWrappedLines(el) {
+  const lines = [];
+  const range = document.createRange();
+  for (const node of el.childNodes) {
+    if (node.nodeType !== Node.TEXT_NODE) {
+      continue;
+    }
+    for (const m of node.nodeValue.matchAll(/\S+/g)) {
+      range.setStart(node, m.index);
+      range.setEnd(node, m.index + m[0].length);
+      const r = range.getBoundingClientRect();
+      const last = lines.at(-1);
+      if (last && Math.abs(r.top - last.top) < r.height / 2) {
+        last.words.push(m[0]);
+        last.left = Math.min(last.left, r.left);
+        last.right = Math.max(last.right, r.right);
+      } else {
+        lines.push({ words: [m[0]], top: r.top, height: r.height, left: r.left, right: r.right });
+      }
+    }
+  }
+  return lines.map(({ words, top, height, left, right }) => ({ text: words.join(" "), top, height, left, right }));
+}
+
+/** Sets a dotted stroke when the CSS border is dotted, a solid one otherwise. Round caps make the dashes dots. */
+function applyBorderDash(ctx, borderStyle, lineWidth) {
+  const dotted = borderStyle === "dotted";
+  ctx.setLineDash(dotted ? [0, lineWidth * 2] : []);
+  ctx.lineCap = dotted ? "round" : "butt";
+}
+
+/** A lucide icon, redrawn from its own path data at its laid-out box. */
+function drawSvgIcon(ctx, svg, rootRect, scaleX, scaleY, padX, padY) {
+  const cs = window.getComputedStyle(svg);
+  const { x, y, w, h } = getRelativeRect(svg, rootRect, scaleX, scaleY, padX, padY);
+  const vb = svg.viewBox.baseVal;
+  if (!vb?.width || !vb?.height) {
+    return;
+  }
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(w / vb.width, h / vb.height);
+  ctx.lineWidth = Number.parseFloat(cs.strokeWidth) || 2;
+  ctx.lineJoin = cs.strokeLinejoin || "round";
+  ctx.lineCap = cs.strokeLinecap || "round";
+  for (const path of svg.querySelectorAll("path")) {
+    const p = new Path2D(path.getAttribute("d") ?? "");
+    if (cs.fill && cs.fill !== "none") {
+      ctx.fillStyle = sanitizeColorForHtml2Canvas(cs.fill);
+      ctx.fill(p);
+    }
+    if (cs.stroke && cs.stroke !== "none") {
+      ctx.strokeStyle = sanitizeColorForHtml2Canvas(cs.stroke);
+      ctx.stroke(p);
+    }
+  }
+  ctx.restore();
+}
+
+function renderScoreCard(ctx, card, rootRect, scaleX, scaleY, padX, padY) {
+  const cs = window.getComputedStyle(card);
+  const cardAlpha = Number.parseFloat(cs.opacity);
+  const alpha = Number.isFinite(cardAlpha) ? cardAlpha : 1;
+  const { x, y, w, h } = getRelativeRect(card, rootRect, scaleX, scaleY, padX, padY);
+  const radius = (Number.parseFloat(cs.borderTopLeftRadius) || 8) * scaleX;
+  const lineWidth = (Number.parseFloat(cs.borderTopWidth) || 1) * scaleX;
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  applyBorderDash(ctx, cs.borderTopStyle, lineWidth);
+  drawRoundedRect(
+    ctx,
+    x,
+    y,
+    w,
+    h,
+    radius,
+    sanitizeColorForHtml2Canvas(cs.backgroundColor),
+    sanitizeColorForHtml2Canvas(cs.borderTopColor),
+    lineWidth,
+  );
+
+  for (const span of card.querySelectorAll("span")) {
+    // Own text only: the Tooltip's `display: contents` wrapper would otherwise carry the tooltip copy.
+    if (span.getAttribute("role") === "tooltip" || !getOwnText(span)) {
+      continue;
+    }
+    const scs = window.getComputedStyle(span);
+    const spanAlpha = Number.parseFloat(scs.opacity);
+    ctx.globalAlpha = alpha * (Number.isFinite(spanAlpha) ? spanAlpha : 1);
+    ctx.fillStyle = sanitizeColorForHtml2Canvas(scs.color);
+    ctx.font = buildFont(scs, scaleY);
+    applyLetterSpacing(ctx, scs, scaleY);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    for (const line of getWrappedLines(span)) {
+      const cx = ((line.left + line.right) / 2 - rootRect.left + padX) * scaleX;
+      const cy = (line.top + line.height / 2 - rootRect.top + padY) * scaleY;
+      ctx.fillText(line.text, cx, cy);
+    }
+  }
+  ctx.globalAlpha = alpha;
+
+  const connector = card.querySelector("[data-chart-export='chart-score-connector']");
+  if (connector instanceof HTMLElement) {
+    const ccs = window.getComputedStyle(connector);
+    const r = getRelativeRect(connector, rootRect, scaleX, scaleY, padX, padY);
+    const cx = r.x + r.w / 2;
+    ctx.strokeStyle = sanitizeColorForHtml2Canvas(ccs.borderLeftColor);
+    ctx.lineWidth = r.w;
+    applyBorderDash(ctx, ccs.borderLeftStyle, r.w);
+    // Inset by half a stroke so round caps stay inside the gap, as the CSS dots do.
+    const inset = ccs.borderLeftStyle === "dotted" ? r.w / 2 : 0;
+    ctx.beginPath();
+    ctx.moveTo(cx, r.y + inset);
+    ctx.lineTo(cx, r.y + r.h - inset);
+    ctx.stroke();
+  }
+
+  const star = card.querySelector("[data-chart-export='chart-score-star']");
+  if (star instanceof SVGSVGElement) {
+    ctx.setLineDash([]);
+    drawSvgIcon(ctx, star, rootRect, scaleX, scaleY, padX, padY);
+  }
+  ctx.restore();
+}
+
 function renderExportDom(ctx, exportRoot, scaleX, scaleY, padX, padY) {
   const rootRect = exportRoot.getBoundingClientRect();
 
@@ -381,42 +512,8 @@ function renderExportDom(ctx, exportRoot, scaleX, scaleY, padX, padY) {
   const scoresGrid = exportRoot.querySelector("[data-chart-export='chart-scores']");
   if (scoresGrid) {
     for (const card of scoresGrid.querySelectorAll("[data-chart-export='chart-score-card']")) {
-      if (!(card instanceof HTMLElement)) {
-        continue;
-      }
-      const cs = window.getComputedStyle(card);
-      const { x, y, w, h } = getRelativeRect(card, rootRect, scaleX, scaleY, padX, padY);
-      const radius = (Number.parseFloat(cs.borderTopLeftRadius) || 8) * scaleX;
-      const lineWidth = (Number.parseFloat(cs.borderTopWidth) || 1) * scaleX;
-      drawRoundedRect(
-        ctx,
-        x,
-        y,
-        w,
-        h,
-        radius,
-        sanitizeColorForHtml2Canvas(cs.backgroundColor),
-        sanitizeColorForHtml2Canvas(cs.borderTopColor),
-        lineWidth,
-      );
-
-      for (const span of card.querySelectorAll("span")) {
-        // Hover tooltips are visually hidden (opacity-0) and sit outside the card — never paint them.
-        if (span.getAttribute("role") === "tooltip") {
-          continue;
-        }
-        const text = span.textContent?.trim();
-        if (!text) {
-          continue;
-        }
-        const scs = window.getComputedStyle(span);
-        const sr = getRelativeRect(span, rootRect, scaleX, scaleY, padX, padY);
-        ctx.fillStyle = sanitizeColorForHtml2Canvas(scs.color);
-        ctx.font = buildFont(scs, scaleY);
-        applyLetterSpacing(ctx, scs, scaleY);
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(text, sr.x + sr.w / 2, sr.y + sr.h / 2);
+      if (card instanceof HTMLElement && !isVisuallyHidden(card)) {
+        renderScoreCard(ctx, card, rootRect, scaleX, scaleY, padX, padY);
       }
     }
   }
