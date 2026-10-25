@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 
 // `Image` is aliased because the bare name is a global DOM constructor (`new Image()`), and a component
 // shadowing it at module scope is a trap for anything later in this file that wants the real one.
-import { Image as ImageIcon, Settings, Share2 } from "lucide-react";
+import { Download, Image as ImageIcon, Settings, Share2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { MenuCheckboxItem } from "@/components/ui/menu-checkbox-item";
@@ -133,16 +133,15 @@ const CAN_SHARE_FILES = (() => {
 })();
 
 /**
- * Image-export controls. "Copy image" is always shown (clipboard, falling back to a download); "Share"
- * appears only where the Web Share API can carry files. Share comes first, being the primary action where
- * it exists.
+ * Image-export controls. "Copy image" (clipboard, falling back to a download) and "Download" are always
+ * shown; "Share" appears last, only where the Web Share API can carry files.
  *
  * Both take the theory tab's toolbar surface (see styles/toolbar.js) rather than a default button, so
  * switching tabs does not restyle the chrome. They keep their text because neither glyph is
  * self-explanatory: a plain `Image` deliberately makes no claim about the verb, since this button has two
  * possible outcomes and the earlier `ImageDown` advertised the fallback rather than the primary path.
  */
-function ExportMenu({ onCopy, onShare }) {
+function ExportMenu({ onCopy, onDownload, onShare }) {
   return (
     // `gap-2` IS SHARED WITH THEORY'S PRINT/SHARE GROUP (see TheoryContent's toolbar row) — same pills, same
     // place on the page, so the same 8px between them. Theory's was `gap-1.5`; keep the two in step. It
@@ -160,6 +159,18 @@ function ExportMenu({ onCopy, onShare }) {
         <ImageIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
         Copy
         <Tooltip text="Copy the chart image to your clipboard" />
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        shape="pill"
+        onClick={onDownload}
+        className={cn(TOOLBAR_SURFACE, "group relative gap-1")}
+        aria-label="Download image"
+      >
+        <Download className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        Download
+        <Tooltip text="Download the chart image as a PNG" />
       </Button>
       {CAN_SHARE_FILES ? (
         <Button

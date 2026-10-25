@@ -8,6 +8,7 @@
 const TOAST = {
   clipboard: "Copied to clipboard",
   copyFailed: "Couldn't copy the image",
+  downloadFailed: "Couldn't download the image",
   shareFailed: "Couldn't share the image",
 };
 
@@ -17,6 +18,13 @@ const OUTCOMES = {
     failureToast: TOAST.copyFailed,
     methods: {
       clipboard: { method: "clipboard", toast: TOAST.clipboard },
+      download: { method: "download", toast: null },
+    },
+  },
+  download: {
+    event: "chart_downloaded",
+    failureToast: TOAST.downloadFailed,
+    methods: {
       download: { method: "download", toast: null },
     },
   },

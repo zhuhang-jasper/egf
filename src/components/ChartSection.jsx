@@ -15,7 +15,7 @@ import { FE_UI, FEATURE_SCORES_SETTINGS, SITE_COPY } from "@/constants";
 import { CARD_PLAIN } from "@/styles/card";
 import { cn } from "@/utils";
 import { track } from "@/utils/analytics";
-import { copyChartAsImageToClipboard, shareChartAsImage } from "@/utils/copy-chart-image";
+import { copyChartAsImageToClipboard, downloadChartImage, shareChartAsImage } from "@/utils/copy-chart-image";
 import { resolveExportOutcome } from "@/utils/export-outcome";
 
 /**
@@ -116,6 +116,24 @@ export function ChartSection({ isVisible }) {
     }
   };
 
+  const handleDownload = async () => {
+    try {
+      const result = await downloadChartImage({
+        exportRoot: exportRef.current,
+        canvas: canvasRef.current,
+        chart: chartRef.current,
+        profileName: title,
+        attributionHidden: chartAttributionHidden,
+        uhd: chartUhdExport,
+        frameworkVersion: exportFrameworkVersion,
+      });
+      reportExportOutcome(result, "download");
+    } catch (e) {
+      console.error(e);
+      reportExportOutcome(null, "download");
+    }
+  };
+
   const handleShare = async () => {
     try {
       const result = await shareChartAsImage({
@@ -141,7 +159,7 @@ export function ChartSection({ isVisible }) {
           `relative` WITHOUT A Z-INDEX: that would make this row a stacking context and cap both children's
           dropdowns inside it (`LAYER` in constants/layers.js has the rule). */}
       <div className="relative mb-3 flex w-full min-w-0 items-center justify-between gap-2 print:hidden">
-        <ExportMenu onCopy={handleCopy} onShare={handleShare} />
+        <ExportMenu onCopy={handleCopy} onDownload={handleDownload} onShare={handleShare} />
         <ChartDisplayMenu />
       </div>
 

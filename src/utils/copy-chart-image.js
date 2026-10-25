@@ -1,4 +1,6 @@
 import { FE_UI, SITE_COPY } from "@/constants";
+import { canWriteClipboardImage, writeClipboardImage } from "@/utils/clipboard";
+import { saveBlob } from "@/utils/download";
 import { createExportClone } from "@/utils/export-clone";
 import { ensureInterFontsLoaded } from "@/utils/export-image";
 
@@ -727,28 +729,43 @@ export async function copyChartAsImageToClipboard({ exportRoot, canvas, chart, p
     return { ok: false, method: null };
   }
 
+  const blobPromise = renderChartImageBlob({ exportRoot, canvas, chart, attributionHidden, uhd, frameworkVersion });
+
+  if (canWriteClipboardImage()) {
+    try {
+      await writeClipboardImage(
+        blobPromise.then((b) => {
+          if (!b) {
+            throw new Error("Failed to render chart image");
+          }
+          return b;
+        }),
+      );
+      return { ok: true, method: "clipboard" };
+    } catch (e) {
+      console.warn(e);
+    }
+  }
+
+  const blob = await blobPromise;
+  if (!blob) {
+    return { ok: false, method: null };
+  }
+  saveBlob(blob, buildChartFileName(profileName));
+  return { ok: true, method: "download" };
+}
+
+export async function downloadChartImage({ exportRoot, canvas, chart, profileName, attributionHidden, uhd, frameworkVersion }) {
+  if (!exportRoot || !canvas || !chart) {
+    return { ok: false, method: null };
+  }
+
   const blob = await renderChartImageBlob({ exportRoot, canvas, chart, attributionHidden, uhd, frameworkVersion });
   if (!blob) {
     return { ok: false, method: null };
   }
 
-  try {
-    if (navigator.clipboard && typeof ClipboardItem !== "undefined" && typeof navigator.clipboard.write === "function") {
-      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-      return { ok: true, method: "clipboard" };
-    }
-  } catch (e) {
-    console.warn(e);
-  }
-
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = buildChartFileName(profileName);
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+  saveBlob(blob, buildChartFileName(profileName));
   return { ok: true, method: "download" };
 }
 
@@ -816,23 +833,16 @@ export async function shareChartAsImage({ exportRoot, canvas, chart, url, profil
   }
 
   // Fallback: no Web Share (or it failed) — copy the image so the user can paste it manually.
-  try {
-    if (navigator.clipboard && typeof ClipboardItem !== "undefined" && typeof navigator.clipboard.write === "function") {
-      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+  if (canWriteClipboardImage()) {
+    try {
+      await writeClipboardImage(blob);
       return { ok: true, method: "share-fallback-clipboard" };
+    } catch (e) {
+      console.warn(e);
     }
-  } catch (e) {
-    console.warn(e);
   }
 
-  const objectUrl = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = objectUrl;
-  a.download = fileName;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(objectUrl);
+  saveBlob(blob, fileName);
   return { ok: true, method: "share-fallback-download" };
 }
 

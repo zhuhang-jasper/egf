@@ -1,5 +1,6 @@
 import { PROFILES_STORAGE_KEY } from "@/constants";
 import { migrateBadgeKey, normalizeStoredProfile } from "@/constants/levels";
+import { saveBlob } from "@/utils/download";
 
 export const EXPORT_FORMAT = "egf-profiles";
 
@@ -58,17 +59,9 @@ async function saveProfilesWithPicker(profiles, json) {
   return "saved";
 }
 
-/** Fallback: anchor-click download. Fires-and-forgets — the browser gives no completion signal. */
+/** Fallback for browsers without the save picker. */
 function downloadViaAnchor(json) {
-  const blob = new Blob([json], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = exportFileName();
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+  saveBlob(new Blob([json], { type: "application/json" }), exportFileName());
 }
 
 /** Whether the browser can report a truthful save-completion (Chromium: Chrome/Edge). */

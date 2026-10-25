@@ -7,6 +7,9 @@ import interLatinExtNormalUrl from "@fontsource-variable/inter/files/inter-latin
 import interLatinItalicUrl from "@fontsource-variable/inter/files/inter-latin-opsz-italic.woff2?url";
 import interLatinNormalUrl from "@fontsource-variable/inter/files/inter-latin-opsz-normal.woff2?url";
 
+import { canWriteClipboardImage, writeClipboardImage } from "@/utils/clipboard";
+import { saveBlob } from "@/utils/download";
+
 /**
  * Shared PNG-export pipeline for the fixed-canvas share pages (PosterPage, SocialPage), which differ only in
  * canvas size and filename. snapdom rather than html2canvas because it natively understands Tailwind v4's
@@ -161,10 +164,7 @@ export async function renderShareBlob(node, width, height) {
 }
 
 /**
- * Copy a share PNG to the clipboard. Passes a Promise<Blob> to ClipboardItem (rather than an
- * already-resolved blob): this is the spec'd way to copy async-generated content — the browser
- * holds the clipboard-write permission across the awaited render, instead of the gesture window
- * expiring while we rasterize. Safari requires this form; Chrome/Firefox accept it too.
+ * Copy a share PNG to the clipboard. The render is handed over unresolved; see writeClipboardImage.
  *
  * @param node   the live share <article>
  * @param width  fixed canvas width in px
@@ -172,7 +172,7 @@ export async function renderShareBlob(node, width, height) {
  * @param label  human-readable noun for the error message (e.g. "poster", "social image")
  */
 export async function copyShareToClipboard(node, width, height, label) {
-  if (typeof ClipboardItem === "undefined" || !navigator.clipboard?.write) {
+  if (!canWriteClipboardImage()) {
     throw new Error("Clipboard image write is not supported in this browser");
   }
   const blobPromise = renderShareBlob(node, width, height).then((blob) => {
@@ -181,7 +181,7 @@ export async function copyShareToClipboard(node, width, height, label) {
     }
     return blob;
   });
-  await navigator.clipboard.write([new ClipboardItem({ "image/png": blobPromise })]);
+  await writeClipboardImage(blobPromise);
 }
 
 /**
@@ -198,13 +198,5 @@ export async function downloadSharePng(node, width, height, filename, label) {
   if (!blob) {
     throw new Error(`Failed to render ${label} image`);
   }
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  // Delay revoke — revoking synchronously after click() cancels the download in some browsers.
-  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  saveBlob(blob, filename);
 }
